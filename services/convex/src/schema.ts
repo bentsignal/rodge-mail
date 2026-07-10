@@ -7,6 +7,9 @@ import {
   vMessage,
   vMessageClassification,
   vMessageContent,
+  vOutboxMessage,
+  vProviderCredential,
+  vProviderOAuthState,
   vSyncRun,
   vThread,
 } from "./mail/validators";
@@ -78,6 +81,16 @@ export default defineSchema(
       .index("by_owner_bucket_importance", ["ownerId", "bucket", "importance"]),
     syncRuns: defineTable(vSyncRun)
       .index("by_account_created", ["accountId", "createdAt"])
+      .index("by_status_created", ["status", "createdAt"]),
+    providerCredentials: defineTable(vProviderCredential)
+      .index("by_account", ["accountId"])
+      .index("by_owner_provider", ["ownerId", "provider"]),
+    providerOAuthStates: defineTable(vProviderOAuthState)
+      .index("by_state_hash", ["stateHash"])
+      .index("by_owner_created", ["ownerId", "createdAt"]),
+    outboxMessages: defineTable(vOutboxMessage)
+      .index("by_account_idempotency", ["accountId", "idempotencyKey"])
+      .index("by_owner_created", ["ownerId", "createdAt"])
       .index("by_status_created", ["status", "createdAt"]),
   },
   { schemaValidation: true },

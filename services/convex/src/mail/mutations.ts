@@ -1,7 +1,9 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 
+import { internal } from "../_generated/api";
 import { authedMutation } from "../utils";
-import { ensureOwnedMessage } from "./helpers";
+import { ensureOwnedAccount, ensureOwnedMessage } from "./helpers";
+import { vMailboxAddress } from "./validators";
 
 export const setPinned = authedMutation({
   args: {
@@ -41,5 +43,81 @@ export const setRead = authedMutation({
         updatedAt: Date.now(),
       }),
     ]);
+  },
+});
+
+export const enqueuePlainText = authedMutation({
+  args: {
+    accountId: v.id("mailAccounts"),
+    idempotencyKey: v.string(),
+    to: v.array(vMailboxAddress),
+    cc: v.optional(v.array(vMailboxAddress)),
+    bcc: v.optional(v.array(vMailboxAddress)),
+    subject: v.string(),
+    plainText: v.string(),
+    replyToInternetMessageId: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const account = await ensureOwnedAccount(ctx, ctx.ownerId, args.accountId);
+    if (
+      account.provider !== "gmail" ||
+      !["connected", "syncing"].includes(account.status)
+    ) {
+      throw new ConvexError("The selected account cannot send mail");
+    }
+    const idempotencyKey = args.idempotencyKey.trim();
+    if (idempotencyKey.length < 8 || idempotencyKey.length > 200) {
+      throw new ConvexError("A stable idempotency key is required");
+    }
+    if (args.to.length === 0 || !args.plainText.trim()) {
+      throw new ConvexError("A recipient and message body are required");
+    }
+    const existing = await ctx.db
+      .query("outboxMessages")
+      .withIndex("by_account_idempotency", (q) =>
+        q.eq("accountId", args.accountId).eq("idempotencyKey", idempotencyKey),
+      )
+      .unique();
+    if (existing) return existing._id;
+
+    const now = Date.now();
+    const outboxId = await ctx.db.insert("outboxMessages", {
+      ownerId: ctx.ownerId,
+      accountId: args.accountId,
+      idempotencyKey,
+      to: args.to,
+      cc: args.cc ?? [],
+      bcc: args.bcc ?? [],
+      subject: args.subject,
+      plainText: args.plainText,
+      replyToInternetMessageId: args.replyToInternetMessageId,
+      status: "pending",
+      attempt: 0,
+      createdAt: now,
+      updatedAt: now,
+    });
+    await ctx.scheduler.runAfter(0, internal.sync.internal.deliverGmailOutbox, {
+      outboxId,
+    });
+    return outboxId;
+  },
+});
+
+export const retryOutbox = authedMutation({
+  args: { outboxId: v.id("outboxMessages") },
+  handler: async (ctx, args) => {
+    const outbox = await ctx.db.get(args.outboxId);
+    if (!outbox || outbox.ownerId !== ctx.ownerId) {
+      throw new ConvexError("Outbox message not found");
+    }
+    if (outbox.status !== "failed") return;
+    await ctx.db.patch(outbox._id, {
+      status: "pending",
+      error: undefined,
+      updatedAt: Date.now(),
+    });
+    await ctx.scheduler.runAfter(0, internal.sync.internal.deliverGmailOutbox, {
+      outboxId: outbox._id,
+    });
   },
 });

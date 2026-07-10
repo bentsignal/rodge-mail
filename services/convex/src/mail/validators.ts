@@ -10,6 +10,7 @@ export const vMailAccountStatus = v.union(
   v.literal("connected"),
   v.literal("syncing"),
   v.literal("error"),
+  v.literal("reauthorization_required"),
   v.literal("disconnected"),
 );
 
@@ -58,6 +59,10 @@ export const vMailAccount = v.object({
   displayName: v.optional(v.string()),
   status: vMailAccountStatus,
   isDemo: v.optional(v.boolean()),
+  syncCursor: v.optional(v.string()),
+  grantedScopes: v.optional(v.array(v.string())),
+  credentialKeyVersion: v.optional(v.string()),
+  connectedAt: v.optional(v.number()),
   lastSyncedAt: v.optional(v.number()),
   lastSyncError: v.optional(v.string()),
   createdAt: v.number(),
@@ -218,5 +223,58 @@ export const vSyncRun = v.object({
   createdAt: v.number(),
   startedAt: v.optional(v.number()),
   completedAt: v.optional(v.number()),
+  updatedAt: v.number(),
+});
+
+export const vEncryptedEnvelope = v.object({
+  formatVersion: v.literal(1),
+  keyVersion: v.string(),
+  iv: v.string(),
+  ciphertext: v.string(),
+});
+
+export const vProviderCredential = v.object({
+  ownerId: v.string(),
+  accountId: v.id("mailAccounts"),
+  provider: vMailProvider,
+  encryptedTokens: vEncryptedEnvelope,
+  tokenExpiresAt: v.optional(v.number()),
+  createdAt: v.number(),
+  updatedAt: v.number(),
+});
+
+export const vProviderOAuthState = v.object({
+  ownerId: v.string(),
+  provider: vMailProvider,
+  stateHash: v.string(),
+  encryptedCodeVerifier: vEncryptedEnvelope,
+  returnPath: v.string(),
+  expiresAt: v.number(),
+  createdAt: v.number(),
+});
+
+export const vOutboxStatus = v.union(
+  v.literal("pending"),
+  v.literal("sending"),
+  v.literal("sent"),
+  v.literal("failed"),
+);
+
+export const vOutboxMessage = v.object({
+  ownerId: v.string(),
+  accountId: v.id("mailAccounts"),
+  idempotencyKey: v.string(),
+  to: v.array(vMailboxAddress),
+  cc: v.array(vMailboxAddress),
+  bcc: v.array(vMailboxAddress),
+  subject: v.string(),
+  plainText: v.string(),
+  replyToInternetMessageId: v.optional(v.string()),
+  status: vOutboxStatus,
+  attempt: v.number(),
+  remoteMessageId: v.optional(v.string()),
+  error: v.optional(v.string()),
+  sentAt: v.optional(v.number()),
+  createdAt: v.number(),
   updatedAt: v.number(),
 });
