@@ -1,21 +1,19 @@
-import {
-  DEMO_MAIL_ACCOUNTS,
-  DEMO_MAIL_THREADS,
-} from "@rodge-mail/features/mail";
-
+import { LiveMailProvider } from "../live-data";
 import { MailStore, useMailStore } from "../store";
 import { AccountRail } from "./account-rail";
 import { ComposeDialog } from "./compose-dialog";
 import { InboxPane } from "./inbox-pane";
+import { MailDataErrorBoundary } from "./mail-data-error-boundary";
 import { ReaderPane } from "./reader-pane";
 
 export function MailShell() {
   return (
-    <MailStore
-      initialAccounts={DEMO_MAIL_ACCOUNTS}
-      initialThreads={DEMO_MAIL_THREADS}
-    >
-      <MailWorkspace />
+    <MailStore>
+      <MailDataErrorBoundary>
+        <LiveMailProvider>
+          <MailWorkspace />
+        </LiveMailProvider>
+      </MailDataErrorBoundary>
     </MailStore>
   );
 }

@@ -1,17 +1,19 @@
 import { useState } from "react";
 import { createStore } from "rostra";
 
-import type {
-  ComposerDraft,
-  InboxCategory,
-  MailAccount,
-  MailAccountFilter,
-  MailThread,
-} from "@rodge-mail/features/mail";
+import type { Id } from "@rodge-mail/convex/model";
+import type { ComposerDraft, InboxCategory } from "@rodge-mail/features/mail";
 
-interface MailStoreProps {
-  initialAccounts: MailAccount[];
-  initialThreads: MailThread[];
+export type MailAccountFilter = "all" | Id<"mailAccounts">;
+
+interface ThreadSelection {
+  messageId: Id<"messages">;
+  threadId: Id<"threads">;
+}
+
+interface ReplyTarget {
+  address: string;
+  subject: string;
 }
 
 function createEmptyDraft() {
@@ -24,54 +26,7 @@ function createEmptyDraft() {
   };
 }
 
-function getVisibleThreads({
-  accountFilter,
-  category,
-  searchQuery,
-  threads,
-}: {
-  accountFilter: MailAccountFilter;
-  category: InboxCategory;
-  searchQuery: string;
-  threads: MailThread[];
-}) {
-  const query = searchQuery.trim().toLocaleLowerCase();
-  return threads
-    .filter((thread) => {
-      if (accountFilter !== "all" && thread.accountId !== accountFilter) {
-        return false;
-      }
-      if (query.length === 0) return thread.category === category;
-
-      const searchable = [
-        thread.sender.name,
-        thread.sender.address,
-        thread.subject,
-        thread.preview,
-        ...thread.messages.flatMap((message) => message.body),
-      ]
-        .join(" ")
-        .toLocaleLowerCase();
-      return searchable.includes(query);
-    })
-    .slice()
-    .sort((left, right) => {
-      if (left.isPinned !== right.isPinned) return left.isPinned ? -1 : 1;
-      return right.receivedAt.localeCompare(left.receivedAt);
-    });
-}
-
-function getUnreadCounts(threads: MailThread[]) {
-  const counts = new Map<string, number>([["all", 0]]);
-  for (const thread of threads) {
-    if (thread.isRead) continue;
-    counts.set("all", (counts.get("all") ?? 0) + 1);
-    counts.set(thread.accountId, (counts.get(thread.accountId) ?? 0) + 1);
-  }
-  return Object.fromEntries(counts);
-}
-
-function useComposerState(selectedThread: MailThread | undefined) {
+function useComposerState() {
   const [composerIsOpen, setComposerIsOpen] = useState(false);
   const [composerDraft, setComposerDraft] =
     useState<ComposerDraft>(createEmptyDraft);
@@ -95,21 +50,20 @@ function useComposerState(selectedThread: MailThread | undefined) {
     }));
   }
 
-  function replyToSelectedThread() {
-    if (!selectedThread) return;
+  function openReply({ address, subject }: ReplyTarget) {
     setComposerDraft({
       ...createEmptyDraft(),
-      subject: selectedThread.subject.startsWith("Re:")
-        ? selectedThread.subject
-        : `Re: ${selectedThread.subject}`,
-      to: selectedThread.sender.address,
+      subject: subject.startsWith("Re:") ? subject : `Re: ${subject}`,
+      to: address,
     });
     setComposerIsOpen(true);
   }
 
   function sendComposerDraft() {
     if (!composerCanSend) return;
-    setDeliveryNotice(`Message queued for ${composerDraft.to}`);
+    setDeliveryNotice(
+      `Draft ready for ${composerDraft.to}. Provider sending is not connected yet.`,
+    );
     setComposerIsOpen(false);
     setComposerDraft(createEmptyDraft());
   }
@@ -126,77 +80,67 @@ function useComposerState(selectedThread: MailThread | undefined) {
       setComposerDraft(createEmptyDraft());
       setComposerIsOpen(true);
     },
+    openReply,
     removeComposerAttachment: (fileName: string) =>
       setComposerDraft((current) => ({
         ...current,
         attachments: current.attachments.filter((name) => name !== fileName),
       })),
-    replyToSelectedThread,
     sendComposerDraft,
     updateComposerDraft,
   };
 }
 
-function useInternalStore({ initialAccounts, initialThreads }: MailStoreProps) {
-  const [threads, setThreads] = useState(initialThreads);
-  const [accountFilter, setAccountFilter] = useState<MailAccountFilter>("all");
-  const [category, setCategory] = useState<InboxCategory>("focused");
+function useInternalStore() {
+  const [accountFilter, setAccountFilterState] =
+    useState<MailAccountFilter>("all");
+  const [category, setCategoryState] = useState<InboxCategory>("focused");
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedThreadId, setSelectedThreadId] = useState(
-    initialThreads[0]?.id,
-  );
+  const [selection, setSelection] = useState<ThreadSelection>();
   const [mobileReaderIsOpen, setMobileReaderIsOpen] = useState(false);
-  const visibleThreads = getVisibleThreads({
-    accountFilter,
-    category,
-    searchQuery,
-    threads,
-  });
-  const selectedThread =
-    visibleThreads.find((thread) => thread.id === selectedThreadId) ??
-    visibleThreads[0];
-  const composer = useComposerState(selectedThread);
+  const composer = useComposerState();
 
-  function selectThread(threadId: string) {
-    setSelectedThreadId(threadId);
-    setMobileReaderIsOpen(true);
-    setThreads((current) =>
-      current.map((thread) =>
-        thread.id === threadId ? { ...thread, isRead: true } : thread,
-      ),
-    );
+  function resetSelection() {
+    setSelection(undefined);
+    setMobileReaderIsOpen(false);
   }
 
-  function toggleThreadFlag(threadId: string, flag: "isPinned" | "isRead") {
-    setThreads((current) =>
-      current.map((thread) =>
-        thread.id === threadId ? { ...thread, [flag]: !thread[flag] } : thread,
-      ),
-    );
+  function setAccountFilter(accountFilter: MailAccountFilter) {
+    setAccountFilterState(accountFilter);
+    resetSelection();
+  }
+
+  function setCategory(category: InboxCategory) {
+    setCategoryState(category);
+    setSearchQuery("");
+    resetSelection();
+  }
+
+  function selectThread(nextSelection: ThreadSelection) {
+    setSelection(nextSelection);
+    setMobileReaderIsOpen(true);
   }
 
   return {
     ...composer,
-    accounts: initialAccounts,
     accountFilter,
     category,
     closeMobileReader: () => setMobileReaderIsOpen(false),
     mobileReaderIsOpen,
     searchQuery,
     selectThread,
-    selectedThread,
+    selectedMessageId: selection?.messageId,
+    selectedThreadId: selection?.threadId,
     setAccountFilter,
     setCategory,
-    setSearchQuery,
-    threads,
-    togglePinned: (threadId: string) => toggleThreadFlag(threadId, "isPinned"),
-    toggleRead: (threadId: string) => toggleThreadFlag(threadId, "isRead"),
-    unreadCounts: getUnreadCounts(threads),
-    visibleThreads,
+    setInitialSelection: (nextSelection: ThreadSelection) =>
+      setSelection((current) => current ?? nextSelection),
+    setSearchQuery: (query: string) => {
+      setSearchQuery(query);
+      resetSelection();
+    },
   };
 }
 
-export const { Store: MailStore, useStore: useMailStore } = createStore<
-  MailStoreProps,
-  ReturnType<typeof useInternalStore>
->(useInternalStore);
+export const { Store: MailStore, useStore: useMailStore } =
+  createStore(useInternalStore);

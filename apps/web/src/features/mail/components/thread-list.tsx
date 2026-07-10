@@ -1,30 +1,60 @@
-import { Inbox, Paperclip, Pin } from "lucide-react";
+import { Inbox, LoaderCircle, Sparkles } from "lucide-react";
 
-import type { MailAccount, MailThread } from "@rodge-mail/features/mail";
-import { cn } from "@rodge-mail/std/cn";
-
-import { formatInboxDate, getInitials } from "../format";
+import { useLiveMail } from "../live-data";
 import { useMailStore } from "../store";
+import { ThreadRow } from "./thread-row";
 
 export function ThreadList() {
   const searchQuery = useMailStore((store) => store.searchQuery);
-  const visibleThreads = useMailStore((store) => store.visibleThreads);
+  const {
+    canLoadMore,
+    canSeedDemo,
+    inboxMessages,
+    isLoadingInbox,
+    isLoadingMore,
+    isSeedingDemo,
+    loadMore,
+    seedDemoMail,
+  } = useLiveMail();
 
-  if (visibleThreads.length === 0) {
-    return <EmptyThreadList isSearch={searchQuery.length > 0} />;
+  if (isLoadingInbox) return <ThreadListSkeleton />;
+
+  if (inboxMessages.length === 0) {
+    return (
+      <EmptyThreadList
+        canSeedDemo={canSeedDemo}
+        isSearch={searchQuery.trim().length > 0}
+        isSeedingDemo={isSeedingDemo}
+        seedDemoMail={seedDemoMail}
+      />
+    );
   }
 
   return (
     <div className="mail-scrollbar min-h-0 flex-1 overflow-y-auto">
-      {visibleThreads.map((thread, index) => (
-        <ThreadRow index={index} key={thread.id} thread={thread} />
+      {inboxMessages.map((message, index) => (
+        <ThreadRow index={index} key={message._id} message={message} />
       ))}
-      <ThreadListEnd />
+      <ThreadListFooter
+        canLoadMore={canLoadMore}
+        isLoadingMore={isLoadingMore}
+        loadMore={loadMore}
+      />
     </div>
   );
 }
 
-function EmptyThreadList({ isSearch }: { isSearch: boolean }) {
+function EmptyThreadList({
+  canSeedDemo,
+  isSearch,
+  isSeedingDemo,
+  seedDemoMail,
+}: {
+  canSeedDemo: boolean;
+  isSearch: boolean;
+  isSeedingDemo: boolean;
+  seedDemoMail: () => Promise<void>;
+}) {
   return (
     <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-8 text-center">
       <span className="mb-4 flex size-12 items-center justify-center rounded-full border border-dashed border-[#bfb4a5] text-[#978a7d]">
@@ -32,15 +62,76 @@ function EmptyThreadList({ isSearch }: { isSearch: boolean }) {
       </span>
       <p className="font-serif text-lg font-semibold">Nothing on the desk</p>
       <p className="mt-1 max-w-xs text-sm leading-6 text-[#887d70]">
-        {getEmptyDescription(isSearch)}
+        {getEmptyDescription(isSearch, canSeedDemo)}
       </p>
+      <DevelopmentSeedButton
+        canSeedDemo={canSeedDemo}
+        isSeedingDemo={isSeedingDemo}
+        seedDemoMail={seedDemoMail}
+      />
     </div>
   );
 }
 
-function getEmptyDescription(isSearch: boolean) {
+function DevelopmentSeedButton({
+  canSeedDemo,
+  isSeedingDemo,
+  seedDemoMail,
+}: {
+  canSeedDemo: boolean;
+  isSeedingDemo: boolean;
+  seedDemoMail: () => Promise<void>;
+}) {
+  if (!canSeedDemo) return null;
+  return (
+    <button
+      className="mt-5 flex h-9 items-center gap-2 rounded-full bg-[#20251f] px-4 text-xs font-semibold text-[#f8f1e6] transition hover:-translate-y-0.5 hover:bg-[#30362f] disabled:cursor-wait disabled:opacity-60"
+      disabled={isSeedingDemo}
+      onClick={() => void seedDemoMail()}
+      type="button"
+    >
+      <SeedButtonIcon isSeeding={isSeedingDemo} />
+      <SeedButtonLabel isSeeding={isSeedingDemo} />
+    </button>
+  );
+}
+
+function SeedButtonIcon({ isSeeding }: { isSeeding: boolean }) {
+  if (isSeeding) return <LoaderCircle className="size-3.5 animate-spin" />;
+  return <Sparkles className="size-3.5" />;
+}
+
+function SeedButtonLabel({ isSeeding }: { isSeeding: boolean }) {
+  if (isSeeding) return "Preparing mail…";
+  return "Load development mail";
+}
+
+function getEmptyDescription(isSearch: boolean, canSeedDemo: boolean) {
   if (isSearch) return "Try a sender, subject, or phrase from the message.";
+  if (canSeedDemo) {
+    return "This development mailbox is empty. Add the safe demo set to exercise the live Convex path.";
+  }
   return "This view is clear. New mail will settle here when it arrives.";
+}
+
+function ThreadListSkeleton() {
+  return (
+    <div aria-label="Loading inbox" className="min-h-0 flex-1 overflow-hidden">
+      {[0, 1, 2, 3, 4, 5].map((index) => (
+        <div
+          className="flex animate-pulse gap-3 border-b border-[#e2dacd] px-5 py-4 dark:border-[#373b35]"
+          key={index}
+        >
+          <div className="size-9 shrink-0 rounded-full bg-[#e7ded0] dark:bg-[#3c413a]" />
+          <div className="flex-1 space-y-2.5">
+            <div className="h-2.5 w-2/5 rounded-full bg-[#ddd4c6] dark:bg-[#3c413a]" />
+            <div className="h-3.5 w-4/5 rounded-full bg-[#e4dbce] dark:bg-[#383d37]" />
+            <div className="h-2.5 w-full rounded-full bg-[#ebe4d8] dark:bg-[#343832]" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 function ThreadListEnd() {
@@ -55,134 +146,35 @@ function ThreadListEnd() {
   );
 }
 
-function ThreadRow({ index, thread }: { index: number; thread: MailThread }) {
-  const accounts = useMailStore((store) => store.accounts);
-  const selectedThreadId = useMailStore((store) => store.selectedThread?.id);
-  const selectThread = useMailStore((store) => store.selectThread);
-  const togglePinned = useMailStore((store) => store.togglePinned);
-  const account = accounts.find((item) => item.id === thread.accountId);
-  const isSelected = selectedThreadId === thread.id;
-
-  return (
-    <article
-      className={cn(
-        "group relative border-b border-[#e2dacd] transition dark:border-[#373b35]",
-        isSelected
-          ? "bg-[#f0e9dc] dark:bg-[#30342e]"
-          : "hover:bg-[#faf7f0] dark:hover:bg-white/[0.025]",
-      )}
-      style={{ animationDelay: `${Math.min(index * 34, 220)}ms` }}
-    >
-      <SelectedMarker selected={isSelected} />
-      <button
-        className="w-full px-4 py-4 pr-12 text-left sm:px-5"
-        onClick={() => selectThread(thread.id)}
-        type="button"
-      >
-        <div className="flex items-start gap-3">
-          <SenderAvatar account={account} name={thread.sender.name} />
-          <div className="min-w-0 flex-1">
-            <div className="flex items-baseline gap-2">
-              <p
-                className={cn(
-                  "min-w-0 flex-1 truncate text-[13px]",
-                  thread.isRead ? "font-medium" : "font-bold text-[#1f241f]",
-                )}
-              >
-                {thread.sender.name}
-              </p>
-              <time className="shrink-0 font-mono text-[9px] text-[#978b7e] tabular-nums">
-                {formatInboxDate(thread.receivedAt)}
-              </time>
-            </div>
-            <p
-              className={cn(
-                "mt-1 truncate font-serif text-[16px] leading-5 tracking-[-0.01em]",
-                thread.isRead
-                  ? "text-[#514b44] dark:text-[#cec6ba]"
-                  : "font-semibold",
-              )}
-            >
-              {thread.subject}
-            </p>
-            <p className="mt-1 line-clamp-2 text-[12px] leading-[1.55] text-[#81766a] dark:text-[#aaa095]">
-              {thread.preview}
-            </p>
-            <ThreadMetadata thread={thread} />
-          </div>
-        </div>
-      </button>
-      <button
-        aria-label={thread.isPinned ? "Unpin thread" : "Pin thread"}
-        className={cn(
-          "absolute right-3 bottom-3 flex size-7 items-center justify-center rounded-full transition",
-          thread.isPinned
-            ? "text-[#b95d41]"
-            : "text-[#a99d90] opacity-0 group-hover:opacity-100 focus:opacity-100",
-        )}
-        onClick={() => togglePinned(thread.id)}
-        type="button"
-      >
-        <Pin className={cn("size-3.5", thread.isPinned && "fill-current")} />
-      </button>
-    </article>
-  );
-}
-
-function ThreadMetadata({ thread }: { thread: MailThread }) {
-  const hasAttachments = thread.messages.some(
-    (message) => message.attachments.length > 0,
-  );
-
-  return (
-    <div className="mt-2.5 flex h-4 items-center gap-2">
-      <UnreadDot isRead={thread.isRead} />
-      <AttachmentIcon visible={hasAttachments} />
-      <PriorityNote note={thread.priorityNote} />
-    </div>
-  );
-}
-
-function SelectedMarker({ selected }: { selected: boolean }) {
-  if (!selected) return null;
-  return (
-    <span className="absolute inset-y-3 left-0 w-[3px] rounded-r bg-[#c76749]" />
-  );
-}
-
-function UnreadDot({ isRead }: { isRead: boolean }) {
-  if (isRead) return null;
-  return <span className="size-1.5 rounded-full bg-[#c76749]" />;
-}
-
-function AttachmentIcon({ visible }: { visible: boolean }) {
-  if (!visible) return null;
-  return <Paperclip className="size-3 text-[#998c7e]" />;
-}
-
-function PriorityNote({ note }: { note: string | undefined }) {
-  if (!note) return null;
-  return (
-    <span className="truncate font-mono text-[8px] tracking-[0.08em] text-[#8d725e] uppercase">
-      {note}
-    </span>
-  );
-}
-
-function SenderAvatar({
-  account,
-  name,
+function ThreadListFooter({
+  canLoadMore,
+  isLoadingMore,
+  loadMore,
 }: {
-  account: MailAccount | undefined;
-  name: string;
+  canLoadMore: boolean;
+  isLoadingMore: boolean;
+  loadMore: () => void;
 }) {
+  if (!canLoadMore && !isLoadingMore) return <ThreadListEnd />;
   return (
-    <div className="relative flex size-9 shrink-0 items-center justify-center rounded-full border border-black/[0.06] bg-[#e7ded0] font-mono text-[10px] font-semibold text-[#625a50] dark:bg-[#3c413a] dark:text-[#e0d7cb]">
-      {getInitials(name)}
-      <span
-        className="ring-card absolute right-0 bottom-0 size-2.5 rounded-full ring-2"
-        style={{ backgroundColor: account?.accent }}
-      />
-    </div>
+    <button
+      className="mx-auto my-5 flex h-9 items-center gap-2 rounded-full border border-[#cfc4b5] px-4 font-mono text-[9px] tracking-[0.1em] text-[#776e64] uppercase transition hover:border-[#20251f] hover:text-[#20251f] disabled:cursor-wait dark:border-[#4b5049] dark:text-[#aaa095]"
+      disabled={isLoadingMore}
+      onClick={loadMore}
+      type="button"
+    >
+      <LoadingMoreIcon isLoading={isLoadingMore} />
+      <LoadingMoreLabel isLoading={isLoadingMore} />
+    </button>
   );
+}
+
+function LoadingMoreIcon({ isLoading }: { isLoading: boolean }) {
+  if (!isLoading) return null;
+  return <LoaderCircle className="size-3 animate-spin" />;
+}
+
+function LoadingMoreLabel({ isLoading }: { isLoading: boolean }) {
+  if (isLoading) return "Loading letters";
+  return "Load older mail";
 }

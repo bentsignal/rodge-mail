@@ -2,6 +2,7 @@ import { PenLine, Search, X } from "lucide-react";
 
 import { cn } from "@rodge-mail/std/cn";
 
+import { useLiveMail } from "../live-data";
 import { useMailStore } from "../store";
 import { ThreadList } from "./thread-list";
 
@@ -24,13 +25,12 @@ export function InboxPane() {
 
 function InboxHeader() {
   const accountFilter = useMailStore((store) => store.accountFilter);
-  const accounts = useMailStore((store) => store.accounts);
   const openComposer = useMailStore((store) => store.openComposer);
-  const visibleCount = useMailStore((store) => store.visibleThreads.length);
+  const { accounts, inboxMessages, isLoadingInbox } = useLiveMail();
   const currentAccount =
     accountFilter === "all"
       ? undefined
-      : accounts.find((account) => account.id === accountFilter);
+      : accounts.find((account) => account._id === accountFilter);
 
   return (
     <header className="border-border/70 bg-card/80 shrink-0 border-b px-4 pt-4 pb-3.5 sm:px-5 sm:pt-5">
@@ -47,7 +47,10 @@ function InboxHeader() {
               Inbox
             </h1>
             <span className="font-mono text-[10px] text-[#9b8e80] tabular-nums">
-              {visibleCount.toString().padStart(2, "0")}
+              <InboxCount
+                count={inboxMessages.length}
+                isLoading={isLoadingInbox}
+              />
             </span>
           </div>
         </div>
@@ -65,6 +68,17 @@ function InboxHeader() {
       <CategoryTabs />
     </header>
   );
+}
+
+function InboxCount({
+  count,
+  isLoading,
+}: {
+  count: number;
+  isLoading: boolean;
+}) {
+  if (isLoading) return "··";
+  return count.toString().padStart(2, "0");
 }
 
 function SearchInput() {
@@ -105,8 +119,8 @@ function ClearSearchButton({ query }: { query: string }) {
 
 function MobileAccountFilters() {
   const accountFilter = useMailStore((store) => store.accountFilter);
-  const accounts = useMailStore((store) => store.accounts);
   const setAccountFilter = useMailStore((store) => store.setAccountFilter);
+  const { accounts } = useLiveMail();
 
   return (
     <div className="mail-scrollbar mt-3 flex gap-2 overflow-x-auto pb-1 md:hidden">
@@ -118,10 +132,10 @@ function MobileAccountFilters() {
       {accounts.map((account) => (
         <MobileAccountChip
           accent={account.accent}
-          active={accountFilter === account.id}
-          key={account.id}
+          active={accountFilter === account._id}
+          key={account._id}
           label={account.label}
-          onClick={() => setAccountFilter(account.id)}
+          onClick={() => setAccountFilter(account._id)}
         />
       ))}
     </div>

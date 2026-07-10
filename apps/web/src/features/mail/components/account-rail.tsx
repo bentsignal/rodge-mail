@@ -1,26 +1,26 @@
 import type { LucideIcon } from "lucide-react";
 import { BriefcaseBusiness, Cloud, Inbox, Mail, PenLine } from "lucide-react";
 
-import type { MailAccount } from "@rodge-mail/features/mail";
 import { cn } from "@rodge-mail/std/cn";
 
+import type { MailAccountView } from "../types";
 import { PasskeyManagementButton } from "~/features/auth/components/passkey-management-button";
 import { SignOutLink } from "~/features/auth/components/sign-out-link";
 import { ThemeToggle } from "~/features/theme/components/theme-toggle";
+import { useLiveMail } from "../live-data";
 import { useMailStore } from "../store";
 
 const ACCOUNT_ICONS = {
   gmail: Mail,
   icloud: Cloud,
   microsoft: BriefcaseBusiness,
-} satisfies Record<MailAccount["provider"], LucideIcon>;
+} satisfies Record<MailAccountView["provider"], LucideIcon>;
 
 export function AccountRail() {
-  const accounts = useMailStore((store) => store.accounts);
   const accountFilter = useMailStore((store) => store.accountFilter);
   const setAccountFilter = useMailStore((store) => store.setAccountFilter);
-  const unreadCounts = useMailStore((store) => store.unreadCounts);
   const openComposer = useMailStore((store) => store.openComposer);
+  const { accounts, isLoadingAccounts, unreadCounts } = useLiveMail();
 
   return (
     <aside className="relative z-10 hidden h-full w-[82px] shrink-0 flex-col px-2.5 py-4 md:flex xl:w-[244px] xl:px-4">
@@ -40,7 +40,7 @@ export function AccountRail() {
       <nav aria-label="Mail accounts" className="mt-8 space-y-1.5">
         <AccountButton
           active={accountFilter === "all"}
-          count={unreadCounts.all ?? 0}
+          count={unreadCounts.all}
           icon={Inbox}
           label="Unified inbox"
           onClick={() => setAccountFilter("all")}
@@ -50,16 +50,17 @@ export function AccountRail() {
           const Icon = ACCOUNT_ICONS[account.provider];
           return (
             <AccountButton
-              active={accountFilter === account.id}
+              active={accountFilter === account._id}
               accent={account.accent}
-              count={unreadCounts[account.id] ?? 0}
+              count={unreadCounts[account._id]}
               icon={Icon}
-              key={account.id}
+              key={account._id}
               label={account.label}
-              onClick={() => setAccountFilter(account.id)}
+              onClick={() => setAccountFilter(account._id)}
             />
           );
         })}
+        <AccountLoadingState isLoading={isLoadingAccounts} />
       </nav>
 
       <div className="mt-auto space-y-1.5">
@@ -68,7 +69,7 @@ export function AccountRail() {
             All systems quiet
           </p>
           <p className="mt-1 text-xs text-[#6e665d] dark:text-[#a89f94]">
-            Last sync 2m ago
+            {getSyncLabel(accounts)}
           </p>
         </div>
         <div className="border-border/80 mx-3 mb-3 border-t" />
@@ -113,7 +114,7 @@ function AccountButton({
 }: {
   accent?: string;
   active: boolean;
-  count: number;
+  count: number | undefined;
   icon: LucideIcon;
   label: string;
   onClick: () => void;
@@ -151,8 +152,14 @@ function AccountAccent({ accent }: { accent: string | undefined }) {
   );
 }
 
-function UnreadCount({ active, count }: { active: boolean; count: number }) {
-  if (count === 0) return null;
+function UnreadCount({
+  active,
+  count,
+}: {
+  active: boolean;
+  count: number | undefined;
+}) {
+  if (!count) return null;
 
   return (
     <span
@@ -164,4 +171,39 @@ function UnreadCount({ active, count }: { active: boolean; count: number }) {
       {count}
     </span>
   );
+}
+
+function AccountSkeletons() {
+  return (
+    <div aria-label="Loading accounts" className="space-y-2 px-3 py-1">
+      {[0, 1, 2].map((index) => (
+        <div
+          className="h-9 animate-pulse rounded-lg bg-black/[0.045] dark:bg-white/[0.05]"
+          key={index}
+        />
+      ))}
+    </div>
+  );
+}
+
+function AccountLoadingState({ isLoading }: { isLoading: boolean }) {
+  if (!isLoading) return null;
+  return <AccountSkeletons />;
+}
+
+function getSyncLabel(accounts: MailAccountView[]) {
+  if (accounts.length === 0) return "Waiting for an account";
+  if (accounts.some((account) => account.status === "syncing")) {
+    return "Syncing mail…";
+  }
+  if (accounts.some((account) => account.status === "error")) {
+    return "One account needs attention";
+  }
+  const latestSync = Math.max(
+    ...accounts.map((account) => account.lastSyncedAt ?? 0),
+  );
+  if (latestSync === 0) return "Waiting for first sync";
+  return `Last sync ${new Intl.RelativeTimeFormat(undefined, {
+    numeric: "auto",
+  }).format(Math.round((latestSync - Date.now()) / 60_000), "minute")}`;
 }

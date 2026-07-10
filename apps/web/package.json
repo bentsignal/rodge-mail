@@ -21,6 +21,7 @@
     "@fontsource-variable/geist": "^5.2.7",
     "@fontsource-variable/geist-mono": "^5.2.7",
     "@rodge-mail/config": "workspace:*",
+    "@rodge-mail/convex": "workspace:*",
     "@rodge-mail/features": "workspace:*",
     "@rodge-mail/std": "workspace:*",
     "@rodge-mail/ui-web": "workspace:*",

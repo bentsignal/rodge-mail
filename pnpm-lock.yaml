@@ -346,6 +346,9 @@ importers:
       '@rodge-mail/config':
         specifier: workspace:*
         version: link:../../shared/config
+      '@rodge-mail/convex':
+        specifier: workspace:*
+        version: link:../../services/convex
       '@rodge-mail/features':
         specifier: workspace:*
         version: link:../../shared/features
