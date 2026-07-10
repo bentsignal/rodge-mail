@@ -33,6 +33,7 @@ import type * as embedding_queries from "../embedding/queries.js";
 import type * as embedding_search from "../embedding/search.js";
 import type * as embedding_stale from "../embedding/stale.js";
 import type * as embedding_storage from "../embedding/storage.js";
+import type * as embedding_validators from "../embedding/validators.js";
 import type * as http from "../http.js";
 import type * as limiter from "../limiter.js";
 import type * as mail_helpers from "../mail/helpers.js";
@@ -82,6 +83,7 @@ declare const fullApi: ApiFromModules<{
   "embedding/search": typeof embedding_search;
   "embedding/stale": typeof embedding_stale;
   "embedding/storage": typeof embedding_storage;
+  "embedding/validators": typeof embedding_validators;
   http: typeof http;
   limiter: typeof limiter;
   "mail/helpers": typeof mail_helpers;
