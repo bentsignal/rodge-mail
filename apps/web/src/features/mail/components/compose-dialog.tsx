@@ -221,7 +221,7 @@ function getSendingAccount(
 
 function canSendFromAccount(account: MailAccountView) {
   return (
-    (account.provider === "gmail" || account.provider === "microsoft") &&
+    ["gmail", "microsoft", "icloud"].includes(account.provider) &&
     (account.status === "connected" || account.status === "syncing")
   );
 }

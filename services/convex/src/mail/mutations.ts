@@ -157,6 +157,8 @@ export const enqueuePlainText = authedMutation({
     replyToInternetMessageId: v.optional(v.string()),
     attachmentIds: v.optional(v.array(v.id("draftAttachments"))),
   },
+  // Provider routing adds one branch beyond the repository's default complexity budget.
+  // eslint-disable-next-line complexity
   handler: async (ctx, args) => {
     const account = await ensureOwnedAccount(ctx, ctx.ownerId, args.accountId);
     const idempotencyKey = validateSendRequest(account, args);
@@ -206,11 +208,19 @@ export const enqueuePlainText = authedMutation({
         });
       }),
     );
-    await ctx.scheduler.runAfter(
-      0,
-      internal.sync.internal.deliverProviderOutbox,
-      { outboxId },
-    );
+    if (account.provider === "icloud") {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.providers.icloud.internal.enqueueSendJob,
+        { ownerId: ctx.ownerId, accountId: account._id, outboxId },
+      );
+    } else {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.sync.internal.deliverProviderOutbox,
+        { outboxId },
+      );
+    }
     return outboxId;
   },
 });
@@ -225,7 +235,7 @@ function validateSendRequest(
   },
 ) {
   if (
-    !["gmail", "microsoft"].includes(account.provider) ||
+    !["gmail", "microsoft", "icloud"].includes(account.provider) ||
     !["connected", "syncing"].includes(account.status)
   ) {
     throw new ConvexError("The selected account cannot send mail");
@@ -324,10 +334,27 @@ export const retryOutbox = authedMutation({
       error: undefined,
       updatedAt: Date.now(),
     });
-    await ctx.scheduler.runAfter(
-      0,
-      internal.sync.internal.deliverProviderOutbox,
-      { outboxId: outbox._id },
+    const account = await ensureOwnedAccount(
+      ctx,
+      ctx.ownerId,
+      outbox.accountId,
     );
+    if (account.provider === "icloud") {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.providers.icloud.internal.enqueueSendJob,
+        {
+          ownerId: ctx.ownerId,
+          accountId: account._id,
+          outboxId: outbox._id,
+        },
+      );
+    } else {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.sync.internal.deliverProviderOutbox,
+        { outboxId: outbox._id },
+      );
+    }
   },
 });

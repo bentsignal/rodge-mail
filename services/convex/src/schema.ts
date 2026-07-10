@@ -18,6 +18,12 @@ import {
   vSyncRun,
   vThread,
 } from "./mail/validators";
+import {
+  vProviderBridgeChallenge,
+  vProviderBridgeConnection,
+  vProviderBridgeJob,
+  vProviderBridgeRequest,
+} from "./providers/icloud/validators";
 
 export default defineSchema(
   {
@@ -114,6 +120,24 @@ export default defineSchema(
       .index("by_status_created", ["status", "createdAt"])
       .index("by_outbox", ["outboxId"])
       .index("by_storage", ["storageId"]),
+    providerBridgeChallenges: defineTable(vProviderBridgeChallenge)
+      .index("by_challenge_hash", ["challengeHash"])
+      .index("by_owner_created", ["ownerId", "createdAt"]),
+    providerBridgeConnections: defineTable(vProviderBridgeConnection)
+      .index("by_account", ["accountId"])
+      .index("by_bridge_account", ["bridgeAccountId"]),
+    providerBridgeJobs: defineTable(vProviderBridgeJob)
+      .index("by_bridge_status_available", [
+        "bridgeAccountId",
+        "status",
+        "availableAt",
+      ])
+      .index("by_account_kind_created", ["accountId", "kind", "createdAt"])
+      .index("by_outbox", ["outboxId"]),
+    providerBridgeRequests: defineTable(vProviderBridgeRequest).index(
+      "by_request_id",
+      ["requestId"],
+    ),
   },
   { schemaValidation: true },
 );

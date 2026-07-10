@@ -49,3 +49,25 @@ export const syncMicrosoftNow = authedMutation({
     );
   },
 });
+
+export const syncICloudNow = authedMutation({
+  args: { accountId: v.id("mailAccounts") },
+  handler: async (ctx, args) => {
+    const account = await ensureOwnedAccount(ctx, ctx.ownerId, args.accountId);
+    if (account.provider !== "icloud" || account.isDemo) {
+      throw new ConvexError("iCloud sync is unavailable for this account");
+    }
+    if (account.status === "disconnected") {
+      throw new ConvexError("Reconnect iCloud before syncing");
+    }
+    await ctx.scheduler.runAfter(
+      0,
+      internal.providers.icloud.internal.enqueueSyncJob,
+      {
+        ownerId: ctx.ownerId,
+        accountId: args.accountId,
+        reason: "manual",
+      },
+    );
+  },
+});

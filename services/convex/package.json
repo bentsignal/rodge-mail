@@ -11,7 +11,9 @@
       "types": "./src/_generated/dataModel.d.ts"
     },
     "./mail/types": "./src/mail/types.ts",
-    "./attachments/constants": "./src/attachments/constants.ts"
+    "./attachments/constants": "./src/attachments/constants.ts",
+    "./providers/icloud/contract": "./src/providers/icloud/contract.ts",
+    "./providers/icloud/protocol": "./src/providers/icloud/protocol.ts"
   },
   "scripts": {
     "build": "tsc --noEmit",
@@ -47,7 +49,8 @@
     "better-auth": "catalog:",
     "convex": "catalog:",
     "convex-env": "^2.3.0",
-    "convex-helpers": "^0.1.108"
+    "convex-helpers": "^0.1.108",
+    "zod": "catalog:"
   },
   "peerDependencies": {
     "react": "catalog:react19"

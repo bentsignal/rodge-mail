@@ -18,4 +18,11 @@ crons.interval(
   {},
 );
 
+crons.interval(
+  "queue iCloud bridge synchronization",
+  { minutes: 5 },
+  internal.providers.icloud.internal.scheduleConnectedAccounts,
+  {},
+);
+
 export default crons;

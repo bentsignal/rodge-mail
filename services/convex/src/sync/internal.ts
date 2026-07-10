@@ -706,7 +706,7 @@ export const listScheduledMicrosoftAccounts = internalQuery({
   },
 });
 
-export const listRecoverableOutbox = internalQuery({
+export const listRecoverableProviderOutbox = internalQuery({
   args: {},
   handler: async (ctx) => {
     const now = Date.now();
@@ -724,14 +724,20 @@ export const listRecoverableOutbox = internalQuery({
         .withIndex("by_status_created", (q) => q.eq("status", "sending"))
         .take(100),
     ]);
-    return [...pending, ...failed, ...sending]
-      .filter(
-        (outbox) =>
-          (outbox.status !== "failed" || outbox.attempt < 3) &&
-          (outbox.status !== "sending" ||
-            outbox.updatedAt < now - 10 * 60 * 1000),
-      )
-      .map((outbox) => outbox._id);
+    const recoverable = [...pending, ...failed, ...sending].filter(
+      (outbox) =>
+        (outbox.status !== "failed" || outbox.attempt < 3) &&
+        (outbox.status !== "sending" ||
+          outbox.updatedAt < now - 10 * 60 * 1000),
+    );
+    const providerOutboxIds: Id<"outboxMessages">[] = [];
+    for (const outbox of recoverable) {
+      const account = await ctx.db.get(outbox.accountId);
+      if (account && ["gmail", "microsoft"].includes(account.provider)) {
+        providerOutboxIds.push(outbox._id);
+      }
+    }
+    return providerOutboxIds;
   },
 });
 
@@ -741,7 +747,7 @@ export const runScheduledProviderWork = internalAction({
     const [gmailAccounts, microsoftAccounts, outboxIds] = await Promise.all([
       ctx.runQuery(internal.sync.internal.listScheduledGmailAccounts, {}),
       ctx.runQuery(internal.sync.internal.listScheduledMicrosoftAccounts, {}),
-      ctx.runQuery(internal.sync.internal.listRecoverableOutbox, {}),
+      ctx.runQuery(internal.sync.internal.listRecoverableProviderOutbox, {}),
     ]);
     await Promise.all([
       ...gmailAccounts.map((account, index) =>

@@ -105,12 +105,16 @@ function ProviderConnectionButtons({
 }) {
   const connectGmail = useAction(api.accounts.actions.connectGmail);
   const connectMicrosoft = useAction(api.accounts.actions.connectMicrosoft);
+  const connectICloud = useAction(api.accounts.actions.connectICloud);
   const [connectingProvider, setConnectingProvider] = useState<
-    "gmail" | "microsoft" | undefined
+    "gmail" | "microsoft" | "icloud" | undefined
   >();
   const gmailAccount = accounts.find((account) => account.provider === "gmail");
   const microsoftAccount = accounts.find(
     (account) => account.provider === "microsoft",
+  );
+  const iCloudAccount = accounts.find(
+    (account) => account.provider === "icloud",
   );
 
   async function connect(
@@ -127,6 +131,17 @@ function ProviderConnectionButtons({
     }
   }
 
+  async function connectICloudAccount() {
+    setConnectingProvider("icloud");
+    try {
+      const result = await connectICloud({ returnPath: "/" });
+      window.location.assign(result.setupUrl);
+    } catch (error) {
+      toast.error(getConnectionError(error, "icloud"));
+      setConnectingProvider(undefined);
+    }
+  }
+
   return (
     <>
       <ProviderConnectionButton
@@ -136,6 +151,12 @@ function ProviderConnectionButtons({
         onConnect={() =>
           void connect("gmail", () => connectGmail({ returnPath: "/" }))
         }
+      />
+      <ProviderConnectionButton
+        account={iCloudAccount}
+        isConnecting={connectingProvider === "icloud"}
+        label="iCloud"
+        onConnect={() => void connectICloudAccount()}
       />
       <ProviderConnectionButton
         account={microsoftAccount}
@@ -183,9 +204,18 @@ function ConnectionIcon({ isConnecting }: { isConnecting: boolean }) {
   return <Link className="size-3.5" />;
 }
 
-function getConnectionError(error: unknown, provider: "gmail" | "microsoft") {
+function getConnectionError(
+  error: unknown,
+  provider: "gmail" | "microsoft" | "icloud",
+) {
   if (error instanceof Error && error.message.trim()) return error.message;
-  return `Could not start ${provider === "gmail" ? "Gmail" : "Microsoft"} authorization.`;
+  const label =
+    provider === "gmail"
+      ? "Gmail"
+      : provider === "microsoft"
+        ? "Microsoft"
+        : "iCloud";
+  return `Could not start ${label} authorization.`;
 }
 
 function Brand() {
