@@ -773,7 +773,10 @@ export const listRecoverableProviderOutbox = internalQuery({
     const providerOutboxIds: Id<"outboxMessages">[] = [];
     for (const outbox of recoverable) {
       const account = await ctx.db.get(outbox.accountId);
-      if (account && ["gmail", "microsoft"].includes(account.provider)) {
+      if (
+        account &&
+        ["gmail", "microsoft", "icloud"].includes(account.provider)
+      ) {
         providerOutboxIds.push(outbox._id);
       }
     }
@@ -784,11 +787,16 @@ export const listRecoverableProviderOutbox = internalQuery({
 export const runScheduledProviderWork = internalAction({
   args: {},
   handler: async (ctx): Promise<void> => {
-    const [gmailAccounts, microsoftAccounts, outboxIds] = await Promise.all([
-      ctx.runQuery(internal.sync.internal.listScheduledGmailAccounts, {}),
-      ctx.runQuery(internal.sync.internal.listScheduledMicrosoftAccounts, {}),
-      ctx.runQuery(internal.sync.internal.listRecoverableProviderOutbox, {}),
-    ]);
+    const [gmailAccounts, microsoftAccounts, icloudAccounts, outboxIds] =
+      await Promise.all([
+        ctx.runQuery(internal.sync.internal.listScheduledGmailAccounts, {}),
+        ctx.runQuery(internal.sync.internal.listScheduledMicrosoftAccounts, {}),
+        ctx.runQuery(
+          internal.providers.icloud.internal.listScheduledAccounts,
+          {},
+        ),
+        ctx.runQuery(internal.sync.internal.listRecoverableProviderOutbox, {}),
+      ]);
     await Promise.all([
       ...gmailAccounts.map((account, index) =>
         ctx.scheduler.runAfter(
@@ -801,6 +809,13 @@ export const runScheduledProviderWork = internalAction({
         ctx.scheduler.runAfter(
           index * 500,
           internal.sync.internal.executeMicrosoftSync,
+          { ...account, reason: "incremental" },
+        ),
+      ),
+      ...icloudAccounts.map((account, index) =>
+        ctx.scheduler.runAfter(
+          index * 500,
+          internal.providers.icloud.sync.synchronize,
           { ...account, reason: "incremental" },
         ),
       ),
@@ -1177,6 +1192,10 @@ export const deliverProviderOutbox = internalAction({
     }
     if (provider === "microsoft") {
       await ctx.runAction(internal.sync.internal.deliverMicrosoftOutbox, args);
+      return;
+    }
+    if (provider === "icloud") {
+      await ctx.runAction(internal.providers.icloud.outbox.deliver, args);
     }
   },
 });

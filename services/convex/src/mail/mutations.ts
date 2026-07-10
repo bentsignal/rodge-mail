@@ -149,7 +149,9 @@ function scheduleProviderReadUpdate({
   isRead: boolean;
   delay: number;
 }) {
-  if (!account || account.ownerId !== ctx.ownerId) return undefined;
+  if (!account || account.ownerId !== ctx.ownerId || account.isDemo) {
+    return undefined;
+  }
   const args = {
     ownerId: ctx.ownerId,
     accountId: account._id,
@@ -170,7 +172,11 @@ function scheduleProviderReadUpdate({
       args,
     );
   }
-  return undefined;
+  return ctx.scheduler.runAfter(
+    delay,
+    internal.providers.icloud.outbox.setRead,
+    args,
+  );
 }
 
 export const enqueuePlainText = authedMutation({
@@ -234,19 +240,11 @@ export const enqueuePlainText = authedMutation({
         });
       }),
     );
-    if (account.provider === "icloud") {
-      await ctx.scheduler.runAfter(
-        0,
-        internal.providers.icloud.internal.enqueueSendJob,
-        { ownerId: ctx.ownerId, accountId: account._id, outboxId },
-      );
-    } else {
-      await ctx.scheduler.runAfter(
-        0,
-        internal.sync.internal.deliverProviderOutbox,
-        { outboxId },
-      );
-    }
+    await ctx.scheduler.runAfter(
+      0,
+      internal.sync.internal.deliverProviderOutbox,
+      { outboxId },
+    );
     return outboxId;
   },
 });
@@ -264,27 +262,10 @@ export const retryOutbox = authedMutation({
       error: undefined,
       updatedAt: Date.now(),
     });
-    const account = await ensureOwnedAccount(
-      ctx,
-      ctx.ownerId,
-      outbox.accountId,
+    await ctx.scheduler.runAfter(
+      0,
+      internal.sync.internal.deliverProviderOutbox,
+      { outboxId: outbox._id },
     );
-    if (account.provider === "icloud") {
-      await ctx.scheduler.runAfter(
-        0,
-        internal.providers.icloud.internal.enqueueSendJob,
-        {
-          ownerId: ctx.ownerId,
-          accountId: account._id,
-          outboxId: outbox._id,
-        },
-      );
-    } else {
-      await ctx.scheduler.runAfter(
-        0,
-        internal.sync.internal.deliverProviderOutbox,
-        { outboxId: outbox._id },
-      );
-    }
   },
 });

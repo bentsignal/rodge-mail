@@ -59,10 +59,9 @@ Webhooks are wake-up hints; provider cursors are the source of truth.
 - Microsoft uses an Inbox delta link with immutable Outlook message IDs. A
   scheduled repair follows opaque next/delta URLs; change notifications can be
   added later as wake-up hints without replacing cursor reconciliation.
-- iCloud uses a long-running Node.js bridge because Convex actions cannot open
-  IMAP or SMTP sockets. The bridge leases bounded jobs from Convex, persists
-  UIDVALIDITY and known UIDs in PostgreSQL, and submits normalized changes over
-  a replay-protected signed HTTPS protocol.
+- iCloud uses Convex Node actions to make bounded TLS connections to Apple's
+  IMAP and SMTP servers. Encrypted app-specific credentials, imported IMAP
+  identifiers, sync runs, and outbox reconciliation all remain in Convex.
 
 All adapters normalize into one internal mutation and use leases, bounded
 batches, exponential backoff, and periodic reconciliation.

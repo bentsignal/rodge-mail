@@ -10,6 +10,8 @@ import { internal } from "../_generated/api";
 import { action } from "../_generated/server";
 import { GmailAdapter } from "../providers/gmail/api";
 import { getUsableGmailTokens } from "../providers/gmail/tokenAccess";
+import { fetchAttachment as fetchICloudAttachment } from "../providers/icloud/client";
+import { decryptICloudCredential } from "../providers/icloud/credentialAccess";
 import { MicrosoftGraphAdapter } from "../providers/microsoft/api";
 import { getUsableMicrosoftTokens } from "../providers/microsoft/tokenAccess";
 import { checkIdentity } from "../utils";
@@ -119,7 +121,16 @@ async function fetchRemoteAttachment({
       attachment.remoteAttachmentId,
     );
   }
-  throw new ConvexError("This provider attachment cannot be fetched yet");
+  const icloudCredential = await decryptICloudCredential({
+    ownerId,
+    accountId: account._id,
+    encryptedCredential: credential.encryptedTokens,
+  });
+  return await fetchICloudAttachment({
+    credential: icloudCredential,
+    remoteMessageId: message.remoteMessageId,
+    remoteAttachmentId: attachment.remoteAttachmentId,
+  });
 }
 
 function requireDownloadUrl(url: string | null) {

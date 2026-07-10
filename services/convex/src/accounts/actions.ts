@@ -8,12 +8,10 @@ import {
   randomBase64Url,
   sha256Base64Url,
 } from "../providers/crypto";
-import { providerEnv } from "../providers/env";
 import {
   buildGoogleAuthorizationUrl,
   getGoogleOAuthConfig,
 } from "../providers/gmail/oauth";
-import { signSetupToken } from "../providers/icloud/protocol";
 import {
   buildMicrosoftAuthorizationUrl,
   getMicrosoftOAuthConfig,
@@ -84,42 +82,6 @@ export const connectMicrosoft = authedAction({
         codeChallenge,
       }),
     };
-  },
-});
-
-export const connectICloud = authedAction({
-  args: { returnPath: v.optional(v.string()) },
-  handler: async (ctx, args): Promise<{ setupUrl: string }> => {
-    const bridgeUrl = providerEnv.ICLOUD_BRIDGE_URL;
-    const signingSecret = providerEnv.ICLOUD_BRIDGE_SIGNING_SECRET;
-    if (!bridgeUrl || !signingSecret || signingSecret.length < 32) {
-      throw new Error("iCloud bridge is not configured");
-    }
-    const returnPath = normalizeReturnPath(args.returnPath);
-    const challengeId = randomBase64Url(32);
-    const expiresAt = Date.now() + OAUTH_STATE_LIFETIME_MS;
-    await ctx.runMutation(
-      internal.providers.icloud.internal.storeConnectionChallenge,
-      {
-        ownerId: ctx.ownerId,
-        challengeHash: await sha256Base64Url(challengeId),
-        returnPath,
-        expiresAt,
-      },
-    );
-    const setupToken = await signSetupToken(
-      {
-        version: 1,
-        challengeId,
-        ownerId: ctx.ownerId,
-        returnPath,
-        expiresAt,
-      },
-      signingSecret,
-    );
-    const setupUrl = new URL("/connect/icloud", bridgeUrl);
-    setupUrl.searchParams.set("token", setupToken);
-    return { setupUrl: setupUrl.toString() };
   },
 });
 

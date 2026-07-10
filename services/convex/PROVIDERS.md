@@ -101,15 +101,16 @@ the current simple Graph attachment path limits each Microsoft file to 3 MB.
   request, cached in private Convex storage, and served through short-lived
   storage URLs. Compose uploads allow five files, 10 MB per file, and 18 MB
   total; Microsoft additionally applies its 3 MB per-file send limit. iCloud
-  binary attachment transfer remains a separate bridge storage flow.
+  reads and sends attachment bytes through bounded Convex Node actions.
 - Read/unread changes are written locally first and propagated to Gmail and
-  Microsoft with bounded retries. iCloud read-state propagation is not part of
-  protocol version 1.
-- The shared cron schedules Gmail history and Microsoft Inbox delta repair every
-  five minutes and recovers expired outbox leases. Gmail `watch`/Pub/Sub and
-  Microsoft Graph change notifications can later reduce latency; cursor-based
-  reconciliation remains authoritative. Manual sync is available through the
-  provider-specific account mutations, and sends trigger an incremental pass.
+  Microsoft with bounded retries. iCloud applies the same write-through model
+  using IMAP `\\Seen` flags.
+- The shared cron schedules Gmail history, Microsoft Inbox delta, and iCloud
+  IMAP repair every five minutes and recovers expired outbox leases. Gmail
+  `watch`/Pub/Sub and Microsoft Graph change notifications can later reduce
+  latency; cursor-based reconciliation remains authoritative. Manual sync is
+  available through the provider-specific account mutations, and sends trigger
+  an incremental pass.
 
 Primary references:
 
@@ -126,122 +127,46 @@ Primary references:
 - [Convex actions](https://docs.convex.dev/functions/actions)
 - [Convex HTTP actions](https://docs.convex.dev/functions/http-actions)
 
-## iCloud Mail bridge
+## iCloud Mail
 
-Apple exposes iCloud Mail to third-party clients through IMAP and SMTP, not a
-mail REST API that a Convex action can call. Apple's current documented settings
-are `imap.mail.me.com:993` with TLS and `smtp.mail.me.com:587` with authenticated
-STARTTLS. Apple requires an app-specific password for manual third-party client
-access; the user's primary Apple Account password must never be collected.
+Apple exposes iCloud Mail through IMAP and SMTP rather than a mail REST API.
+Apple's documented settings are `imap.mail.me.com:993` with TLS and
+`smtp.mail.me.com:587` with authenticated STARTTLS. Rodge Mail runs these
+connections in Convex's opt-in Node.js action runtime; an empirical deployment
+probe confirmed TLS 1.3 IMAP and SMTP connectivity from the hosted development
+runtime.
 
-Rodge Mail therefore uses `@rodge-mail/icloud-bridge`, a long-running Node.js
-service with raw TCP egress. It is a deliberate credential and network boundary:
+The connection dialog accepts only an iCloud, me.com, or mac.com address and a
+dedicated Apple app-specific password. The Node action verifies both IMAP and
+SMTP before creating the account. The password and selected IMAP username are
+then stored in the same AES-256-GCM, key-versioned, account-bound envelope used
+for other provider credentials. The primary Apple Account password is never
+requested.
 
-1. `accounts/actions:connectICloud` creates a ten-minute, owner-scoped,
-   single-use setup challenge and returns the bridge's `/connect/icloud` URL.
-2. The setup form is served by the bridge. The iCloud address and app-specific
-   password travel directly from the browser to the bridge over HTTPS. Neither
-   the Rodge Mail web client nor Convex receives the password.
-3. The bridge proves both IMAP read access and SMTP send access, encrypts the
-   password using AES-256-GCM with account-bound additional data, and stores the
-   envelope in PostgreSQL. It then completes the signed challenge with Convex.
-4. Convex creates an `icloud` mail account and queues a leased initial-sync job.
-   The bridge polls for work, normalizes IMAP messages into the existing provider
-   contract, and submits bounded batches to signed HTTP actions.
-5. iCloud outbox rows become leased bridge send jobs. The bridge uses a stable
-   RFC 5322 Message-ID, durably records completed outbox IDs before acknowledging
-   Convex, and searches the Sent mailbox as an additional retry reconciliation
-   path. A lost acknowledgement therefore does not blindly send a duplicate.
+### Incremental behavior and recovery
 
-### Signed protocol
+- Canonical IMAP identifiers encode mailbox, UIDVALIDITY, and UID. The imported
+  Convex message rows are therefore the durable UID state; no second database is
+  needed.
+- Each run compares Apple's complete UID snapshot with imported identifiers,
+  removes confirmed deletions, and imports at most 200 missing messages per
+  mailbox in 25-message fetch batches. Repeated repair runs backfill older mail.
+- A UIDVALIDITY change retires identifiers from the previous generation and
+  imports the current one.
+- Source reads are capped at 5 MB per message and normalized plain text at
+  100 KB. Attachment bytes are fetched on demand and cached in private Convex
+  storage.
+- SMTP sends use a deterministic RFC 5322 Message-ID. Before every retry, Rodge
+  Mail searches the Sent mailbox for that ID, preventing a lost acknowledgement
+  from blindly sending a duplicate.
+- Sync runs and outbox leases already live in Convex. Scheduled actions repair
+  sync every five minutes and recover expired sends without a persistent worker.
 
-All bridge-to-Convex requests are HTTPS `POST`s with these headers:
-
-- `x-rodge-timestamp`: Unix epoch milliseconds
-- `x-rodge-request-id`: a unique UUID
-- `x-rodge-signature`: base64url HMAC-SHA256
-
-The signed value is
-`timestamp.requestId.METHOD.pathname.base64url(sha256(rawBody))`. Convex rejects
-timestamps outside five minutes and transactionally records request IDs for
-replay protection. The shared secret must contain at least 32 random characters.
-Requests are capped at 900 KB; sync payloads contain at most 50 messages and the
-bridge additionally chunks on serialized size.
-
-Protocol version 1 has four endpoints:
-
-| Endpoint                                        | Purpose                                                                                 |
-| ----------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `/providers/icloud/bridge/connections/complete` | Consume a signed setup challenge and bind the verified bridge account.                  |
-| `/providers/icloud/bridge/jobs/claim`           | Lease up to ten owner/account-scoped sync or send jobs for ten minutes.                 |
-| `/providers/icloud/bridge/sync`                 | Upsert normalized folders/messages, apply confirmed deletions, and finish a sync lease. |
-| `/providers/icloud/bridge/jobs/ack`             | Reconcile a leased outbox row as sent or failed.                                        |
-
-Leases make bridge restarts safe. A lost response is reclaimed after expiry.
-Connection completion and reconnect are idempotent because the bridge account
-UUID is derived from the signed owner identity and normalized mail address.
-Authentication failures transition the account to `reauthorization_required`;
-the account rail then offers reconnect.
-
-### Incremental IMAP behavior
-
-The bridge stores mailbox UIDVALIDITY and known UIDs in PostgreSQL. For each
-selectable mailbox it compares the current UID set with this durable state:
-
-- New UIDs are fetched and normalized in bounded batches.
-- Missing known UIDs become deletions only after the server returned a complete
-  UID snapshot, avoiding false deletes from a capped history window.
-- A UIDVALIDITY change retires the previous generation and imports the current
-  generation again.
-- Folder special-use flags determine inbox, sent, drafts, archive, trash, and
-  junk semantics. Other selectable mailboxes remain custom folders.
-
-The source fetch is capped by `MAX_MESSAGE_BYTES`, and normalized plain text is
-capped at 100 KB. Attachment metadata is retained, but binary attachment transfer
-remains a separate storage flow. The bridge does not store message bodies.
-
-### Production deployment contract
-
-The bridge requires a continuously running Node.js 22+ container or VM, a
-durable PostgreSQL database, public HTTPS for the setup page, and outbound TCP
-access to `imap.mail.me.com:993` and `smtp.mail.me.com:587`. A request-only
-serverless function is not suitable because the worker polls leased jobs and must
-open IMAP/SMTP sockets.
-
-Generate independent secrets locally:
-
-```sh
-openssl rand -base64 48 # shared signing secret
-openssl rand -base64 32 # bridge credential-encryption key
-```
-
-Configure the bridge from `services/icloud-bridge/.env.example`. In particular:
-
-- `DATABASE_URL`: TLS-protected PostgreSQL connection string
-- `RODGE_CONVEX_SITE_URL`: the deployed `https://*.convex.site` origin
-- `ICLOUD_BRIDGE_SIGNING_SECRET`: shared only with the Convex deployment
-- `BRIDGE_ACTIVE_CREDENTIAL_KEY_VERSION`: active keyring entry, for example `v1`
-- `BRIDGE_CREDENTIAL_KEYS`: JSON map of versions to base64-encoded 32-byte keys
-
-Configure the same boundary in each Convex deployment:
-
-```sh
-pnpm --filter @rodge-mail/convex exec convex env set ICLOUD_BRIDGE_URL 'https://icloud-bridge.example.com'
-pnpm --filter @rodge-mail/convex exec convex env set ICLOUD_BRIDGE_SIGNING_SECRET '<same-shared-secret>'
-```
-
-Deploy Convex after setting its variables, deploy the bridge, verify
-`GET https://icloud-bridge.example.com/health`, then use **Connect iCloud** in
-Rodge Mail. Rotate encryption keys by adding a new keyring version and changing
-the active version; retain old keys until every credential has been reconnected
-or re-encrypted. Rotate the signing secret atomically across both services during
-a maintenance window because protocol requests cannot use two secrets at once.
-
-The unavoidable user steps are provisioning the bridge/PostgreSQL deployment,
-setting these secrets, enabling two-factor authentication on the Apple Account,
-and generating a dedicated Rodge Mail app-specific password at
-`account.apple.com`. Changing the primary Apple Account password revokes every
-app-specific password, so Rodge Mail will request reconnection afterward.
+The only unavoidable user step is enabling two-factor authentication and
+generating a dedicated Rodge Mail app-specific password at
+`account.apple.com`. Changing the primary Apple Account password revokes
+app-specific passwords, after which Rodge Mail marks the account for
+reconnection.
 
 Primary Apple references:
 

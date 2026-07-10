@@ -11,9 +11,7 @@
       "types": "./src/_generated/dataModel.d.ts"
     },
     "./mail/types": "./src/mail/types.ts",
-    "./attachments/constants": "./src/attachments/constants.ts",
-    "./providers/icloud/contract": "./src/providers/icloud/contract.ts",
-    "./providers/icloud/protocol": "./src/providers/icloud/protocol.ts"
+    "./attachments/constants": "./src/attachments/constants.ts"
   },
   "scripts": {
     "build": "tsc --noEmit",
@@ -32,7 +30,9 @@
     "@rodge-mail/eslint-config": "workspace:*",
     "@rodge-mail/prettier-config": "workspace:*",
     "@rodge-mail/tsconfig": "workspace:*",
+    "@types/mailparser": "^3.4.6",
     "@types/node": "^22.19.1",
+    "@types/nodemailer": "^8.0.1",
     "eslint": "catalog:",
     "prettier": "catalog:",
     "typescript": "catalog:",
@@ -50,6 +50,9 @@
     "convex": "catalog:",
     "convex-env": "^2.3.0",
     "convex-helpers": "^0.1.108",
+    "imapflow": "^1.4.6",
+    "mailparser": "^3.9.14",
+    "nodemailer": "^9.0.3",
     "zod": "catalog:"
   },
   "peerDependencies": {

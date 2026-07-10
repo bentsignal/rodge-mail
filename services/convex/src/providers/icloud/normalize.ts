@@ -1,5 +1,6 @@
+"use node";
+
 /* eslint-disable complexity -- RFC 5322 normalization deliberately handles absent and partial message fields. */
-import { createHash } from "node:crypto";
 import type {
   FetchMessageObject,
   ListResponse,
@@ -7,14 +8,17 @@ import type {
 } from "imapflow";
 import { simpleParser } from "mailparser";
 
-import type { NormalizedICloudMessage } from "@rodge-mail/convex/providers/icloud/contract";
-
-import type { BridgeAccount } from "./database";
+import type { NormalizedMessage } from "../types";
+import {
+  createAttachmentId,
+  createRemoteMessageId,
+  createThreadId,
+} from "./identifiers";
 
 const MAX_TEXT_LENGTH = 100_000;
 
 export async function normalizeMessage(
-  account: BridgeAccount,
+  accountAddress: string,
   mailbox: ListResponse,
   uidValidity: string,
   message: FetchMessageObject,
@@ -43,12 +47,12 @@ export async function normalizeMessage(
   return {
     remoteMessageId,
     remoteThreadId: createThreadId(
-      references[0] ?? message.envelope?.inReplyTo ?? internetMessageId,
+      references.at(0) ?? message.envelope?.inReplyTo ?? internetMessageId,
       parsed.subject,
     ),
     internetMessageId,
     from: toAddresses(message.envelope?.from)[0] ?? {
-      address: account.address,
+      address: accountAddress,
     },
     replyTo: optionalAddresses(message.envelope?.replyTo),
     to: toAddresses(message.envelope?.to),
@@ -69,7 +73,7 @@ export async function normalizeMessage(
     isRead: message.flags?.has("\\Seen") ?? false,
     direction,
     attachments: parsed.attachments.map((attachment, index) => ({
-      remoteAttachmentId: `${remoteMessageId}:${attachment.checksum || index}`,
+      remoteAttachmentId: createAttachmentId(remoteMessageId, index),
       fileName: attachment.filename ?? `attachment-${index + 1}`,
       contentType: attachment.contentType,
       size: attachment.size,
@@ -78,7 +82,7 @@ export async function normalizeMessage(
         attachment.related === true,
       contentId: attachment.contentId,
     })),
-  } satisfies NormalizedICloudMessage;
+  } satisfies NormalizedMessage;
 }
 
 export function isSelectableMailbox(mailbox: ListResponse) {
@@ -120,29 +124,6 @@ function toAddresses(addresses: MessageAddressObject[] | undefined) {
 function optionalAddresses(addresses: MessageAddressObject[] | undefined) {
   const normalized = toAddresses(addresses);
   return normalized.length > 0 ? normalized : undefined;
-}
-
-function createRemoteMessageId(
-  mailbox: string,
-  uidValidity: string,
-  uid: number,
-) {
-  return `imap:${Buffer.from(mailbox).toString("base64url")}:${uidValidity}:${uid}`;
-}
-
-function createThreadId(
-  reference: string | undefined,
-  subject: string | undefined,
-) {
-  const source = reference ?? normalizeSubject(subject ?? "(no subject)");
-  return `rfc822:${createHash("sha256").update(source).digest("base64url")}`;
-}
-
-function normalizeSubject(subject: string) {
-  return subject
-    .replace(/^(?:(?:re|fw|fwd):\s*)+/iu, "")
-    .trim()
-    .toLowerCase();
 }
 
 function collapseWhitespace(value: string) {

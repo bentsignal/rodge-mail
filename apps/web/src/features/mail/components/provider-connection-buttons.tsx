@@ -6,6 +6,7 @@ import { api } from "@rodge-mail/convex/api";
 import { toast } from "@rodge-mail/ui-web/toast";
 
 import type { MailAccountView } from "../types";
+import { ICloudConnectionDialog } from "./icloud-connection-dialog";
 
 type ConnectableProvider = "gmail" | "icloud" | "microsoft";
 
@@ -16,7 +17,7 @@ export function ProviderConnectionButtons({
 }) {
   const connectGmail = useAction(api.accounts.actions.connectGmail);
   const connectMicrosoft = useAction(api.accounts.actions.connectMicrosoft);
-  const connectICloud = useAction(api.accounts.actions.connectICloud);
+  const [icloudOpen, setICloudOpen] = useState(false);
   const [connectingProvider, setConnectingProvider] =
     useState<ConnectableProvider>();
 
@@ -30,17 +31,6 @@ export function ProviderConnectionButtons({
       window.location.assign(result.authorizationUrl);
     } catch (error) {
       toast.error(getConnectionError(error, provider));
-      setConnectingProvider(undefined);
-    }
-  }
-
-  async function connectICloudAccount() {
-    setConnectingProvider("icloud");
-    try {
-      const result = await connectICloud({ returnPath: "/" });
-      window.location.assign(result.setupUrl);
-    } catch (error) {
-      toast.error(getConnectionError(error, "icloud"));
       setConnectingProvider(undefined);
     }
   }
@@ -59,10 +49,11 @@ export function ProviderConnectionButtons({
       />
       <ProviderConnectionButton
         account={findAccount(accounts, "icloud")}
-        isConnecting={connectingProvider === "icloud"}
+        isConnecting={false}
         label="iCloud"
-        onConnect={() => void connectICloudAccount()}
+        onConnect={() => setICloudOpen(true)}
       />
+      <ICloudConnectionDialog onOpenChange={setICloudOpen} open={icloudOpen} />
       <ProviderConnectionButton
         account={findAccount(accounts, "microsoft")}
         isConnecting={connectingProvider === "microsoft"}

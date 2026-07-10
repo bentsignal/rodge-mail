@@ -57,12 +57,15 @@ export const syncICloudNow = authedMutation({
     if (account.provider !== "icloud" || account.isDemo) {
       throw new ConvexError("iCloud sync is unavailable for this account");
     }
-    if (account.status === "disconnected") {
+    if (
+      account.status === "disconnected" ||
+      account.status === "reauthorization_required"
+    ) {
       throw new ConvexError("Reconnect iCloud before syncing");
     }
     await ctx.scheduler.runAfter(
       0,
-      internal.providers.icloud.internal.enqueueSyncJob,
+      internal.providers.icloud.sync.synchronize,
       {
         ownerId: ctx.ownerId,
         accountId: args.accountId,

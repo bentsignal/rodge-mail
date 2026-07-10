@@ -55,15 +55,13 @@ export const semanticSearch = authedAction({
       accountId: args.accountId,
     });
     if (!ownsScope) throw new ConvexError("Mail account not found");
+    if (!isAiConfigured()) return [];
 
     const limited = await rateLimiter.limit(ctx, "semanticSearch", {
       key: ctx.ownerId,
     });
     if (!limited.ok)
       throw new ConvexError("Semantic search rate limit exceeded");
-    if (!isAiConfigured())
-      throw new ConvexError("Semantic search is not configured");
-
     const vector = await createEmbedding(
       searchTerm,
       `search:${ctx.ownerId}:${stableHash(searchTerm)}`,

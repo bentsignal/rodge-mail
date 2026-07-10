@@ -16,9 +16,10 @@ iCloud accounts, and learns which messages Shawn actually wants to see.
 
 The product implementation includes the shared focused inbox, owner-only
 passkey auth, Gmail and Microsoft Graph OAuth providers, the iCloud IMAP/SMTP
-bridge, transactional sending, private attachments, and explainable AI
-classification and semantic search. Production provider credentials, the
-iCloud bridge host, and the public web origin are deployment-time concerns.
+connector, transactional sending, private attachments, and explainable AI
+classification and semantic search. Provider credentials and the public web
+origin are deployment-time concerns; no separate mail worker or database is
+required.
 
 ## Development
 

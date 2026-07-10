@@ -43,11 +43,6 @@ export function validateProviderAttachments(
     }
     return;
   }
-  if (account.provider !== "gmail" && attachments.length > 0) {
-    throw new ConvexError(
-      "Attachments are not yet available for the selected provider",
-    );
-  }
 }
 
 export async function getReadyDraftAttachments(
