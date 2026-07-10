@@ -106,7 +106,9 @@ function findAccount(
   accounts: MailAccountView[],
   provider: ConnectableProvider,
 ) {
-  return accounts.find((account) => account.provider === provider);
+  return accounts.find(
+    (account) => account.provider === provider && account.isDemo !== true,
+  );
 }
 
 function getConnectionError(error: unknown, provider: ConnectableProvider) {
