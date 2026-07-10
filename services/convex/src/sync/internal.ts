@@ -684,21 +684,10 @@ export const upsertProviderMessage = internalMutation({
       message.attachments,
       now,
     );
-    if (!existing) {
-      await ctx.db.insert("messageClassifications", {
-        ownerId: args.ownerId,
-        messageId,
-        status: "pending",
-        bucket: "unclassified",
-        importance: 0,
-        confidence: 0,
-        shouldEmbed: true,
-        source: "rules",
-        promptVersion: "provider-v1",
-        createdAt: now,
-        updatedAt: now,
-      });
-    }
+    await ctx.scheduler.runAfter(0, internal.classification.internal.queue, {
+      ownerId: args.ownerId,
+      messageId,
+    });
     await recalculateThread(ctx, thread._id);
   },
 });
@@ -720,21 +709,36 @@ export const deleteProviderMessage = internalMutation({
       )
       .unique();
     if (!message) return;
-    const [contents, attachments, classifications] = await Promise.all([
-      ctx.db
-        .query("messageContents")
-        .withIndex("by_message", (q) => q.eq("messageId", message._id))
-        .collect(),
-      ctx.db
-        .query("attachments")
-        .withIndex("by_message", (q) => q.eq("messageId", message._id))
-        .collect(),
-      ctx.db
-        .query("messageClassifications")
-        .withIndex("by_message", (q) => q.eq("messageId", message._id))
-        .collect(),
-    ]);
-    for (const row of [...contents, ...attachments, ...classifications]) {
+    const [contents, attachments, classifications, embeddingJobs, embeddings] =
+      await Promise.all([
+        ctx.db
+          .query("messageContents")
+          .withIndex("by_message", (q) => q.eq("messageId", message._id))
+          .collect(),
+        ctx.db
+          .query("attachments")
+          .withIndex("by_message", (q) => q.eq("messageId", message._id))
+          .collect(),
+        ctx.db
+          .query("messageClassifications")
+          .withIndex("by_message", (q) => q.eq("messageId", message._id))
+          .collect(),
+        ctx.db
+          .query("messageEmbeddingJobs")
+          .withIndex("by_message", (q) => q.eq("messageId", message._id))
+          .collect(),
+        ctx.db
+          .query("messageEmbeddings")
+          .withIndex("by_message", (q) => q.eq("messageId", message._id))
+          .collect(),
+      ]);
+    for (const row of [
+      ...contents,
+      ...attachments,
+      ...classifications,
+      ...embeddingJobs,
+      ...embeddings,
+    ]) {
       await ctx.db.delete(row._id);
     }
     await ctx.db.delete(message._id);
@@ -748,8 +752,7 @@ export const claimOutbox = internalMutation({
     const outbox = await ctx.db.get(args.outboxId);
     const now = Date.now();
     const reclaimingExpiredLease =
-      outbox?.status === "sending" &&
-      outbox.updatedAt < now - 10 * 60 * 1000;
+      outbox?.status === "sending" && outbox.updatedAt < now - 10 * 60 * 1000;
     if (
       !outbox ||
       (!reclaimingExpiredLease &&

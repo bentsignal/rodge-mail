@@ -1,7 +1,7 @@
 import type { ProviderTokens } from "../types";
+import { urls } from "../../urls";
 /* eslint-disable no-restricted-syntax, @typescript-eslint/consistent-type-assertions -- OAuth token responses require explicit external-data contracts. */
 import { providerEnv } from "../env";
-import { urls } from "../../urls";
 
 const GOOGLE_AUTHORIZATION_ENDPOINT =
   "https://accounts.google.com/o/oauth2/v2/auth";
@@ -70,7 +70,7 @@ export async function exchangeAuthorizationCode(
       code_verifier: codeVerifier,
       grant_type: "authorization_code",
       redirect_uri: config.redirectUri,
-    }),
+    }).toString(),
   });
   const body = (await response.json()) as GoogleTokenResponse;
   if (!response.ok || !body.access_token) {
@@ -94,7 +94,7 @@ export async function refreshGoogleTokens(
       client_secret: config.clientSecret,
       refresh_token: refreshToken,
       grant_type: "refresh_token",
-    }),
+    }).toString(),
   });
   const body = (await response.json()) as GoogleTokenResponse;
   if (!response.ok || !body.access_token) {

@@ -1,6 +1,6 @@
 import { useId, useState } from "react";
-import { ArrowUp, Paperclip, Send, X } from "lucide-react";
 import { useMutation } from "convex/react";
+import { ArrowUp, Paperclip, Send, X } from "lucide-react";
 
 import { api } from "@rodge-mail/convex/api";
 import * as Dialog from "@rodge-mail/ui-web/dialog";

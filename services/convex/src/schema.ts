@@ -1,14 +1,16 @@
 import { defineSchema, defineTable } from "convex/server";
 
 import {
+  vMessageEmbedding,
+  vMessageEmbeddingJob,
+} from "./embedding/validators";
+import {
   vAttachment,
   vMailAccount,
   vMailFolder,
   vMessage,
   vMessageClassification,
   vMessageContent,
-  vMessageEmbedding,
-  vMessageEmbeddingJob,
   vOutboxMessage,
   vProviderCredential,
   vProviderOAuthState,

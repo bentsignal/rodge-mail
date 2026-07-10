@@ -63,9 +63,7 @@ function useComposerState() {
 
   function sendComposerDraft() {
     if (!composerCanSend) return;
-    setDeliveryNotice(
-      `Message queued for ${composerDraft.to}.`,
-    );
+    setDeliveryNotice(`Message queued for ${composerDraft.to}.`);
     setComposerIsOpen(false);
     setComposerDraft(createEmptyDraft());
     setIdempotencyKey(createIdempotencyKey());

@@ -3,7 +3,11 @@ import { ConvexError, v } from "convex/values";
 import { internal } from "../_generated/api";
 import { reconcileEmbeddingSelection } from "../embedding/internal";
 import { authedMutation } from "../utils";
-import { ensureOwnedAccount, ensureOwnedMessage } from "./helpers";
+import {
+  ensureOwnedAccount,
+  ensureOwnedMessage,
+  ensureOwnedThread,
+} from "./helpers";
 import { vMailboxAddress } from "./validators";
 
 export const setPinned = authedMutation({
@@ -43,6 +47,60 @@ export const setRead = authedMutation({
       ctx.db.patch(thread._id, {
         unreadCount: Math.max(0, thread.unreadCount + (args.isRead ? -1 : 1)),
         updatedAt: Date.now(),
+      }),
+    ]);
+  },
+});
+
+export const setThreadPinned = authedMutation({
+  args: {
+    threadId: v.id("threads"),
+    isPinned: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const thread = await ensureOwnedThread(ctx, ctx.ownerId, args.threadId);
+    const messages = await ctx.db
+      .query("messages")
+      .withIndex("by_thread_received", (q) => q.eq("threadId", thread._id))
+      .collect();
+    await Promise.all(
+      messages.map(async (message) => {
+        if (message.isPinned !== args.isPinned) {
+          await ctx.db.patch(message._id, {
+            isPinned: args.isPinned,
+            updatedAt: Date.now(),
+          });
+        }
+        await reconcileEmbeddingSelection(ctx, message._id);
+      }),
+    );
+  },
+});
+
+export const setThreadRead = authedMutation({
+  args: {
+    threadId: v.id("threads"),
+    isRead: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const thread = await ensureOwnedThread(ctx, ctx.ownerId, args.threadId);
+    const messages = await ctx.db
+      .query("messages")
+      .withIndex("by_thread_received", (q) => q.eq("threadId", thread._id))
+      .collect();
+    const now = Date.now();
+    await Promise.all([
+      ...messages
+        .filter((message) => message.isRead !== args.isRead)
+        .map(async (message) => {
+          await ctx.db.patch(message._id, {
+            isRead: args.isRead,
+            updatedAt: now,
+          });
+        }),
+      ctx.db.patch(thread._id, {
+        unreadCount: args.isRead ? 0 : messages.length,
+        updatedAt: now,
       }),
     ]);
   },

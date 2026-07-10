@@ -1,5 +1,6 @@
 import { useState } from "react";
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -8,18 +9,27 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { randomUUID } from "expo-crypto";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useMutation } from "convex/react";
 import { Paperclip, Send, X } from "lucide-react-native";
 
 import type { ComposerDraft } from "@rodge-mail/features/mail";
+import { api } from "@rodge-mail/convex/api";
 
 import { useColor } from "~/hooks/use-color";
+import { toConvexId } from "../lib/convex-id";
+import { useMailStore } from "../store";
 
 export function ComposerScreen() {
   const params = useLocalSearchParams<{ subject?: string; to?: string }>();
   const router = useRouter();
+  const accounts = useMailStore((store) => store.accounts);
+  const enqueuePlainText = useMutation(api.mail.mutations.enqueuePlainText);
+  const [idempotencyKey] = useState(() => `rodge-native-${randomUUID()}`);
+  const [isSending, setIsSending] = useState(false);
   const [draft, setDraft] = useState<ComposerDraft>({
     attachments: [],
     body: "",
@@ -32,37 +42,44 @@ export function ComposerScreen() {
   function setField(field: keyof ComposerDraft, value: string) {
     setDraft((current) => ({ ...current, [field]: value }));
   }
-
-  async function attachImages() {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      allowsMultipleSelection: true,
-      mediaTypes: ["images"],
-      selectionLimit: 5,
-    });
-    if (result.canceled) return;
-
-    const attachments = result.assets.map(
-      (asset, index) => asset.fileName ?? `Attachment ${index + 1}`,
-    );
-    setDraft((current) => ({
-      ...current,
-      attachments: [...current.attachments, ...attachments],
-    }));
-  }
-
-  function removeAttachment(name: string) {
-    setDraft((current) => ({
-      ...current,
-      attachments: current.attachments.filter(
-        (attachment) => attachment !== name,
-      ),
-    }));
-  }
-
-  function send() {
-    if (!canSend) return;
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    router.back();
+  async function send() {
+    if (!canSend || isSending) return;
+    if (draft.attachments.length > 0) {
+      Alert.alert(
+        "Attachments aren’t ready yet",
+        "Remove the attachments to send this message as plain text.",
+      );
+      return;
+    }
+    const account = accounts.find((item) => item.provider === "gmail");
+    if (!account) {
+      Alert.alert(
+        "Connect Gmail first",
+        "Add a Gmail account from Rodge Mail on the web before sending.",
+      );
+      return;
+    }
+    const to = parseAddresses(draft.to);
+    if (to.length === 0) {
+      Alert.alert("Add a recipient", "Enter at least one valid email address.");
+      return;
+    }
+    setIsSending(true);
+    try {
+      await enqueuePlainText({
+        accountId: toConvexId<"mailAccounts">(account.id),
+        idempotencyKey,
+        to,
+        cc: parseAddresses(draft.cc),
+        subject: draft.subject.trim(),
+        plainText: draft.body,
+      });
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      router.back();
+    } catch (error) {
+      setIsSending(false);
+      Alert.alert("Couldn’t queue this message", getErrorMessage(error));
+    }
   }
 
   return (
@@ -70,64 +87,129 @@ export function ComposerScreen() {
       className="bg-background flex-1"
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <ComposerHeader canSend={canSend} onCancel={router.back} onSend={send} />
-      <ScrollView
-        contentContainerClassName="px-4 pb-10"
-        keyboardShouldPersistTaps="handled"
-      >
-        <ComposerField
-          autoCapitalize="none"
-          defaultValue={draft.to}
-          keyboardType="email-address"
-          label="To"
-          onChangeText={(value) => setField("to", value)}
-        />
-        <ComposerField
-          autoCapitalize="none"
-          defaultValue={draft.cc}
-          keyboardType="email-address"
-          label="CC"
-          onChangeText={(value) => setField("cc", value)}
-        />
-        <ComposerField
-          defaultValue={draft.subject}
-          label="Subject"
-          onChangeText={(value) => setField("subject", value)}
-        />
-        <TextInput
-          accessibilityLabel="Message body"
-          autoFocus
-          className="text-foreground min-h-72 py-4 text-base leading-6"
-          defaultValue={draft.body}
-          multiline
-          placeholder="Write a message"
-          placeholderTextColor="#777777"
-          textAlignVertical="top"
-          onChangeText={(value) => setField("body", value)}
-        />
-        <AttachmentList
-          attachments={draft.attachments}
-          onRemove={removeAttachment}
-        />
-        <Pressable
-          accessibilityLabel="Attach photos"
-          accessibilityRole="button"
-          className="border-border flex-row items-center justify-center gap-2 rounded-xl border py-3"
-          onPress={() => void attachImages()}
-        >
-          <Paperclip color="#777777" size={18} />
-          <Text className="text-foreground font-semibold">Attach files</Text>
-        </Pressable>
-      </ScrollView>
+      <ComposerHeader
+        canSend={canSend && !isSending}
+        onCancel={router.back}
+        onSend={() => void send()}
+      />
+      <ComposerBody
+        draft={draft}
+        onAttach={() => void attachImages(setDraft)}
+        onChange={setField}
+        onRemoveAttachment={(name) => removeAttachment(setDraft, name)}
+      />
     </KeyboardAvoidingView>
   );
 }
 
-function draftCanSend(draft: ComposerDraft) {
-  return (
-    draft.to.trim().length > 0 &&
-    (draft.subject.trim().length > 0 || draft.body.trim().length > 0)
+async function attachImages(
+  setDraft: React.Dispatch<React.SetStateAction<ComposerDraft>>,
+) {
+  const result = await ImagePicker.launchImageLibraryAsync({
+    allowsMultipleSelection: true,
+    mediaTypes: ["images"],
+    selectionLimit: 5,
+  });
+  if (result.canceled) return;
+  const attachments = result.assets.map(
+    (asset, index) => asset.fileName ?? `Attachment ${index + 1}`,
   );
+  setDraft((current) => ({
+    ...current,
+    attachments: [...current.attachments, ...attachments],
+  }));
+}
+
+function removeAttachment(
+  setDraft: React.Dispatch<React.SetStateAction<ComposerDraft>>,
+  name: string,
+) {
+  setDraft((current) => ({
+    ...current,
+    attachments: current.attachments.filter(
+      (attachment) => attachment !== name,
+    ),
+  }));
+}
+
+function ComposerBody({
+  draft,
+  onAttach,
+  onChange,
+  onRemoveAttachment,
+}: {
+  draft: ComposerDraft;
+  onAttach: () => void;
+  onChange: (field: keyof ComposerDraft, value: string) => void;
+  onRemoveAttachment: (name: string) => void;
+}) {
+  return (
+    <ScrollView
+      contentContainerClassName="px-4 pb-10"
+      keyboardShouldPersistTaps="handled"
+    >
+      <ComposerField
+        autoCapitalize="none"
+        defaultValue={draft.to}
+        keyboardType="email-address"
+        label="To"
+        onChangeText={(value) => onChange("to", value)}
+      />
+      <ComposerField
+        autoCapitalize="none"
+        defaultValue={draft.cc}
+        keyboardType="email-address"
+        label="CC"
+        onChangeText={(value) => onChange("cc", value)}
+      />
+      <ComposerField
+        defaultValue={draft.subject}
+        label="Subject"
+        onChangeText={(value) => onChange("subject", value)}
+      />
+      <TextInput
+        accessibilityLabel="Message body"
+        autoFocus
+        className="text-foreground min-h-72 py-4 text-base leading-6"
+        defaultValue={draft.body}
+        multiline
+        placeholder="Write a message"
+        placeholderTextColor="#777777"
+        textAlignVertical="top"
+        onChangeText={(value) => onChange("body", value)}
+      />
+      <AttachmentList
+        attachments={draft.attachments}
+        onRemove={onRemoveAttachment}
+      />
+      <Pressable
+        accessibilityLabel="Attach photos"
+        accessibilityRole="button"
+        className="border-border flex-row items-center justify-center gap-2 rounded-xl border py-3"
+        onPress={onAttach}
+      >
+        <Paperclip color="#777777" size={18} />
+        <Text className="text-foreground font-semibold">Attach files</Text>
+      </Pressable>
+    </ScrollView>
+  );
+}
+
+function draftCanSend(draft: ComposerDraft) {
+  return draft.to.trim().length > 0 && draft.body.trim().length > 0;
+}
+
+function parseAddresses(value: string) {
+  return value
+    .split(",")
+    .map((address) => address.trim().toLowerCase())
+    .filter((address) => address.includes("@"))
+    .map((address) => ({ address }));
+}
+
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error && error.message.trim()) return error.message;
+  return "Rodge Mail could not add this message to the delivery queue.";
 }
 
 function ComposerHeader({

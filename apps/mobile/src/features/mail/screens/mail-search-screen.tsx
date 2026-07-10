@@ -1,23 +1,40 @@
 import type { ListRenderItemInfo } from "react-native";
-import { useState } from "react";
-import { FlatList, Text, View } from "react-native";
+import { useDeferredValue, useState } from "react";
+import { ActivityIndicator, FlatList, Text, View } from "react-native";
 import { Stack, useRouter } from "expo-router";
+import { usePaginatedQuery } from "convex/react";
 
 import type { MailThread } from "@rodge-mail/features/mail";
+import { api } from "@rodge-mail/convex/api";
 
 import { ThreadRow } from "../components/thread-row";
-import { filterAndSortThreads, threadMatchesSearch } from "../lib/mail-format";
+import { toConvexId } from "../lib/convex-id";
+import { toMailThreads } from "../lib/convex-mail";
 import { useMailStore } from "../store";
 
 export function MailSearchScreen() {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
-  const threads = useMailStore((store) => store.threads);
+  const deferredSearchTerm = useDeferredValue(searchTerm.trim());
+  const recentThreads = useMailStore((store) => store.threads);
+  const accountFilter = useMailStore((store) => store.accountFilter);
   const markRead = useMailStore((store) => store.markRead);
-  const results = filterAndSortThreads(
-    threads.filter((thread) => threadMatchesSearch(thread, searchTerm)),
-    "all",
+  const search = usePaginatedQuery(
+    api.mail.queries.searchHeaders,
+    deferredSearchTerm
+      ? {
+          accountId:
+            accountFilter === "all"
+              ? undefined
+              : toConvexId<"mailAccounts">(accountFilter),
+          searchTerm: deferredSearchTerm,
+        }
+      : "skip",
+    { initialNumItems: 30 },
   );
+  const results = deferredSearchTerm
+    ? toMailThreads(search.results)
+    : recentThreads;
 
   function openThread(threadId: string) {
     markRead(threadId);
@@ -47,6 +64,10 @@ export function MailSearchScreen() {
         keyboardDismissMode="on-drag"
         keyExtractor={threadKey}
         renderItem={renderThread}
+        onEndReached={() => {
+          if (search.status === "CanLoadMore") search.loadMore(30);
+        }}
+        onEndReachedThreshold={0.6}
         ListHeaderComponent={
           searchTerm ? null : (
             <Text className="text-muted-foreground px-4 pt-3 pb-2 text-sm">
@@ -55,6 +76,11 @@ export function MailSearchScreen() {
           )
         }
         ListEmptyComponent={<EmptySearch searchTerm={searchTerm} />}
+        ListFooterComponent={
+          search.status === "LoadingMore" ? (
+            <ActivityIndicator className="my-6" color="#d77a55" />
+          ) : null
+        }
       />
     </View>
   );

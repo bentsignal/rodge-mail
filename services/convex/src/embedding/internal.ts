@@ -16,7 +16,6 @@ import {
 } from "../classification/normalize";
 import { configuredEmbeddingModel } from "../classification/openai";
 import { rateLimiter } from "../limiter";
-import { vEmbeddingReason } from "../mail/validators";
 import { isEmbeddingInputStale, isEmbeddingJobRunnable } from "./stale";
 import {
   deleteEmbeddingRecords,
@@ -25,6 +24,7 @@ import {
   findMessageEmbedding,
   preferredReason,
 } from "./storage";
+import { vEmbeddingReason } from "./validators";
 
 interface EmbeddingActionArgs extends Record<string, unknown> {
   messageId: Id<"messages">;

@@ -8,44 +8,52 @@ import type {
 } from "@rodge-mail/features/mail";
 import { api } from "@rodge-mail/convex/api";
 
-import { toMailAccount, toMailThread } from "./lib/convex-mail";
+import { toConvexId } from "./lib/convex-id";
+import { toMailAccount, toMailThreads } from "./lib/convex-mail";
 
 function useInternalStore() {
   const [accountFilter, setAccountFilter] = useState<MailAccountFilter>("all");
   const [category, setCategory] = useState<InboxCategory>("focused");
   const inbox = usePaginatedQuery(
     api.mail.queries.listInbox,
-    {},
+    {
+      accountId:
+        accountFilter === "all"
+          ? undefined
+          : toConvexId<"mailAccounts">(accountFilter),
+      bucket: category,
+    },
     { initialNumItems: 30 },
   );
   const accountRows = useQuery(api.accounts.queries.list, {});
-  const setPinned = useMutation(api.mail.mutations.setPinned);
-  const setRead = useMutation(api.mail.mutations.setRead);
+  const setThreadPinned = useMutation(api.mail.mutations.setThreadPinned);
+  const setThreadRead = useMutation(api.mail.mutations.setThreadRead);
 
   const messages = inbox.results;
-  const threads = messages.map(toMailThread);
+  const threads = toMailThreads(messages);
   const accounts = accountRows?.map(toMailAccount) ?? [];
 
-  function getMessage(threadId: string) {
-    return messages.find((message) => message._id === threadId);
-  }
-
   function togglePin(threadId: string) {
-    const message = getMessage(threadId);
-    if (!message) return;
-    void setPinned({ messageId: message._id, isPinned: !message.isPinned });
+    const thread = threads.find((item) => item.id === threadId);
+    void setThreadPinned({
+      threadId: toConvexId<"threads">(threadId),
+      isPinned: !thread?.isPinned,
+    });
   }
 
   function markRead(threadId: string) {
-    const message = getMessage(threadId);
-    if (!message || message.isRead) return;
-    void setRead({ messageId: message._id, isRead: true });
+    void setThreadRead({
+      threadId: toConvexId<"threads">(threadId),
+      isRead: true,
+    });
   }
 
   function toggleRead(threadId: string) {
-    const message = getMessage(threadId);
-    if (!message) return;
-    void setRead({ messageId: message._id, isRead: !message.isRead });
+    const thread = threads.find((item) => item.id === threadId);
+    void setThreadRead({
+      threadId: toConvexId<"threads">(threadId),
+      isRead: !thread?.isRead,
+    });
   }
 
   function loadMore() {
@@ -57,7 +65,6 @@ function useInternalStore() {
     accounts,
     canLoadMore: inbox.status === "CanLoadMore",
     category,
-    getMessageId: (threadId: string) => getMessage(threadId)?._id,
     isLoading: inbox.status === "LoadingFirstPage",
     isLoadingMore: inbox.status === "LoadingMore",
     loadMore,

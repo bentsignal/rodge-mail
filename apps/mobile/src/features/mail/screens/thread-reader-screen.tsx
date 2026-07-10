@@ -1,30 +1,30 @@
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { Paperclip, Pin, Reply } from "lucide-react-native";
 
 import type { MailMessage, MailThread } from "@rodge-mail/features/mail";
 import { api } from "@rodge-mail/convex/api";
 
 import { useColor } from "~/hooks/use-color";
+import { toConvexId } from "../lib/convex-id";
 import { toMailThreadDetail } from "../lib/convex-mail";
 import { formatMessageTime } from "../lib/mail-format";
-import { useMailStore } from "../store";
 
 export function ThreadReaderScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const messageId = useMailStore((store) => store.getMessageId(id));
-  const queryArgs = messageId ? { messageId } : "skip";
-  const message = useQuery(api.mail.queries.getMessage, queryArgs);
+  const threadId = id ? toConvexId<"threads">(id) : undefined;
+  const queryArgs = threadId ? { threadId } : "skip";
+  const thread = useQuery(api.mail.queries.getThread, queryArgs);
 
-  if (message === undefined && messageId) return <ThreadLoading />;
-  if (!message) return <ThreadNotFound />;
-  return <ThreadReader thread={toMailThreadDetail(message)} />;
+  if (thread === undefined && threadId) return <ThreadLoading />;
+  if (!thread) return <ThreadNotFound />;
+  return <ThreadReader thread={toMailThreadDetail(thread)} />;
 }
 
 function ThreadReader({ thread }: { thread: MailThread }) {
   const router = useRouter();
-  const togglePin = useMailStore((store) => store.togglePin);
+  const setThreadPinned = useMutation(api.mail.mutations.setThreadPinned);
   const background = useColor("background");
   const foreground = useColor("foreground");
 
@@ -52,7 +52,12 @@ function ThreadReader({ thread }: { thread: MailThread }) {
               }
               accessibilityRole="button"
               hitSlop={12}
-              onPress={() => togglePin(thread.id)}
+              onPress={() =>
+                void setThreadPinned({
+                  threadId: toConvexId<"threads">(thread.id),
+                  isPinned: !thread.isPinned,
+                })
+              }
             >
               <Pin
                 color={foreground}

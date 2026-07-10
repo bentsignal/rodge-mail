@@ -24,6 +24,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   android: {
     package: "com.bentsignal.rodgemail",
     icon: "./assets/rounded-icon.png",
+    permissions: ["android.permission.CREDENTIAL_MANAGER_SET_ORIGIN"],
   },
   experiments: {
     tsconfigPaths: true,

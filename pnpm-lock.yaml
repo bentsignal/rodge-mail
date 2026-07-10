@@ -225,6 +225,9 @@ importers:
       expo-constants:
         specifier: ~56.0.17
         version: 56.0.17(expo@56.0.9)(react-native@0.85.3(@babel/core@7.28.5)(@react-native/metro-config@0.85.3(@babel/core@7.28.5))(@types/react@19.2.17)(bufferutil@4.0.8)(react@19.2.3))
+      expo-crypto:
+        specifier: ~56.0.4
+        version: 56.0.4(expo@56.0.9)
       expo-dev-client:
         specifier: ~56.0.19
         version: 56.0.19(expo@56.0.9)(react-native@0.85.3(@babel/core@7.28.5)(@react-native/metro-config@0.85.3(@babel/core@7.28.5))(@types/react@19.2.17)(bufferutil@4.0.8)(react@19.2.3))
@@ -5076,6 +5079,7 @@ packages:
   basic-ftp@5.0.5:
     resolution: {integrity: sha512-4Bcg1P8xhUuqcii/S0Z9wiHIrQVPMermM1any+MX5GeGD7faD3/msQUDGLol9wOcz4/jbg/WJnGqoJF6LiBdtg==}
     engines: {node: '>=10.0.0'}
+    deprecated: Security vulnerability fixed in 5.2.1, please upgrade
 
   better-auth@1.6.11:
     resolution: {integrity: sha512-Wwt6+q07dwIhsp6XiM7L1qSXVUWBEtNl+eZvwM778CguFqDZFBN9Pt6LtFaHl55t8Z+Zc//5kxcbgDY8/79vFQ==}
@@ -6086,6 +6090,11 @@ packages:
     peerDependencies:
       expo: '*'
       react-native: '*'
+
+  expo-crypto@56.0.4:
+    resolution: {integrity: sha512-fRNEhoXRXgAWBpe3/hq5X+KXTit3OZqdiAGts1YvNEUHQb+H5591mpPac0Yw+sZg9pXcrjRnzo5AxvZaENpc7g==}
+    peerDependencies:
+      expo: '*'
 
   expo-dev-client@56.0.19:
     resolution: {integrity: sha512-Mk2AsYGPBb+G30rwNHZvIE0Mi5Zd0yIZ2UdvIqllZjaWITiLbSqHklTgwY3KUs4/HrusXdZrfX7GqJGcUhOPiw==}
@@ -15548,6 +15557,10 @@ snapshots:
       react-native: 0.85.3(@babel/core@7.28.5)(@react-native/metro-config@0.85.3(@babel/core@7.28.5))(@types/react@19.2.17)(bufferutil@4.0.8)(react@19.2.3)
     transitivePeerDependencies:
       - supports-color
+
+  expo-crypto@56.0.4(expo@56.0.9):
+    dependencies:
+      expo: 56.0.9(@babel/core@7.28.5)(@expo/dom-webview@56.0.5)(@expo/metro-runtime@56.0.14)(bufferutil@4.0.8)(expo-router@56.2.9)(react-dom@19.2.3(react@19.2.3))(react-native-worklets@0.8.3(@babel/core@7.28.5)(@react-native/metro-config@0.85.3(@babel/core@7.28.5))(react-native@0.85.3(@babel/core@7.28.5)(@react-native/metro-config@0.85.3(@babel/core@7.28.5))(@types/react@19.2.17)(bufferutil@4.0.8)(react@19.2.3))(react@19.2.3))(react-native@0.85.3(@babel/core@7.28.5)(@react-native/metro-config@0.85.3(@babel/core@7.28.5))(@types/react@19.2.17)(bufferutil@4.0.8)(react@19.2.3))(react@19.2.3)(typescript@6.0.3)
 
   expo-dev-client@56.0.19(expo@56.0.9)(react-native@0.85.3(@babel/core@7.28.5)(@react-native/metro-config@0.85.3(@babel/core@7.28.5))(@types/react@19.2.17)(bufferutil@4.0.8)(react@19.2.3)):
     dependencies:

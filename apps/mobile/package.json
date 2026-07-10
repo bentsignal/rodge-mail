@@ -32,6 +32,7 @@
     "expo-better-auth-passkey": "1.4.3",
     "expo-build-properties": "~56.0.17",
     "expo-constants": "~56.0.17",
+    "expo-crypto": "~56.0.4",
     "expo-dev-client": "~56.0.19",
     "expo-glass-effect": "~56.0.4",
     "expo-haptics": "~56.0.3",

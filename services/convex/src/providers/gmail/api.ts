@@ -145,7 +145,9 @@ export class GmailAdapter implements MailProviderAdapter {
         }
       },
     );
-    return results.filter((messageId): messageId is string => Boolean(messageId));
+    return results.filter((messageId): messageId is string =>
+      Boolean(messageId),
+    );
   }
 
   async sendPlainText(accessToken: string, payload: OutboxPayload) {

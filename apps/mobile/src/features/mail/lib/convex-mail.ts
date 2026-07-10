@@ -11,14 +11,15 @@ const attachmentTypes = {
 
 type InboxResult = FunctionReturnType<typeof api.mail.queries.listInbox>;
 type InboxItem = InboxResult["page"][number];
-type MessageDetail = FunctionReturnType<typeof api.mail.queries.getMessage>;
+type ThreadDetail = FunctionReturnType<typeof api.mail.queries.getThread>;
+type ThreadMessage = ThreadDetail["messages"][number];
 type Account = FunctionReturnType<typeof api.accounts.queries.list>[number];
 
 export function toMailThread(item: InboxItem) {
   return {
     accountId: item.accountId,
     category: toCategory(item.focusBucket),
-    id: item._id,
+    id: item.threadId,
     isPinned: item.isPinned,
     isRead: item.isRead,
     messages: [],
@@ -33,10 +34,32 @@ export function toMailThread(item: InboxItem) {
   };
 }
 
-export function toMailThreadDetail(item: MessageDetail) {
+export function toMailThreads(items: InboxItem[]) {
+  return [...new Map(items.map((item) => [item.threadId, item])).values()].map(
+    toMailThread,
+  );
+}
+
+export function toMailThreadDetail(item: ThreadDetail) {
+  const latest = item.messages.at(-1);
+  if (!latest) throw new Error("Mail thread has no messages");
   return {
-    ...toMailThread(item),
-    messages: [toMailMessage(item)],
+    accountId: item.accountId,
+    category: item.messages.some((message) => message.focusBucket === "focused")
+      ? ("focused" as const)
+      : ("other" as const),
+    id: item._id,
+    isPinned: item.messages.some((message) => message.isPinned),
+    isRead: item.unreadCount === 0,
+    messages: item.messages.map(toMailMessage),
+    preview: latest.classification?.summary ?? latest.snippet,
+    priorityNote: latest.classification?.reason,
+    receivedAt: new Date(latest.receivedAt).toISOString(),
+    sender: {
+      address: latest.from.address,
+      name: getAddressName(latest.from),
+    },
+    subject: item.subject,
   };
 }
 
@@ -52,7 +75,7 @@ export function toMailAccount(account: Account) {
   };
 }
 
-function toMailMessage(item: MessageDetail) {
+function toMailMessage(item: ThreadMessage) {
   return {
     attachments: item.attachments.map(toMailAttachment),
     body: toParagraphs(item.content?.plainText, item.snippet),
@@ -73,7 +96,7 @@ function toMailMessage(item: MessageDetail) {
   };
 }
 
-function toMailAttachment(attachment: MessageDetail["attachments"][number]) {
+function toMailAttachment(attachment: ThreadMessage["attachments"][number]) {
   return {
     id: attachment._id,
     name: attachment.fileName,

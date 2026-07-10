@@ -20,7 +20,6 @@ import { useColor } from "~/hooks/use-color";
 import { AccountFilter } from "../components/account-filter";
 import { CategoryControl } from "../components/category-control";
 import { ThreadRow } from "../components/thread-row";
-import { filterAndSortThreads } from "../lib/mail-format";
 import { useMailStore } from "../store";
 
 export function InboxScreen() {
@@ -36,10 +35,6 @@ export function InboxScreen() {
   const isLoading = useMailStore((store) => store.isLoading);
   const isLoadingMore = useMailStore((store) => store.isLoadingMore);
   const background = useColor("background");
-  const visibleThreads = filterAndSortThreads(
-    threads.filter((thread) => thread.category === category),
-    accountFilter,
-  );
 
   function openThread(threadId: string) {
     markRead(threadId);
@@ -56,7 +51,7 @@ export function InboxScreen() {
   return (
     <View className="bg-background flex-1">
       <FlatList
-        data={visibleThreads}
+        data={threads}
         keyExtractor={threadKey}
         renderItem={renderThread}
         contentInsetAdjustmentBehavior="automatic"
