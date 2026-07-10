@@ -10,7 +10,6 @@ import { useRouter } from "expo-router";
 import { SquarePen } from "lucide-react-native";
 
 import type {
-  InboxCategory,
   MailAccount,
   MailAccountFilter,
   MailThread,
@@ -18,7 +17,6 @@ import type {
 
 import { useColor } from "~/hooks/use-color";
 import { AccountFilter } from "../components/account-filter";
-import { CategoryControl } from "../components/category-control";
 import { ThreadRow } from "../components/thread-row";
 import { useMailStore } from "../store";
 
@@ -27,10 +25,8 @@ export function InboxScreen() {
   const threads = useMailStore((store) => store.threads);
   const accounts = useMailStore((store) => store.accounts);
   const accountFilter = useMailStore((store) => store.accountFilter);
-  const category = useMailStore((store) => store.category);
   const markRead = useMailStore((store) => store.markRead);
   const setAccountFilter = useMailStore((store) => store.setAccountFilter);
-  const setCategory = useMailStore((store) => store.setCategory);
   const loadMore = useMailStore((store) => store.loadMore);
   const isLoading = useMailStore((store) => store.isLoading);
   const isLoadingMore = useMailStore((store) => store.isLoadingMore);
@@ -62,14 +58,10 @@ export function InboxScreen() {
           <InboxHeader
             accountFilter={accountFilter}
             accounts={accounts}
-            category={category}
             onAccountChange={setAccountFilter}
-            onCategoryChange={setCategory}
           />
         }
-        ListEmptyComponent={
-          <EmptyInbox category={category} isLoading={isLoading} />
-        }
+        ListEmptyComponent={<EmptyInbox isLoading={isLoading} />}
         ListFooterComponent={<InboxFooter isLoading={isLoadingMore} />}
       />
       <Pressable
@@ -87,15 +79,11 @@ export function InboxScreen() {
 function InboxHeader({
   accountFilter,
   accounts,
-  category,
   onAccountChange,
-  onCategoryChange,
 }: {
   accountFilter: MailAccountFilter;
   accounts: MailAccount[];
-  category: InboxCategory;
   onAccountChange: (value: MailAccountFilter) => void;
-  onCategoryChange: (value: InboxCategory) => void;
 }) {
   return (
     <View className="gap-4 pt-2 pb-3">
@@ -104,20 +92,11 @@ function InboxHeader({
         value={accountFilter}
         onChange={onAccountChange}
       />
-      <View className="px-4">
-        <CategoryControl value={category} onChange={onCategoryChange} />
-      </View>
     </View>
   );
 }
 
-function EmptyInbox({
-  category,
-  isLoading,
-}: {
-  category: "focused" | "other";
-  isLoading: boolean;
-}) {
+function EmptyInbox({ isLoading }: { isLoading: boolean }) {
   if (isLoading) {
     return (
       <View className="items-center py-24">
@@ -125,26 +104,13 @@ function EmptyInbox({
       </View>
     );
   }
-  if (category === "focused") {
-    return (
-      <View className="items-center px-8 py-24">
-        <Text className="text-foreground text-lg font-bold">
-          You are caught up
-        </Text>
-        <Text className="text-muted-foreground mt-2 text-center leading-5">
-          Mail that needs your attention will appear here.
-        </Text>
-      </View>
-    );
-  }
-
   return (
     <View className="items-center px-8 py-24">
       <Text className="text-foreground text-lg font-bold">
-        Nothing else here
+        You are caught up
       </Text>
       <Text className="text-muted-foreground mt-2 text-center leading-5">
-        Newsletters and low-priority updates will wait here.
+        New mail will appear here in the order it arrives.
       </Text>
     </View>
   );

@@ -2,10 +2,7 @@ import { useState } from "react";
 import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
 import { createStore } from "rostra";
 
-import type {
-  InboxCategory,
-  MailAccountFilter,
-} from "@rodge-mail/features/mail";
+import type { MailAccountFilter } from "@rodge-mail/features/mail";
 import { api } from "@rodge-mail/convex/api";
 
 import { toConvexId } from "./lib/convex-id";
@@ -13,7 +10,6 @@ import { toMailAccount, toMailThreads } from "./lib/convex-mail";
 
 function useInternalStore() {
   const [accountFilter, setAccountFilter] = useState<MailAccountFilter>("all");
-  const [category, setCategory] = useState<InboxCategory>("focused");
   const inbox = usePaginatedQuery(
     api.mail.queries.listInbox,
     {
@@ -21,7 +17,6 @@ function useInternalStore() {
         accountFilter === "all"
           ? undefined
           : toConvexId<"mailAccounts">(accountFilter),
-      bucket: category,
     },
     { initialNumItems: 30 },
   );
@@ -64,13 +59,11 @@ function useInternalStore() {
     accountFilter,
     accounts,
     canLoadMore: inbox.status === "CanLoadMore",
-    category,
     isLoading: inbox.status === "LoadingFirstPage",
     isLoadingMore: inbox.status === "LoadingMore",
     loadMore,
     markRead,
     setAccountFilter,
-    setCategory,
     threads,
     togglePin,
     toggleRead,

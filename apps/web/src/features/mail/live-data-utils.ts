@@ -21,7 +21,6 @@ export function toAccountView(account: MailAccountDocument) {
 
 export function sortInboxMessages(messages: InboxMessage[]) {
   const sortedMessages = messages.slice().sort((left, right) => {
-    if (left.isPinned !== right.isPinned) return left.isPinned ? -1 : 1;
     return right.receivedAt - left.receivedAt;
   });
   const visibleThreadIds = new Set<InboxMessage["threadId"]>();

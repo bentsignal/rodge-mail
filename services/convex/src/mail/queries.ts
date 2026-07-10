@@ -11,33 +11,16 @@ import {
   toMessageDetail,
   toMessageListItem,
 } from "./helpers";
-import { vFocusBucket } from "./validators";
 
 export const listInbox = authedQuery({
   args: {
     accountId: v.optional(v.id("mailAccounts")),
-    bucket: v.optional(vFocusBucket),
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
-    const { accountId, bucket, paginationOpts } = args;
+    const { accountId, paginationOpts } = args;
     if (accountId) {
       await ensureOwnedAccount(ctx, ctx.ownerId, accountId);
-      if (bucket) {
-        return await enrichPage(
-          ctx,
-          await ctx.db
-            .query("messages")
-            .withIndex("by_account_inbox_bucket_received", (q) =>
-              q
-                .eq("accountId", accountId)
-                .eq("inInbox", true)
-                .eq("focusBucket", bucket),
-            )
-            .order("desc")
-            .paginate(paginationOpts),
-        );
-      }
       return await enrichPage(
         ctx,
         await ctx.db
@@ -50,21 +33,6 @@ export const listInbox = authedQuery({
       );
     }
 
-    if (bucket) {
-      return await enrichPage(
-        ctx,
-        await ctx.db
-          .query("messages")
-          .withIndex("by_owner_inbox_bucket_received", (q) =>
-            q
-              .eq("ownerId", ctx.ownerId)
-              .eq("inInbox", true)
-              .eq("focusBucket", bucket),
-          )
-          .order("desc")
-          .paginate(paginationOpts),
-      );
-    }
     return await enrichPage(
       ctx,
       await ctx.db

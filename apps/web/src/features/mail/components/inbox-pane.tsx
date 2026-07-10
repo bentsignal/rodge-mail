@@ -65,7 +65,7 @@ function InboxHeader() {
       </div>
       <SearchInput />
       <MobileAccountFilters />
-      <CategoryTabs />
+      <SearchResultsLabel />
     </header>
   );
 }
@@ -142,31 +142,13 @@ function MobileAccountFilters() {
   );
 }
 
-function CategoryTabs() {
-  const category = useMailStore((store) => store.category);
+function SearchResultsLabel() {
   const searchQuery = useMailStore((store) => store.searchQuery);
-  const setCategory = useMailStore((store) => store.setCategory);
-  const setSearchQuery = useMailStore((store) => store.setSearchQuery);
-
-  function chooseCategory(nextCategory: "focused" | "other") {
-    setSearchQuery("");
-    setCategory(nextCategory);
-  }
-
+  if (!searchQuery) return null;
   return (
-    <div className="mt-3.5 flex items-center gap-1 border-b border-[#ded5c8] dark:border-[#3c403a]">
-      <CategoryButton
-        active={category === "focused" && searchQuery.length === 0}
-        label="Focused"
-        onClick={() => chooseCategory("focused")}
-      />
-      <CategoryButton
-        active={category === "other" && searchQuery.length === 0}
-        label="Other"
-        onClick={() => chooseCategory("other")}
-      />
-      <SearchResultsLabel query={searchQuery} />
-    </div>
+    <p className="mt-3 font-mono text-[9px] tracking-[0.12em] text-[#8e8377] uppercase">
+      Search results
+    </p>
   );
 }
 
@@ -210,45 +192,5 @@ function ChipAccent({ accent }: { accent: string | undefined }) {
   if (!accent) return null;
   return (
     <span className="size-1.5 rounded-full" style={{ background: accent }} />
-  );
-}
-
-function CategoryButton({
-  active,
-  label,
-  onClick,
-}: {
-  active: boolean;
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      className={cn(
-        "relative px-3 pb-2 text-[13px] font-semibold transition",
-        active ? "text-foreground" : "hover:text-foreground text-[#94887a]",
-      )}
-      onClick={onClick}
-      type="button"
-    >
-      {label}
-      <CategoryMarker active={active} />
-    </button>
-  );
-}
-
-function CategoryMarker({ active }: { active: boolean }) {
-  if (!active) return null;
-  return (
-    <span className="absolute right-3 bottom-[-1px] left-3 h-0.5 rounded-full bg-[#c76749]" />
-  );
-}
-
-function SearchResultsLabel({ query }: { query: string }) {
-  if (!query) return null;
-  return (
-    <p className="ml-auto pb-2 font-mono text-[9px] tracking-[0.12em] text-[#8e8377] uppercase">
-      Search results
-    </p>
   );
 }

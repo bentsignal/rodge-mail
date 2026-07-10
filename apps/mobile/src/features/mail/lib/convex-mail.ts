@@ -18,13 +18,11 @@ type Account = FunctionReturnType<typeof api.accounts.queries.list>[number];
 export function toMailThread(item: InboxItem) {
   return {
     accountId: item.accountId,
-    category: toCategory(item.focusBucket),
     id: item.threadId,
     isPinned: item.isPinned,
     isRead: item.isRead,
     messages: [],
     preview: item.classification?.summary ?? item.snippet,
-    priorityNote: item.classification?.reason,
     receivedAt: new Date(item.receivedAt).toISOString(),
     sender: {
       address: item.from.address,
@@ -45,15 +43,11 @@ export function toMailThreadDetail(item: ThreadDetail) {
   if (!latest) throw new Error("Mail thread has no messages");
   return {
     accountId: item.accountId,
-    category: item.messages.some((message) => message.focusBucket === "focused")
-      ? ("focused" as const)
-      : ("other" as const),
     id: item._id,
     isPinned: item.messages.some((message) => message.isPinned),
     isRead: item.unreadCount === 0,
     messages: item.messages.map(toMailMessage),
     preview: latest.classification?.summary ?? latest.snippet,
-    priorityNote: latest.classification?.reason,
     receivedAt: new Date(latest.receivedAt).toISOString(),
     sender: {
       address: latest.from.address,
@@ -104,11 +98,6 @@ function toMailAttachment(attachment: ThreadMessage["attachments"][number]) {
     status: attachment.status,
     type: getAttachmentType(attachment.contentType),
   };
-}
-
-function toCategory(bucket: InboxItem["focusBucket"]) {
-  if (bucket === "focused") return "focused" as const;
-  return "other" as const;
 }
 
 function getAddressName(address: { address: string; name?: string }) {

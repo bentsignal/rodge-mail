@@ -79,7 +79,6 @@ export function ThreadRow({
         >
           {thread.preview}
         </Text>
-        <PriorityNote note={thread.priorityNote} />
       </View>
       <View className="self-start">
         <Pressable
@@ -112,13 +111,4 @@ export function ThreadRow({
 function ReadIcon({ isRead, color }: { isRead: boolean; color: string }) {
   if (isRead) return <Mail color={color} size={17} />;
   return <MailOpen color={color} size={17} />;
-}
-
-function PriorityNote({ note }: { note?: string }) {
-  if (!note) return null;
-  return (
-    <Text className="text-primary text-xs font-medium" numberOfLines={1}>
-      {note}
-    </Text>
-  );
 }

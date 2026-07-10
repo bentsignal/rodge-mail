@@ -10,7 +10,6 @@ import { api } from "@rodge-mail/convex/api";
 import { ThreadRow } from "../components/thread-row";
 import { toConvexId } from "../lib/convex-id";
 import { toMailThreads } from "../lib/convex-mail";
-import { useSemanticMessages } from "../lib/semantic-search";
 import { useMailStore } from "../store";
 
 export function MailSearchScreen() {
@@ -33,12 +32,8 @@ export function MailSearchScreen() {
       : "skip",
     { initialNumItems: 30 },
   );
-  const semanticMessages = useSemanticMessages({
-    accountFilter,
-    searchTerm: deferredSearchTerm,
-  });
   const results = deferredSearchTerm
-    ? toMailThreads([...search.results, ...semanticMessages])
+    ? toMailThreads(search.results)
     : recentThreads;
 
   function openThread(threadId: string) {

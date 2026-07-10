@@ -10,7 +10,6 @@ import { useQuery } from "@tanstack/react-query";
 import { convexQuery } from "@convex-dev/react-query";
 import { useMutation, usePaginatedQuery } from "convex/react";
 
-import type { InboxCategory } from "@rodge-mail/features/mail";
 import { api } from "@rodge-mail/convex/api";
 import { toast } from "@rodge-mail/ui-web/toast";
 
@@ -28,7 +27,6 @@ import {
   sortInboxMessages,
   toAccountView,
 } from "./live-data-utils";
-import { useSemanticMessages } from "./semantic-search";
 import { useMailStore } from "./store";
 
 const PAGE_SIZE = 30;
@@ -77,7 +75,6 @@ export function useLiveMail() {
 
 function useLiveMailValue() {
   const accountFilter = useMailStore((store) => store.accountFilter);
-  const category = useMailStore((store) => store.category);
   const searchQuery = useMailStore((store) => store.searchQuery);
   const selectedMessageId = useMailStore((store) => store.selectedMessageId);
   const selectedThreadId = useMailStore((store) => store.selectedThreadId);
@@ -87,7 +84,6 @@ function useLiveMailValue() {
   const deferredSearchQuery = useDeferredValue(searchQuery.trim());
   const queryState = useLiveMailQueries({
     accountFilter,
-    category,
     deferredSearchQuery,
     searchQuery,
     selectedMessageId,
@@ -113,14 +109,12 @@ function useLiveMailValue() {
 
 function useLiveMailQueries({
   accountFilter,
-  category,
   deferredSearchQuery,
   searchQuery,
   selectedMessageId,
   selectedThreadId,
 }: {
   accountFilter: MailAccountFilter;
-  category: InboxCategory;
   deferredSearchQuery: string;
   searchQuery: string;
   selectedMessageId: InboxMessage["_id"] | undefined;
@@ -130,17 +124,9 @@ function useLiveMailQueries({
   const accountQuery = useAccountsQuery();
   const activePage = useMailboxPage({
     accountId,
-    category,
     searchTerm: deferredSearchQuery,
   });
-  const semanticMessages = useSemanticMessages({
-    accountId,
-    searchTerm: deferredSearchQuery,
-  });
-  const inboxMessages = sortInboxMessages([
-    ...activePage.results,
-    ...semanticMessages,
-  ]);
+  const inboxMessages = sortInboxMessages(activePage.results);
   const effectiveThreadId = selectedThreadId ?? inboxMessages[0]?.threadId;
   const threadQuery = useThreadQuery(effectiveThreadId);
   throwQueryError(accountQuery.error);
@@ -193,17 +179,15 @@ function useAccountsQuery() {
 
 function useMailboxPage({
   accountId,
-  category,
   searchTerm,
 }: {
   accountId: InboxMessage["accountId"] | undefined;
-  category: InboxCategory;
   searchTerm: string;
 }) {
   const isSearching = searchTerm.length > 0;
   const inbox = usePaginatedQuery(
     api.mail.queries.listInbox,
-    isSearching ? "skip" : { accountId, bucket: category },
+    isSearching ? "skip" : { accountId },
     { initialNumItems: PAGE_SIZE },
   );
   const search = usePaginatedQuery(

@@ -45,18 +45,6 @@ export default defineSchema(
         "inInbox",
         "receivedAt",
       ])
-      .index("by_owner_inbox_bucket_received", [
-        "ownerId",
-        "inInbox",
-        "focusBucket",
-        "receivedAt",
-      ])
-      .index("by_account_inbox_bucket_received", [
-        "accountId",
-        "inInbox",
-        "focusBucket",
-        "receivedAt",
-      ])
       .index("by_owner_inbox_pinned_received", [
         "ownerId",
         "inInbox",

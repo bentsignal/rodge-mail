@@ -31,7 +31,6 @@ export const DEMO_MAIL_THREADS = [
   {
     id: "weekend-cabin",
     accountId: "gmail",
-    category: "focused",
     subject: "Cabin details for this weekend",
     sender: { name: "Maya Chen", address: "maya.chen@example.com" },
     preview:
@@ -39,7 +38,6 @@ export const DEMO_MAIL_THREADS = [
     receivedAt: "2026-07-09T14:42:00.000Z",
     isRead: false,
     isPinned: true,
-    priorityNote: "Direct note from a frequent contact",
     messages: [
       {
         id: "weekend-cabin-1",
@@ -69,7 +67,6 @@ export const DEMO_MAIL_THREADS = [
   {
     id: "railway-launch",
     accountId: "work",
-    category: "focused",
     subject: "Railway launch — final decisions",
     sender: { name: "Noah Williams", address: "noah@bentsignal.com" },
     preview:
@@ -77,7 +74,6 @@ export const DEMO_MAIL_THREADS = [
     receivedAt: "2026-07-09T13:18:00.000Z",
     isRead: false,
     isPinned: true,
-    priorityNote: "Time-sensitive project decision",
     messages: [
       {
         id: "railway-launch-1",
@@ -98,7 +94,6 @@ export const DEMO_MAIL_THREADS = [
   {
     id: "order-shipped",
     accountId: "gmail",
-    category: "focused",
     subject: "Your Field Notes order has shipped",
     sender: { name: "Field Notes", address: "dispatch@fieldnotesbrand.com" },
     preview:
@@ -106,7 +101,6 @@ export const DEMO_MAIL_THREADS = [
     receivedAt: "2026-07-09T11:05:00.000Z",
     isRead: true,
     isPinned: false,
-    priorityNote: "Order and delivery update",
     messages: [
       {
         id: "order-shipped-1",
@@ -129,7 +123,6 @@ export const DEMO_MAIL_THREADS = [
   {
     id: "mom-dinner",
     accountId: "icloud",
-    category: "focused",
     subject: "Sunday dinner",
     sender: { name: "Mom", address: "mom@example.com" },
     preview:
@@ -137,7 +130,6 @@ export const DEMO_MAIL_THREADS = [
     receivedAt: "2026-07-08T22:31:00.000Z",
     isRead: false,
     isPinned: false,
-    priorityNote: "Personal message",
     messages: [
       {
         id: "mom-dinner-1",
@@ -157,7 +149,6 @@ export const DEMO_MAIL_THREADS = [
   {
     id: "lease-renewal",
     accountId: "gmail",
-    category: "focused",
     subject: "Lease renewal document ready",
     sender: { name: "Harbor Property", address: "leasing@harborproperty.com" },
     preview:
@@ -165,7 +156,6 @@ export const DEMO_MAIL_THREADS = [
     receivedAt: "2026-07-08T16:20:00.000Z",
     isRead: true,
     isPinned: false,
-    priorityNote: "Document with a deadline",
     messages: [
       {
         id: "lease-renewal-1",
@@ -197,7 +187,6 @@ export const DEMO_MAIL_THREADS = [
   {
     id: "privacy-update",
     accountId: "work",
-    category: "other",
     subject: "We updated our privacy policy",
     sender: { name: "Cloudboard", address: "updates@cloudboard.example" },
     preview:
@@ -223,7 +212,6 @@ export const DEMO_MAIL_THREADS = [
   {
     id: "weekly-roundup",
     accountId: "gmail",
-    category: "other",
     subject: "This week in independent publishing",
     sender: { name: "The Colophon", address: "dispatch@colophon.example" },
     preview:
@@ -249,7 +237,6 @@ export const DEMO_MAIL_THREADS = [
   {
     id: "product-digest",
     accountId: "work",
-    category: "other",
     subject: "Your Tuesday product digest",
     sender: { name: "Linear", address: "digest@linear.example" },
     preview:

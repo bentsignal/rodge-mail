@@ -18,7 +18,6 @@ import { authClient } from "../../auth/client";
 import { useMailStore } from "../store";
 
 export function MailSettingsScreen() {
-  const [focusedInboxEnabled, setFocusedInboxEnabled] = useState(true);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const accounts = useMailStore((store) => store.accounts);
 
@@ -67,14 +66,8 @@ export function MailSettingsScreen() {
       </SettingsSection>
       <SettingsSection title="Inbox">
         <SettingsToggle
-          label="Focused Inbox"
-          description="Prioritize people, deliveries, deadlines, and account alerts."
-          value={focusedInboxEnabled}
-          onChange={setFocusedInboxEnabled}
-        />
-        <SettingsToggle
           label="Notifications"
-          description="Notify only for unread Focused mail."
+          description="Notify for new unread mail."
           value={notificationsEnabled}
           onChange={setNotificationsEnabled}
         />

@@ -3,7 +3,6 @@ import { ConvexError, v } from "convex/values";
 import type { Doc } from "../_generated/dataModel";
 import type { AuthedMutationCtx } from "../utils";
 import { internal } from "../_generated/api";
-import { reconcileEmbeddingSelection } from "../embedding/internal";
 import { authedMutation } from "../utils";
 import {
   ensureOwnedAccount,
@@ -31,7 +30,6 @@ export const setPinned = authedMutation({
       isPinned: args.isPinned,
       updatedAt: Date.now(),
     });
-    await reconcileEmbeddingSelection(ctx, message._id);
   },
 });
 
@@ -89,7 +87,6 @@ export const setThreadPinned = authedMutation({
             updatedAt: Date.now(),
           });
         }
-        await reconcileEmbeddingSelection(ctx, message._id);
       }),
     );
   },

@@ -1,9 +1,14 @@
 # AI classification and semantic search
 
-Rodge Mail uses a narrow, tool-free pipeline for inbox prioritization. Message
-fields are bounded and normalized before they are sent as untrusted JSON to the
-model. The model receives no tools, URLs are not fetched, and its structured
-response is validated again before storage.
+AI classification is deferred while Rodge Mail uses one chronological inbox.
+New provider mail is not queued for classification. The existing pipeline and
+stored classification rows remain temporarily available for migration and
+experimentation, but the inbox API and clients do not depend on them.
+
+If classification is re-enabled, message fields are bounded and normalized
+before they are sent as untrusted JSON to the model. The model receives no
+tools, URLs are not fetched, and its structured response is validated again
+before storage.
 
 ## Provider setup
 
@@ -23,22 +28,23 @@ configured. Never put the API key in a client environment variable.
 
 ## Classification lifecycle
 
-`classification/internal:queue` creates one job per message revision and
+The dormant `classification/internal:queue` boundary creates one job per message revision and
 prompt version. Re-queuing the same input is a no-op. Scheduled actions use a
 per-owner rate limit, retry transient failures with bounded backoff, and reject
 stale completions by job key. After the final model failure, deterministic
 signals provide an explainable fallback instead of leaving the message stuck.
 
 The stored record includes the input hash, prompt and output-schema versions,
-model, attempts, signals, reason, and confidence. A manual Focused/Other choice
-has absolute precedence: delayed model work cannot overwrite it. Clearing the
-override creates a fresh classification job.
+model, attempts, signals, reason, and confidence. Legacy bucket fields are
+optional so existing rows remain valid without requiring new messages to adopt
+that product model.
 
 ## Selective embeddings
 
-Only focused, pinned, or explicitly selected messages enter the embedding
-queue. Vectors live in a separate table and use 512 dimensions to keep normal
-mail reads small. Removing the last selection reason removes the vector.
+The retained experimental pipeline only embeds legacy-prioritized, pinned, or
+explicitly selected messages. Vectors live in a separate table and use 512
+dimensions to keep normal mail reads small. Removing the last selection reason
+removes the vector.
 
 `embedding/search:semanticSearch` is the only public vector-search boundary.
 It authenticates and rate-limits the caller, filters the vector index by owner,

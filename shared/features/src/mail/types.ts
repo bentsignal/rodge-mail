@@ -2,8 +2,6 @@ export type MailAccountId = string;
 
 export type MailAccountFilter = string;
 
-export type InboxCategory = "focused" | "other";
-
 export type MailProvider = "gmail" | "icloud" | "microsoft";
 
 export interface MailAddress {
@@ -40,13 +38,11 @@ export interface MailMessage {
 
 export interface MailThread {
   accountId: MailAccountId;
-  category: InboxCategory;
   id: string;
   isPinned: boolean;
   isRead: boolean;
   messages: MailMessage[];
   preview: string;
-  priorityNote?: string;
   receivedAt: string;
   sender: MailAddress;
   subject: string;

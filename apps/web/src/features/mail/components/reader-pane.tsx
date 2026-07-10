@@ -165,10 +165,6 @@ function ReaderArticle({
   return (
     <div className="mail-scrollbar min-h-0 flex-1 overflow-y-auto">
       <article className="mx-auto w-full max-w-[780px] px-5 pt-8 pb-24 sm:px-9 sm:pt-11 xl:px-14">
-        <div className="mb-8 flex items-center gap-2 font-mono text-[9px] tracking-[0.15em] text-[#8c7e70] uppercase">
-          <span className="size-1.5 rounded-full bg-[#c76749]" />
-          {getPriorityLabel(selectedMessage)}
-        </div>
         <h1 className="max-w-3xl font-serif text-[34px] leading-[1.08] font-semibold tracking-[-0.04em] text-balance sm:text-[42px]">
           {selectedThread.subject}
         </h1>
@@ -263,11 +259,6 @@ function getSenderFirstName(message: ThreadMessageDetail | undefined) {
   if (!message) return "sender";
   const sender = getAddressName(message.from);
   return sender.split(/[\s@]/)[0];
-}
-
-function getPriorityLabel(message: ThreadMessageDetail | undefined) {
-  if (!message) return "unclassified mail";
-  return message.classification?.reason ?? `${message.focusBucket} mail`;
 }
 
 function getSelectedMessage(

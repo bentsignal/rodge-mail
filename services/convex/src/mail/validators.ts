@@ -118,7 +118,7 @@ export const vMessage = v.object({
   inInbox: v.boolean(),
   isRead: v.boolean(),
   isPinned: v.boolean(),
-  focusBucket: vFocusBucket,
+  focusBucket: v.optional(vFocusBucket),
   createdAt: v.number(),
   updatedAt: v.number(),
 });
@@ -189,7 +189,7 @@ export const vMessageClassification = v.object({
   ownerId: v.string(),
   messageId: v.id("messages"),
   status: vClassificationStatus,
-  bucket: vFocusBucket,
+  bucket: v.optional(vFocusBucket),
   category: v.optional(vClassificationCategory),
   importance: v.number(),
   confidence: v.number(),

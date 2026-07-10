@@ -977,7 +977,6 @@ export const upsertProviderMessage = internalMutation({
       messageId = await ctx.db.insert("messages", {
         ...messageFields,
         isPinned: false,
-        focusBucket: "unclassified",
         createdAt: now,
       });
     }
@@ -995,10 +994,6 @@ export const upsertProviderMessage = internalMutation({
       message.attachments,
       now,
     );
-    await ctx.scheduler.runAfter(0, internal.classification.internal.queue, {
-      ownerId: args.ownerId,
-      messageId,
-    });
     await recalculateThread(ctx, thread._id);
   },
 });

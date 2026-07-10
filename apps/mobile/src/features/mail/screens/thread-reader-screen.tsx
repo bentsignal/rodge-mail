@@ -125,18 +125,6 @@ function ThreadHeader({ thread }: { thread: MailThread }) {
           {formatMessageTime(thread.receivedAt)}
         </Text>
       </View>
-      <PriorityReason note={thread.priorityNote} />
-    </View>
-  );
-}
-
-function PriorityReason({ note }: { note?: string }) {
-  if (!note) return null;
-  return (
-    <View className="bg-primary/10 rounded-xl px-3 py-2">
-      <Text className="text-primary text-sm font-medium">
-        Focused because: {note}
-      </Text>
     </View>
   );
 }

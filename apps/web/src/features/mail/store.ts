@@ -5,7 +5,6 @@ import type { Id } from "@rodge-mail/convex/model";
 import type {
   ComposerAttachment,
   ComposerDraft,
-  InboxCategory,
 } from "@rodge-mail/features/mail";
 
 export type MailAccountFilter = "all" | Id<"mailAccounts">;
@@ -126,7 +125,6 @@ function createIdempotencyKey() {
 function useInternalStore() {
   const [accountFilter, setAccountFilterState] =
     useState<MailAccountFilter>("all");
-  const [category, setCategoryState] = useState<InboxCategory>("focused");
   const [searchQuery, setSearchQuery] = useState("");
   const [selection, setSelection] = useState<ThreadSelection>();
   const [mobileReaderIsOpen, setMobileReaderIsOpen] = useState(false);
@@ -142,12 +140,6 @@ function useInternalStore() {
     resetSelection();
   }
 
-  function setCategory(category: InboxCategory) {
-    setCategoryState(category);
-    setSearchQuery("");
-    resetSelection();
-  }
-
   function selectThread(nextSelection: ThreadSelection) {
     setSelection(nextSelection);
     setMobileReaderIsOpen(true);
@@ -156,7 +148,6 @@ function useInternalStore() {
   return {
     ...composer,
     accountFilter,
-    category,
     closeMobileReader: () => setMobileReaderIsOpen(false),
     mobileReaderIsOpen,
     searchQuery,
@@ -164,7 +155,6 @@ function useInternalStore() {
     selectedMessageId: selection?.messageId,
     selectedThreadId: selection?.threadId,
     setAccountFilter,
-    setCategory,
     setInitialSelection: (nextSelection: ThreadSelection) =>
       setSelection((current) => current ?? nextSelection),
     setSearchQuery: (query: string) => {

@@ -78,7 +78,6 @@ function ThreadMetadata({ message }: { message: InboxMessage }) {
     <div className="mt-2.5 flex h-4 items-center gap-2">
       <UnreadDot isRead={message.isRead} />
       <AttachmentMarker hasAttachments={message.hasAttachments} />
-      <PriorityReason reason={message.classification?.reason} />
     </div>
   );
 }
@@ -91,15 +90,6 @@ function UnreadDot({ isRead }: { isRead: boolean }) {
 function AttachmentMarker({ hasAttachments }: { hasAttachments: boolean }) {
   if (!hasAttachments) return null;
   return <Paperclip className="size-3 text-[#998c7e]" />;
-}
-
-function PriorityReason({ reason }: { reason: string | undefined }) {
-  if (!reason) return null;
-  return (
-    <span className="truncate font-mono text-[8px] tracking-[0.08em] text-[#8d725e] uppercase">
-      {reason}
-    </span>
-  );
 }
 
 function PinMessageButton({
