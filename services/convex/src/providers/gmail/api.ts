@@ -336,15 +336,93 @@ function normalizeMessage(message: GmailMessage): NormalizedMessage {
 }
 
 function findPlainText(part?: GmailPart): string | undefined {
+  const plainText = findMimeText(part, "text/plain");
+  if (plainText?.trim()) return plainText;
+
+  const html = findMimeText(part, "text/html");
+  return html ? gmailHtmlToPlainText(html) || undefined : undefined;
+}
+
+function findMimeText(
+  part: GmailPart | undefined,
+  mimeType: "text/html" | "text/plain",
+): string | undefined {
   if (!part) return undefined;
-  if (part.mimeType === "text/plain" && part.body?.data) {
+  if (part.mimeType === mimeType && part.body?.data) {
     return decodeBase64UrlText(part.body.data);
   }
   for (const child of part.parts ?? []) {
-    const text = findPlainText(child);
+    const text = findMimeText(child, mimeType);
     if (text) return text;
   }
   return undefined;
+}
+
+export function gmailHtmlToPlainText(html: string) {
+  const withBreaks = html
+    .replace(
+      /<(?:head|script|style|title)\b[^>]*>[\s\S]*?<\/(?:head|script|style|title)>/giu,
+      " ",
+    )
+    .replace(/<br\s*\/?>/giu, "\n")
+    .replace(/<li\b[^>]*>/giu, "• ")
+    .replace(
+      /<\/(?:article|blockquote|div|h[1-6]|li|ol|p|section|table|tr|ul)>/giu,
+      "\n",
+    )
+    .replace(/<[^>]+>/gu, " ");
+
+  return decodeHtmlEntities(withBreaks)
+    .replace(/\r/gu, "")
+    .replace(/[\t\f\v ]+/gu, " ")
+    .replace(/ *\n */gu, "\n")
+    .replace(/\n{3,}/gu, "\n\n")
+    .trim();
+}
+
+function decodeHtmlEntities(value: string) {
+  const namedEntities: Record<string, string> = {
+    amp: "&",
+    apos: "'",
+    bull: "•",
+    copy: "©",
+    emsp: " ",
+    ensp: " ",
+    euro: "€",
+    gt: ">",
+    hellip: "…",
+    laquo: "«",
+    ldquo: "“",
+    lsquo: "‘",
+    lt: "<",
+    mdash: "—",
+    middot: "·",
+    nbsp: " ",
+    ndash: "–",
+    pound: "£",
+    quot: '"',
+    raquo: "»",
+    rdquo: "”",
+    reg: "®",
+    rsquo: "’",
+    trade: "™",
+    yen: "¥",
+  };
+
+  return value
+    .replace(/&#(x[\da-f]+|\d+);/giu, (entity, encoded: string) => {
+      const hexadecimal = encoded.toLowerCase().startsWith("x");
+      const codePoint = Number.parseInt(
+        hexadecimal ? encoded.slice(1) : encoded,
+        hexadecimal ? 16 : 10,
+      );
+      return Number.isFinite(codePoint) && codePoint <= 0x10ffff
+        ? String.fromCodePoint(codePoint)
+        : entity;
+    })
+    .replace(/&([a-z]+);/giu, (entity, name: string) => {
+      return namedEntities[name.toLowerCase()] ?? entity;
+    });
 }
 
 function collectAttachments(part?: GmailPart): NormalizedAttachment[] {
