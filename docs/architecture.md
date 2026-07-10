@@ -37,9 +37,11 @@ Rodge Mail authentication and mailbox authorization are separate concerns.
 Provider credentials are encrypted at rest with a versioned server-side key.
 They are never returned by Convex queries or written to logs.
 
-Passkey-first registration creates a user only after WebAuthn verification.
-Existing email addresses cannot be claimed through signed-out registration,
-and every mailbox query and mutation remains scoped to the authenticated user.
+Registration verifies email ownership with a single-use code before issuing
+WebAuthn options. Passkey creation then requires the verified Better Auth
+session, and email codes are not delivered for accounts that already have a
+passkey. Every mailbox query and mutation remains scoped to the authenticated
+user.
 
 ## Mail model
 

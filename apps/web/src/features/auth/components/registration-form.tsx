@@ -1,106 +1,184 @@
 import { useState } from "react";
-import { Check, KeyRound, Loader, ShieldCheck } from "lucide-react";
+import { useSearch } from "@tanstack/react-router";
+import { Loader } from "lucide-react";
 
 import { useAuthStore } from "../store";
-import { SignInButton } from "./sign-in-button";
 
-export function RegistrationForm() {
+type RegistrationStep = "code" | "details";
+
+export function RegistrationForm({ onCancel }: { onCancel: () => void }) {
+  const [step, setStep] = useState<RegistrationStep>("details");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [passkeyName, setPasskeyName] = useState("");
-  const [registrationIsComplete, setRegistrationIsComplete] = useState(false);
-  const registerWithPasskey = useAuthStore(
-    (store) => store.registerWithPasskey,
-  );
-  const isLoading = useAuthStore((store) => store.isLoading);
 
-  if (registrationIsComplete) return <RegistrationComplete />;
-
-  async function handleSubmit() {
-    const wasCreated = await registerWithPasskey({
-      email,
-      name,
-      passkeyName,
-    });
-    if (wasCreated) setRegistrationIsComplete(true);
+  if (step === "code") {
+    return (
+      <RegistrationCodeStep
+        email={email}
+        name={name}
+        onBack={() => setStep("details")}
+      />
+    );
   }
 
   return (
-    <form
-      className="mt-5 space-y-4"
-      onSubmit={(event) => {
-        event.preventDefault();
-        void handleSubmit();
-      }}
-    >
-      <RegistrationField
-        autoComplete="name"
-        label="Full name"
-        onChange={setName}
-        placeholder="Your name"
-        value={name}
-      />
-      <RegistrationField
-        autoComplete="email"
-        label="Email address"
-        onChange={setEmail}
-        placeholder="you@example.com"
-        type="email"
-        value={email}
-      />
-      <RegistrationField
-        autoComplete="webauthn"
-        label="Passkey name"
-        onChange={setPasskeyName}
-        placeholder="e.g. MacBook Touch ID"
-        value={passkeyName}
-      />
-      <button
-        className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#cfc4b5] bg-white/40 text-sm font-semibold text-[#343832] transition hover:border-[#a99a88] hover:bg-white/70 disabled:cursor-not-allowed disabled:opacity-50 dark:border-[#4a4f48] dark:bg-white/[0.025] dark:text-[#eee6da]"
-        disabled={
-          isLoading || !name.trim() || !email.trim() || !passkeyName.trim()
-        }
-        type="submit"
+    <RegistrationDetailsStep
+      email={email}
+      name={name}
+      onCancel={onCancel}
+      onEmailChange={setEmail}
+      onNameChange={setName}
+      onSuccess={() => setStep("code")}
+    />
+  );
+}
+
+function RegistrationDetailsStep({
+  email,
+  name,
+  onCancel,
+  onEmailChange,
+  onNameChange,
+  onSuccess,
+}: {
+  email: string;
+  name: string;
+  onCancel: () => void;
+  onEmailChange: (value: string) => void;
+  onNameChange: (value: string) => void;
+  onSuccess: () => void;
+}) {
+  const requestCode = useAuthStore((store) => store.requestRegistrationCode);
+  const isLoading = useAuthStore((store) => store.isLoading);
+
+  async function handleSubmit() {
+    const wasSent = await requestCode({ email });
+    if (wasSent) onSuccess();
+  }
+
+  return (
+    <div>
+      <StepHeading step="1 of 2" title="Create account" />
+      <form
+        className="mt-6 space-y-4"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void handleSubmit();
+        }}
       >
-        <RegistrationButtonIcon isLoading={isLoading} />
-        Create account with a passkey
-      </button>
-      <p className="flex gap-2.5 text-[11px] leading-5 text-[#84796d] dark:text-[#aca297]">
-        <ShieldCheck className="mt-0.5 size-3.5 shrink-0 text-[#397367]" />
-        Your passkey stays on your device or in your password manager. Rodge
-        Mail receives only a public credential.
+        <RegistrationField
+          autoComplete="name"
+          label="Name"
+          onChange={onNameChange}
+          value={name}
+        />
+        <RegistrationField
+          autoComplete="email"
+          label="Email"
+          onChange={onEmailChange}
+          type="email"
+          value={email}
+        />
+        <PrimaryButton
+          disabled={isLoading || !name.trim() || !email.trim()}
+          isLoading={isLoading}
+          label="Continue"
+        />
+      </form>
+      <BackButton label="Back to sign in" onClick={onCancel} />
+    </div>
+  );
+}
+
+function RegistrationCodeStep({
+  email,
+  name,
+  onBack,
+}: {
+  email: string;
+  name: string;
+  onBack: () => void;
+}) {
+  const [code, setCode] = useState("");
+  const finishRegistration = useAuthStore((store) => store.finishRegistration);
+  const isLoading = useAuthStore((store) => store.isLoading);
+  const redirectUri = useSearch({
+    from: "/login",
+    select: (search) => search.redirect_uri,
+  });
+
+  return (
+    <div>
+      <StepHeading step="2 of 2" title="Check your email" />
+      <p className="mt-2 text-sm leading-6 text-[#81776c] dark:text-[#aaa095]">
+        Enter the code sent to {email}. Your device will then ask you to finish
+        setting up your sign-in.
       </p>
-    </form>
+      <form
+        className="mt-6 space-y-4"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void finishRegistration({ code, email, name, redirectUri });
+        }}
+      >
+        <RegistrationField
+          autoComplete="one-time-code"
+          inputMode="numeric"
+          label="Code"
+          onChange={setCode}
+          value={code}
+        />
+        <PrimaryButton
+          disabled={isLoading || !code.trim()}
+          isLoading={isLoading}
+          label="Verify and continue"
+        />
+      </form>
+      <BackButton label="Use a different email" onClick={onBack} />
+    </div>
+  );
+}
+
+function StepHeading({ step, title }: { step: string; title: string }) {
+  return (
+    <div>
+      <p className="font-mono text-[8px] tracking-[0.16em] text-[#897d6f] uppercase">
+        {step}
+      </p>
+      <h2 className="mt-2 font-serif text-2xl font-semibold tracking-[-0.03em]">
+        {title}
+      </h2>
+    </div>
   );
 }
 
 function RegistrationField({
   autoComplete,
+  inputMode,
   label,
   onChange,
-  placeholder,
   type = "text",
   value,
 }: {
-  autoComplete?: string;
+  autoComplete: string;
+  inputMode?: "numeric";
   label: string;
   onChange: (value: string) => void;
-  placeholder: string;
   type?: "email" | "text";
   value: string;
 }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block font-mono text-[8px] tracking-[0.16em] text-[#81766a] uppercase">
+      <span className="mb-1.5 block text-xs font-medium text-[#6f675e] dark:text-[#bbb1a5]">
         {label}
       </span>
       <input
         autoComplete={autoComplete}
-        className="border-border bg-background/65 h-11 w-full rounded-xl border px-3.5 text-sm transition outline-none placeholder:text-[#a79d91] focus:border-[#ba6b4f]/60 focus:ring-3 focus:ring-[#ba6b4f]/10"
+        className="border-border bg-background/65 h-11 w-full rounded-xl border px-3.5 text-sm transition outline-none focus:border-[#ba6b4f]/60 focus:ring-3 focus:ring-[#ba6b4f]/10"
+        inputMode={inputMode}
         onChange={(event) => onChange(event.target.value)}
-        placeholder={placeholder}
         required
-        spellCheck={type === "text"}
+        spellCheck={false}
         type={type}
         value={value}
       />
@@ -108,30 +186,46 @@ function RegistrationField({
   );
 }
 
-function RegistrationButtonIcon({ isLoading }: { isLoading: boolean }) {
-  if (isLoading) return <Loader className="size-4 animate-spin" />;
-  return <KeyRound className="size-4" />;
+function PrimaryButton({
+  disabled,
+  isLoading,
+  label,
+}: {
+  disabled: boolean;
+  isLoading: boolean;
+  label: string;
+}) {
+  return (
+    <button
+      className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#20251f] px-5 text-sm font-semibold text-[#f8f1e6] transition hover:bg-[#30362f] disabled:cursor-not-allowed disabled:opacity-55"
+      disabled={disabled}
+      type="submit"
+    >
+      <LoadingIndicator isLoading={isLoading} />
+      {label}
+    </button>
+  );
 }
 
-function RegistrationComplete() {
+function LoadingIndicator({ isLoading }: { isLoading: boolean }) {
+  if (!isLoading) return null;
+  return <Loader className="size-4 animate-spin" />;
+}
+
+function BackButton({
+  label,
+  onClick,
+}: {
+  label: string;
+  onClick: () => void;
+}) {
   return (
-    <div className="mt-5 rounded-2xl border border-[#9db9a9] bg-[#edf4ee] p-4 dark:border-[#456356] dark:bg-[#29342d]">
-      <div className="flex items-start gap-3">
-        <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-[#397367] text-white">
-          <Check className="size-3.5" />
-        </span>
-        <div>
-          <p className="text-sm font-semibold text-[#274a3f] dark:text-[#d5e8dd]">
-            Account ready
-          </p>
-          <p className="mt-1 text-xs leading-5 text-[#557064] dark:text-[#aabfb3]">
-            Your passkey is registered. Sign in with it to open Rodge Mail.
-          </p>
-        </div>
-      </div>
-      <div className="mt-4">
-        <SignInButton compact />
-      </div>
-    </div>
+    <button
+      className="mt-5 w-full text-center text-xs font-medium text-[#81776c] transition hover:text-[#343832] dark:text-[#aaa095] dark:hover:text-white"
+      onClick={onClick}
+      type="button"
+    >
+      {label}
+    </button>
   );
 }

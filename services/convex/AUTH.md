@@ -4,7 +4,10 @@ Rodge Mail uses Better Auth passkeys backed by a locally installed Convex
 component. Configure these variables on each Convex deployment:
 
 - `BETTER_AUTH_SECRET`: a random Better Auth signing secret.
+- `AUTH_EMAIL_FROM`: a verified Resend sender, such as
+  `Rodge Mail <auth@example.com>`.
 - `PASSKEY_RP_ID`: the WebAuthn relying-party domain, without a scheme or path.
+- `RESEND_API_KEY`: the Resend API key used for registration verification codes.
 - `ANDROID_PASSKEY_ORIGINS`: optional comma-separated
   `android:apk-key-hash:<BASE64_SHA256>` origins for every debug, EAS, and Play
   signing certificate that may authenticate on Android versions where
@@ -14,11 +17,14 @@ component. Configure these variables on each Convex deployment:
 server uses `CONVEX_SITE_URL` as its base URL rather than the placeholder URLs
 in shared app configuration.
 
-Signed-out registration sends normalized name and email fields in the passkey
-registration context. The server rejects malformed input and existing email
-addresses, then creates the Better Auth user only after WebAuthn verification
-succeeds. Authenticated users can add passkeys to their existing account
-without registration context. Passkey sign-in remains usernameless and selects
+Registration verifies the email address with a single-use, five-minute Better
+Auth email OTP before issuing passkey registration options. OTP verification
+creates an email-verified user and authenticated session; the client then adds a
+passkey through the same authenticated flow used by existing users. Email OTPs
+are stored hashed and allow three attempts. To keep OTP from becoming an
+alternate sign-in method, the server silently skips delivery for users who
+already have a passkey. Users with no passkeys can request another code to
+resume interrupted onboarding. Passkey sign-in remains usernameless and selects
 the account from the credential.
 
 Android also requires `https://<PASSKEY_RP_ID>/.well-known/assetlinks.json`

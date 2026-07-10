@@ -142,7 +142,6 @@ function AddPasskeyButton() {
     setMessage(undefined);
     const result = await authClient.passkey.addPasskey({
       authenticatorAttachment: "platform",
-      name: "Mobile passkey",
     });
     setIsLoading(false);
     if (result.error) {

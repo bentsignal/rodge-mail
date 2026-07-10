@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Fingerprint, KeyRound, Loader, Plus } from "lucide-react";
+import { Fingerprint, KeyRound, Loader } from "lucide-react";
 
 import * as Dialog from "@rodge-mail/ui-web/dialog";
 
@@ -7,14 +7,12 @@ import { useAuthStore } from "../store";
 
 export function PasskeyManagementButton() {
   const [isOpen, setIsOpen] = useState(false);
-  const [name, setName] = useState("");
   const addPasskey = useAuthStore((store) => store.addAuthenticatedPasskey);
   const isLoading = useAuthStore((store) => store.isLoading);
 
   async function registerPasskey() {
-    const wasAdded = await addPasskey(name);
+    const wasAdded = await addPasskey();
     if (!wasAdded) return;
-    setName("");
     setIsOpen(false);
   }
 
@@ -42,39 +40,17 @@ export function PasskeyManagementButton() {
             you are signed in to your Rodge Mail account.
           </Dialog.Description>
         </div>
-        <form
-          className="p-6"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void registerPasskey();
-          }}
-        >
-          <label className="block">
-            <span className="mb-1.5 block font-mono text-[8px] tracking-[0.16em] text-[#81766a] uppercase">
-              Passkey name
-            </span>
-            <input
-              autoFocus
-              className="border-border bg-background/65 h-11 w-full rounded-xl border px-3.5 text-sm transition outline-none placeholder:text-[#a79d91] focus:border-[#ba6b4f]/60 focus:ring-3 focus:ring-[#ba6b4f]/10"
-              onChange={(event) => setName(event.target.value)}
-              placeholder="e.g. MacBook Touch ID"
-              value={name}
-            />
-          </label>
+        <div className="p-6">
           <button
-            className="mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#20251f] px-4 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-[#30362f] disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={isLoading || !name.trim()}
-            type="submit"
+            className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#20251f] px-4 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-[#30362f] disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={isLoading}
+            onClick={() => void registerPasskey()}
+            type="button"
           >
             <RegisterIcon isLoading={isLoading} />
-            Register passkey
+            Add passkey
           </button>
-          <p className="mt-3 flex items-start gap-2 text-[10px] leading-4 text-[#8d8276]">
-            <Plus className="mt-0.5 size-3 shrink-0" />
-            Keep a backup passkey on another trusted device or security key so
-            you can recover access if this one is unavailable.
-          </p>
-        </form>
+        </div>
       </Dialog.Content>
     </Dialog.Container>
   );

@@ -4,21 +4,19 @@ import { expo } from "@better-auth/expo";
 import { passkey } from "@better-auth/passkey";
 import { createClient } from "@convex-dev/better-auth";
 import { convex, crossDomain } from "@convex-dev/better-auth/plugins";
-import { APIError } from "better-auth/api";
 import { betterAuth } from "better-auth/minimal";
-
-import { parsePasskeyRegistrationContext } from "@rodge-mail/config/auth";
+import { emailOTP } from "better-auth/plugins";
 
 import type { DataModel } from "./_generated/dataModel";
 import { components, internal } from "./_generated/api";
 import { primaryAuthConfig } from "./auth.config";
 import authSchema from "./betterAuth/schema";
 import { env } from "./convex.env";
+import { sendRegistrationEmail } from "./registrationEmail";
 import { urls } from "./urls";
 
 // eslint-disable-next-line no-restricted-syntax -- This preserves Better Auth's generated Convex API typing.
 const authFunctions: AuthFunctions = internal.auth;
-const pendingRegistrationPrefix = "pending-passkey:";
 const androidPasskeyOrigins = getAndroidPasskeyOrigins();
 const passkeyRpOrigin = `https://${env.PASSKEY_RP_ID}`;
 const passkeyOrigins = [
@@ -60,6 +58,31 @@ export function createAuthOptions(ctx: GenericCtx<DataModel>) {
     secret: env.BETTER_AUTH_SECRET,
     trustedOrigins,
     plugins: [
+      emailOTP({
+        allowedAttempts: 3,
+        expiresIn: 300,
+        storeOTP: "hashed",
+        sendVerificationOTP: async ({ email, otp, type }, authCtx) => {
+          if (type !== "sign-in" || !authCtx) return;
+
+          const existing =
+            await authCtx.context.internalAdapter.findUserByEmail(email);
+          if (existing) {
+            const existingPasskey = await authCtx.context.adapter.findOne({
+              model: "passkey",
+              where: [{ field: "userId", value: existing.user.id }],
+            });
+            if (existingPasskey) return;
+          }
+
+          await sendRegistrationEmail({
+            apiKey: env.RESEND_API_KEY,
+            from: env.AUTH_EMAIL_FROM,
+            otp,
+            to: email,
+          });
+        },
+      }),
       passkey({
         origin: passkeyOrigins,
         rpID: env.PASSKEY_RP_ID,
@@ -67,45 +90,6 @@ export function createAuthOptions(ctx: GenericCtx<DataModel>) {
         authenticatorSelection: {
           residentKey: "required",
           userVerification: "required",
-        },
-        registration: {
-          requireSession: false,
-          resolveUser: async ({ context, ctx: authCtx }) => {
-            const registration = requirePasskeyRegistration(context);
-            const existing =
-              await authCtx.context.internalAdapter.findUserByEmail(
-                registration.email,
-              );
-            if (existing) {
-              throw new APIError("BAD_REQUEST", {
-                message: "This account already exists. Sign in instead.",
-              });
-            }
-            return {
-              id: `${pendingRegistrationPrefix}${crypto.randomUUID()}`,
-              name: registration.email,
-              displayName: registration.name,
-            };
-          },
-          afterVerification: async ({ context, ctx: authCtx, user }) => {
-            if (!user.id.startsWith(pendingRegistrationPrefix)) return;
-            const registration = requirePasskeyRegistration(context);
-            const existing =
-              await authCtx.context.internalAdapter.findUserByEmail(
-                registration.email,
-              );
-            if (existing) {
-              throw new APIError("BAD_REQUEST", {
-                message: "This account already exists. Sign in instead.",
-              });
-            }
-            const created = await authCtx.context.internalAdapter.createUser({
-              email: registration.email,
-              emailVerified: false,
-              name: registration.name,
-            });
-            return { userId: created.id };
-          },
         },
       }),
       expo(),
@@ -120,16 +104,6 @@ export function createAuth(ctx: GenericCtx<DataModel>) {
 }
 
 export const { onCreate, onUpdate, onDelete } = authComponent.triggersApi();
-
-function requirePasskeyRegistration(context: string | null | undefined) {
-  const registration = parsePasskeyRegistrationContext(context);
-  if (!registration) {
-    throw new APIError("BAD_REQUEST", {
-      message: "Enter a valid name and email address",
-    });
-  }
-  return registration;
-}
 
 function getAndroidPasskeyOrigins() {
   return (process.env.ANDROID_PASSKEY_ORIGINS ?? "")
