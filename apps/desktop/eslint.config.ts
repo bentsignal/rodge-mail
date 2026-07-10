@@ -5,7 +5,12 @@ import { createStrictSyntax } from "@rodge-mail/eslint-config/syntax";
 
 export default defineConfig(
   {
-    ignores: ["out/**", "release/**", "src/preload/index.ts"],
+    ignores: [
+      "out/**",
+      "release/**",
+      "resources/embedded-web-bootstrap.mjs",
+      "src/preload/index.ts",
+    ],
   },
   baseConfig,
   strictConfig,

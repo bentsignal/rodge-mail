@@ -6,12 +6,20 @@ import {
   MACOS_WEBAUTHN_KEYCHAIN_ACCESS_GROUP,
 } from "../shared/constants";
 import { resolveWebAppUrl, translateDeepLink } from "../shared/urls";
+import {
+  routeEmbeddedWebOrigin,
+  startEmbeddedWebRuntime,
+  stopEmbeddedWebRuntime,
+} from "./embedded-web";
 import { desktopEnv } from "./env";
 import { secureSession, secureWindow } from "./security";
 
 let mainWindow: BrowserWindow | undefined;
 let pendingDeepLink: string | undefined;
 let webAppUrl: URL | undefined;
+let embeddedWebRuntime:
+  | Awaited<ReturnType<typeof startEmbeddedWebRuntime>>
+  | undefined;
 
 function findDeepLink(argv: string[]) {
   return argv.find((value) =>
@@ -90,6 +98,17 @@ async function start() {
     configuredUrl: desktopEnv.webUrl,
     isPackaged: app.isPackaged,
   });
+  if (app.isPackaged) {
+    embeddedWebRuntime = await startEmbeddedWebRuntime((error) => {
+      showStartupError(error);
+      app.quit();
+    });
+    routeEmbeddedWebOrigin(
+      session.defaultSession,
+      webAppUrl,
+      embeddedWebRuntime,
+    );
+  }
   secureSession(session.defaultSession, webAppUrl);
   app.on("web-contents-created", (_event, contents) => {
     contents.on("will-attach-webview", (event) => event.preventDefault());
@@ -106,6 +125,7 @@ async function start() {
 }
 
 function registerAppEvents() {
+  app.on("before-quit", () => stopEmbeddedWebRuntime(embeddedWebRuntime));
   app.on("open-url", (event, url) => {
     event.preventDefault();
     navigateDeepLink(url);

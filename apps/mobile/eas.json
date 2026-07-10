@@ -13,7 +13,10 @@
     },
     "development": {
       "extends": "base",
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "NODE_ENV": "development"
+      }
     },
     "development:client": {
       "extends": "development",
@@ -29,7 +32,10 @@
       }
     },
     "production": {
-      "extends": "base"
+      "extends": "base",
+      "env": {
+        "NODE_ENV": "production"
+      }
     }
   },
   "submit": {

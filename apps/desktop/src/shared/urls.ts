@@ -1,7 +1,7 @@
 import {
   APP_PROTOCOL,
   DEFAULT_DEV_WEB_URL,
-  PRODUCTION_WEB_URL,
+  PACKAGED_WEB_URL,
 } from "./constants";
 
 const LOOPBACK_HOSTS = new Set(["127.0.0.1", "[::1]", "localhost"]);
@@ -40,7 +40,7 @@ function validateOrigin(url: URL) {
 export function resolveWebAppUrl(options: ResolveWebAppUrlOptions) {
   const configuredUrl = options.configuredUrl?.trim();
   const rawUrl = options.isPackaged
-    ? PRODUCTION_WEB_URL
+    ? PACKAGED_WEB_URL
     : (configuredUrl ?? DEFAULT_DEV_WEB_URL);
   const url = new URL(rawUrl);
   validateProtocol(url, options.isPackaged);

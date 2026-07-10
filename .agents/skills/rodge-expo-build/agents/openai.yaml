@@ -1,0 +1,4 @@
+interface:
+  display_name: "Rodge Expo Build"
+  short_description: "Build and test Rodge Mail through local EAS"
+  default_prompt: "Use $rodge-expo-build to build and test the Rodge Mail Expo development client locally."

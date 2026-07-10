@@ -6,6 +6,11 @@ directories:
 files:
   - out/**
   - package.json
+extraResources:
+  - from: ../web/.output
+    to: web
+  - from: resources/embedded-web-bootstrap.mjs
+    to: embedded-web-bootstrap.mjs
 protocols:
   - name: Rodge Mail
     schemes:

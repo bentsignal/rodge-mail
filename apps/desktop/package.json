@@ -8,13 +8,19 @@
   "main": "out/main/index.js",
   "scripts": {
     "build": "electron-vite build",
+    "build:web": "pnpm --filter @rodge-mail/web build:desktop",
     "dev": "electron-vite dev",
-    "dist": "pnpm run build && electron-builder",
+    "dist": "pnpm run build:web && pnpm run build && electron-builder",
+    "dist:mac": "pnpm run build:web && pnpm run build && electron-builder --mac dmg zip --arm64",
+    "dist:mac:development-profile": "pnpm run build:web && pnpm run build && electron-builder --mac dmg zip --arm64 --config.mac.provisioningProfile=resources/Rodge_Mail_Desktop_Development.provisionprofile",
+    "dist:win": "pnpm run build:web && pnpm run build && electron-builder --win nsis --x64",
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "format:fix": "prettier --write . --ignore-path ../../.gitignore",
     "lint": "eslint --flag unstable_native_nodejs_ts_config",
-    "package": "pnpm run build && electron-builder --dir",
+    "package": "pnpm run build:web && pnpm run build && electron-builder --dir",
+    "package:mac:development-profile": "pnpm run build:web && pnpm run build && electron-builder --dir --mac --arm64 --config.mac.provisioningProfile=resources/Rodge_Mail_Desktop_Development.provisionprofile",
     "preview": "electron-vite preview",
+    "test": "node --experimental-strip-types --test src/main/*.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

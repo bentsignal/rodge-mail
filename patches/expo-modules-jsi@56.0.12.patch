@@ -1,3 +1,4 @@
+# Applies to expo-modules-jsi 56.0.12.
 diff --git a/apple/ExpoModulesJSI.podspec b/apple/ExpoModulesJSI.podspec
 index 09231ec7bbe3be95f3c3eeb6f0bd000b7ad0e58c..c66464f7f05c38f3012b4a17dc3be898f6dfdd36 100644
 --- a/apple/ExpoModulesJSI.podspec
