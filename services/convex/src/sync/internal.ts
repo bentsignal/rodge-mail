@@ -2,8 +2,8 @@
 import { ConvexError, v } from "convex/values";
 
 import type { Id } from "../_generated/dataModel";
-import type { ActionCtx, MutationCtx } from "../_generated/server";
-import type { NormalizedMessage, ProviderTokens } from "../providers/types";
+import type { MutationCtx } from "../_generated/server";
+import type { NormalizedMessage } from "../providers/types";
 import { internal } from "../_generated/api";
 import {
   internalAction,
@@ -18,24 +18,13 @@ import {
   vMessageHeader,
   vSyncReason,
 } from "../mail/validators";
-import {
-  credentialAdditionalData,
-  decryptProviderSecret,
-  encryptProviderSecret,
-} from "../providers/crypto";
 import { GmailAdapter, GmailApiError } from "../providers/gmail/api";
-import {
-  GoogleOAuthError,
-  refreshGoogleTokens,
-} from "../providers/gmail/oauth";
+import { getUsableGmailTokens } from "../providers/gmail/tokenAccess";
 import {
   MicrosoftGraphAdapter,
   MicrosoftGraphError,
 } from "../providers/microsoft/api";
-import {
-  MicrosoftOAuthError,
-  refreshMicrosoftTokens,
-} from "../providers/microsoft/oauth";
+import { getUsableMicrosoftTokens } from "../providers/microsoft/tokenAccess";
 
 const vNormalizedAttachment = v.object({
   remoteAttachmentId: v.string(),
@@ -387,7 +376,7 @@ export const executeGmailSync = internalAction({
         { ownerId: args.ownerId, accountId: args.accountId },
       );
       if (!connection) throw new Error("Gmail connection is unavailable");
-      const tokens = await getUsableTokens(ctx, {
+      const tokens = await getUsableGmailTokens(ctx, {
         ownerId: args.ownerId,
         accountId: args.accountId,
         encryptedTokens: connection.credential.encryptedTokens,
@@ -1000,6 +989,9 @@ export const deleteProviderMessage = internalMutation({
       ...embeddingJobs,
       ...embeddings,
     ]) {
+      if ("storageId" in row && row.storageId) {
+        await ctx.storage.delete(row.storageId);
+      }
       await ctx.db.delete(row._id);
     }
     await ctx.db.delete(message._id);
@@ -1022,6 +1014,24 @@ export const claimOutbox = internalMutation({
       return null;
     const account = await ctx.db.get(outbox.accountId);
     if (!account || account.ownerId !== outbox.ownerId) return null;
+    const attachments = await Promise.all(
+      (outbox.attachmentIds ?? []).map(async (attachmentId) => {
+        return await ctx.db.get(attachmentId);
+      }),
+    );
+    if (
+      attachments.some(
+        (attachment) =>
+          !attachment ||
+          attachment.ownerId !== outbox.ownerId ||
+          attachment.status !== "claimed" ||
+          attachment.outboxId !== outbox._id ||
+          !attachment.storageId ||
+          attachment.size === undefined,
+      )
+    ) {
+      throw new ConvexError("A queued attachment is unavailable");
+    }
     const leaseId = `${now}:${outbox.attempt + 1}`;
     await ctx.db.patch(outbox._id, {
       status: "sending",
@@ -1035,6 +1045,18 @@ export const claimOutbox = internalMutation({
       attempt: outbox.attempt + 1,
       from: account.address,
       leaseId,
+      attachments: attachments.flatMap((attachment) =>
+        attachment?.storageId && attachment.size !== undefined
+          ? [
+              {
+                fileName: attachment.fileName,
+                contentType: attachment.contentType,
+                size: attachment.size,
+                storageId: attachment.storageId,
+              },
+            ]
+          : [],
+      ),
     };
   },
 });
@@ -1116,60 +1138,7 @@ export const deliverProviderOutbox = internalAction({
 export const deliverGmailOutbox = internalAction({
   args: { outboxId: v.id("outboxMessages") },
   handler: async (ctx, args): Promise<void> => {
-    const outbox = await ctx.runMutation(
-      internal.sync.internal.claimOutbox,
-      args,
-    );
-    if (!outbox) return;
-    try {
-      const connection = await ctx.runQuery(
-        internal.sync.internal.getGmailSyncContext,
-        { ownerId: outbox.ownerId, accountId: outbox.accountId },
-      );
-      if (!connection) throw new Error("Gmail connection is unavailable");
-      const tokens = await getUsableTokens(ctx, {
-        ownerId: outbox.ownerId,
-        accountId: outbox.accountId,
-        encryptedTokens: connection.credential.encryptedTokens,
-      });
-      const result = await new GmailAdapter().sendPlainText(
-        tokens.accessToken,
-        {
-          _id: outbox._id,
-          accountId: outbox.accountId,
-          from: outbox.from,
-          to: outbox.to,
-          cc: outbox.cc,
-          bcc: outbox.bcc,
-          subject: outbox.subject,
-          plainText: outbox.plainText,
-          replyToInternetMessageId: outbox.replyToInternetMessageId,
-        },
-      );
-      await ctx.runMutation(internal.sync.internal.finishOutbox, {
-        outboxId: outbox._id,
-        leaseId: outbox.leaseId,
-        remoteMessageId: result.remoteMessageId,
-      });
-      await ctx.scheduler.runAfter(0, internal.sync.internal.executeGmailSync, {
-        ownerId: outbox.ownerId,
-        accountId: outbox.accountId,
-        reason: "incremental",
-      });
-    } catch (error) {
-      await ctx.runMutation(internal.sync.internal.finishOutbox, {
-        outboxId: outbox._id,
-        leaseId: outbox.leaseId,
-        error: safeErrorMessage(error),
-      });
-      if (outbox.attempt < 3) {
-        await ctx.scheduler.runAfter(
-          2 ** outbox.attempt * 1_000,
-          internal.sync.internal.deliverGmailOutbox,
-          { outboxId: outbox._id },
-        );
-      }
-    }
+    await ctx.runAction(internal.sync.gmailOutbox.deliver, args);
   },
 });
 
@@ -1192,6 +1161,23 @@ export const deliverMicrosoftOutbox = internalAction({
         accountId: outbox.accountId,
         encryptedTokens: connection.credential.encryptedTokens,
       });
+      const attachments = await Promise.all(
+        outbox.attachments.map(async (attachment) => {
+          const url = await ctx.storage.getUrl(attachment.storageId);
+          if (!url) throw new Error(`${attachment.fileName} is unavailable`);
+          const response = await fetch(url);
+          if (!response.ok) {
+            throw new Error(
+              `Could not read ${attachment.fileName} from storage`,
+            );
+          }
+          const bytes = new Uint8Array(await response.arrayBuffer());
+          if (bytes.byteLength !== attachment.size) {
+            throw new Error(`${attachment.fileName} failed its size check`);
+          }
+          return { ...attachment, bytes };
+        }),
+      );
       const result = await new MicrosoftGraphAdapter().sendPlainText(
         tokens.accessToken,
         {
@@ -1205,6 +1191,7 @@ export const deliverMicrosoftOutbox = internalAction({
           subject: outbox.subject,
           plainText: outbox.plainText,
           replyToInternetMessageId: outbox.replyToInternetMessageId,
+          attachments,
         },
         async (remoteMessageId) => {
           await ctx.runMutation(
@@ -1248,114 +1235,6 @@ export const deliverMicrosoftOutbox = internalAction({
   },
 });
 
-async function getUsableTokens(
-  ctx: ActionCtx,
-  args: {
-    ownerId: string;
-    accountId: Id<"mailAccounts">;
-    encryptedTokens: {
-      formatVersion: 1;
-      keyVersion: string;
-      iv: string;
-      ciphertext: string;
-    };
-  },
-) {
-  const additionalData = credentialAdditionalData(
-    args.ownerId,
-    args.accountId,
-    "gmail",
-  );
-  let tokens = await decryptProviderSecret<ProviderTokens>(
-    args.encryptedTokens,
-    additionalData,
-  );
-  if (!tokens.expiresAt || tokens.expiresAt <= Date.now() + 2 * 60 * 1000) {
-    if (!tokens.refreshToken)
-      throw new Error("Gmail refresh token is unavailable");
-    try {
-      tokens = await refreshGoogleTokens(tokens.refreshToken);
-    } catch (error) {
-      if (error instanceof GoogleOAuthError && error.code === "invalid_grant") {
-        await ctx.runMutation(
-          internal.sync.internal.markProviderReauthorization,
-          {
-            ownerId: args.ownerId,
-            accountId: args.accountId,
-            error: error.message.slice(0, 500),
-          },
-        );
-      }
-      throw error;
-    }
-    const encryptedTokens = await encryptProviderSecret(tokens, additionalData);
-    await ctx.runMutation(internal.sync.internal.storeProviderCredential, {
-      ownerId: args.ownerId,
-      accountId: args.accountId,
-      encryptedTokens,
-      tokenExpiresAt: tokens.expiresAt,
-      grantedScopes: tokens.scopes,
-    });
-  }
-  return tokens;
-}
-
-async function getUsableMicrosoftTokens(
-  ctx: ActionCtx,
-  args: {
-    ownerId: string;
-    accountId: Id<"mailAccounts">;
-    encryptedTokens: {
-      formatVersion: 1;
-      keyVersion: string;
-      iv: string;
-      ciphertext: string;
-    };
-  },
-) {
-  const additionalData = credentialAdditionalData(
-    args.ownerId,
-    args.accountId,
-    "microsoft",
-  );
-  let tokens = await decryptProviderSecret<ProviderTokens>(
-    args.encryptedTokens,
-    additionalData,
-  );
-  if (!tokens.expiresAt || tokens.expiresAt <= Date.now() + 2 * 60 * 1000) {
-    if (!tokens.refreshToken) {
-      throw new Error("Microsoft refresh token is unavailable");
-    }
-    try {
-      tokens = await refreshMicrosoftTokens(tokens.refreshToken);
-    } catch (error) {
-      if (
-        error instanceof MicrosoftOAuthError &&
-        ["invalid_grant", "interaction_required"].includes(error.code)
-      ) {
-        await ctx.runMutation(
-          internal.sync.internal.markProviderReauthorization,
-          {
-            ownerId: args.ownerId,
-            accountId: args.accountId,
-            error: error.message.slice(0, 500),
-          },
-        );
-      }
-      throw error;
-    }
-    const encryptedTokens = await encryptProviderSecret(tokens, additionalData);
-    await ctx.runMutation(internal.sync.internal.storeProviderCredential, {
-      ownerId: args.ownerId,
-      accountId: args.accountId,
-      encryptedTokens,
-      tokenExpiresAt: tokens.expiresAt,
-      grantedScopes: tokens.scopes,
-    });
-  }
-  return tokens;
-}
-
 function isExpiredMicrosoftDelta(error: unknown) {
   return (
     error instanceof MicrosoftGraphError &&
@@ -1365,7 +1244,6 @@ function isExpiredMicrosoftDelta(error: unknown) {
       ))
   );
 }
-
 async function ensureInternalOwnedAccount(
   ctx: MutationCtx,
   ownerId: string,
@@ -1423,6 +1301,7 @@ async function reconcileAttachments(
   );
   for (const previous of existing) {
     if (!remoteIds.has(previous.remoteAttachmentId)) {
+      if (previous.storageId) await ctx.storage.delete(previous.storageId);
       await ctx.db.delete(previous._id);
     }
   }
@@ -1433,8 +1312,7 @@ async function reconcileAttachments(
     if (previous) {
       await ctx.db.patch(previous._id, {
         ...attachment,
-        status: "remote",
-        storageId: undefined,
+        status: previous.storageId ? "available" : "remote",
         updatedAt: now,
       });
     } else {

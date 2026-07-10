@@ -2,7 +2,11 @@ import { useState } from "react";
 import { createStore } from "rostra";
 
 import type { Id } from "@rodge-mail/convex/model";
-import type { ComposerDraft, InboxCategory } from "@rodge-mail/features/mail";
+import type {
+  ComposerAttachment,
+  ComposerDraft,
+  InboxCategory,
+} from "@rodge-mail/features/mail";
 
 export type MailAccountFilter = "all" | Id<"mailAccounts">;
 
@@ -16,6 +20,10 @@ interface ReplyTarget {
   subject: string;
 }
 
+export interface WebComposerAttachment extends ComposerAttachment {
+  file: File;
+}
+
 function createEmptyDraft() {
   return {
     attachments: [],
@@ -23,13 +31,13 @@ function createEmptyDraft() {
     cc: "",
     subject: "",
     to: "",
-  };
+  } satisfies ComposerDraft<WebComposerAttachment>;
 }
 
 function useComposerState() {
   const [composerIsOpen, setComposerIsOpen] = useState(false);
   const [composerDraft, setComposerDraft] =
-    useState<ComposerDraft>(createEmptyDraft);
+    useState<ComposerDraft<WebComposerAttachment>>(createEmptyDraft);
   const [deliveryNotice, setDeliveryNotice] = useState<string>();
   const [idempotencyKey, setIdempotencyKey] = useState(createIdempotencyKey);
   const composerCanSend =
@@ -44,10 +52,24 @@ function useComposerState() {
     setComposerDraft((current) => ({ ...current, [field]: value }));
   }
 
-  function addComposerAttachments(fileNames: string[]) {
+  function addComposerAttachments(attachments: WebComposerAttachment[]) {
     setComposerDraft((current) => ({
       ...current,
-      attachments: [...new Set([...current.attachments, ...fileNames])],
+      attachments: [...current.attachments, ...attachments],
+    }));
+  }
+
+  function updateComposerAttachment(
+    attachmentId: string,
+    update: Partial<WebComposerAttachment>,
+  ) {
+    setComposerDraft((current) => ({
+      ...current,
+      attachments: current.attachments.map((attachment) =>
+        attachment.id === attachmentId
+          ? { ...attachment, ...update }
+          : attachment,
+      ),
     }));
   }
 
@@ -84,12 +106,15 @@ function useComposerState() {
       setComposerIsOpen(true);
     },
     openReply,
-    removeComposerAttachment: (fileName: string) =>
+    removeComposerAttachment: (attachmentId: string) =>
       setComposerDraft((current) => ({
         ...current,
-        attachments: current.attachments.filter((name) => name !== fileName),
+        attachments: current.attachments.filter(
+          (attachment) => attachment.id !== attachmentId,
+        ),
       })),
     sendComposerDraft,
+    updateComposerAttachment,
     updateComposerDraft,
   };
 }

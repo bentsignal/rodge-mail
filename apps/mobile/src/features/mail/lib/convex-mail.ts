@@ -101,6 +101,7 @@ function toMailAttachment(attachment: ThreadMessage["attachments"][number]) {
     id: attachment._id,
     name: attachment.fileName,
     size: formatByteSize(attachment.size),
+    status: attachment.status,
     type: getAttachmentType(attachment.contentType),
   };
 }

@@ -1,8 +1,11 @@
+/* eslint-disable @typescript-eslint/consistent-type-assertions -- Convex upload responses contain runtime-validated branded storage IDs. */
 import { useId, useState } from "react";
 import { useMutation } from "convex/react";
 import { ArrowUp, Paperclip, Send, X } from "lucide-react";
 
+import type { Id } from "@rodge-mail/convex/model";
 import { api } from "@rodge-mail/convex/api";
+import { MAX_ATTACHMENT_COUNT } from "@rodge-mail/convex/attachments/constants";
 import * as Dialog from "@rodge-mail/ui-web/dialog";
 import { Textarea } from "@rodge-mail/ui-web/textarea";
 import { toast } from "@rodge-mail/ui-web/toast";
@@ -10,6 +13,8 @@ import { toast } from "@rodge-mail/ui-web/toast";
 import type { MailAccountView } from "../types";
 import { useLiveMail } from "../live-data";
 import { useMailStore } from "../store";
+import { DraftAttachments, getUploadSummary } from "./compose-attachment-list";
+import { useComposeAttachments } from "./use-compose-attachments";
 
 export function ComposeDialog() {
   const composerIsOpen = useMailStore((store) => store.composerIsOpen);
@@ -85,7 +90,7 @@ function ComposeHeader() {
           New message
         </Dialog.Title>
         <Dialog.Description className="mt-0.5 font-mono text-[8px] tracking-[0.16em] text-[#8c8174] uppercase">
-          Plain text · saved locally
+          Plain text · secure attachments
         </Dialog.Description>
       </div>
       <button
@@ -100,39 +105,8 @@ function ComposeHeader() {
   );
 }
 
-function DraftAttachments() {
-  const attachments = useMailStore((store) => store.composerDraft.attachments);
-  const removeAttachment = useMailStore(
-    (store) => store.removeComposerAttachment,
-  );
-  if (attachments.length === 0) return null;
-
-  return (
-    <div className="flex flex-wrap gap-2 pb-5">
-      {attachments.map((attachment) => (
-        <span
-          className="flex items-center gap-2 rounded-full border border-[#d4c9bb] bg-white/60 py-1.5 pr-1.5 pl-3 text-xs dark:border-[#484d46] dark:bg-white/[0.035]"
-          key={attachment}
-        >
-          <Paperclip className="size-3 text-[#8f8173]" />
-          <span className="max-w-56 truncate">{attachment}</span>
-          <button
-            aria-label={`Remove ${attachment}`}
-            className="flex size-5 items-center justify-center rounded-full hover:bg-black/[0.06]"
-            onClick={() => removeAttachment(attachment)}
-            type="button"
-          >
-            <X className="size-3" />
-          </button>
-        </span>
-      ))}
-    </div>
-  );
-}
-
 function ComposeFooter() {
   const attachmentInputId = useId();
-  const addAttachments = useMailStore((store) => store.addComposerAttachments);
   const canSend = useMailStore((store) => store.composerCanSend);
   const completeSend = useMailStore((store) => store.sendComposerDraft);
   const draft = useMailStore((store) => store.composerDraft);
@@ -140,6 +114,7 @@ function ComposeFooter() {
   const enqueuePlainText = useMutation(api.mail.mutations.enqueuePlainText);
   const { accounts, selectedThread } = useLiveMail();
   const [isSending, setIsSending] = useState(false);
+  const { attachFiles, attachmentsAreReady } = useComposeAttachments();
 
   async function send() {
     const account = getSendingAccount(accounts, selectedThread?.accountId);
@@ -147,8 +122,8 @@ function ComposeFooter() {
       toast.error("Connect a Gmail or Microsoft 365 account before sending.");
       return;
     }
-    if (draft.attachments.length > 0) {
-      toast.error("Attachment upload is not connected yet.");
+    if (!attachmentsAreReady) {
+      toast.error("Wait for every attachment to finish uploading.");
       return;
     }
     const to = parseAddresses(draft.to);
@@ -167,6 +142,9 @@ function ComposeFooter() {
         plainText: draft.body,
         replyToInternetMessageId:
           selectedThread?.messages.at(-1)?.internetMessageId,
+        attachmentIds: draft.attachments.map((attachment) =>
+          toDraftAttachmentId(requireDraftAttachmentId(attachment)),
+        ),
       });
       setIsSending(false);
       completeSend();
@@ -183,9 +161,10 @@ function ComposeFooter() {
         className="sr-only"
         id={attachmentInputId}
         multiple
+        disabled={draft.attachments.length >= MAX_ATTACHMENT_COUNT}
         onChange={(event) => {
           const files = Array.from(event.target.files ?? []);
-          addAttachments(files.map((file) => file.name));
+          void attachFiles(files);
           event.target.value = "";
         }}
         type="file"
@@ -199,11 +178,11 @@ function ComposeFooter() {
         <span className="sr-only">Attach files</span>
       </label>
       <span className="font-mono text-[8px] tracking-[0.12em] text-[#968a7d] uppercase">
-        Attach anything
+        {getUploadSummary(draft.attachments)}
       </span>
       <button
         className="ml-auto flex h-10 items-center gap-2 rounded-full bg-[#c76749] px-4 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(169,77,52,0.20)] transition hover:-translate-y-0.5 hover:bg-[#b85a3f] disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-40"
-        disabled={!canSend || isSending}
+        disabled={!canSend || !attachmentsAreReady || isSending}
         onClick={() => void send()}
         type="button"
       >
@@ -213,6 +192,20 @@ function ComposeFooter() {
       </button>
     </footer>
   );
+}
+
+function toDraftAttachmentId(value: string) {
+  return value as Id<"draftAttachments">;
+}
+
+function requireDraftAttachmentId(attachment: {
+  draftAttachmentId?: string;
+  fileName: string;
+}) {
+  if (!attachment.draftAttachmentId) {
+    throw new Error(`${attachment.fileName} has not finished uploading.`);
+  }
+  return attachment.draftAttachmentId;
 }
 
 function getSendingAccount(

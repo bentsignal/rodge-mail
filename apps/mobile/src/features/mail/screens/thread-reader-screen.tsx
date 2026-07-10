@@ -1,7 +1,16 @@
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Linking,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { useMutation, useQuery } from "convex/react";
-import { Paperclip, Pin, Reply } from "lucide-react-native";
+import { useAction, useMutation, useQuery } from "convex/react";
+import { Download, Paperclip, Pin, Reply } from "lucide-react-native";
 
 import type { MailMessage, MailThread } from "@rodge-mail/features/mail";
 import { api } from "@rodge-mail/convex/api";
@@ -133,6 +142,23 @@ function PriorityReason({ note }: { note?: string }) {
 }
 
 function MessageBody({ message }: { message: MailMessage }) {
+  const downloadAttachment = useAction(api.attachments.actions.download);
+  const [downloadingId, setDownloadingId] = useState<string>();
+
+  async function download(attachment: MailMessage["attachments"][number]) {
+    if (downloadingId) return;
+    setDownloadingId(attachment.id);
+    try {
+      const { url } = await downloadAttachment({
+        attachmentId: toConvexId<"attachments">(attachment.id),
+      });
+      await Linking.openURL(url);
+    } catch (error) {
+      Alert.alert("Couldn’t download attachment", getDownloadError(error));
+    }
+    setDownloadingId(undefined);
+  }
+
   return (
     <View className="gap-4">
       <Text className="text-muted-foreground text-xs">
@@ -148,10 +174,13 @@ function MessageBody({ message }: { message: MailMessage }) {
         </Text>
       ))}
       {message.attachments.map((attachment) => (
-        <View
+        <Pressable
           key={attachment.id}
           accessibilityLabel={`${attachment.name}, ${attachment.size}`}
+          accessibilityRole="button"
           className="bg-muted flex-row items-center gap-3 rounded-xl px-4 py-3"
+          disabled={downloadingId !== undefined}
+          onPress={() => void download(attachment)}
         >
           <Paperclip color="#777777" size={18} />
           <View className="min-w-0 flex-1">
@@ -162,10 +191,25 @@ function MessageBody({ message }: { message: MailMessage }) {
               {attachment.size}
             </Text>
           </View>
-        </View>
+          <AttachmentDownloadIcon
+            isDownloading={downloadingId === attachment.id}
+          />
+        </Pressable>
       ))}
     </View>
   );
+}
+
+function AttachmentDownloadIcon({ isDownloading }: { isDownloading: boolean }) {
+  if (isDownloading) {
+    return <ActivityIndicator color="#777777" size="small" />;
+  }
+  return <Download color="#777777" size={18} />;
+}
+
+function getDownloadError(error: unknown) {
+  if (error instanceof Error && error.message.trim()) return error.message;
+  return "This attachment is not available yet.";
 }
 
 function ThreadNotFound() {

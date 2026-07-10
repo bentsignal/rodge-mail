@@ -150,7 +150,7 @@ export class GmailAdapter implements MailProviderAdapter {
     );
   }
 
-  async sendPlainText(accessToken: string, payload: OutboxPayload) {
+  async sendMessage(accessToken: string, payload: OutboxPayload) {
     const internetMessageId = `<rodge-${payload._id}@rodge-mail.local>`;
     const existing = await this.findByInternetMessageId(
       accessToken,
@@ -158,7 +158,7 @@ export class GmailAdapter implements MailProviderAdapter {
     );
     if (existing) return { remoteMessageId: existing };
 
-    const raw = createPlainTextMime(payload, internetMessageId);
+    const raw = createMimeMessage(payload, internetMessageId);
     const message = await gmailFetch<GmailMessage>(
       accessToken,
       "/messages/send",
@@ -170,6 +170,19 @@ export class GmailAdapter implements MailProviderAdapter {
     if (!message.id)
       throw new Error("Gmail send response omitted the message ID");
     return { remoteMessageId: message.id };
+  }
+
+  async fetchAttachment(
+    accessToken: string,
+    remoteMessageId: string,
+    remoteAttachmentId: string,
+  ) {
+    const response = await gmailFetch<{ data?: string }>(
+      accessToken,
+      `/messages/${encodeURIComponent(remoteMessageId)}/attachments/${encodeURIComponent(remoteAttachmentId)}`,
+    );
+    if (!response.data) throw new Error("Gmail attachment response was empty");
+    return decodeBase64Url(response.data);
   }
 
   private async listRecentMessageIds(accessToken: string) {
@@ -408,18 +421,17 @@ function parseDate(value: string) {
 }
 
 function decodeBase64UrlText(value: string) {
+  return new TextDecoder().decode(decodeBase64Url(value));
+}
+
+function decodeBase64Url(value: string) {
   const base64 = value.replaceAll("-", "+").replaceAll("_", "/");
   const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
   const binary = atob(padded);
-  return new TextDecoder().decode(
-    Uint8Array.from(binary, (character) => character.charCodeAt(0)),
-  );
+  return Uint8Array.from(binary, (character) => character.charCodeAt(0));
 }
 
-function createPlainTextMime(
-  payload: OutboxPayload,
-  internetMessageId: string,
-) {
+function createMimeMessage(payload: OutboxPayload, internetMessageId: string) {
   const headers = [
     ["From", payload.from],
     ["To", formatAddresses(payload.to)],
@@ -428,18 +440,70 @@ function createPlainTextMime(
     ["Subject", sanitizeHeader(payload.subject)],
     ["Message-ID", internetMessageId],
     ["MIME-Version", "1.0"],
-    ["Content-Type", 'text/plain; charset="UTF-8"'],
-    ["Content-Transfer-Encoding", "8bit"],
   ];
   if (payload.replyToInternetMessageId) {
     const replyId = sanitizeHeader(payload.replyToInternetMessageId);
     headers.push(["In-Reply-To", replyId], ["References", replyId]);
   }
-  const raw = `${headers
+  if (payload.attachments.length === 0) {
+    headers.push(
+      ["Content-Type", 'text/plain; charset="UTF-8"'],
+      ["Content-Transfer-Encoding", "8bit"],
+    );
+  }
+  const rawHeaders = headers
     .filter(([, value]) => value)
     .map(([name, value]) => `${name}: ${value}`)
-    .join("\r\n")}\r\n\r\n${normalizeCrlf(payload.plainText)}`;
+    .join("\r\n");
+  if (payload.attachments.length === 0) {
+    return encodeBase64UrlText(
+      `${rawHeaders}\r\n\r\n${normalizeCrlf(payload.plainText)}`,
+    );
+  }
+
+  const boundary = `rodge-mail-${payload._id}`;
+  const parts = [
+    `--${boundary}\r\nContent-Type: text/plain; charset="UTF-8"\r\nContent-Transfer-Encoding: 8bit\r\n\r\n${normalizeCrlf(payload.plainText)}`,
+    ...payload.attachments.map((attachment) =>
+      createAttachmentPart(boundary, attachment),
+    ),
+    `--${boundary}--`,
+  ];
+  const raw = `${rawHeaders}\r\nContent-Type: multipart/mixed; boundary="${boundary}"\r\n\r\n${parts.join("\r\n")}`;
   return encodeBase64UrlText(raw);
+}
+
+function createAttachmentPart(
+  boundary: string,
+  attachment: OutboxPayload["attachments"][number],
+) {
+  const fallbackName = attachment.fileName
+    .replace(/[^\x20-\x7e]/gu, "_")
+    .replaceAll('"', "'");
+  const encodedName = encodeRfc5987Value(attachment.fileName);
+  const encodedBytes = wrapBase64(encodeBase64(attachment.bytes));
+  return `--${boundary}\r\nContent-Type: ${sanitizeHeader(attachment.contentType)}; name="${fallbackName}"\r\nContent-Disposition: attachment; filename="${fallbackName}"; filename*=UTF-8''${encodedName}\r\nContent-Transfer-Encoding: base64\r\n\r\n${encodedBytes}`;
+}
+
+function encodeRfc5987Value(value: string) {
+  return encodeURIComponent(value).replace(/[!'()*]/gu, (character) => {
+    return `%${character.charCodeAt(0).toString(16).toUpperCase()}`;
+  });
+}
+
+function encodeBase64(bytes: Uint8Array) {
+  let binary = "";
+  const chunkSize = 32_768;
+  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+    binary += String.fromCharCode(
+      ...bytes.subarray(offset, offset + chunkSize),
+    );
+  }
+  return btoa(binary);
+}
+
+function wrapBase64(value: string) {
+  return value.match(/.{1,76}/gu)?.join("\r\n") ?? "";
 }
 
 function formatAddresses(addresses: OutboxPayload["to"]) {

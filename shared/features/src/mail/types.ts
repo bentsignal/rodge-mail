@@ -24,6 +24,7 @@ export interface MailAttachment {
   id: string;
   name: string;
   size: string;
+  status: "available" | "error" | "remote";
   type: "document" | "image" | "spreadsheet";
 }
 
@@ -51,8 +52,20 @@ export interface MailThread {
   subject: string;
 }
 
-export interface ComposerDraft {
-  attachments: string[];
+export interface ComposerAttachment {
+  contentType: string;
+  draftAttachmentId?: string;
+  error?: string;
+  fileName: string;
+  id: string;
+  size: number;
+  status: "error" | "ready" | "uploading";
+}
+
+export interface ComposerDraft<
+  TAttachment extends ComposerAttachment = ComposerAttachment,
+> {
+  attachments: TAttachment[];
   body: string;
   cc: string;
   subject: string;

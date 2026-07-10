@@ -1,6 +1,12 @@
 import { ConvexError, v } from "convex/values";
 
+import type { Doc, Id } from "../_generated/dataModel";
+import type { AuthedMutationCtx } from "../utils";
 import { internal } from "../_generated/api";
+import {
+  MAX_ATTACHMENT_COUNT,
+  MAX_TOTAL_ATTACHMENT_BYTES,
+} from "../attachments/constants";
 import { reconcileEmbeddingSelection } from "../embedding/internal";
 import { authedMutation } from "../utils";
 import {
@@ -149,29 +155,30 @@ export const enqueuePlainText = authedMutation({
     subject: v.string(),
     plainText: v.string(),
     replyToInternetMessageId: v.optional(v.string()),
+    attachmentIds: v.optional(v.array(v.id("draftAttachments"))),
   },
   handler: async (ctx, args) => {
     const account = await ensureOwnedAccount(ctx, ctx.ownerId, args.accountId);
-    if (
-      !["gmail", "microsoft"].includes(account.provider) ||
-      !["connected", "syncing"].includes(account.status)
-    ) {
-      throw new ConvexError("The selected account cannot send mail");
-    }
-    const idempotencyKey = args.idempotencyKey.trim();
-    if (idempotencyKey.length < 8 || idempotencyKey.length > 200) {
-      throw new ConvexError("A stable idempotency key is required");
-    }
-    if (args.to.length === 0 || !args.plainText.trim()) {
-      throw new ConvexError("A recipient and message body are required");
-    }
+    const idempotencyKey = validateSendRequest(account, args);
+    const { attachmentIds, attachments } = await getReadyDraftAttachments(
+      ctx,
+      args.attachmentIds ?? [],
+    );
+    validateProviderAttachments(account, attachments);
     const existing = await ctx.db
       .query("outboxMessages")
       .withIndex("by_account_idempotency", (q) =>
         q.eq("accountId", args.accountId).eq("idempotencyKey", idempotencyKey),
       )
       .unique();
-    if (existing) return existing._id;
+    if (existing) {
+      if (!attachmentIdsMatch(existing.attachmentIds ?? [], attachmentIds)) {
+        throw new ConvexError(
+          "This send attempt already exists with different attachments",
+        );
+      }
+      return existing._id;
+    }
 
     const now = Date.now();
     const outboxId = await ctx.db.insert("outboxMessages", {
@@ -184,11 +191,21 @@ export const enqueuePlainText = authedMutation({
       subject: args.subject,
       plainText: args.plainText,
       replyToInternetMessageId: args.replyToInternetMessageId,
+      attachmentIds,
       status: "pending",
       attempt: 0,
       createdAt: now,
       updatedAt: now,
     });
+    await Promise.all(
+      attachments.map(async (attachment) => {
+        await ctx.db.patch(attachment._id, {
+          status: "claimed",
+          outboxId,
+          updatedAt: now,
+        });
+      }),
+    );
     await ctx.scheduler.runAfter(
       0,
       internal.sync.internal.deliverProviderOutbox,
@@ -197,6 +214,102 @@ export const enqueuePlainText = authedMutation({
     return outboxId;
   },
 });
+
+function validateSendRequest(
+  account: Doc<"mailAccounts">,
+  args: {
+    idempotencyKey: string;
+    plainText: string;
+    to: { address: string; name?: string }[];
+    attachmentIds?: Id<"draftAttachments">[];
+  },
+) {
+  if (
+    !["gmail", "microsoft"].includes(account.provider) ||
+    !["connected", "syncing"].includes(account.status)
+  ) {
+    throw new ConvexError("The selected account cannot send mail");
+  }
+  const idempotencyKey = args.idempotencyKey.trim();
+  if (idempotencyKey.length < 8 || idempotencyKey.length > 200) {
+    throw new ConvexError("A stable idempotency key is required");
+  }
+  if (args.to.length === 0 || !args.plainText.trim()) {
+    throw new ConvexError("A recipient and message body are required");
+  }
+  return idempotencyKey;
+}
+
+function validateProviderAttachments(
+  account: Doc<"mailAccounts">,
+  attachments: Doc<"draftAttachments">[],
+) {
+  if (account.provider === "microsoft") {
+    if (attachments.some((attachment) => (attachment.size ?? 0) > 3_145_728)) {
+      throw new ConvexError(
+        "Microsoft 365 attachments must be 3 MB or smaller",
+      );
+    }
+    return;
+  }
+  if (account.provider !== "gmail" && attachments.length > 0) {
+    throw new ConvexError(
+      "Attachments are not yet available for the selected provider",
+    );
+  }
+}
+
+async function getReadyDraftAttachments(
+  ctx: AuthedMutationCtx,
+  requestedIds: Id<"draftAttachments">[],
+) {
+  const attachmentIds = [...new Set(requestedIds)];
+  if (attachmentIds.length !== requestedIds.length) {
+    throw new ConvexError("Duplicate attachments are not allowed");
+  }
+  if (attachmentIds.length > MAX_ATTACHMENT_COUNT) {
+    throw new ConvexError("A message can include up to 5 attachments");
+  }
+  const documents = await Promise.all(
+    attachmentIds.map(async (attachmentId) => {
+      return await ctx.db.get(attachmentId);
+    }),
+  );
+  const attachments = documents.flatMap((attachment) =>
+    getReadyOwnedAttachment(attachment, ctx.ownerId),
+  );
+  if (attachments.length !== attachmentIds.length) {
+    throw new ConvexError("Every attachment must finish uploading first");
+  }
+  const totalBytes = attachments.reduce(
+    (total, attachment) => total + (attachment.size ?? 0),
+    0,
+  );
+  if (totalBytes > MAX_TOTAL_ATTACHMENT_BYTES) {
+    throw new ConvexError("Attachments must total 18 MB or less");
+  }
+  return { attachmentIds, attachments };
+}
+
+function getReadyOwnedAttachment(
+  attachment: Doc<"draftAttachments"> | null,
+  ownerId: string,
+) {
+  if (attachment?.ownerId !== ownerId) return [];
+  if (attachment.status !== "ready") return [];
+  if (!attachment.storageId || attachment.size === undefined) return [];
+  return [attachment];
+}
+
+function attachmentIdsMatch(
+  existingIds: Id<"draftAttachments">[],
+  requestedIds: Id<"draftAttachments">[],
+) {
+  return (
+    existingIds.length === requestedIds.length &&
+    existingIds.every((attachmentId) => requestedIds.includes(attachmentId))
+  );
+}
 
 export const retryOutbox = authedMutation({
   args: { outboxId: v.id("outboxMessages") },

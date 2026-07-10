@@ -283,12 +283,33 @@ export const vOutboxMessage = v.object({
   subject: v.string(),
   plainText: v.string(),
   replyToInternetMessageId: v.optional(v.string()),
+  attachmentIds: v.optional(v.array(v.id("draftAttachments"))),
   status: vOutboxStatus,
   attempt: v.number(),
   leaseId: v.optional(v.string()),
   remoteMessageId: v.optional(v.string()),
   error: v.optional(v.string()),
   sentAt: v.optional(v.number()),
+  createdAt: v.number(),
+  updatedAt: v.number(),
+});
+
+export const vDraftAttachmentStatus = v.union(
+  v.literal("pending"),
+  v.literal("ready"),
+  v.literal("claimed"),
+);
+
+export const vDraftAttachment = v.object({
+  ownerId: v.string(),
+  fileName: v.string(),
+  contentType: v.string(),
+  declaredSize: v.number(),
+  size: v.optional(v.number()),
+  sha256: v.optional(v.string()),
+  storageId: v.optional(v.id("_storage")),
+  status: vDraftAttachmentStatus,
+  outboxId: v.optional(v.id("outboxMessages")),
   createdAt: v.number(),
   updatedAt: v.number(),
 });

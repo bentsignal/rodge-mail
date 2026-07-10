@@ -10,7 +10,8 @@
     "./model": {
       "types": "./src/_generated/dataModel.d.ts"
     },
-    "./mail/types": "./src/mail/types.ts"
+    "./mail/types": "./src/mail/types.ts",
+    "./attachments/constants": "./src/attachments/constants.ts"
   },
   "scripts": {
     "build": "tsc --noEmit",

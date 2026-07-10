@@ -11,4 +11,11 @@ crons.interval(
   {},
 );
 
+crons.interval(
+  "remove abandoned draft attachments",
+  { hours: 6 },
+  internal.attachments.internal.cleanupExpiredDrafts,
+  {},
+);
+
 export default crons;

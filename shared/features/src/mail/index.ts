@@ -1,5 +1,6 @@
 export { DEMO_MAIL_ACCOUNTS, DEMO_MAIL_THREADS } from "./demo";
 export type {
+  ComposerAttachment,
   ComposerDraft,
   InboxCategory,
   MailAccount,

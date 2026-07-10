@@ -1,4 +1,9 @@
+import { useState } from "react";
+import { useAction } from "convex/react";
 import { Download, FileText, Paperclip } from "lucide-react";
+
+import { api } from "@rodge-mail/convex/api";
+import { toast } from "@rodge-mail/ui-web/toast";
 
 import type { ThreadMessageDetail } from "../types";
 import { formatFullDate, getInitials } from "../format";
@@ -45,6 +50,29 @@ function MessageAttachments({
 }: {
   attachments: ThreadMessageDetail["attachments"];
 }) {
+  const downloadAttachment = useAction(api.attachments.actions.download);
+  const [downloadingId, setDownloadingId] = useState<string>();
+
+  async function download(
+    attachment: ThreadMessageDetail["attachments"][number],
+  ) {
+    if (downloadingId) return;
+    setDownloadingId(attachment._id);
+    try {
+      const { url } = await downloadAttachment({
+        attachmentId: attachment._id,
+      });
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = attachment.fileName;
+      link.rel = "noopener";
+      link.click();
+    } catch (error) {
+      toast.error(getDownloadError(error));
+    }
+    setDownloadingId(undefined);
+  }
+
   if (attachments.length === 0) return null;
 
   return (
@@ -58,7 +86,9 @@ function MessageAttachments({
           <button
             className="group flex items-center gap-3 rounded-xl border border-[#d8cec0] bg-white/45 p-3 text-left transition hover:-translate-y-0.5 hover:border-[#b8aa98] hover:bg-white/80 dark:border-[#454a43] dark:bg-white/[0.025]"
             key={attachment._id}
-            title={getAttachmentTitle(attachment.status)}
+            disabled={downloadingId !== undefined}
+            onClick={() => void download(attachment)}
+            title="Download attachment"
             type="button"
           >
             <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[#ebe2d4] text-[#765f4c] dark:bg-[#363b35] dark:text-[#d4bca9]">
@@ -72,7 +102,9 @@ function MessageAttachments({
                 {attachment.contentType} · {formatFileSize(attachment.size)}
               </span>
             </span>
-            <Download className="size-4 text-[#96897c] transition group-hover:text-[#20251f] dark:group-hover:text-white" />
+            <Download
+              className={`size-4 text-[#96897c] transition group-hover:text-[#20251f] dark:group-hover:text-white ${downloadingId === attachment._id ? "animate-bounce" : ""}`}
+            />
           </button>
         ))}
       </div>
@@ -101,11 +133,9 @@ function getAddressName(address: ThreadMessageDetail["from"]) {
   return address.address;
 }
 
-function getAttachmentTitle(
-  status: ThreadMessageDetail["attachments"][number]["status"],
-) {
-  if (status === "available") return "Attachment download is not wired yet";
-  return "Attachment is still remote";
+function getDownloadError(error: unknown) {
+  if (error instanceof Error && error.message.trim()) return error.message;
+  return "Could not download this attachment.";
 }
 
 function formatFileSize(bytes: number) {

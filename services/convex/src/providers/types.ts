@@ -58,6 +58,14 @@ export interface OutboxPayload {
   subject: string;
   plainText: string;
   replyToInternetMessageId?: string;
+  attachments: OutboxAttachmentPayload[];
+}
+
+export interface OutboxAttachmentPayload {
+  fileName: string;
+  contentType: string;
+  size: number;
+  bytes: Uint8Array;
 }
 
 export interface SyncResult {
@@ -81,8 +89,13 @@ export interface MailProviderAdapter {
     deletedRemoteMessageIds: string[];
     messages: NormalizedMessage[];
   }>;
-  sendPlainText(
+  sendMessage(
     accessToken: string,
     payload: OutboxPayload,
   ): Promise<{ remoteMessageId: string }>;
+  fetchAttachment(
+    accessToken: string,
+    remoteMessageId: string,
+    remoteAttachmentId: string,
+  ): Promise<Uint8Array>;
 }

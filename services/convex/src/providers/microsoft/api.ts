@@ -10,6 +10,7 @@ import type {
 const GRAPH_ROOT = "https://graph.microsoft.com/v1.0";
 const INITIAL_SYNC_LOOKBACK_DAYS = 90;
 const MAX_DELTA_PAGES = 100;
+const SIMPLE_ATTACHMENT_LIMIT_BYTES = 3 * 1024 * 1024;
 const GRAPH_PREFERENCES =
   'IdType="ImmutableId", outlook.body-content-type="text", odata.maxpagesize=200';
 const MESSAGE_SELECT = [
@@ -87,6 +88,21 @@ export class MicrosoftGraphAdapter implements MailProviderAdapter {
     await onDraftCreated?.(draft.id);
     await sendDraft(accessToken, draft.id);
     return { remoteMessageId: draft.id };
+  }
+
+  async sendMessage(accessToken: string, payload: OutboxPayload) {
+    return await this.sendPlainText(accessToken, payload);
+  }
+
+  async fetchAttachment(
+    accessToken: string,
+    remoteMessageId: string,
+    remoteAttachmentId: string,
+  ) {
+    return await graphFetchBytes(
+      accessToken,
+      `/me/messages/${encodeURIComponent(remoteMessageId)}/attachments/${encodeURIComponent(remoteAttachmentId)}/$value`,
+    );
   }
 
   async setRead(accessToken: string, remoteMessageId: string, isRead: boolean) {
@@ -242,6 +258,13 @@ async function getMessageState(accessToken: string, remoteMessageId: string) {
 }
 
 function createDraftPayload(payload: OutboxPayload) {
+  for (const attachment of payload.attachments) {
+    if (attachment.size > SIMPLE_ATTACHMENT_LIMIT_BYTES) {
+      throw new Error(
+        `${attachment.fileName} exceeds Microsoft Graph's 3 MB simple attachment limit`,
+      );
+    }
+  }
   return {
     subject: payload.subject,
     body: { contentType: "Text", content: payload.plainText },
@@ -254,6 +277,12 @@ function createDraftPayload(payload: OutboxPayload) {
         value: String(payload._id),
       },
     ],
+    attachments: payload.attachments.map((attachment) => ({
+      "@odata.type": "#microsoft.graph.fileAttachment",
+      name: attachment.fileName,
+      contentType: attachment.contentType,
+      contentBytes: encodeBase64(attachment.bytes),
+    })),
   };
 }
 
@@ -377,6 +406,29 @@ async function graphFetch<T>(
   }
   if (!text) return undefined as T;
   return JSON.parse(text) as T;
+}
+
+async function graphFetchBytes(accessToken: string, path: string) {
+  const response = await fetch(validateGraphUrl(path), {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      Accept: "application/octet-stream",
+      Prefer: GRAPH_PREFERENCES,
+    },
+  });
+  if (!response.ok) {
+    throw new MicrosoftGraphError(
+      `Microsoft attachment request failed with ${response.status}`,
+      response.status,
+    );
+  }
+  return new Uint8Array(await response.arrayBuffer());
+}
+
+function encodeBase64(bytes: Uint8Array) {
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary);
 }
 
 function parseGraphError(value: string) {

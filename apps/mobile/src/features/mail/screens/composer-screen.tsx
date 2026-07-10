@@ -11,7 +11,6 @@ import {
 } from "react-native";
 import { randomUUID } from "expo-crypto";
 import * as Haptics from "expo-haptics";
-import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMutation } from "convex/react";
 import { Paperclip, Send, X } from "lucide-react-native";
@@ -19,9 +18,15 @@ import { Paperclip, Send, X } from "lucide-react-native";
 import type { ComposerDraft } from "@rodge-mail/features/mail";
 import { api } from "@rodge-mail/convex/api";
 
+import type { NativeComposerAttachment } from "./use-native-attachments";
 import { useColor } from "~/hooks/use-color";
 import { toConvexId } from "../lib/convex-id";
 import { useMailStore } from "../store";
+import { ComposerAttachmentList } from "./composer-attachment-list";
+import {
+  getDraftAttachmentIds,
+  useNativeAttachments,
+} from "./use-native-attachments";
 
 export function ComposerScreen() {
   const params = useLocalSearchParams<{ subject?: string; to?: string }>();
@@ -30,24 +35,28 @@ export function ComposerScreen() {
   const enqueuePlainText = useMutation(api.mail.mutations.enqueuePlainText);
   const [idempotencyKey] = useState(() => `rodge-native-${randomUUID()}`);
   const [isSending, setIsSending] = useState(false);
-  const [draft, setDraft] = useState<ComposerDraft>({
+  const [draft, setDraft] = useState<ComposerDraft<NativeComposerAttachment>>({
     attachments: [],
     body: "",
     cc: "",
     subject: params.subject ?? "",
     to: params.to ?? "",
   });
+  const { attachImages, removeAttachment } = useNativeAttachments({
+    draft,
+    setDraft,
+  });
   const canSend = draftCanSend(draft);
 
-  function setField(field: keyof ComposerDraft, value: string) {
+  function setField(field: "body" | "cc" | "subject" | "to", value: string) {
     setDraft((current) => ({ ...current, [field]: value }));
   }
   async function send() {
     if (!canSend || isSending) return;
-    if (draft.attachments.length > 0) {
+    if (draft.attachments.some((attachment) => attachment.status !== "ready")) {
       Alert.alert(
-        "Attachments aren’t ready yet",
-        "Remove the attachments to send this message as plain text.",
+        "Attachments are still uploading",
+        "Wait for every file or remove the failed attachment.",
       );
       return;
     }
@@ -75,6 +84,7 @@ export function ComposerScreen() {
         cc: parseAddresses(draft.cc),
         subject: draft.subject.trim(),
         plainText: draft.body,
+        attachmentIds: getDraftAttachmentIds(draft.attachments),
       });
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.back();
@@ -96,42 +106,12 @@ export function ComposerScreen() {
       />
       <ComposerBody
         draft={draft}
-        onAttach={() => void attachImages(setDraft)}
+        onAttach={() => void attachImages()}
         onChange={setField}
-        onRemoveAttachment={(name) => removeAttachment(setDraft, name)}
+        onRemoveAttachment={(attachment) => void removeAttachment(attachment)}
       />
     </KeyboardAvoidingView>
   );
-}
-
-async function attachImages(
-  setDraft: React.Dispatch<React.SetStateAction<ComposerDraft>>,
-) {
-  const result = await ImagePicker.launchImageLibraryAsync({
-    allowsMultipleSelection: true,
-    mediaTypes: ["images"],
-    selectionLimit: 5,
-  });
-  if (result.canceled) return;
-  const attachments = result.assets.map(
-    (asset, index) => asset.fileName ?? `Attachment ${index + 1}`,
-  );
-  setDraft((current) => ({
-    ...current,
-    attachments: [...current.attachments, ...attachments],
-  }));
-}
-
-function removeAttachment(
-  setDraft: React.Dispatch<React.SetStateAction<ComposerDraft>>,
-  name: string,
-) {
-  setDraft((current) => ({
-    ...current,
-    attachments: current.attachments.filter(
-      (attachment) => attachment !== name,
-    ),
-  }));
 }
 
 function ComposerBody({
@@ -140,10 +120,10 @@ function ComposerBody({
   onChange,
   onRemoveAttachment,
 }: {
-  draft: ComposerDraft;
+  draft: ComposerDraft<NativeComposerAttachment>;
   onAttach: () => void;
-  onChange: (field: keyof ComposerDraft, value: string) => void;
-  onRemoveAttachment: (name: string) => void;
+  onChange: (field: "body" | "cc" | "subject" | "to", value: string) => void;
+  onRemoveAttachment: (attachment: NativeComposerAttachment) => void;
 }) {
   return (
     <ScrollView
@@ -180,7 +160,7 @@ function ComposerBody({
         textAlignVertical="top"
         onChangeText={(value) => onChange("body", value)}
       />
-      <AttachmentList
+      <ComposerAttachmentList
         attachments={draft.attachments}
         onRemove={onRemoveAttachment}
       />
@@ -197,8 +177,12 @@ function ComposerBody({
   );
 }
 
-function draftCanSend(draft: ComposerDraft) {
-  return draft.to.trim().length > 0 && draft.body.trim().length > 0;
+function draftCanSend(draft: ComposerDraft<NativeComposerAttachment>) {
+  return (
+    draft.to.trim().length > 0 &&
+    draft.body.trim().length > 0 &&
+    draft.attachments.every((attachment) => attachment.status === "ready")
+  );
 }
 
 function parseAddresses(value: string) {
@@ -267,40 +251,6 @@ function ComposerField({
         placeholderTextColor="#777777"
         {...props}
       />
-    </View>
-  );
-}
-
-function AttachmentList({
-  attachments,
-  onRemove,
-}: {
-  attachments: string[];
-  onRemove: (name: string) => void;
-}) {
-  if (attachments.length === 0) return null;
-
-  return (
-    <View className="mb-4 gap-2">
-      {attachments.map((attachment) => (
-        <View
-          key={attachment}
-          className="bg-muted flex-row items-center gap-2 rounded-xl px-3 py-2"
-        >
-          <Paperclip color="#777777" size={16} />
-          <Text className="text-foreground min-w-0 flex-1" numberOfLines={1}>
-            {attachment}
-          </Text>
-          <Pressable
-            accessibilityLabel={`Remove ${attachment}`}
-            accessibilityRole="button"
-            hitSlop={10}
-            onPress={() => onRemove(attachment)}
-          >
-            <X color="#777777" size={17} />
-          </Pressable>
-        </View>
-      ))}
     </View>
   );
 }

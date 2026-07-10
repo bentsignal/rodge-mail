@@ -6,6 +6,7 @@ import {
 } from "./embedding/validators";
 import {
   vAttachment,
+  vDraftAttachment,
   vMailAccount,
   vMailFolder,
   vMessage,
@@ -108,6 +109,11 @@ export default defineSchema(
       .index("by_account_idempotency", ["accountId", "idempotencyKey"])
       .index("by_owner_created", ["ownerId", "createdAt"])
       .index("by_status_created", ["status", "createdAt"]),
+    draftAttachments: defineTable(vDraftAttachment)
+      .index("by_owner_status_created", ["ownerId", "status", "createdAt"])
+      .index("by_status_created", ["status", "createdAt"])
+      .index("by_outbox", ["outboxId"])
+      .index("by_storage", ["storageId"]),
   },
   { schemaValidation: true },
 );
