@@ -13,11 +13,11 @@ import {
   buildGoogleAuthorizationUrl,
   getGoogleOAuthConfig,
 } from "../providers/gmail/oauth";
+import { signSetupToken } from "../providers/icloud/protocol";
 import {
   buildMicrosoftAuthorizationUrl,
   getMicrosoftOAuthConfig,
 } from "../providers/microsoft/oauth";
-import { signSetupToken } from "../providers/icloud/protocol";
 import { urls } from "../urls";
 import { authedAction } from "../utils";
 

@@ -1,12 +1,8 @@
 import { ConvexError, v } from "convex/values";
 
-import type { Doc, Id } from "../_generated/dataModel";
+import type { Doc } from "../_generated/dataModel";
 import type { AuthedMutationCtx } from "../utils";
 import { internal } from "../_generated/api";
-import {
-  MAX_ATTACHMENT_COUNT,
-  MAX_TOTAL_ATTACHMENT_BYTES,
-} from "../attachments/constants";
 import { reconcileEmbeddingSelection } from "../embedding/internal";
 import { authedMutation } from "../utils";
 import {
@@ -14,6 +10,12 @@ import {
   ensureOwnedMessage,
   ensureOwnedThread,
 } from "./helpers";
+import {
+  attachmentIdsMatch,
+  getReadyDraftAttachments,
+  validateProviderAttachments,
+  validateSendRequest,
+} from "./outbox";
 import { vMailboxAddress } from "./validators";
 
 export const setPinned = authedMutation({
@@ -46,6 +48,13 @@ export const setRead = authedMutation({
     if (!thread || thread.ownerId !== ctx.ownerId) return;
 
     const account = await ctx.db.get(message.accountId);
+    const providerUpdate = scheduleProviderReadUpdate({
+      ctx,
+      account,
+      message,
+      isRead: args.isRead,
+      delay: 0,
+    });
 
     await Promise.all([
       ctx.db.patch(message._id, {
@@ -56,20 +65,7 @@ export const setRead = authedMutation({
         unreadCount: Math.max(0, thread.unreadCount + (args.isRead ? -1 : 1)),
         updatedAt: Date.now(),
       }),
-      ...(account?.ownerId === ctx.ownerId && account.provider === "microsoft"
-        ? [
-            ctx.scheduler.runAfter(
-              0,
-              internal.sync.internal.setMicrosoftMessageRead,
-              {
-                ownerId: ctx.ownerId,
-                accountId: account._id,
-                remoteMessageId: message.remoteMessageId,
-                isRead: args.isRead,
-              },
-            ),
-          ]
-        : []),
+      ...(providerUpdate ? [providerUpdate] : []),
     ]);
   },
 });
@@ -112,38 +108,70 @@ export const setThreadRead = authedMutation({
       .collect();
     const account = await ctx.db.get(thread.accountId);
     const now = Date.now();
+    const changedMessages = messages.filter(
+      (message) => message.isRead !== args.isRead,
+    );
     await Promise.all([
-      ...messages
-        .filter((message) => message.isRead !== args.isRead)
-        .map(async (message) => {
-          await ctx.db.patch(message._id, {
-            isRead: args.isRead,
-            updatedAt: now,
-          });
-        }),
+      ...changedMessages.map(async (message) => {
+        await ctx.db.patch(message._id, {
+          isRead: args.isRead,
+          updatedAt: now,
+        });
+      }),
       ctx.db.patch(thread._id, {
         unreadCount: args.isRead ? 0 : messages.length,
         updatedAt: now,
       }),
-      ...(account?.ownerId === ctx.ownerId && account.provider === "microsoft"
-        ? messages
-            .filter((message) => message.isRead !== args.isRead)
-            .map((message, index) =>
-              ctx.scheduler.runAfter(
-                index * 100,
-                internal.sync.internal.setMicrosoftMessageRead,
-                {
-                  ownerId: ctx.ownerId,
-                  accountId: account._id,
-                  remoteMessageId: message.remoteMessageId,
-                  isRead: args.isRead,
-                },
-              ),
-            )
-        : []),
+      ...changedMessages.flatMap((message, index) => {
+        const update = scheduleProviderReadUpdate({
+          ctx,
+          account,
+          message,
+          isRead: args.isRead,
+          delay: index * 100,
+        });
+        return update ? [update] : [];
+      }),
     ]);
   },
 });
+
+function scheduleProviderReadUpdate({
+  ctx,
+  account,
+  message,
+  isRead,
+  delay,
+}: {
+  ctx: AuthedMutationCtx;
+  account: Doc<"mailAccounts"> | null;
+  message: Doc<"messages">;
+  isRead: boolean;
+  delay: number;
+}) {
+  if (!account || account.ownerId !== ctx.ownerId) return undefined;
+  const args = {
+    ownerId: ctx.ownerId,
+    accountId: account._id,
+    remoteMessageId: message.remoteMessageId,
+    isRead,
+  };
+  if (account.provider === "gmail") {
+    return ctx.scheduler.runAfter(
+      delay,
+      internal.sync.internal.setGmailMessageRead,
+      args,
+    );
+  }
+  if (account.provider === "microsoft") {
+    return ctx.scheduler.runAfter(
+      delay,
+      internal.sync.internal.setMicrosoftMessageRead,
+      args,
+    );
+  }
+  return undefined;
+}
 
 export const enqueuePlainText = authedMutation({
   args: {
@@ -157,8 +185,6 @@ export const enqueuePlainText = authedMutation({
     replyToInternetMessageId: v.optional(v.string()),
     attachmentIds: v.optional(v.array(v.id("draftAttachments"))),
   },
-  // Provider routing adds one branch beyond the repository's default complexity budget.
-  // eslint-disable-next-line complexity
   handler: async (ctx, args) => {
     const account = await ensureOwnedAccount(ctx, ctx.ownerId, args.accountId);
     const idempotencyKey = validateSendRequest(account, args);
@@ -224,102 +250,6 @@ export const enqueuePlainText = authedMutation({
     return outboxId;
   },
 });
-
-function validateSendRequest(
-  account: Doc<"mailAccounts">,
-  args: {
-    idempotencyKey: string;
-    plainText: string;
-    to: { address: string; name?: string }[];
-    attachmentIds?: Id<"draftAttachments">[];
-  },
-) {
-  if (
-    !["gmail", "microsoft", "icloud"].includes(account.provider) ||
-    !["connected", "syncing"].includes(account.status)
-  ) {
-    throw new ConvexError("The selected account cannot send mail");
-  }
-  const idempotencyKey = args.idempotencyKey.trim();
-  if (idempotencyKey.length < 8 || idempotencyKey.length > 200) {
-    throw new ConvexError("A stable idempotency key is required");
-  }
-  if (args.to.length === 0 || !args.plainText.trim()) {
-    throw new ConvexError("A recipient and message body are required");
-  }
-  return idempotencyKey;
-}
-
-function validateProviderAttachments(
-  account: Doc<"mailAccounts">,
-  attachments: Doc<"draftAttachments">[],
-) {
-  if (account.provider === "microsoft") {
-    if (attachments.some((attachment) => (attachment.size ?? 0) > 3_145_728)) {
-      throw new ConvexError(
-        "Microsoft 365 attachments must be 3 MB or smaller",
-      );
-    }
-    return;
-  }
-  if (account.provider !== "gmail" && attachments.length > 0) {
-    throw new ConvexError(
-      "Attachments are not yet available for the selected provider",
-    );
-  }
-}
-
-async function getReadyDraftAttachments(
-  ctx: AuthedMutationCtx,
-  requestedIds: Id<"draftAttachments">[],
-) {
-  const attachmentIds = [...new Set(requestedIds)];
-  if (attachmentIds.length !== requestedIds.length) {
-    throw new ConvexError("Duplicate attachments are not allowed");
-  }
-  if (attachmentIds.length > MAX_ATTACHMENT_COUNT) {
-    throw new ConvexError("A message can include up to 5 attachments");
-  }
-  const documents = await Promise.all(
-    attachmentIds.map(async (attachmentId) => {
-      return await ctx.db.get(attachmentId);
-    }),
-  );
-  const attachments = documents.flatMap((attachment) =>
-    getReadyOwnedAttachment(attachment, ctx.ownerId),
-  );
-  if (attachments.length !== attachmentIds.length) {
-    throw new ConvexError("Every attachment must finish uploading first");
-  }
-  const totalBytes = attachments.reduce(
-    (total, attachment) => total + (attachment.size ?? 0),
-    0,
-  );
-  if (totalBytes > MAX_TOTAL_ATTACHMENT_BYTES) {
-    throw new ConvexError("Attachments must total 18 MB or less");
-  }
-  return { attachmentIds, attachments };
-}
-
-function getReadyOwnedAttachment(
-  attachment: Doc<"draftAttachments"> | null,
-  ownerId: string,
-) {
-  if (attachment?.ownerId !== ownerId) return [];
-  if (attachment.status !== "ready") return [];
-  if (!attachment.storageId || attachment.size === undefined) return [];
-  return [attachment];
-}
-
-function attachmentIdsMatch(
-  existingIds: Id<"draftAttachments">[],
-  requestedIds: Id<"draftAttachments">[],
-) {
-  return (
-    existingIds.length === requestedIds.length &&
-    existingIds.every((attachmentId) => requestedIds.includes(attachmentId))
-  );
-}
 
 export const retryOutbox = authedMutation({
   args: { outboxId: v.id("outboxMessages") },

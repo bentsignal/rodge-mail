@@ -57,8 +57,10 @@ Webhooks are wake-up hints; provider cursors are the source of truth.
 - Microsoft uses an Inbox delta link with immutable Outlook message IDs. A
   scheduled repair follows opaque next/delta URLs; change notifications can be
   added later as wake-up hints without replacing cursor reconciliation.
-- iCloud uses bounded IMAP UID polling from Convex actions. Persistent IDLE
-  belongs in a separate worker if bounded polling proves insufficient.
+- iCloud uses a long-running Node.js bridge because Convex actions cannot open
+  IMAP or SMTP sockets. The bridge leases bounded jobs from Convex, persists
+  UIDVALIDITY and known UIDs in PostgreSQL, and submits normalized changes over
+  a replay-protected signed HTTPS protocol.
 
 All adapters normalize into one internal mutation and use leases, bounded
 batches, exponential backoff, and periodic reconciliation.

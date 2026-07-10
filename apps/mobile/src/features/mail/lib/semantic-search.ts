@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useAction, useQuery } from "convex/react";
 
+import type { Id } from "@rodge-mail/convex/model";
 import type { MailAccountFilter } from "@rodge-mail/features/mail";
 import { api } from "@rodge-mail/convex/api";
-import type { Id } from "@rodge-mail/convex/model";
 
 import { toConvexId } from "./convex-id";
 

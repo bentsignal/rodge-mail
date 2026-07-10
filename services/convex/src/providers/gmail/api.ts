@@ -185,6 +185,19 @@ export class GmailAdapter implements MailProviderAdapter {
     return decodeBase64Url(response.data);
   }
 
+  async setRead(accessToken: string, remoteMessageId: string, isRead: boolean) {
+    await gmailFetch(
+      accessToken,
+      `/messages/${encodeURIComponent(remoteMessageId)}/modify`,
+      {
+        method: "POST",
+        body: JSON.stringify(
+          isRead ? { removeLabelIds: ["UNREAD"] } : { addLabelIds: ["UNREAD"] },
+        ),
+      },
+    );
+  }
+
   private async listRecentMessageIds(accessToken: string) {
     const ids: string[] = [];
     let pageToken: string | undefined;

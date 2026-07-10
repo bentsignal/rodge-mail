@@ -32,6 +32,7 @@ export function ComposerScreen() {
   const params = useLocalSearchParams<{ subject?: string; to?: string }>();
   const router = useRouter();
   const accounts = useMailStore((store) => store.accounts);
+  const accountFilter = useMailStore((store) => store.accountFilter);
   const enqueuePlainText = useMutation(api.mail.mutations.enqueuePlainText);
   const [idempotencyKey] = useState(() => `rodge-native-${randomUUID()}`);
   const [isSending, setIsSending] = useState(false);
@@ -60,13 +61,12 @@ export function ComposerScreen() {
       );
       return;
     }
-    const account = accounts.find(
-      (item) => item.provider === "gmail" || item.provider === "microsoft",
-    );
+    const account =
+      accounts.find((item) => item.id === accountFilter) ?? accounts[0];
     if (!account) {
       Alert.alert(
         "Connect an account first",
-        "Add Gmail or Microsoft 365 from Rodge Mail on the web before sending.",
+        "Add Gmail, Microsoft 365, or iCloud from Rodge Mail on the web before sending.",
       );
       return;
     }

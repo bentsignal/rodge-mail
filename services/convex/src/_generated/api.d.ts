@@ -42,6 +42,7 @@ import type * as http from "../http.js";
 import type * as limiter from "../limiter.js";
 import type * as mail_helpers from "../mail/helpers.js";
 import type * as mail_mutations from "../mail/mutations.js";
+import type * as mail_outbox from "../mail/outbox.js";
 import type * as mail_queries from "../mail/queries.js";
 import type * as mail_types from "../mail/types.js";
 import type * as mail_validators from "../mail/validators.js";
@@ -107,6 +108,7 @@ declare const fullApi: ApiFromModules<{
   limiter: typeof limiter;
   "mail/helpers": typeof mail_helpers;
   "mail/mutations": typeof mail_mutations;
+  "mail/outbox": typeof mail_outbox;
   "mail/queries": typeof mail_queries;
   "mail/types": typeof mail_types;
   "mail/validators": typeof mail_validators;

@@ -8,10 +8,7 @@ import {
 // eslint-disable-next-line no-restricted-imports -- Mail has intentional loading states and a selection-dependent thread query.
 import { useQuery } from "@tanstack/react-query";
 import { convexQuery } from "@convex-dev/react-query";
-import {
-  useMutation,
-  usePaginatedQuery,
-} from "convex/react";
+import { useMutation, usePaginatedQuery } from "convex/react";
 
 import type { InboxCategory } from "@rodge-mail/features/mail";
 import { api } from "@rodge-mail/convex/api";
@@ -31,8 +28,8 @@ import {
   sortInboxMessages,
   toAccountView,
 } from "./live-data-utils";
-import { useMailStore } from "./store";
 import { useSemanticMessages } from "./semantic-search";
+import { useMailStore } from "./store";
 
 const PAGE_SIZE = 30;
 

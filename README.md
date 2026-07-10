@@ -14,10 +14,11 @@ iCloud accounts, and learns which messages Shawn actually wants to see.
 - Explainable Focused/Other classification and semantic search for important
   mail
 
-The first vertical slice is in place: all three clients share a focused inbox
-experience, Convex owns the normalized mail model, and owner-only passkey auth
-is deployed. Provider sync and production AI credentials are the next runtime
-milestones.
+The product implementation includes the shared focused inbox, owner-only
+passkey auth, Gmail and Microsoft Graph OAuth providers, the iCloud IMAP/SMTP
+bridge, transactional sending, private attachments, and explainable AI
+classification and semantic search. Production provider credentials, the
+iCloud bridge host, and the public web origin are deployment-time concerns.
 
 ## Development
 

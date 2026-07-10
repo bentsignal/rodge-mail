@@ -76,7 +76,8 @@ Microsoft sends use a draft-first flow. Rodge Mail stores the immutable draft
 ID under the outbox lease before calling `send`, so a timeout can check whether
 the same draft is still a draft or already exists in Sent Items before retrying.
 Graph returns `202 Accepted`; that confirms Exchange accepted the send request,
-not final recipient delivery. Attachment bytes are not uploaded by this slice.
+not final recipient delivery. File attachments are uploaded with the draft;
+the current simple Graph attachment path limits each Microsoft file to 3 MB.
 
 ## Synchronization and send guarantees
 
@@ -95,9 +96,15 @@ not final recipient delivery. Attachment bytes are not uploaded by this slice.
 - Access and refresh tokens are stored in AES-256-GCM envelopes. The key version
   is stored with each envelope, while the keys remain deployment variables. GCM
   additional authenticated data binds credentials to owner, provider, and account.
-- Message HTML and attachment bytes are not downloaded in this slice. Plain-text
-  bodies and remote attachment metadata are normalized; attachment download and
-  sanitized HTML rendering remain explicit follow-up work.
+- Plain-text bodies and remote attachment metadata are normalized. Gmail and
+  Microsoft attachment bytes are fetched only after an authorized download
+  request, cached in private Convex storage, and served through short-lived
+  storage URLs. Compose uploads allow five files, 10 MB per file, and 18 MB
+  total; Microsoft additionally applies its 3 MB per-file send limit. iCloud
+  binary attachment transfer remains a separate bridge storage flow.
+- Read/unread changes are written locally first and propagated to Gmail and
+  Microsoft with bounded retries. iCloud read-state propagation is not part of
+  protocol version 1.
 - The shared cron schedules Gmail history and Microsoft Inbox delta repair every
   five minutes and recovers expired outbox leases. Gmail `watch`/Pub/Sub and
   Microsoft Graph change notifications can later reduce latency; cursor-based

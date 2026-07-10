@@ -1,19 +1,7 @@
 import type { LucideIcon } from "lucide-react";
-import { useState } from "react";
-import { useAction } from "convex/react";
-import {
-  BriefcaseBusiness,
-  Cloud,
-  Inbox,
-  Link,
-  Loader,
-  Mail,
-  PenLine,
-} from "lucide-react";
+import { BriefcaseBusiness, Cloud, Inbox, Mail, PenLine } from "lucide-react";
 
-import { api } from "@rodge-mail/convex/api";
 import { cn } from "@rodge-mail/std/cn";
-import { toast } from "@rodge-mail/ui-web/toast";
 
 import type { MailAccountView } from "../types";
 import { PasskeyManagementButton } from "~/features/auth/components/passkey-management-button";
@@ -21,6 +9,7 @@ import { SignOutLink } from "~/features/auth/components/sign-out-link";
 import { ThemeToggle } from "~/features/theme/components/theme-toggle";
 import { useLiveMail } from "../live-data";
 import { useMailStore } from "../store";
+import { ProviderConnectionButtons } from "./provider-connection-buttons";
 
 const ACCOUNT_ICONS = {
   gmail: Mail,
@@ -96,126 +85,6 @@ export function AccountRail() {
       </div>
     </aside>
   );
-}
-
-function ProviderConnectionButtons({
-  accounts,
-}: {
-  accounts: MailAccountView[];
-}) {
-  const connectGmail = useAction(api.accounts.actions.connectGmail);
-  const connectMicrosoft = useAction(api.accounts.actions.connectMicrosoft);
-  const connectICloud = useAction(api.accounts.actions.connectICloud);
-  const [connectingProvider, setConnectingProvider] = useState<
-    "gmail" | "microsoft" | "icloud" | undefined
-  >();
-  const gmailAccount = accounts.find((account) => account.provider === "gmail");
-  const microsoftAccount = accounts.find(
-    (account) => account.provider === "microsoft",
-  );
-  const iCloudAccount = accounts.find(
-    (account) => account.provider === "icloud",
-  );
-
-  async function connect(
-    provider: "gmail" | "microsoft",
-    startAuthorization: () => Promise<{ authorizationUrl: string }>,
-  ) {
-    setConnectingProvider(provider);
-    try {
-      const result = await startAuthorization();
-      window.location.assign(result.authorizationUrl);
-    } catch (error) {
-      toast.error(getConnectionError(error, provider));
-      setConnectingProvider(undefined);
-    }
-  }
-
-  async function connectICloudAccount() {
-    setConnectingProvider("icloud");
-    try {
-      const result = await connectICloud({ returnPath: "/" });
-      window.location.assign(result.setupUrl);
-    } catch (error) {
-      toast.error(getConnectionError(error, "icloud"));
-      setConnectingProvider(undefined);
-    }
-  }
-
-  return (
-    <>
-      <ProviderConnectionButton
-        account={gmailAccount}
-        isConnecting={connectingProvider === "gmail"}
-        label="Gmail"
-        onConnect={() =>
-          void connect("gmail", () => connectGmail({ returnPath: "/" }))
-        }
-      />
-      <ProviderConnectionButton
-        account={iCloudAccount}
-        isConnecting={connectingProvider === "icloud"}
-        label="iCloud"
-        onConnect={() => void connectICloudAccount()}
-      />
-      <ProviderConnectionButton
-        account={microsoftAccount}
-        isConnecting={connectingProvider === "microsoft"}
-        label="Microsoft 365"
-        onConnect={() =>
-          void connect("microsoft", () => connectMicrosoft({ returnPath: "/" }))
-        }
-      />
-    </>
-  );
-}
-
-function ProviderConnectionButton({
-  account,
-  isConnecting,
-  label,
-  onConnect,
-}: {
-  account: MailAccountView | undefined;
-  isConnecting: boolean;
-  label: string;
-  onConnect: () => void;
-}) {
-  if (account && account.status !== "reauthorization_required") return null;
-  const connectionLabel = `${account ? "Reconnect" : "Connect"} ${label}`;
-
-  return (
-    <button
-      aria-label={connectionLabel}
-      className="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[#b9ad9d] px-3 text-xs font-semibold text-[#756b60] transition hover:border-[#c76749] hover:text-[#a74f37] disabled:opacity-50 xl:justify-start dark:border-[#555a52] dark:text-[#aaa195]"
-      disabled={isConnecting}
-      onClick={onConnect}
-      title={connectionLabel}
-      type="button"
-    >
-      <ConnectionIcon isConnecting={isConnecting} />
-      <span className="hidden xl:inline">{connectionLabel}</span>
-    </button>
-  );
-}
-
-function ConnectionIcon({ isConnecting }: { isConnecting: boolean }) {
-  if (isConnecting) return <Loader className="size-3.5 animate-spin" />;
-  return <Link className="size-3.5" />;
-}
-
-function getConnectionError(
-  error: unknown,
-  provider: "gmail" | "microsoft" | "icloud",
-) {
-  if (error instanceof Error && error.message.trim()) return error.message;
-  const label =
-    provider === "gmail"
-      ? "Gmail"
-      : provider === "microsoft"
-        ? "Microsoft"
-        : "iCloud";
-  return `Could not start ${label} authorization.`;
 }
 
 function Brand() {

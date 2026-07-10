@@ -653,6 +653,46 @@ export const setMicrosoftMessageRead = internalAction({
   },
 });
 
+export const setGmailMessageRead = internalAction({
+  args: {
+    ownerId: v.string(),
+    accountId: v.id("mailAccounts"),
+    remoteMessageId: v.string(),
+    isRead: v.boolean(),
+    attempt: v.optional(v.number()),
+  },
+  handler: async (ctx, args): Promise<void> => {
+    const attempt = args.attempt ?? 0;
+    try {
+      const connection = await ctx.runQuery(
+        internal.sync.internal.getGmailSyncContext,
+        { ownerId: args.ownerId, accountId: args.accountId },
+      );
+      if (!connection) throw new Error("Gmail connection is unavailable");
+      const tokens = await getUsableGmailTokens(ctx, {
+        ownerId: args.ownerId,
+        accountId: args.accountId,
+        encryptedTokens: connection.credential.encryptedTokens,
+      });
+      await new GmailAdapter().setRead(
+        tokens.accessToken,
+        args.remoteMessageId,
+        args.isRead,
+      );
+    } catch (error) {
+      if (attempt < 2) {
+        await ctx.scheduler.runAfter(
+          2 ** attempt * 1_000,
+          internal.sync.internal.setGmailMessageRead,
+          { ...args, attempt: attempt + 1 },
+        );
+        return;
+      }
+      throw error;
+    }
+  },
+});
+
 export const listProviderRemoteMessageIds = internalQuery({
   args: { ownerId: v.string(), accountId: v.id("mailAccounts") },
   handler: async (ctx, args) => {
