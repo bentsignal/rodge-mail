@@ -107,8 +107,12 @@ function findAccount(
   provider: ConnectableProvider,
 ) {
   return accounts.find(
-    (account) => account.provider === provider && account.isDemo !== true,
+    (account) => account.provider === provider && !isDemoAccount(account),
   );
+}
+
+function isDemoAccount(account: MailAccountView) {
+  return account.isDemo === true || account.remoteAccountId.startsWith("demo-");
 }
 
 function getConnectionError(error: unknown, provider: ConnectableProvider) {

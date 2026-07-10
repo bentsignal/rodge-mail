@@ -54,7 +54,7 @@ export const wipeDemoMail = authedMutation({
         .query("mailAccounts")
         .withIndex("by_owner", (q) => q.eq("ownerId", ctx.ownerId))
         .collect()
-    ).filter((account) => account.isDemo === true);
+    ).filter(isDemoAccount);
 
     for (const account of accounts) {
       await deleteDemoAccountRecords(ctx, account._id);
@@ -67,4 +67,13 @@ function ensureDevelopment() {
   if (env.ENVIRONMENT === "production") {
     throw new ConvexError("Demo mail is unavailable in production");
   }
+}
+
+function isDemoAccount(account: { isDemo?: boolean; remoteAccountId: string }) {
+  return (
+    account.isDemo === true ||
+    DEMO_ACCOUNTS.some(
+      (fixture) => fixture.remoteAccountId === account.remoteAccountId,
+    )
+  );
 }

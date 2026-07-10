@@ -21,20 +21,31 @@ export async function ensureDemoAccount(
     )
     .first();
   const now = Date.now();
-  const accountId = existing
-    ? existing._id
-    : await ctx.db.insert("mailAccounts", {
-        ownerId,
-        provider: fixture.provider,
-        remoteAccountId: fixture.remoteAccountId,
-        address: fixture.address,
-        displayName: fixture.displayName,
-        status: "connected",
-        isDemo: true,
-        lastSyncedAt: now,
-        createdAt: now,
-        updatedAt: now,
-      });
+  let accountId: Id<"mailAccounts">;
+  if (existing) {
+    accountId = existing._id;
+    await ctx.db.patch(existing._id, {
+      address: fixture.address,
+      displayName: fixture.displayName,
+      status: "connected",
+      isDemo: true,
+      lastSyncedAt: now,
+      updatedAt: now,
+    });
+  } else {
+    accountId = await ctx.db.insert("mailAccounts", {
+      ownerId,
+      provider: fixture.provider,
+      remoteAccountId: fixture.remoteAccountId,
+      address: fixture.address,
+      displayName: fixture.displayName,
+      status: "connected",
+      isDemo: true,
+      lastSyncedAt: now,
+      createdAt: now,
+      updatedAt: now,
+    });
+  }
 
   const folder = await ctx.db
     .query("mailFolders")

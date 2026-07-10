@@ -8,7 +8,9 @@ const ACCOUNT_ACCENTS = {
 
 export function toAccountView(account: MailAccountDocument) {
   const accountLabel = account.displayName?.trim() ?? account.address;
-  const label = account.isDemo ? `${accountLabel} · Demo` : accountLabel;
+  const isDemo =
+    account.isDemo === true || account.remoteAccountId.startsWith("demo-");
+  const label = isDemo ? `${accountLabel} · Demo` : accountLabel;
   return {
     ...account,
     accent: ACCOUNT_ACCENTS[account.provider],
