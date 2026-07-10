@@ -122,6 +122,24 @@ export const getMessage = authedQuery({
   },
 });
 
+export const getMessagesByIds = authedQuery({
+  args: { messageIds: v.array(v.id("messages")) },
+  handler: async (ctx, args) => {
+    const messageIds = args.messageIds.slice(0, 50);
+    const messages = await Promise.all(
+      messageIds.map(async (messageId) => await ctx.db.get(messageId)),
+    );
+    return await Promise.all(
+      messages
+        .filter(
+          (message): message is Doc<"messages"> =>
+            message?.ownerId === ctx.ownerId && message.inInbox,
+        )
+        .map(async (message) => await toMessageListItem(ctx, message)),
+    );
+  },
+});
+
 export const getThread = authedQuery({
   args: { threadId: v.id("threads") },
   handler: async (ctx, args) => {

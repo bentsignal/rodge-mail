@@ -8,7 +8,10 @@ import {
 // eslint-disable-next-line no-restricted-imports -- Mail has intentional loading states and a selection-dependent thread query.
 import { useQuery } from "@tanstack/react-query";
 import { convexQuery } from "@convex-dev/react-query";
-import { useMutation, usePaginatedQuery } from "convex/react";
+import {
+  useMutation,
+  usePaginatedQuery,
+} from "convex/react";
 
 import type { InboxCategory } from "@rodge-mail/features/mail";
 import { api } from "@rodge-mail/convex/api";
@@ -29,6 +32,7 @@ import {
   toAccountView,
 } from "./live-data-utils";
 import { useMailStore } from "./store";
+import { useSemanticMessages } from "./semantic-search";
 
 const PAGE_SIZE = 30;
 
@@ -132,7 +136,14 @@ function useLiveMailQueries({
     category,
     searchTerm: deferredSearchQuery,
   });
-  const inboxMessages = sortInboxMessages(activePage.results);
+  const semanticMessages = useSemanticMessages({
+    accountId,
+    searchTerm: deferredSearchQuery,
+  });
+  const inboxMessages = sortInboxMessages([
+    ...activePage.results,
+    ...semanticMessages,
+  ]);
   const effectiveThreadId = selectedThreadId ?? inboxMessages[0]?.threadId;
   const threadQuery = useThreadQuery(effectiveThreadId);
   throwQueryError(accountQuery.error);
