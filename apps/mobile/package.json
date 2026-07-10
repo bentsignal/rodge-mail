@@ -4,9 +4,9 @@
   "main": "index.ts",
   "scripts": {
     "clean": "git clean -xdf .cache .expo .turbo android ios node_modules",
-    "dev": "portless \"$(../../scripts/portless-app-name.sh mobile.rodge-mail)\" node ../../scripts/expo-portless-bridge.mjs expo start",
-    "dev:android": "portless \"$(../../scripts/portless-app-name.sh mobile.rodge-mail)\" node ../../scripts/expo-portless-bridge.mjs expo start --android",
-    "dev:ios": "portless \"$(../../scripts/portless-app-name.sh mobile.rodge-mail)\" node ../../scripts/expo-portless-bridge.mjs expo start --ios",
+    "dev": "portless \"$(../../scripts/portless-app-name.sh mobile.rodge-mail)\" --lan node ../../scripts/expo-portless-bridge.mjs expo start",
+    "dev:android": "portless \"$(../../scripts/portless-app-name.sh mobile.rodge-mail)\" --lan node ../../scripts/expo-portless-bridge.mjs expo start --android",
+    "dev:ios": "portless \"$(../../scripts/portless-app-name.sh mobile.rodge-mail)\" --lan node ../../scripts/expo-portless-bridge.mjs expo start --ios",
     "android": "expo run:android",
     "ios": "expo run:ios",
     "format": "prettier --check . --ignore-path ../../.gitignore --ignore-path .prettierignore",

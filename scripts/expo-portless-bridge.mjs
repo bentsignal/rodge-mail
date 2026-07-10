@@ -184,6 +184,7 @@ server.listen(publicPort, "127.0.0.1", () => {
 const child = spawn(command[0], [...command.slice(1), "--port", String(metroPort)], {
   env: {
     ...process.env,
+    EXPO_PACKAGER_PROXY_URL: publicOrigin,
     PORT: String(metroPort),
     REACT_NATIVE_PACKAGER_HOSTNAME: publicHost,
   },

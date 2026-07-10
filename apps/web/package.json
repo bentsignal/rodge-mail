@@ -5,7 +5,7 @@
   "scripts": {
     "build": "pnpm with-env vite build",
     "clean": "git clean -xdf .cache dist .turbo node_modules",
-    "dev": "pnpm with-env portless \"$(../../scripts/portless-app-name.sh www.rodge-mail)\" vite dev",
+    "dev": "pnpm with-env portless \"$(../../scripts/portless-app-name.sh www.rodge-mail)\" --lan vite dev",
     "dev:app": "pnpm with-env vite dev",
     "format": "prettier --check . --ignore-path ../../.gitignore --ignore-path .prettierignore",
     "lint": "eslint --flag unstable_native_nodejs_ts_config",

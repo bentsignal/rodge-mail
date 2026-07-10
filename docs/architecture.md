@@ -19,9 +19,11 @@ Electron host ───────┼─> Convex queries, mutations, and auth
 Expo mobile ─────────┘
 ```
 
-The Electron application loads the hosted HTTPS web origin. That keeps one web
-implementation and one stable WebAuthn relying-party origin. It must not expose
-Node, filesystem, shell, or generic IPC access to remote renderer content.
+The Electron application loads the same HTTPS web origin as the browser:
+Portless during development and the hosted origin in packaged builds. That
+keeps one web implementation and one stable WebAuthn relying-party origin per
+environment. It must not expose Node, filesystem, shell, or generic IPC access
+to remote renderer content.
 
 ## Identity and mailbox access
 

@@ -12,12 +12,33 @@ scripts coordinate package tasks.
 
 ## Local apps
 
-`pnpm dev` starts workspace development tasks through Portless. The web origin
-uses the stable `www.rodge-mail.local` host shape so auth callbacks and future
-passkey configuration do not depend on random ports.
+Portless HTTPS is the primary development environment. Production hosting is
+not required to exercise the application locally.
 
-The desktop app must receive `RODGE_WEB_URL`; use the stable local HTTPS web URL
-in development and the deployed HTTPS URL in packaged builds.
+`pnpm dev:web` starts the development Convex functions and TanStack web client.
+`pnpm dev` adds the Expo and Electron development processes. Both commands
+start Portless explicitly in LAN mode, making the stable origins available on
+this Mac and other devices on the same Wi-Fi network:
+
+- Web: `https://www.rodge-mail.local`
+- Expo/Metro: `https://mobile.rodge-mail.local`
+
+On first use, allow Portless to install its local certificate authority. If the
+certificate was removed or is not trusted, run `pnpm exec portless trust` and
+restart the development command. A physical phone must also trust that local CA
+before it can load the HTTPS Metro origin.
+
+The Expo bridge sets Expo's packager proxy URL to the Portless origin, so the
+development-client QR code and generated manifest use
+`https://mobile.rodge-mail.local` instead of Metro's random internal port.
+
+The Convex development auth deployment trusts `https://www.rodge-mail.local`,
+and its passkey relying-party ID is `rodge-mail.local`. Worktree-specific hosts
+remain subdomains of the same relying-party ID.
+
+The desktop app defaults to the Portless web origin in development. Set
+`RODGE_WEB_URL` only when intentionally testing another safe development
+origin; packaged builds continue to use the deployed HTTPS origin.
 
 ## Secrets
 
@@ -50,6 +71,9 @@ See [`services/convex/AI.md`](../services/convex/AI.md) for model variables,
 fallback behavior, and the selective semantic-indexing boundary.
 
 ## Web deployment
+
+This is a release step, not a prerequisite for local development or web
+passkey testing.
 
 The Vercel project root must be `apps/web`, with “Include source files outside
 of the Root Directory” enabled so pnpm workspace packages are available. The
