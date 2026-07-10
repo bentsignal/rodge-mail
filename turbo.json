@@ -50,7 +50,8 @@
     "VITE_NODE_ENV",
     "OPENAI_API_KEY",
     "AI_CLASSIFICATION_MODEL",
-    "AI_EMBEDDING_MODEL"
+    "AI_EMBEDDING_MODEL",
+    "ANDROID_PASSKEY_ORIGINS"
   ],
   "globalPassThroughEnv": [
     "NODE_ENV",

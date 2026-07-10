@@ -9,6 +9,10 @@ component. Configure these variables on each Convex deployment:
 - `PASSKEY_RP_ID`: the WebAuthn relying-party domain, without a scheme or path.
 - `OWNER_BOOTSTRAP_TOKEN`: a temporary, high-entropy secret used as the
   passkey-first registration `context`. Use at least 32 random characters.
+- `ANDROID_PASSKEY_ORIGINS`: optional comma-separated
+  `android:apk-key-hash:<BASE64_SHA256>` origins for every debug, EAS, and Play
+  signing certificate that may authenticate on Android versions where
+  Credential Manager cannot forward the HTTPS origin.
 
 `CONVEX_CLOUD_URL` and `CONVEX_SITE_URL` are supplied by Convex. The auth
 server uses `CONVEX_SITE_URL` as its base URL rather than the placeholder URLs
@@ -18,6 +22,11 @@ Pre-auth passkey registration is closed when `OWNER_BOOTSTRAP_TOKEN` is not
 set. Configure it only while bootstrapping, register at least two independent
 passkeys, then remove it from the Convex deployment. An authenticated owner can
 still add or manage passkeys after the bootstrap token is removed.
+
+Android also requires `https://<PASSKEY_RP_ID>/.well-known/assetlinks.json`
+with the package `com.bentsignal.rodgemail` and each signing certificate's raw
+SHA-256 fingerprint. The same certificates must be converted to base64 and
+listed in `ANDROID_PASSKEY_ORIGINS`; the server rejects malformed entries.
 
 After changing Better Auth plugins or options that affect its schema, regenerate
 the local component schema from `services/convex/src/betterAuth`:

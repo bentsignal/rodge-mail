@@ -16,14 +16,16 @@ import { urls } from "./urls";
 
 // eslint-disable-next-line no-restricted-syntax -- This preserves Better Auth's generated Convex API typing.
 const authFunctions: AuthFunctions = internal.auth;
+const androidPasskeyOrigins = getAndroidPasskeyOrigins();
 const trustedOrigins =
   env.ENVIRONMENT === "production"
-    ? [urls.web, "rodge-mail://"]
+    ? [urls.web, "rodge-mail://", ...androidPasskeyOrigins]
     : [
         urls.web,
         "https://*.rodge-mail.local",
         "https://*.www.rodge-mail.local",
         "rodge-mail://",
+        ...androidPasskeyOrigins,
       ];
 export const authCorsAllowedOrigins =
   env.ENVIRONMENT === "production"
@@ -48,7 +50,7 @@ export function createAuthOptions(ctx: GenericCtx<DataModel>) {
     trustedOrigins,
     plugins: [
       passkey({
-        origin: urls.web,
+        origin: [urls.web, ...androidPasskeyOrigins],
         rpID: env.PASSKEY_RP_ID,
         rpName: "Rodge Mail",
         authenticatorSelection: {
@@ -122,4 +124,13 @@ async function securelyEqual(left: string, right: string) {
 
 function normalizeOwnerEmail(email: string) {
   return email.trim().toLowerCase();
+}
+
+function getAndroidPasskeyOrigins() {
+  return (process.env.ANDROID_PASSKEY_ORIGINS ?? "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter((origin) =>
+      /^android:apk-key-hash:[A-Za-z0-9+/]+={0,2}$/u.test(origin),
+    );
 }
