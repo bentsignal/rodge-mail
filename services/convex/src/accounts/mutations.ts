@@ -24,3 +24,28 @@ export const syncGmailNow = authedMutation({
     });
   },
 });
+
+export const syncMicrosoftNow = authedMutation({
+  args: { accountId: v.id("mailAccounts") },
+  handler: async (ctx, args) => {
+    const account = await ensureOwnedAccount(ctx, ctx.ownerId, args.accountId);
+    if (account.provider !== "microsoft" || account.isDemo) {
+      throw new ConvexError("Microsoft sync is unavailable for this account");
+    }
+    if (
+      account.status === "disconnected" ||
+      account.status === "reauthorization_required"
+    ) {
+      throw new ConvexError("Reconnect Microsoft before syncing");
+    }
+    await ctx.scheduler.runAfter(
+      0,
+      internal.sync.internal.executeMicrosoftSync,
+      {
+        ownerId: ctx.ownerId,
+        accountId: args.accountId,
+        reason: "manual",
+      },
+    );
+  },
+});

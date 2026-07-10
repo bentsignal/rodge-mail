@@ -1,6 +1,6 @@
+/* eslint-disable complexity, no-restricted-syntax, @typescript-eslint/consistent-type-assertions -- The unauthenticated callback validates explicit OAuth and Graph response contracts. */
 import type { EncryptedEnvelope } from "../crypto";
 import type { ProviderTokens } from "../types";
-/* eslint-disable no-restricted-syntax, @typescript-eslint/consistent-type-assertions -- The unauthenticated OAuth callback validates explicit network response contracts. */
 import { internal } from "../../_generated/api";
 import { httpAction } from "../../_generated/server";
 import { urls } from "../../urls";
@@ -8,13 +8,13 @@ import {
   credentialAdditionalData,
   decryptProviderSecret,
   encryptProviderSecret,
-  oauthStateAdditionalData,
+  oauthStateAdditionalDataForProvider,
   sha256Base64Url,
 } from "../crypto";
-import { exchangeAuthorizationCode } from "./oauth";
+import { exchangeMicrosoftAuthorizationCode } from "./oauth";
 
-const GMAIL_PROFILE_URL =
-  "https://gmail.googleapis.com/gmail/v1/users/me/profile";
+const MICROSOFT_PROFILE_URL =
+  "https://graph.microsoft.com/v1.0/me?$select=id,mail,userPrincipalName,displayName";
 
 export const oauthCallback = httpAction(async (ctx, request) => {
   const requestUrl = new URL(request.url);
@@ -33,7 +33,7 @@ export const oauthCallback = httpAction(async (ctx, request) => {
       encryptedCodeVerifier: EncryptedEnvelope;
       returnPath: string;
     } | null = await ctx.runMutation(internal.sync.internal.consumeOAuthState, {
-      provider: "gmail",
+      provider: "microsoft",
       stateHash,
       now: Date.now(),
     });
@@ -41,16 +41,28 @@ export const oauthCallback = httpAction(async (ctx, request) => {
     returnPath = oauthState.returnPath;
     const codeVerifier = await decryptProviderSecret<string>(
       oauthState.encryptedCodeVerifier,
-      oauthStateAdditionalData(oauthState.ownerId, stateHash),
+      oauthStateAdditionalDataForProvider(
+        oauthState.ownerId,
+        stateHash,
+        "microsoft",
+      ),
     );
-    let tokens = await exchangeAuthorizationCode(code, codeVerifier);
-    const profile = await fetchGmailProfile(tokens.accessToken);
+    let tokens = await exchangeMicrosoftAuthorizationCode(code, codeVerifier);
+    const profile = await fetchMicrosoftProfile(tokens.accessToken);
+    const mailboxAddress = profile.mail?.trim();
+    const address = (
+      mailboxAddress?.length ? mailboxAddress : profile.userPrincipalName
+    )?.toLowerCase();
+    if (!address?.includes("@")) {
+      throw new Error("Microsoft account has no usable mailbox address");
+    }
     const accountId = await ctx.runMutation(
-      internal.sync.internal.upsertGmailAccount,
+      internal.sync.internal.upsertMicrosoftAccount,
       {
         ownerId: oauthState.ownerId,
-        remoteAccountId: profile.emailAddress.toLowerCase(),
-        address: profile.emailAddress.toLowerCase(),
+        remoteAccountId: profile.id,
+        address,
+        displayName: profile.displayName,
         grantedScopes: tokens.scopes,
       },
     );
@@ -63,17 +75,17 @@ export const oauthCallback = httpAction(async (ctx, request) => {
       if (existing) {
         const previous = await decryptProviderSecret<ProviderTokens>(
           existing.encryptedTokens,
-          credentialAdditionalData(oauthState.ownerId, accountId, "gmail"),
+          credentialAdditionalData(oauthState.ownerId, accountId, "microsoft"),
         );
         tokens = { ...tokens, refreshToken: previous.refreshToken };
       }
     }
     if (!tokens.refreshToken) {
-      throw new Error("Google did not issue an offline refresh token");
+      throw new Error("Microsoft did not issue an offline refresh token");
     }
     const encryptedTokens = await encryptProviderSecret(
       tokens,
-      credentialAdditionalData(oauthState.ownerId, accountId, "gmail"),
+      credentialAdditionalData(oauthState.ownerId, accountId, "microsoft"),
     );
     await ctx.runMutation(internal.sync.internal.storeProviderCredential, {
       ownerId: oauthState.ownerId,
@@ -82,30 +94,42 @@ export const oauthCallback = httpAction(async (ctx, request) => {
       tokenExpiresAt: tokens.expiresAt,
       grantedScopes: tokens.scopes,
     });
-    await ctx.scheduler.runAfter(0, internal.sync.internal.executeGmailSync, {
-      ownerId: oauthState.ownerId,
-      accountId,
-      reason: "initial",
-    });
+    await ctx.scheduler.runAfter(
+      0,
+      internal.sync.internal.executeMicrosoftSync,
+      {
+        ownerId: oauthState.ownerId,
+        accountId,
+        reason: "initial",
+      },
+    );
     return redirectWithResult(returnPath, "connected");
   } catch (error) {
-    console.error("Gmail OAuth callback failed", safeErrorMessage(error));
+    console.error("Microsoft OAuth callback failed", safeErrorMessage(error));
     return redirectWithResult(returnPath, "error");
   }
 });
 
-async function fetchGmailProfile(accessToken: string) {
-  const response = await fetch(GMAIL_PROFILE_URL, {
+async function fetchMicrosoftProfile(accessToken: string) {
+  const response = await fetch(MICROSOFT_PROFILE_URL, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
   const body = (await response.json()) as {
-    emailAddress?: string;
+    id?: string;
+    mail?: string | null;
+    userPrincipalName?: string;
+    displayName?: string;
     error?: { message?: string };
   };
-  if (!response.ok || !body.emailAddress) {
-    throw new Error(body.error?.message ?? "Unable to read Gmail profile");
+  if (!response.ok || !body.id) {
+    throw new Error(body.error?.message ?? "Unable to read Microsoft profile");
   }
-  return { emailAddress: body.emailAddress };
+  return body as {
+    id: string;
+    mail?: string | null;
+    userPrincipalName?: string;
+    displayName?: string;
+  };
 }
 
 function redirectWithResult(
@@ -114,7 +138,7 @@ function redirectWithResult(
   detail?: string | null,
 ) {
   const destination = new URL(returnPath, urls.web);
-  destination.searchParams.set("gmail", result);
+  destination.searchParams.set("microsoft", result);
   if (detail) destination.searchParams.set("reason", detail.slice(0, 80));
   return Response.redirect(destination, 302);
 }

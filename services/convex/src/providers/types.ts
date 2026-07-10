@@ -50,6 +50,7 @@ export interface NormalizedMessage {
 export interface OutboxPayload {
   _id: Id<"outboxMessages">;
   accountId: Id<"mailAccounts">;
+  remoteMessageId?: string;
   from: string;
   to: MailboxAddress[];
   cc: MailboxAddress[];

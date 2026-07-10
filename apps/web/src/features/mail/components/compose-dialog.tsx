@@ -144,7 +144,7 @@ function ComposeFooter() {
   async function send() {
     const account = getSendingAccount(accounts, selectedThread?.accountId);
     if (!account) {
-      toast.error("Connect a Gmail account before sending mail.");
+      toast.error("Connect a Gmail or Microsoft 365 account before sending.");
       return;
     }
     if (draft.attachments.length > 0) {
@@ -228,7 +228,7 @@ function getSendingAccount(
 
 function canSendFromAccount(account: MailAccountView) {
   return (
-    account.provider === "gmail" &&
+    (account.provider === "gmail" || account.provider === "microsoft") &&
     (account.status === "connected" || account.status === "syncing")
   );
 }

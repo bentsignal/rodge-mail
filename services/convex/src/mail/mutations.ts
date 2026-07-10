@@ -39,6 +39,8 @@ export const setRead = authedMutation({
     const thread = await ctx.db.get(message.threadId);
     if (!thread || thread.ownerId !== ctx.ownerId) return;
 
+    const account = await ctx.db.get(message.accountId);
+
     await Promise.all([
       ctx.db.patch(message._id, {
         isRead: args.isRead,
@@ -48,6 +50,20 @@ export const setRead = authedMutation({
         unreadCount: Math.max(0, thread.unreadCount + (args.isRead ? -1 : 1)),
         updatedAt: Date.now(),
       }),
+      ...(account?.ownerId === ctx.ownerId && account.provider === "microsoft"
+        ? [
+            ctx.scheduler.runAfter(
+              0,
+              internal.sync.internal.setMicrosoftMessageRead,
+              {
+                ownerId: ctx.ownerId,
+                accountId: account._id,
+                remoteMessageId: message.remoteMessageId,
+                isRead: args.isRead,
+              },
+            ),
+          ]
+        : []),
     ]);
   },
 });
@@ -88,6 +104,7 @@ export const setThreadRead = authedMutation({
       .query("messages")
       .withIndex("by_thread_received", (q) => q.eq("threadId", thread._id))
       .collect();
+    const account = await ctx.db.get(thread.accountId);
     const now = Date.now();
     await Promise.all([
       ...messages
@@ -102,6 +119,22 @@ export const setThreadRead = authedMutation({
         unreadCount: args.isRead ? 0 : messages.length,
         updatedAt: now,
       }),
+      ...(account?.ownerId === ctx.ownerId && account.provider === "microsoft"
+        ? messages
+            .filter((message) => message.isRead !== args.isRead)
+            .map((message, index) =>
+              ctx.scheduler.runAfter(
+                index * 100,
+                internal.sync.internal.setMicrosoftMessageRead,
+                {
+                  ownerId: ctx.ownerId,
+                  accountId: account._id,
+                  remoteMessageId: message.remoteMessageId,
+                  isRead: args.isRead,
+                },
+              ),
+            )
+        : []),
     ]);
   },
 });
@@ -120,7 +153,7 @@ export const enqueuePlainText = authedMutation({
   handler: async (ctx, args) => {
     const account = await ensureOwnedAccount(ctx, ctx.ownerId, args.accountId);
     if (
-      account.provider !== "gmail" ||
+      !["gmail", "microsoft"].includes(account.provider) ||
       !["connected", "syncing"].includes(account.status)
     ) {
       throw new ConvexError("The selected account cannot send mail");
@@ -156,9 +189,11 @@ export const enqueuePlainText = authedMutation({
       createdAt: now,
       updatedAt: now,
     });
-    await ctx.scheduler.runAfter(0, internal.sync.internal.deliverGmailOutbox, {
-      outboxId,
-    });
+    await ctx.scheduler.runAfter(
+      0,
+      internal.sync.internal.deliverProviderOutbox,
+      { outboxId },
+    );
     return outboxId;
   },
 });
@@ -176,8 +211,10 @@ export const retryOutbox = authedMutation({
       error: undefined,
       updatedAt: Date.now(),
     });
-    await ctx.scheduler.runAfter(0, internal.sync.internal.deliverGmailOutbox, {
-      outboxId: outbox._id,
-    });
+    await ctx.scheduler.runAfter(
+      0,
+      internal.sync.internal.deliverProviderOutbox,
+      { outboxId: outbox._id },
+    );
   },
 });

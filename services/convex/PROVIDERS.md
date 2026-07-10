@@ -1,9 +1,9 @@
 # Mail providers
 
 Rodge Mail's provider boundary keeps OAuth tokens out of public functions and
-normalizes provider payloads before database writes. Gmail is the first complete
-adapter; Microsoft Graph and iCloud adapters can implement the same interfaces in
-`src/providers/types.ts` without changing the mail-domain tables.
+normalizes provider payloads before database writes. Gmail and Microsoft Graph
+implement the same interfaces in `src/providers/types.ts` without changing the
+mail-domain tables.
 
 ## Gmail setup
 
@@ -36,9 +36,51 @@ The OAuth request asks for offline access to `gmail.modify`, which is a Google
 restricted scope. A public app that stores restricted-scope Gmail data requires
 Google OAuth verification and may require a security assessment.
 
+## Microsoft 365 setup
+
+1. In Microsoft Entra, create an app registration that supports organizational
+   directories and personal Microsoft accounts. Add a **Web** redirect URI with
+   this exact value:
+   `https://<deployment>.convex.site/providers/microsoft/oauth/callback`.
+2. Add delegated Microsoft Graph permissions `User.Read`, `Mail.ReadWrite`, and
+   `Mail.Send`. Rodge Mail also requests `openid`, `profile`, and
+   `offline_access` during authorization. Tenant policy may require an
+   administrator to grant consent.
+3. Create a client secret and configure the Convex deployment. The tenant is
+   optional and defaults to `common`; set it to a tenant ID or verified tenant
+   domain to restrict authorization to one organization.
+
+   ```sh
+   pnpm --filter @rodge-mail/convex exec convex env set MICROSOFT_OAUTH_CLIENT_ID '<application-client-id>'
+   pnpm --filter @rodge-mail/convex exec convex env set MICROSOFT_OAUTH_CLIENT_SECRET '<client-secret-value>'
+   pnpm --filter @rodge-mail/convex exec convex env set MICROSOFT_OAUTH_TENANT 'common'
+   ```
+
+   The Microsoft connector uses the same `PROVIDER_CREDENTIAL_KEYS` keyring as
+   Gmail. Do not put the secret, keyring, access token, or refresh token in a
+   client-visible environment variable.
+
+4. Deploy Convex, sign in to Rodge Mail, and choose **Connect Microsoft 365** in
+   the account rail. The callback discovers the mailbox through `/me`, stores
+   encrypted offline credentials, and schedules the initial Inbox sync.
+
+The initial Graph delta round covers the most recent 90 days of Inbox mail and
+then persists the opaque `@odata.deltaLink`. Every five minutes, Rodge Mail
+follows that exact URL until Graph returns a new delta link. `@removed` entries
+delete messages that were deleted or moved out of Inbox. A `410` or invalid
+delta token starts a fresh delta round and reconciles the bounded local Inbox.
+Requests opt into immutable Outlook IDs so moves within the mailbox do not
+change canonical message identifiers.
+
+Microsoft sends use a draft-first flow. Rodge Mail stores the immutable draft
+ID under the outbox lease before calling `send`, so a timeout can check whether
+the same draft is still a draft or already exists in Sent Items before retrying.
+Graph returns `202 Accepted`; that confirms Exchange accepted the send request,
+not final recipient delivery. Attachment bytes are not uploaded by this slice.
+
 ## Synchronization and send guarantees
 
-- Initial sync snapshots up to 200 recent messages, labels, and a mailbox
+- Gmail initial sync snapshots up to 200 recent messages, labels, and a mailbox
   `historyId`. Incremental runs consume every `history.list` page and refetch
   messages affected by additions or label changes. An expired history cursor
   (`HTTP 404`) falls back to a full sync.
@@ -56,9 +98,11 @@ Google OAuth verification and may require a security assessment.
 - Message HTML and attachment bytes are not downloaded in this slice. Plain-text
   bodies and remote attachment metadata are normalized; attachment download and
   sanitized HTML rendering remain explicit follow-up work.
-- Production should add Gmail `watch`/Pub/Sub notifications or a scheduled sync
-  cadence. Manual sync is available through
-  `accounts/mutations:syncGmailNow`, and sends trigger an incremental sync.
+- The shared cron schedules Gmail history and Microsoft Inbox delta repair every
+  five minutes and recovers expired outbox leases. Gmail `watch`/Pub/Sub and
+  Microsoft Graph change notifications can later reduce latency; cursor-based
+  reconciliation remains authoritative. Manual sync is available through the
+  provider-specific account mutations, and sends trigger an incremental pass.
 
 Primary references:
 
@@ -67,5 +111,10 @@ Primary references:
 - [Gmail `history.list`](https://developers.google.com/workspace/gmail/api/reference/rest/v1/users.history/list)
 - [Gmail message sending](https://developers.google.com/workspace/gmail/api/guides/sending)
 - [Gmail OAuth scopes](https://developers.google.com/workspace/gmail/api/auth/scopes)
+- [Microsoft authorization code flow with PKCE](https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-auth-code-flow)
+- [Microsoft Graph message delta query](https://learn.microsoft.com/en-us/graph/delta-query-messages)
+- [Immutable Outlook identifiers](https://learn.microsoft.com/en-us/graph/outlook-immutable-id)
+- [Microsoft Graph `sendMail`](https://learn.microsoft.com/en-us/graph/api/user-sendmail?view=graph-rest-1.0)
+- [Microsoft Graph message attachments](https://learn.microsoft.com/en-us/graph/api/message-list-attachments?view=graph-rest-1.0)
 - [Convex actions](https://docs.convex.dev/functions/actions)
 - [Convex HTTP actions](https://docs.convex.dev/functions/http-actions)

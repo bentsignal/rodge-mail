@@ -51,11 +51,13 @@ export function ComposerScreen() {
       );
       return;
     }
-    const account = accounts.find((item) => item.provider === "gmail");
+    const account = accounts.find(
+      (item) => item.provider === "gmail" || item.provider === "microsoft",
+    );
     if (!account) {
       Alert.alert(
-        "Connect Gmail first",
-        "Add a Gmail account from Rodge Mail on the web before sending.",
+        "Connect an account first",
+        "Add Gmail or Microsoft 365 from Rodge Mail on the web before sending.",
       );
       return;
     }

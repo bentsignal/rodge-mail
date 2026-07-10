@@ -4,6 +4,7 @@ import { internal } from "../_generated/api";
 import {
   encryptProviderSecret,
   oauthStateAdditionalData,
+  oauthStateAdditionalDataForProvider,
   randomBase64Url,
   sha256Base64Url,
 } from "../providers/crypto";
@@ -11,6 +12,10 @@ import {
   buildGoogleAuthorizationUrl,
   getGoogleOAuthConfig,
 } from "../providers/gmail/oauth";
+import {
+  buildMicrosoftAuthorizationUrl,
+  getMicrosoftOAuthConfig,
+} from "../providers/microsoft/oauth";
 import { urls } from "../urls";
 import { authedAction } from "../utils";
 
@@ -31,6 +36,7 @@ export const connectGmail = authedAction({
 
     await ctx.runMutation(internal.sync.internal.storeOAuthState, {
       ownerId: ctx.ownerId,
+      provider: "gmail",
       stateHash,
       encryptedCodeVerifier,
       returnPath,
@@ -40,6 +46,38 @@ export const connectGmail = authedAction({
     return {
       authorizationUrl: buildGoogleAuthorizationUrl({
         ...getGoogleOAuthConfig(),
+        state,
+        codeChallenge,
+      }),
+    };
+  },
+});
+
+export const connectMicrosoft = authedAction({
+  args: { returnPath: v.optional(v.string()) },
+  handler: async (ctx, args): Promise<{ authorizationUrl: string }> => {
+    const returnPath = normalizeReturnPath(args.returnPath);
+    const state = randomBase64Url(32);
+    const stateHash = await sha256Base64Url(state);
+    const codeVerifier = randomBase64Url(64);
+    const codeChallenge = await sha256Base64Url(codeVerifier);
+    const encryptedCodeVerifier = await encryptProviderSecret(
+      codeVerifier,
+      oauthStateAdditionalDataForProvider(ctx.ownerId, stateHash, "microsoft"),
+    );
+
+    await ctx.runMutation(internal.sync.internal.storeOAuthState, {
+      ownerId: ctx.ownerId,
+      provider: "microsoft",
+      stateHash,
+      encryptedCodeVerifier,
+      returnPath,
+      expiresAt: Date.now() + OAUTH_STATE_LIFETIME_MS,
+    });
+
+    return {
+      authorizationUrl: buildMicrosoftAuthorizationUrl({
+        ...getMicrosoftOAuthConfig(),
         state,
         codeChallenge,
       }),

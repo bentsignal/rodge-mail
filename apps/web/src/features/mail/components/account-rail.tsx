@@ -73,7 +73,7 @@ export function AccountRail() {
           );
         })}
         <AccountLoadingState isLoading={isLoadingAccounts} />
-        <GmailConnectionButton accounts={accounts} />
+        <ProviderConnectionButtons accounts={accounts} />
       </nav>
 
       <div className="mt-auto space-y-1.5">
@@ -98,37 +98,82 @@ export function AccountRail() {
   );
 }
 
-function GmailConnectionButton({ accounts }: { accounts: MailAccountView[] }) {
+function ProviderConnectionButtons({
+  accounts,
+}: {
+  accounts: MailAccountView[];
+}) {
   const connectGmail = useAction(api.accounts.actions.connectGmail);
-  const [isConnecting, setIsConnecting] = useState(false);
+  const connectMicrosoft = useAction(api.accounts.actions.connectMicrosoft);
+  const [connectingProvider, setConnectingProvider] = useState<
+    "gmail" | "microsoft" | undefined
+  >();
   const gmailAccount = accounts.find((account) => account.provider === "gmail");
+  const microsoftAccount = accounts.find(
+    (account) => account.provider === "microsoft",
+  );
 
-  if (gmailAccount && gmailAccount.status !== "reauthorization_required") {
-    return null;
-  }
-
-  async function connect() {
-    setIsConnecting(true);
+  async function connect(
+    provider: "gmail" | "microsoft",
+    startAuthorization: () => Promise<{ authorizationUrl: string }>,
+  ) {
+    setConnectingProvider(provider);
     try {
-      const result = await connectGmail({ returnPath: "/" });
+      const result = await startAuthorization();
       window.location.assign(result.authorizationUrl);
     } catch (error) {
-      toast.error(getConnectionError(error));
-      setIsConnecting(false);
+      toast.error(getConnectionError(error, provider));
+      setConnectingProvider(undefined);
     }
   }
 
   return (
+    <>
+      <ProviderConnectionButton
+        account={gmailAccount}
+        isConnecting={connectingProvider === "gmail"}
+        label="Gmail"
+        onConnect={() =>
+          void connect("gmail", () => connectGmail({ returnPath: "/" }))
+        }
+      />
+      <ProviderConnectionButton
+        account={microsoftAccount}
+        isConnecting={connectingProvider === "microsoft"}
+        label="Microsoft 365"
+        onConnect={() =>
+          void connect("microsoft", () => connectMicrosoft({ returnPath: "/" }))
+        }
+      />
+    </>
+  );
+}
+
+function ProviderConnectionButton({
+  account,
+  isConnecting,
+  label,
+  onConnect,
+}: {
+  account: MailAccountView | undefined;
+  isConnecting: boolean;
+  label: string;
+  onConnect: () => void;
+}) {
+  if (account && account.status !== "reauthorization_required") return null;
+  const connectionLabel = `${account ? "Reconnect" : "Connect"} ${label}`;
+
+  return (
     <button
+      aria-label={connectionLabel}
       className="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[#b9ad9d] px-3 text-xs font-semibold text-[#756b60] transition hover:border-[#c76749] hover:text-[#a74f37] disabled:opacity-50 xl:justify-start dark:border-[#555a52] dark:text-[#aaa195]"
       disabled={isConnecting}
-      onClick={() => void connect()}
+      onClick={onConnect}
+      title={connectionLabel}
       type="button"
     >
       <ConnectionIcon isConnecting={isConnecting} />
-      <span className="hidden xl:inline">
-        {getConnectionLabel(gmailAccount)}
-      </span>
+      <span className="hidden xl:inline">{connectionLabel}</span>
     </button>
   );
 }
@@ -138,14 +183,9 @@ function ConnectionIcon({ isConnecting }: { isConnecting: boolean }) {
   return <Link className="size-3.5" />;
 }
 
-function getConnectionLabel(account: MailAccountView | undefined) {
-  if (account) return "Reconnect Gmail";
-  return "Connect Gmail";
-}
-
-function getConnectionError(error: unknown) {
+function getConnectionError(error: unknown, provider: "gmail" | "microsoft") {
   if (error instanceof Error && error.message.trim()) return error.message;
-  return "Could not start Gmail authorization.";
+  return `Could not start ${provider === "gmail" ? "Gmail" : "Microsoft"} authorization.`;
 }
 
 function Brand() {

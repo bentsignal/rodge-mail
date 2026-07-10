@@ -14,6 +14,7 @@ import {
   vEncryptedEnvelope,
   vMailboxAddress,
   vMailFolderKind,
+  vMailProvider,
   vMessageHeader,
   vSyncReason,
 } from "../mail/validators";
@@ -27,6 +28,14 @@ import {
   GoogleOAuthError,
   refreshGoogleTokens,
 } from "../providers/gmail/oauth";
+import {
+  MicrosoftGraphAdapter,
+  MicrosoftGraphError,
+} from "../providers/microsoft/api";
+import {
+  MicrosoftOAuthError,
+  refreshMicrosoftTokens,
+} from "../providers/microsoft/oauth";
 
 const vNormalizedAttachment = v.object({
   remoteAttachmentId: v.string(),
@@ -63,6 +72,7 @@ const vNormalizedMessage = v.object({
 export const storeOAuthState = internalMutation({
   args: {
     ownerId: v.string(),
+    provider: vMailProvider,
     stateHash: v.string(),
     encryptedCodeVerifier: vEncryptedEnvelope,
     returnPath: v.string(),
@@ -73,25 +83,34 @@ export const storeOAuthState = internalMutation({
       .query("providerOAuthStates")
       .withIndex("by_owner_created", (q) => q.eq("ownerId", args.ownerId))
       .collect();
-    for (const state of previous) await ctx.db.delete(state._id);
+    for (const state of previous) {
+      if (state.provider === args.provider) await ctx.db.delete(state._id);
+    }
     await ctx.db.insert("providerOAuthStates", {
       ...args,
-      provider: "gmail",
       createdAt: Date.now(),
     });
   },
 });
 
 export const consumeOAuthState = internalMutation({
-  args: { stateHash: v.string(), now: v.number() },
+  args: {
+    provider: vMailProvider,
+    stateHash: v.string(),
+    now: v.number(),
+  },
   handler: async (ctx, args) => {
     const state = await ctx.db
       .query("providerOAuthStates")
       .withIndex("by_state_hash", (q) => q.eq("stateHash", args.stateHash))
       .unique();
     if (!state) return null;
+    if (state.expiresAt < args.now) {
+      await ctx.db.delete(state._id);
+      return null;
+    }
+    if (state.provider !== args.provider) return null;
     await ctx.db.delete(state._id);
-    if (state.expiresAt < args.now || state.provider !== "gmail") return null;
     return {
       ownerId: state.ownerId,
       encryptedCodeVerifier: state.encryptedCodeVerifier,
@@ -133,6 +152,51 @@ export const upsertGmailAccount = internalMutation({
       provider: "gmail",
       remoteAccountId: args.remoteAccountId,
       address: args.address,
+      status: "syncing",
+      grantedScopes: args.grantedScopes,
+      connectedAt: now,
+      createdAt: now,
+      updatedAt: now,
+    });
+  },
+});
+
+export const upsertMicrosoftAccount = internalMutation({
+  args: {
+    ownerId: v.string(),
+    remoteAccountId: v.string(),
+    address: v.string(),
+    displayName: v.optional(v.string()),
+    grantedScopes: v.array(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("mailAccounts")
+      .withIndex("by_owner_provider_remote", (q) =>
+        q
+          .eq("ownerId", args.ownerId)
+          .eq("provider", "microsoft")
+          .eq("remoteAccountId", args.remoteAccountId),
+      )
+      .unique();
+    const now = Date.now();
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        address: args.address,
+        displayName: args.displayName,
+        grantedScopes: args.grantedScopes,
+        lastSyncError: undefined,
+        status: "syncing",
+        updatedAt: now,
+      });
+      return existing._id;
+    }
+    return await ctx.db.insert("mailAccounts", {
+      ownerId: args.ownerId,
+      provider: "microsoft",
+      remoteAccountId: args.remoteAccountId,
+      address: args.address,
+      displayName: args.displayName,
       status: "syncing",
       grantedScopes: args.grantedScopes,
       connectedAt: now,
@@ -412,6 +476,116 @@ export const executeGmailSync = internalAction({
   },
 });
 
+export const executeMicrosoftSync = internalAction({
+  args: {
+    ownerId: v.string(),
+    accountId: v.id("mailAccounts"),
+    reason: vSyncReason,
+  },
+  handler: async (ctx, args): Promise<void> => {
+    const syncRunId: Id<"syncRuns"> | null = await ctx.runMutation(
+      internal.sync.internal.createRun,
+      {
+        ownerId: args.ownerId,
+        accountId: args.accountId,
+        reason: args.reason,
+      },
+    );
+    if (!syncRunId) return;
+    await ctx.runMutation(internal.sync.internal.startRun, { syncRunId });
+    try {
+      const connection = await ctx.runQuery(
+        internal.sync.internal.getMicrosoftSyncContext,
+        { ownerId: args.ownerId, accountId: args.accountId },
+      );
+      if (!connection) throw new Error("Microsoft connection is unavailable");
+      const tokens = await getUsableMicrosoftTokens(ctx, {
+        ownerId: args.ownerId,
+        accountId: args.accountId,
+        encryptedTokens: connection.credential.encryptedTokens,
+      });
+      const adapter = new MicrosoftGraphAdapter();
+      const cursor = connection.account.syncCursor;
+      let reconciledDeletedRemoteMessageIds: string[] = [];
+      let syncResult:
+        | Awaited<ReturnType<MicrosoftGraphAdapter["fullSync"]>>
+        | Awaited<ReturnType<MicrosoftGraphAdapter["incrementalSync"]>>;
+      let fullSync = !cursor || args.reason === "initial";
+      try {
+        if (fullSync) {
+          syncResult = await adapter.fullSync(tokens.accessToken);
+        } else if (cursor) {
+          syncResult = await adapter.incrementalSync(
+            tokens.accessToken,
+            cursor,
+          );
+        } else {
+          throw new Error("Microsoft inbox delta cursor is unavailable");
+        }
+      } catch (error) {
+        if (!fullSync && isExpiredMicrosoftDelta(error)) {
+          fullSync = true;
+          syncResult = await adapter.fullSync(tokens.accessToken);
+        } else {
+          throw error;
+        }
+      }
+
+      if (fullSync) {
+        const knownRemoteMessageIds = await ctx.runQuery(
+          internal.sync.internal.listProviderRemoteMessageIds,
+          { ownerId: args.ownerId, accountId: args.accountId },
+        );
+        const remoteIds = new Set(
+          syncResult.messages.map((message) => message.remoteMessageId),
+        );
+        reconciledDeletedRemoteMessageIds = knownRemoteMessageIds.filter(
+          (remoteMessageId) => !remoteIds.has(remoteMessageId),
+        );
+      }
+
+      if ("folders" in syncResult) {
+        for (const folder of syncResult.folders) {
+          await ctx.runMutation(internal.sync.internal.upsertProviderFolder, {
+            ownerId: args.ownerId,
+            accountId: args.accountId,
+            ...folder,
+          });
+        }
+      }
+      for (const message of syncResult.messages) {
+        await ctx.runMutation(internal.sync.internal.upsertProviderMessage, {
+          ownerId: args.ownerId,
+          accountId: args.accountId,
+          message,
+        });
+      }
+      const deletedRemoteMessageIds = new Set([
+        ...reconciledDeletedRemoteMessageIds,
+        ...("deletedRemoteMessageIds" in syncResult
+          ? syncResult.deletedRemoteMessageIds
+          : []),
+      ]);
+      for (const remoteMessageId of deletedRemoteMessageIds) {
+        await ctx.runMutation(internal.sync.internal.deleteProviderMessage, {
+          ownerId: args.ownerId,
+          accountId: args.accountId,
+          remoteMessageId,
+        });
+      }
+      await ctx.runMutation(internal.sync.internal.finishRun, {
+        syncRunId,
+        cursor: syncResult.cursor,
+      });
+    } catch (error) {
+      await ctx.runMutation(internal.sync.internal.finishRun, {
+        syncRunId,
+        error: safeErrorMessage(error),
+      });
+    }
+  },
+});
+
 export const getGmailSyncContext = internalQuery({
   args: { ownerId: v.string(), accountId: v.id("mailAccounts") },
   handler: async (ctx, args) => {
@@ -428,6 +602,65 @@ export const getGmailSyncContext = internalQuery({
       .withIndex("by_account", (q) => q.eq("accountId", args.accountId))
       .unique();
     return credential ? { account, credential } : null;
+  },
+});
+
+export const getMicrosoftSyncContext = internalQuery({
+  args: { ownerId: v.string(), accountId: v.id("mailAccounts") },
+  handler: async (ctx, args) => {
+    const account = await ctx.db.get(args.accountId);
+    if (
+      !account ||
+      account.ownerId !== args.ownerId ||
+      account.provider !== "microsoft"
+    ) {
+      return null;
+    }
+    const credential = await ctx.db
+      .query("providerCredentials")
+      .withIndex("by_account", (q) => q.eq("accountId", args.accountId))
+      .unique();
+    return credential ? { account, credential } : null;
+  },
+});
+
+export const setMicrosoftMessageRead = internalAction({
+  args: {
+    ownerId: v.string(),
+    accountId: v.id("mailAccounts"),
+    remoteMessageId: v.string(),
+    isRead: v.boolean(),
+    attempt: v.optional(v.number()),
+  },
+  handler: async (ctx, args): Promise<void> => {
+    const attempt = args.attempt ?? 0;
+    try {
+      const connection = await ctx.runQuery(
+        internal.sync.internal.getMicrosoftSyncContext,
+        { ownerId: args.ownerId, accountId: args.accountId },
+      );
+      if (!connection) throw new Error("Microsoft connection is unavailable");
+      const tokens = await getUsableMicrosoftTokens(ctx, {
+        ownerId: args.ownerId,
+        accountId: args.accountId,
+        encryptedTokens: connection.credential.encryptedTokens,
+      });
+      await new MicrosoftGraphAdapter().setRead(
+        tokens.accessToken,
+        args.remoteMessageId,
+        args.isRead,
+      );
+    } catch (error) {
+      if (attempt < 2) {
+        await ctx.scheduler.runAfter(
+          2 ** attempt * 1_000,
+          internal.sync.internal.setMicrosoftMessageRead,
+          { ...args, attempt: attempt + 1 },
+        );
+        return;
+      }
+      throw error;
+    }
   },
 });
 
@@ -454,7 +687,27 @@ export const listScheduledGmailAccounts = internalQuery({
         (account) =>
           account.provider === "gmail" &&
           !account.isDemo &&
-          account.status === "connected" &&
+          ["connected", "error"].includes(account.status) &&
+          (account.lastSyncedAt ?? 0) < cutoff,
+      )
+      .map((account) => ({
+        ownerId: account.ownerId,
+        accountId: account._id,
+      }));
+  },
+});
+
+export const listScheduledMicrosoftAccounts = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    const accounts = await ctx.db.query("mailAccounts").collect();
+    const cutoff = Date.now() - 4 * 60 * 1000;
+    return accounts
+      .filter(
+        (account) =>
+          account.provider === "microsoft" &&
+          !account.isDemo &&
+          ["connected", "error"].includes(account.status) &&
           (account.lastSyncedAt ?? 0) < cutoff,
       )
       .map((account) => ({
@@ -496,22 +749,30 @@ export const listRecoverableOutbox = internalQuery({
 export const runScheduledProviderWork = internalAction({
   args: {},
   handler: async (ctx): Promise<void> => {
-    const [accounts, outboxIds] = await Promise.all([
+    const [gmailAccounts, microsoftAccounts, outboxIds] = await Promise.all([
       ctx.runQuery(internal.sync.internal.listScheduledGmailAccounts, {}),
+      ctx.runQuery(internal.sync.internal.listScheduledMicrosoftAccounts, {}),
       ctx.runQuery(internal.sync.internal.listRecoverableOutbox, {}),
     ]);
     await Promise.all([
-      ...accounts.map((account, index) =>
+      ...gmailAccounts.map((account, index) =>
         ctx.scheduler.runAfter(
           index * 500,
           internal.sync.internal.executeGmailSync,
           { ...account, reason: "incremental" },
         ),
       ),
+      ...microsoftAccounts.map((account, index) =>
+        ctx.scheduler.runAfter(
+          index * 500,
+          internal.sync.internal.executeMicrosoftSync,
+          { ...account, reason: "incremental" },
+        ),
+      ),
       ...outboxIds.map((outboxId, index) =>
         ctx.scheduler.runAfter(
           index * 250,
-          internal.sync.internal.deliverGmailOutbox,
+          internal.sync.internal.deliverProviderOutbox,
           { outboxId },
         ),
       ),
@@ -800,6 +1061,58 @@ export const finishOutbox = internalMutation({
   },
 });
 
+export const recordOutboxRemoteMessageId = internalMutation({
+  args: {
+    outboxId: v.id("outboxMessages"),
+    leaseId: v.string(),
+    remoteMessageId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const outbox = await ctx.db.get(args.outboxId);
+    if (outbox?.status !== "sending" || outbox.leaseId !== args.leaseId) {
+      throw new ConvexError("Outbox lease expired while creating the draft");
+    }
+    if (
+      outbox.remoteMessageId &&
+      outbox.remoteMessageId !== args.remoteMessageId
+    ) {
+      throw new ConvexError("Outbox already references a different draft");
+    }
+    await ctx.db.patch(outbox._id, {
+      remoteMessageId: args.remoteMessageId,
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+export const getOutboxProvider = internalQuery({
+  args: { outboxId: v.id("outboxMessages") },
+  handler: async (ctx, args) => {
+    const outbox = await ctx.db.get(args.outboxId);
+    if (!outbox) return null;
+    const account = await ctx.db.get(outbox.accountId);
+    if (!account || account.ownerId !== outbox.ownerId) return null;
+    return account.provider;
+  },
+});
+
+export const deliverProviderOutbox = internalAction({
+  args: { outboxId: v.id("outboxMessages") },
+  handler: async (ctx, args): Promise<void> => {
+    const provider = await ctx.runQuery(
+      internal.sync.internal.getOutboxProvider,
+      args,
+    );
+    if (provider === "gmail") {
+      await ctx.runAction(internal.sync.internal.deliverGmailOutbox, args);
+      return;
+    }
+    if (provider === "microsoft") {
+      await ctx.runAction(internal.sync.internal.deliverMicrosoftOutbox, args);
+    }
+  },
+});
+
 export const deliverGmailOutbox = internalAction({
   args: { outboxId: v.id("outboxMessages") },
   handler: async (ctx, args): Promise<void> => {
@@ -860,6 +1173,81 @@ export const deliverGmailOutbox = internalAction({
   },
 });
 
+export const deliverMicrosoftOutbox = internalAction({
+  args: { outboxId: v.id("outboxMessages") },
+  handler: async (ctx, args): Promise<void> => {
+    const outbox = await ctx.runMutation(
+      internal.sync.internal.claimOutbox,
+      args,
+    );
+    if (!outbox) return;
+    try {
+      const connection = await ctx.runQuery(
+        internal.sync.internal.getMicrosoftSyncContext,
+        { ownerId: outbox.ownerId, accountId: outbox.accountId },
+      );
+      if (!connection) throw new Error("Microsoft connection is unavailable");
+      const tokens = await getUsableMicrosoftTokens(ctx, {
+        ownerId: outbox.ownerId,
+        accountId: outbox.accountId,
+        encryptedTokens: connection.credential.encryptedTokens,
+      });
+      const result = await new MicrosoftGraphAdapter().sendPlainText(
+        tokens.accessToken,
+        {
+          _id: outbox._id,
+          accountId: outbox.accountId,
+          remoteMessageId: outbox.remoteMessageId,
+          from: outbox.from,
+          to: outbox.to,
+          cc: outbox.cc,
+          bcc: outbox.bcc,
+          subject: outbox.subject,
+          plainText: outbox.plainText,
+          replyToInternetMessageId: outbox.replyToInternetMessageId,
+        },
+        async (remoteMessageId) => {
+          await ctx.runMutation(
+            internal.sync.internal.recordOutboxRemoteMessageId,
+            {
+              outboxId: outbox._id,
+              leaseId: outbox.leaseId,
+              remoteMessageId,
+            },
+          );
+        },
+      );
+      await ctx.runMutation(internal.sync.internal.finishOutbox, {
+        outboxId: outbox._id,
+        leaseId: outbox.leaseId,
+        remoteMessageId: result.remoteMessageId,
+      });
+      await ctx.scheduler.runAfter(
+        0,
+        internal.sync.internal.executeMicrosoftSync,
+        {
+          ownerId: outbox.ownerId,
+          accountId: outbox.accountId,
+          reason: "incremental",
+        },
+      );
+    } catch (error) {
+      await ctx.runMutation(internal.sync.internal.finishOutbox, {
+        outboxId: outbox._id,
+        leaseId: outbox.leaseId,
+        error: safeErrorMessage(error),
+      });
+      if (outbox.attempt < 3) {
+        await ctx.scheduler.runAfter(
+          2 ** outbox.attempt * 1_000,
+          internal.sync.internal.deliverMicrosoftOutbox,
+          { outboxId: outbox._id },
+        );
+      }
+    }
+  },
+});
+
 async function getUsableTokens(
   ctx: ActionCtx,
   args: {
@@ -910,6 +1298,72 @@ async function getUsableTokens(
     });
   }
   return tokens;
+}
+
+async function getUsableMicrosoftTokens(
+  ctx: ActionCtx,
+  args: {
+    ownerId: string;
+    accountId: Id<"mailAccounts">;
+    encryptedTokens: {
+      formatVersion: 1;
+      keyVersion: string;
+      iv: string;
+      ciphertext: string;
+    };
+  },
+) {
+  const additionalData = credentialAdditionalData(
+    args.ownerId,
+    args.accountId,
+    "microsoft",
+  );
+  let tokens = await decryptProviderSecret<ProviderTokens>(
+    args.encryptedTokens,
+    additionalData,
+  );
+  if (!tokens.expiresAt || tokens.expiresAt <= Date.now() + 2 * 60 * 1000) {
+    if (!tokens.refreshToken) {
+      throw new Error("Microsoft refresh token is unavailable");
+    }
+    try {
+      tokens = await refreshMicrosoftTokens(tokens.refreshToken);
+    } catch (error) {
+      if (
+        error instanceof MicrosoftOAuthError &&
+        ["invalid_grant", "interaction_required"].includes(error.code)
+      ) {
+        await ctx.runMutation(
+          internal.sync.internal.markProviderReauthorization,
+          {
+            ownerId: args.ownerId,
+            accountId: args.accountId,
+            error: error.message.slice(0, 500),
+          },
+        );
+      }
+      throw error;
+    }
+    const encryptedTokens = await encryptProviderSecret(tokens, additionalData);
+    await ctx.runMutation(internal.sync.internal.storeProviderCredential, {
+      ownerId: args.ownerId,
+      accountId: args.accountId,
+      encryptedTokens,
+      tokenExpiresAt: tokens.expiresAt,
+      grantedScopes: tokens.scopes,
+    });
+  }
+  return tokens;
+}
+
+function isExpiredMicrosoftDelta(error: unknown) {
+  return (
+    error instanceof MicrosoftGraphError &&
+    (error.status === 410 ||
+      ["syncStateNotFound", "resyncRequired", "InvalidDeltaToken"].includes(
+        error.code ?? "",
+      ))
+  );
 }
 
 async function ensureInternalOwnedAccount(

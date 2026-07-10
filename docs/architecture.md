@@ -54,8 +54,9 @@ Webhooks are wake-up hints; provider cursors are the source of truth.
 
 - Gmail uses history IDs and renews `watch` subscriptions. A periodic repair
   sync covers delayed or dropped Pub/Sub notifications.
-- Microsoft uses per-folder delta links. Webhooks trigger a delta pass and
-  subscriptions are renewed before expiration.
+- Microsoft uses an Inbox delta link with immutable Outlook message IDs. A
+  scheduled repair follows opaque next/delta URLs; change notifications can be
+  added later as wake-up hints without replacing cursor reconciliation.
 - iCloud uses bounded IMAP UID polling from Convex actions. Persistent IDLE
   belongs in a separate worker if bounded polling proves insufficient.
 

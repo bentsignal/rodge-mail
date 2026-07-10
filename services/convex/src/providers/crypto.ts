@@ -74,7 +74,15 @@ export function credentialAdditionalData(
 }
 
 export function oauthStateAdditionalData(ownerId: string, stateHash: string) {
-  return `rodge-mail:oauth-state:gmail:${ownerId}:${stateHash}`;
+  return oauthStateAdditionalDataForProvider(ownerId, stateHash, "gmail");
+}
+
+export function oauthStateAdditionalDataForProvider(
+  ownerId: string,
+  stateHash: string,
+  provider: "gmail" | "microsoft",
+) {
+  return `rodge-mail:oauth-state:${provider}:${ownerId}:${stateHash}`;
 }
 
 function getActiveKeyVersion() {
