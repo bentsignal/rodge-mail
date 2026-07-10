@@ -29,6 +29,6 @@ export default defineConfig({
         plugins: ["babel-plugin-react-compiler"],
       },
     }),
-    nitro(),
+    nitro({ preset: process.env.VERCEL ? "vercel" : undefined }),
   ],
 });

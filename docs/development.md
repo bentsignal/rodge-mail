@@ -49,6 +49,24 @@ module is not available in Expo Go.
 See [`services/convex/AI.md`](../services/convex/AI.md) for model variables,
 fallback behavior, and the selective semantic-indexing boundary.
 
+## Web deployment
+
+The Vercel project root must be `apps/web`, with “Include source files outside
+of the Root Directory” enabled so pnpm workspace packages are available. The
+web build selects Nitro's Vercel preset when `VERCEL=1` and writes the Build
+Output API bundle under `apps/web/.vercel/output`.
+
+From the repository root, authenticate and deploy with:
+
+```sh
+pnpm dlx vercel@latest login
+pnpm dlx vercel@latest link --cwd apps/web
+pnpm dlx vercel@latest deploy --cwd apps/web --prod
+```
+
+Assign `rodge-mail.vercel.app` to the production project before registering
+passkeys or provider OAuth callbacks.
+
 ## Validation
 
 Run these commands in order after changes:
