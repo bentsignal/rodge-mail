@@ -10,9 +10,12 @@ import * as Dialog from "@rodge-mail/ui-web/dialog";
 import { Textarea } from "@rodge-mail/ui-web/textarea";
 import { toast } from "@rodge-mail/ui-web/toast";
 
-import type { MailAccountView } from "../types";
 import { useLiveMail } from "../live-data";
 import { useMailStore } from "../store";
+import {
+  ComposeAccountField,
+  getSendingAccount,
+} from "./compose-account-field";
 import { DraftAttachments, getUploadSummary } from "./compose-attachment-list";
 import { useComposeAttachments } from "./use-compose-attachments";
 
@@ -46,6 +49,7 @@ function ComposeContent() {
       <ComposeHeader />
 
       <div className="min-h-0 flex-1 overflow-y-auto px-5 sm:px-7">
+        <ComposeAccountField />
         <ComposeField
           autoFocus
           label="To"
@@ -109,17 +113,21 @@ function ComposeFooter() {
   const attachmentInputId = useId();
   const canSend = useMailStore((store) => store.composerCanSend);
   const completeSend = useMailStore((store) => store.sendComposerDraft);
+  const composerAccountId = useMailStore((store) => store.composerAccountId);
+  const replyToInternetMessageId = useMailStore(
+    (store) => store.composerReplyToInternetMessageId,
+  );
   const draft = useMailStore((store) => store.composerDraft);
   const idempotencyKey = useMailStore((store) => store.idempotencyKey);
   const enqueuePlainText = useMutation(api.mail.mutations.enqueuePlainText);
-  const { accounts, selectedThread } = useLiveMail();
+  const { accounts } = useLiveMail();
   const [isSending, setIsSending] = useState(false);
   const { attachFiles, attachmentsAreReady } = useComposeAttachments();
 
   async function send() {
-    const account = getSendingAccount(accounts, selectedThread?.accountId);
+    const account = getSendingAccount(accounts, composerAccountId);
     if (!account) {
-      toast.error("Connect a Gmail or Microsoft 365 account before sending.");
+      toast.error("Connect a mail account before sending.");
       return;
     }
     if (!attachmentsAreReady) {
@@ -140,8 +148,7 @@ function ComposeFooter() {
         cc: parseAddresses(draft.cc),
         subject: draft.subject.trim(),
         plainText: draft.body,
-        replyToInternetMessageId:
-          selectedThread?.messages.at(-1)?.internetMessageId,
+        replyToInternetMessageId,
         attachmentIds: draft.attachments.map((attachment) =>
           toDraftAttachmentId(requireDraftAttachmentId(attachment)),
         ),
@@ -206,24 +213,6 @@ function requireDraftAttachmentId(attachment: {
     throw new Error(`${attachment.fileName} has not finished uploading.`);
   }
   return attachment.draftAttachmentId;
-}
-
-function getSendingAccount(
-  accounts: MailAccountView[],
-  selectedAccountId: MailAccountView["_id"] | undefined,
-) {
-  const selected = accounts.find(
-    (account) =>
-      account._id === selectedAccountId && canSendFromAccount(account),
-  );
-  return selected ?? accounts.find(canSendFromAccount);
-}
-
-function canSendFromAccount(account: MailAccountView) {
-  return (
-    ["gmail", "microsoft", "icloud"].includes(account.provider) &&
-    (account.status === "connected" || account.status === "syncing")
-  );
 }
 
 function parseAddresses(value: string) {

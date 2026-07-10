@@ -15,7 +15,9 @@ interface ThreadSelection {
 }
 
 interface ReplyTarget {
+  accountId: Id<"mailAccounts">;
   address: string;
+  internetMessageId?: string;
   subject: string;
 }
 
@@ -37,6 +39,12 @@ function useComposerState() {
   const [composerIsOpen, setComposerIsOpen] = useState(false);
   const [composerDraft, setComposerDraft] =
     useState<ComposerDraft<WebComposerAttachment>>(createEmptyDraft);
+  const [composerAccountId, setComposerAccountId] =
+    useState<Id<"mailAccounts">>();
+  const [
+    composerReplyToInternetMessageId,
+    setComposerReplyToInternetMessageId,
+  ] = useState<string>();
   const [deliveryNotice, setDeliveryNotice] = useState<string>();
   const [idempotencyKey, setIdempotencyKey] = useState(createIdempotencyKey);
   const composerCanSend =
@@ -72,12 +80,19 @@ function useComposerState() {
     }));
   }
 
-  function openReply({ address, subject }: ReplyTarget) {
+  function openReply({
+    accountId,
+    address,
+    internetMessageId,
+    subject,
+  }: ReplyTarget) {
     setComposerDraft({
       ...createEmptyDraft(),
       subject: subject.startsWith("Re:") ? subject : `Re: ${subject}`,
       to: address,
     });
+    setComposerAccountId(accountId);
+    setComposerReplyToInternetMessageId(internetMessageId);
     setComposerIsOpen(true);
     setIdempotencyKey(createIdempotencyKey());
   }
@@ -87,6 +102,7 @@ function useComposerState() {
     setDeliveryNotice(`Message queued for ${composerDraft.to}.`);
     setComposerIsOpen(false);
     setComposerDraft(createEmptyDraft());
+    setComposerReplyToInternetMessageId(undefined);
     setIdempotencyKey(createIdempotencyKey());
   }
 
@@ -94,13 +110,16 @@ function useComposerState() {
     addComposerAttachments,
     closeComposer: () => setComposerIsOpen(false),
     composerCanSend,
+    composerAccountId,
     composerDraft,
     composerIsOpen,
+    composerReplyToInternetMessageId,
     idempotencyKey,
     deliveryNotice,
     dismissDeliveryNotice: () => setDeliveryNotice(undefined),
     openComposer: () => {
       setComposerDraft(createEmptyDraft());
+      setComposerReplyToInternetMessageId(undefined);
       setIdempotencyKey(createIdempotencyKey());
       setComposerIsOpen(true);
     },
@@ -113,6 +132,7 @@ function useComposerState() {
         ),
       })),
     sendComposerDraft,
+    setComposerAccountId,
     updateComposerAttachment,
     updateComposerDraft,
   };

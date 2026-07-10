@@ -244,7 +244,9 @@ function useLiveMailActions(selectedThread: MailThreadDetail | undefined) {
     const latestMessage = selectedThread?.messages.at(-1);
     if (!selectedThread || !latestMessage) return;
     openReply({
+      accountId: selectedThread.accountId,
       address: latestMessage.from.address,
+      internetMessageId: latestMessage.internetMessageId,
       subject: selectedThread.subject,
     });
   }
