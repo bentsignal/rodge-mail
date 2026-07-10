@@ -367,7 +367,7 @@ function initialDeltaUrl() {
   url.searchParams.set("$select", MESSAGE_SELECT);
   url.searchParams.set(
     "$expand",
-    "attachments($select=id,name,contentType,size,isInline,contentId)",
+    "attachments($select=id,name,contentType,size,isInline)",
   );
   url.searchParams.set(
     "$filter",

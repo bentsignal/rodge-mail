@@ -50,7 +50,7 @@ export const synchronize = internalAction({
         accountId: args.accountId,
         encryptedCredential: connection.credential.encryptedTokens,
       });
-      const knownRemoteIds = await ctx.runQuery(
+      const knownRemoteIds = await ctx.runAction(
         internal.sync.internal.listProviderRemoteMessageIds,
         { ownerId: args.ownerId, accountId: args.accountId },
       );

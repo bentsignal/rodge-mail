@@ -1,4 +1,5 @@
 /* eslint-disable complexity, max-lines, max-lines-per-function, no-restricted-syntax, @typescript-eslint/consistent-type-assertions -- Provider orchestration keeps transaction and action contracts explicit. */
+import { paginationOptsValidator } from "convex/server";
 import { ConvexError, v } from "convex/values";
 
 import type { Id } from "../_generated/dataModel";
@@ -57,6 +58,12 @@ const vNormalizedMessage = v.object({
   direction: v.union(v.literal("incoming"), v.literal("outgoing")),
   attachments: v.array(vNormalizedAttachment),
 });
+
+interface RemoteMessageIdPage {
+  continueCursor: string;
+  isDone: boolean;
+  page: string[];
+}
 
 export const storeOAuthState = internalMutation({
   args: {
@@ -406,7 +413,7 @@ export const executeGmailSync = internalAction({
           error.status === 404
         ) {
           fullSync = true;
-          const knownRemoteMessageIds = await ctx.runQuery(
+          const knownRemoteMessageIds = await ctx.runAction(
             internal.sync.internal.listProviderRemoteMessageIds,
             { ownerId: args.ownerId, accountId: args.accountId },
           );
@@ -521,7 +528,7 @@ export const executeMicrosoftSync = internalAction({
       }
 
       if (fullSync) {
-        const knownRemoteMessageIds = await ctx.runQuery(
+        const knownRemoteMessageIds = await ctx.runAction(
           internal.sync.internal.listProviderRemoteMessageIds,
           { ownerId: args.ownerId, accountId: args.accountId },
         );
@@ -693,16 +700,47 @@ export const setGmailMessageRead = internalAction({
   },
 });
 
-export const listProviderRemoteMessageIds = internalQuery({
+export const listProviderRemoteMessageIds = internalAction({
   args: { ownerId: v.string(), accountId: v.id("mailAccounts") },
   handler: async (ctx, args) => {
+    const remoteMessageIds: string[] = [];
+    let cursor: string | null = null;
+    let isDone = false;
+    while (!isDone) {
+      const page = (await ctx.runQuery(
+        internal.sync.internal.listProviderRemoteMessageIdsPage,
+        {
+          ...args,
+          paginationOpts: { cursor, numItems: 25 },
+        },
+      )) as RemoteMessageIdPage;
+      remoteMessageIds.push(...page.page);
+      cursor = page.continueCursor;
+      isDone = page.isDone;
+    }
+    return remoteMessageIds;
+  },
+});
+
+export const listProviderRemoteMessageIdsPage = internalQuery({
+  args: {
+    ownerId: v.string(),
+    accountId: v.id("mailAccounts"),
+    paginationOpts: paginationOptsValidator,
+  },
+  handler: async (ctx, args) => {
     const account = await ctx.db.get(args.accountId);
-    if (!account || account.ownerId !== args.ownerId) return [];
-    const messages = await ctx.db
+    if (!account || account.ownerId !== args.ownerId) {
+      return { continueCursor: "", isDone: true, page: [] };
+    }
+    const result = await ctx.db
       .query("messages")
       .withIndex("by_account_remote", (q) => q.eq("accountId", args.accountId))
-      .collect();
-    return messages.map((message) => message.remoteMessageId);
+      .paginate(args.paginationOpts);
+    return {
+      ...result,
+      page: result.page.map((message) => message.remoteMessageId),
+    };
   },
 });
 
