@@ -13,6 +13,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   assetBundlePatterns: ["**/*"],
   ios: {
+    associatedDomains: ["webcredentials:rodge-mail.vercel.app"],
     bundleIdentifier: "com.bentsignal.rodgemail",
     supportsTablet: true,
     icon: "./assets/rounded-icon.png",

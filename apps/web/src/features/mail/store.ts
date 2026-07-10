@@ -62,16 +62,13 @@ function getVisibleThreads({
 }
 
 function getUnreadCounts(threads: MailThread[]) {
-  const counts = { all: 0, gmail: 0, icloud: 0, work: 0 } satisfies Record<
-    MailAccountFilter,
-    number
-  >;
+  const counts = new Map<string, number>([["all", 0]]);
   for (const thread of threads) {
     if (thread.isRead) continue;
-    counts.all += 1;
-    counts[thread.accountId] += 1;
+    counts.set("all", (counts.get("all") ?? 0) + 1);
+    counts.set(thread.accountId, (counts.get(thread.accountId) ?? 0) + 1);
   }
-  return counts;
+  return Object.fromEntries(counts);
 }
 
 function useComposerState(selectedThread: MailThread | undefined) {

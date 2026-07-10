@@ -51,6 +51,7 @@ onlyBuiltDependencies:
   - electron
   - electron-winstaller
   - esbuild
+  - expo-better-auth-passkey
 
 overrides:
   "@better-auth/utils": 0.4.0

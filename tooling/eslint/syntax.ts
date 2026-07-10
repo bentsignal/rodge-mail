@@ -56,18 +56,6 @@ const strictReactSyntaxSelectors = [
       "Do not use `finally` blocks. The React Compiler cannot optimize components and hooks that use `finally` with try/catch blocks..",
   },
   {
-    selector:
-      "CallExpression:matches([callee.name='useSuspenseQuery'], [callee.property.name='useSuspenseQuery']):not(:has(Property[key.name='select']))",
-    message:
-      "useSuspenseQuery must include a `select` option so the component only subscribes to the data it needs.",
-  },
-  {
-    selector:
-      "CallExpression:matches([callee.name='useQuery'], [callee.property.name='useQuery']):not(:has(Property[key.name='select']))",
-    message:
-      "useQuery must include a `select` option so the component only subscribes to the data it needs. ",
-  },
-  {
     selector: "CallExpression[callee.name='useContext']",
     message:
       "useContext does not support fine-grained selection and causes re-renders on every context change. Use a Rostra store with a selector instead. Use the rostra skill for more information.",
@@ -104,15 +92,21 @@ const reactImportRestrictions = [
     message:
       "React Compiler handles memoization automatically. Only use manual memoization as an escape hatch with a comment explaining why.",
   },
-  {
-    name: "convex/react",
-    importNames: ["useQuery"],
-    message:
-      "Use TanStack Query's `useQuery` with `convexQuery` instead (`import { useQuery } from '@tanstack/react-query'` + `import { convexQuery } from '@convex-dev/react-query'`). This integrates with the route loader cache and supports `select`.",
-  },
 ] as const;
 
 const webSyntaxSelectors = [
+  {
+    selector:
+      "CallExpression:matches([callee.name='useSuspenseQuery'], [callee.property.name='useSuspenseQuery']):not(:has(Property[key.name='select']))",
+    message:
+      "useSuspenseQuery must include a `select` option so the component only subscribes to the data it needs.",
+  },
+  {
+    selector:
+      "CallExpression:matches([callee.name='useQuery'], [callee.property.name='useQuery']):not(:has(Property[key.name='select']))",
+    message:
+      "useQuery must include a `select` option so the component only subscribes to the data it needs. ",
+  },
   {
     selector:
       "CallExpression:matches([callee.name='useSearch'], [callee.property.name='useSearch']):not(:has(Property[key.name='select']))",
@@ -134,6 +128,12 @@ const webSyntaxSelectors = [
 ] as const;
 
 const webImportRestrictions = [
+  {
+    name: "convex/react",
+    importNames: ["useQuery"],
+    message:
+      "Use TanStack Query's `useQuery` with `convexQuery` instead (`import { useQuery } from '@tanstack/react-query'` + `import { convexQuery } from '@convex-dev/react-query'`). This integrates with the route loader cache and supports `select`.",
+  },
   {
     name: "@tanstack/react-query",
     importNames: ["useQuery"],

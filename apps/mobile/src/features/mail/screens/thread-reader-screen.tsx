@@ -1,21 +1,25 @@
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { useQuery } from "convex/react";
 import { Paperclip, Pin, Reply } from "lucide-react-native";
 
 import type { MailMessage, MailThread } from "@rodge-mail/features/mail";
+import { api } from "@rodge-mail/convex/api";
 
 import { useColor } from "~/hooks/use-color";
+import { toMailThreadDetail } from "../lib/convex-mail";
 import { formatMessageTime } from "../lib/mail-format";
 import { useMailStore } from "../store";
 
 export function ThreadReaderScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const thread = useMailStore((store) =>
-    store.threads.find((candidate) => candidate.id === id),
-  );
+  const messageId = useMailStore((store) => store.getMessageId(id));
+  const queryArgs = messageId ? { messageId } : "skip";
+  const message = useQuery(api.mail.queries.getMessage, queryArgs);
 
-  if (!thread) return <ThreadNotFound />;
-  return <ThreadReader thread={thread} />;
+  if (message === undefined && messageId) return <ThreadLoading />;
+  if (!message) return <ThreadNotFound />;
+  return <ThreadReader thread={toMailThreadDetail(message)} />;
 }
 
 function ThreadReader({ thread }: { thread: MailThread }) {
@@ -168,6 +172,14 @@ function ThreadNotFound() {
       <Text className="text-muted-foreground mt-2 text-center">
         This thread is no longer in the local mailbox.
       </Text>
+    </View>
+  );
+}
+
+function ThreadLoading() {
+  return (
+    <View className="bg-background flex-1 items-center justify-center">
+      <Text className="text-muted-foreground">Loading message…</Text>
     </View>
   );
 }

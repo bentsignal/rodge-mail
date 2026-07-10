@@ -1,0 +1,134 @@
+import type { FunctionReturnType } from "convex/server";
+
+import type { api } from "@rodge-mail/convex/api";
+import type { MailAttachment } from "@rodge-mail/features/mail";
+
+const attachmentTypes = {
+  document: "document",
+  image: "image",
+  spreadsheet: "spreadsheet",
+} satisfies Record<string, MailAttachment["type"]>;
+
+type InboxResult = FunctionReturnType<typeof api.mail.queries.listInbox>;
+type InboxItem = InboxResult["page"][number];
+type MessageDetail = FunctionReturnType<typeof api.mail.queries.getMessage>;
+type Account = FunctionReturnType<typeof api.accounts.queries.list>[number];
+
+export function toMailThread(item: InboxItem) {
+  return {
+    accountId: item.accountId,
+    category: toCategory(item.focusBucket),
+    id: item._id,
+    isPinned: item.isPinned,
+    isRead: item.isRead,
+    messages: [],
+    preview: item.classification?.summary ?? item.snippet,
+    priorityNote: item.classification?.reason,
+    receivedAt: new Date(item.receivedAt).toISOString(),
+    sender: {
+      address: item.from.address,
+      name: getAddressName(item.from),
+    },
+    subject: item.subject,
+  };
+}
+
+export function toMailThreadDetail(item: MessageDetail) {
+  return {
+    ...toMailThread(item),
+    messages: [toMailMessage(item)],
+  };
+}
+
+export function toMailAccount(account: Account) {
+  const label = getNonemptyValue(account.displayName, account.address);
+  return {
+    accent: getProviderAccent(account.provider),
+    address: account.address,
+    id: account._id,
+    initials: getInitials(label),
+    label,
+    provider: account.provider,
+  };
+}
+
+function toMailMessage(item: MessageDetail) {
+  return {
+    attachments: item.attachments.map(toMailAttachment),
+    body: toParagraphs(item.content?.plainText, item.snippet),
+    cc: item.cc.map((address) => ({
+      address: address.address,
+      name: getAddressName(address),
+    })),
+    from: {
+      address: item.from.address,
+      name: getAddressName(item.from),
+    },
+    id: item._id,
+    sentAt: new Date(item.sentAt ?? item.receivedAt).toISOString(),
+    to: item.to.map((address) => ({
+      address: address.address,
+      name: getAddressName(address),
+    })),
+  };
+}
+
+function toMailAttachment(attachment: MessageDetail["attachments"][number]) {
+  return {
+    id: attachment._id,
+    name: attachment.fileName,
+    size: formatByteSize(attachment.size),
+    type: getAttachmentType(attachment.contentType),
+  };
+}
+
+function toCategory(bucket: InboxItem["focusBucket"]) {
+  if (bucket === "focused") return "focused" as const;
+  return "other" as const;
+}
+
+function getAddressName(address: { address: string; name?: string }) {
+  return getNonemptyValue(address.name, address.address);
+}
+
+function toParagraphs(plainText: string | undefined, fallback: string) {
+  const source = getNonemptyValue(plainText, fallback);
+  return source
+    .split(/\n\s*\n/u)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean);
+}
+
+function getProviderAccent(provider: Account["provider"]) {
+  if (provider === "gmail") return "#c95d3f";
+  if (provider === "microsoft") return "#397367";
+  return "#b38736";
+}
+
+function getInitials(value: string) {
+  return value
+    .split(/\s+/u)
+    .slice(0, 2)
+    .map((word) => word.slice(0, 1).toUpperCase())
+    .join("");
+}
+
+function getAttachmentType(contentType: string) {
+  if (contentType.startsWith("image/")) return attachmentTypes.image;
+  if (contentType.includes("sheet") || contentType.includes("excel")) {
+    return attachmentTypes.spreadsheet;
+  }
+  return attachmentTypes.document;
+}
+
+function getNonemptyValue(value: string | undefined, fallback: string) {
+  const normalized = value?.trim();
+  if (normalized) return normalized;
+  return fallback;
+}
+
+function formatByteSize(size: number) {
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${Math.round(size / 1024)} KB`;
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+}

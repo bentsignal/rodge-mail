@@ -1,10 +1,17 @@
 import type { ListRenderItemInfo } from "react-native";
-import { FlatList, Pressable, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  Text,
+  View,
+} from "react-native";
 import { useRouter } from "expo-router";
 import { SquarePen } from "lucide-react-native";
 
 import type {
   InboxCategory,
+  MailAccount,
   MailAccountFilter,
   MailThread,
 } from "@rodge-mail/features/mail";
@@ -19,11 +26,15 @@ import { useMailStore } from "../store";
 export function InboxScreen() {
   const router = useRouter();
   const threads = useMailStore((store) => store.threads);
+  const accounts = useMailStore((store) => store.accounts);
   const accountFilter = useMailStore((store) => store.accountFilter);
   const category = useMailStore((store) => store.category);
   const markRead = useMailStore((store) => store.markRead);
   const setAccountFilter = useMailStore((store) => store.setAccountFilter);
   const setCategory = useMailStore((store) => store.setCategory);
+  const loadMore = useMailStore((store) => store.loadMore);
+  const isLoading = useMailStore((store) => store.isLoading);
+  const isLoadingMore = useMailStore((store) => store.isLoadingMore);
   const background = useColor("background");
   const visibleThreads = filterAndSortThreads(
     threads.filter((thread) => thread.category === category),
@@ -50,15 +61,21 @@ export function InboxScreen() {
         renderItem={renderThread}
         contentInsetAdjustmentBehavior="automatic"
         keyboardDismissMode="on-drag"
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.6}
         ListHeaderComponent={
           <InboxHeader
             accountFilter={accountFilter}
+            accounts={accounts}
             category={category}
             onAccountChange={setAccountFilter}
             onCategoryChange={setCategory}
           />
         }
-        ListEmptyComponent={<EmptyInbox category={category} />}
+        ListEmptyComponent={
+          <EmptyInbox category={category} isLoading={isLoading} />
+        }
+        ListFooterComponent={<InboxFooter isLoading={isLoadingMore} />}
       />
       <Pressable
         accessibilityLabel="Compose email"
@@ -74,18 +91,24 @@ export function InboxScreen() {
 
 function InboxHeader({
   accountFilter,
+  accounts,
   category,
   onAccountChange,
   onCategoryChange,
 }: {
   accountFilter: MailAccountFilter;
+  accounts: MailAccount[];
   category: InboxCategory;
   onAccountChange: (value: MailAccountFilter) => void;
   onCategoryChange: (value: InboxCategory) => void;
 }) {
   return (
     <View className="gap-4 pt-2 pb-3">
-      <AccountFilter value={accountFilter} onChange={onAccountChange} />
+      <AccountFilter
+        accounts={accounts}
+        value={accountFilter}
+        onChange={onAccountChange}
+      />
       <View className="px-4">
         <CategoryControl value={category} onChange={onCategoryChange} />
       </View>
@@ -93,7 +116,20 @@ function InboxHeader({
   );
 }
 
-function EmptyInbox({ category }: { category: "focused" | "other" }) {
+function EmptyInbox({
+  category,
+  isLoading,
+}: {
+  category: "focused" | "other";
+  isLoading: boolean;
+}) {
+  if (isLoading) {
+    return (
+      <View className="items-center py-24">
+        <ActivityIndicator color="#d77a55" size="large" />
+      </View>
+    );
+  }
   if (category === "focused") {
     return (
       <View className="items-center px-8 py-24">
@@ -115,6 +151,15 @@ function EmptyInbox({ category }: { category: "focused" | "other" }) {
       <Text className="text-muted-foreground mt-2 text-center leading-5">
         Newsletters and low-priority updates will wait here.
       </Text>
+    </View>
+  );
+}
+
+function InboxFooter({ isLoading }: { isLoading: boolean }) {
+  if (!isLoading) return null;
+  return (
+    <View className="items-center py-6">
+      <ActivityIndicator color="#d77a55" />
     </View>
   );
 }

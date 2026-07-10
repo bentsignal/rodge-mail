@@ -27,6 +27,23 @@ secrets, refresh tokens, iCloud app passwords, encryption keys, AI provider
 keys, mailbox contents, or attachment data through `VITE_*` or Expo public
 configuration.
 
+## Native passkeys
+
+The native client uses the iOS AuthenticationServices and Android Credential
+Manager APIs through `expo-better-auth-passkey`. Production credentials use
+`rodge-mail.vercel.app` as their relying-party ID.
+
+- iOS expects the committed Apple app-site-association file to remain available
+  at `https://rodge-mail.vercel.app/.well-known/apple-app-site-association`.
+- Android requires an `assetlinks.json` file at the same host. Add the SHA-256
+  fingerprints for the local debug certificate, EAS distribution certificate,
+  and Google Play App Signing certificate after those credentials exist.
+- Add every Android APK key hash to the Better Auth passkey origin allowlist
+  before testing a signed Android build.
+
+Passkeys require a development build or signed app; the native credential
+module is not available in Expo Go.
+
 ## Validation
 
 Run these commands in order after changes:

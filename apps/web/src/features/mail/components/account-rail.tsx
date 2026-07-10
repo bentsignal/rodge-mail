@@ -40,7 +40,7 @@ export function AccountRail() {
       <nav aria-label="Mail accounts" className="mt-8 space-y-1.5">
         <AccountButton
           active={accountFilter === "all"}
-          count={unreadCounts.all}
+          count={unreadCounts.all ?? 0}
           icon={Inbox}
           label="Unified inbox"
           onClick={() => setAccountFilter("all")}
@@ -52,7 +52,7 @@ export function AccountRail() {
             <AccountButton
               active={accountFilter === account.id}
               accent={account.accent}
-              count={unreadCounts[account.id]}
+              count={unreadCounts[account.id] ?? 0}
               icon={Icon}
               key={account.id}
               label={account.label}

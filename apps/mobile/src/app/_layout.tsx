@@ -5,7 +5,10 @@ import { isLiquidGlassAvailable } from "expo-glass-effect";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
+import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
+import { useConvexAuth } from "convex/react";
 
+import { authClient, convex } from "~/features/auth/client";
 import { MailStore } from "~/features/mail/store";
 import { useColor } from "~/hooks/use-color";
 import { useInitApp } from "~/hooks/use-init-app";
@@ -22,9 +25,9 @@ export default function RootLayout() {
     <GestureHandlerRootView className="flex-1">
       <SafeAreaProvider>
         <StrictMode>
-          <MailStore>
+          <ConvexBetterAuthProvider authClient={authClient} client={convex}>
             <AppShell readiness={readiness} />
-          </MailStore>
+          </ConvexBetterAuthProvider>
         </StrictMode>
       </SafeAreaProvider>
     </GestureHandlerRootView>
@@ -34,6 +37,7 @@ export default function RootLayout() {
 function AppShell({ readiness }: { readiness: ReturnType<typeof useInitApp> }) {
   const backgroundColor = useColor("background");
   const liquidGlassIsAvailable = isLiquidGlassAvailable();
+  const { isAuthenticated } = useConvexAuth();
 
   // eslint-disable-next-line no-restricted-syntax -- Native splash visibility must follow asynchronous font and system-color initialization.
   useEffect(() => {
@@ -43,6 +47,36 @@ function AppShell({ readiness }: { readiness: ReturnType<typeof useInitApp> }) {
     void SplashScreen.hideAsync();
   }, [readiness.backgroundColorsAreLoaded, readiness.fontsAreLoaded]);
 
+  if (isAuthenticated) {
+    return (
+      <MailStore>
+        <AppNavigation
+          backgroundColor={backgroundColor}
+          isAuthenticated
+          liquidGlassIsAvailable={liquidGlassIsAvailable}
+        />
+      </MailStore>
+    );
+  }
+
+  return (
+    <AppNavigation
+      backgroundColor={backgroundColor}
+      isAuthenticated={false}
+      liquidGlassIsAvailable={liquidGlassIsAvailable}
+    />
+  );
+}
+
+function AppNavigation({
+  backgroundColor,
+  isAuthenticated,
+  liquidGlassIsAvailable,
+}: {
+  backgroundColor: string;
+  isAuthenticated: boolean;
+  liquidGlassIsAvailable: boolean;
+}) {
   return (
     <>
       <Stack
@@ -52,21 +86,23 @@ function AppShell({ readiness }: { readiness: ReturnType<typeof useInitApp> }) {
         }}
       >
         <Stack.Screen name="index" options={{ animation: "fade" }} />
-        <Stack.Screen name="(tabs)" options={{ animation: "fade" }} />
-        <Stack.Screen
-          name="compose"
-          options={{
-            presentation: "formSheet",
-            sheetAllowedDetents: [0.92, 1],
-            sheetGrabberVisible: true,
-            sheetCornerRadius: 24,
-            contentStyle: {
-              backgroundColor: liquidGlassIsAvailable
-                ? "transparent"
-                : backgroundColor,
-            },
-          }}
-        />
+        <Stack.Protected guard={isAuthenticated}>
+          <Stack.Screen name="(tabs)" options={{ animation: "fade" }} />
+          <Stack.Screen
+            name="compose"
+            options={{
+              presentation: "formSheet",
+              sheetAllowedDetents: [0.92, 1],
+              sheetGrabberVisible: true,
+              sheetCornerRadius: 24,
+              contentStyle: {
+                backgroundColor: liquidGlassIsAvailable
+                  ? "transparent"
+                  : backgroundColor,
+              },
+            }}
+          />
+        </Stack.Protected>
       </Stack>
       <StatusBar />
     </>

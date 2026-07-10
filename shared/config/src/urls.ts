@@ -6,8 +6,8 @@ import { normalizeWorktreeId } from "./worktrees";
 
 const CONVEX = {
   production: {
-    cloud: "https://rodge-mail.invalid",
-    site: "https://rodge-mail.invalid",
+    cloud: "https://colorful-ostrich-734.convex.cloud",
+    site: "https://colorful-ostrich-734.convex.site",
   },
   development: {
     cloud: "https://dazzling-dog-633.convex.cloud",
@@ -22,7 +22,7 @@ interface UrlOptions {
 
 function webUrl(options: UrlOptions & { effectiveWorktreeId?: string }) {
   if (options.nodeEnv === "production") {
-    return "https://rodge-mail.invalid";
+    return "https://rodge-mail.vercel.app";
   }
   const prefix = normalizeWorktreeId(options.effectiveWorktreeId);
   const host = [prefix, "www.rodge-mail", "local"].filter(Boolean).join(".");

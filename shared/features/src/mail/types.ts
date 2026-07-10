@@ -1,6 +1,6 @@
-export type MailAccountId = "gmail" | "icloud" | "work";
+export type MailAccountId = string;
 
-export type MailAccountFilter = "all" | MailAccountId;
+export type MailAccountFilter = string;
 
 export type InboxCategory = "focused" | "other";
 

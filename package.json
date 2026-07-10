@@ -17,7 +17,8 @@
     },
     "patchedDependencies": {
       "@better-auth/passkey@1.6.11": "patches/@better-auth__passkey@1.6.11.patch",
-      "expo-modules-jsi@56.0.8": "patches/expo-modules-jsi@56.0.8.patch"
+      "expo-modules-jsi@56.0.8": "patches/expo-modules-jsi@56.0.8.patch",
+      "expo-better-auth-passkey@1.4.3": "patches/expo-better-auth-passkey@1.4.3.patch"
     }
   },
   "scripts": {

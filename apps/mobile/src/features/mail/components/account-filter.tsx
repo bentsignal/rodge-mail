@@ -1,12 +1,13 @@
 import { Pressable, ScrollView, Text } from "react-native";
 
-import type { MailAccountFilter } from "@rodge-mail/features/mail";
-import { DEMO_MAIL_ACCOUNTS } from "@rodge-mail/features/mail";
+import type { MailAccount, MailAccountFilter } from "@rodge-mail/features/mail";
 
 export function AccountFilter({
   value,
+  accounts,
   onChange,
 }: {
+  accounts: MailAccount[];
   value: MailAccountFilter;
   onChange: (value: MailAccountFilter) => void;
 }) {
@@ -21,7 +22,7 @@ export function AccountFilter({
         selected={value === "all"}
         onPress={() => onChange("all")}
       />
-      {DEMO_MAIL_ACCOUNTS.map((account) => (
+      {accounts.map((account) => (
         <AccountFilterButton
           key={account.id}
           label={account.label}
