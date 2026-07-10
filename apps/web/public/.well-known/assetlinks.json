@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.get_login_creds"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.bentsignal.rodgemail",
+      "sha256_cert_fingerprints": [
+        "BA:2D:D6:F7:AD:FA:D3:1E:45:4D:F8:85:4E:81:39:98:92:05:42:AD:AC:38:53:5B:B0:8E:F1:3E:4C:6D:67:E3"
+      ]
+    }
+  }
+]

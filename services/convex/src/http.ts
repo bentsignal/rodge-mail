@@ -9,7 +9,7 @@ const http = httpRouter();
 
 authComponent.registerRoutes(http, createAuth, {
   cors: {
-    allowedOrigins: [urls.web, ...authCorsAllowedOrigins],
+    allowedOrigins: [...new Set([urls.web, ...authCorsAllowedOrigins])],
   },
 });
 

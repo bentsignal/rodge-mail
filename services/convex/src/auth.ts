@@ -17,20 +17,28 @@ import { urls } from "./urls";
 // eslint-disable-next-line no-restricted-syntax -- This preserves Better Auth's generated Convex API typing.
 const authFunctions: AuthFunctions = internal.auth;
 const androidPasskeyOrigins = getAndroidPasskeyOrigins();
-const trustedOrigins =
-  env.ENVIRONMENT === "production"
-    ? [urls.web, "rodge-mail://", ...androidPasskeyOrigins]
-    : [
-        urls.web,
-        "https://*.rodge-mail.local",
-        "https://*.www.rodge-mail.local",
-        "rodge-mail://",
-        ...androidPasskeyOrigins,
-      ];
+const passkeyRpOrigin = `https://${env.PASSKEY_RP_ID}`;
+const passkeyOrigins = [
+  ...new Set([urls.web, passkeyRpOrigin, ...androidPasskeyOrigins]),
+];
+const trustedOrigins = [
+  ...new Set(
+    env.ENVIRONMENT === "production"
+      ? [urls.web, passkeyRpOrigin, "rodge-mail://", ...androidPasskeyOrigins]
+      : [
+          urls.web,
+          passkeyRpOrigin,
+          "https://*.rodge-mail.local",
+          "https://*.www.rodge-mail.local",
+          "rodge-mail://",
+          ...androidPasskeyOrigins,
+        ],
+  ),
+];
 export const authCorsAllowedOrigins =
   env.ENVIRONMENT === "production"
-    ? []
-    : ["*.rodge-mail.local", "*.www.rodge-mail.local"];
+    ? [passkeyRpOrigin]
+    : [passkeyRpOrigin, "*.rodge-mail.local", "*.www.rodge-mail.local"];
 
 export const authComponent = createClient<DataModel, typeof authSchema>(
   components.betterAuth,
@@ -50,7 +58,7 @@ export function createAuthOptions(ctx: GenericCtx<DataModel>) {
     trustedOrigins,
     plugins: [
       passkey({
-        origin: [urls.web, ...androidPasskeyOrigins],
+        origin: passkeyOrigins,
         rpID: env.PASSKEY_RP_ID,
         rpName: "Rodge Mail",
         authenticatorSelection: {
