@@ -1,5 +1,5 @@
 /* eslint-disable no-restricted-syntax, @typescript-eslint/consistent-type-assertions -- Crypto and JSON boundaries require explicit generic contracts. */
-import { env } from "../convex.env";
+import { providerEnv } from "./env";
 
 export interface EncryptedEnvelope {
   formatVersion: 1;
@@ -78,7 +78,7 @@ export function oauthStateAdditionalData(ownerId: string, stateHash: string) {
 }
 
 function getActiveKeyVersion() {
-  const version = env.PROVIDER_ACTIVE_CREDENTIAL_KEY_VERSION?.trim();
+  const version = providerEnv.PROVIDER_ACTIVE_CREDENTIAL_KEY_VERSION?.trim();
   if (!version) {
     throw new Error("PROVIDER_ACTIVE_CREDENTIAL_KEY_VERSION is not configured");
   }
@@ -104,12 +104,12 @@ async function importKey(version: string) {
 }
 
 function readKeyring(): Record<string, string> {
-  if (!env.PROVIDER_CREDENTIAL_KEYS) {
+  if (!providerEnv.PROVIDER_CREDENTIAL_KEYS) {
     throw new Error("PROVIDER_CREDENTIAL_KEYS is not configured");
   }
   let parsed: unknown;
   try {
-    parsed = JSON.parse(env.PROVIDER_CREDENTIAL_KEYS);
+    parsed = JSON.parse(providerEnv.PROVIDER_CREDENTIAL_KEYS);
   } catch {
     throw new Error("PROVIDER_CREDENTIAL_KEYS must be valid JSON");
   }

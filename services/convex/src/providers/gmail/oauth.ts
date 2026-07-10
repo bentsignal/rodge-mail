@@ -1,6 +1,6 @@
 import type { ProviderTokens } from "../types";
 /* eslint-disable no-restricted-syntax, @typescript-eslint/consistent-type-assertions -- OAuth token responses require explicit external-data contracts. */
-import { env } from "../../convex.env";
+import { providerEnv } from "../env";
 import { urls } from "../../urls";
 
 const GOOGLE_AUTHORIZATION_ENDPOINT =
@@ -19,8 +19,8 @@ export class GoogleOAuthError extends Error {
 }
 
 export function getGoogleOAuthConfig() {
-  const clientId = env.GOOGLE_OAUTH_CLIENT_ID?.trim();
-  const clientSecret = env.GOOGLE_OAUTH_CLIENT_SECRET?.trim();
+  const clientId = providerEnv.GOOGLE_OAUTH_CLIENT_ID?.trim();
+  const clientSecret = providerEnv.GOOGLE_OAUTH_CLIENT_SECRET?.trim();
   if (!clientId || !clientSecret) {
     throw new Error("Google OAuth credentials are not configured");
   }

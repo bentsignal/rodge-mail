@@ -1,9 +1,14 @@
-import { useId } from "react";
+import { useId, useState } from "react";
 import { ArrowUp, Paperclip, Send, X } from "lucide-react";
+import { useMutation } from "convex/react";
 
+import { api } from "@rodge-mail/convex/api";
 import * as Dialog from "@rodge-mail/ui-web/dialog";
 import { Textarea } from "@rodge-mail/ui-web/textarea";
+import { toast } from "@rodge-mail/ui-web/toast";
 
+import type { MailAccountView } from "../types";
+import { useLiveMail } from "../live-data";
 import { useMailStore } from "../store";
 
 export function ComposeDialog() {
@@ -129,7 +134,48 @@ function ComposeFooter() {
   const attachmentInputId = useId();
   const addAttachments = useMailStore((store) => store.addComposerAttachments);
   const canSend = useMailStore((store) => store.composerCanSend);
-  const sendDraft = useMailStore((store) => store.sendComposerDraft);
+  const completeSend = useMailStore((store) => store.sendComposerDraft);
+  const draft = useMailStore((store) => store.composerDraft);
+  const idempotencyKey = useMailStore((store) => store.idempotencyKey);
+  const enqueuePlainText = useMutation(api.mail.mutations.enqueuePlainText);
+  const { accounts, selectedThread } = useLiveMail();
+  const [isSending, setIsSending] = useState(false);
+
+  async function send() {
+    const account = getSendingAccount(accounts, selectedThread?.accountId);
+    if (!account) {
+      toast.error("Connect a Gmail account before sending mail.");
+      return;
+    }
+    if (draft.attachments.length > 0) {
+      toast.error("Attachment upload is not connected yet.");
+      return;
+    }
+    const to = parseAddresses(draft.to);
+    if (to.length === 0) {
+      toast.error("Add at least one valid recipient.");
+      return;
+    }
+    setIsSending(true);
+    try {
+      await enqueuePlainText({
+        accountId: account._id,
+        idempotencyKey,
+        to,
+        cc: parseAddresses(draft.cc),
+        subject: draft.subject.trim(),
+        plainText: draft.body,
+        replyToInternetMessageId:
+          selectedThread?.messages.at(-1)?.internetMessageId,
+      });
+      setIsSending(false);
+      completeSend();
+      toast.success("Message queued for delivery.");
+    } catch (error) {
+      toast.error(getSendError(error));
+      setIsSending(false);
+    }
+  }
 
   return (
     <footer className="flex shrink-0 items-center gap-2 border-t border-[#ded5c8] px-5 py-3.5 sm:px-7 dark:border-[#41453f]">
@@ -157,8 +203,8 @@ function ComposeFooter() {
       </span>
       <button
         className="ml-auto flex h-10 items-center gap-2 rounded-full bg-[#c76749] px-4 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(169,77,52,0.20)] transition hover:-translate-y-0.5 hover:bg-[#b85a3f] disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-40"
-        disabled={!canSend}
-        onClick={sendDraft}
+        disabled={!canSend || isSending}
+        onClick={() => void send()}
         type="button"
       >
         <Send className="size-3.5" />
@@ -167,6 +213,37 @@ function ComposeFooter() {
       </button>
     </footer>
   );
+}
+
+function getSendingAccount(
+  accounts: MailAccountView[],
+  selectedAccountId: MailAccountView["_id"] | undefined,
+) {
+  const selected = accounts.find(
+    (account) =>
+      account._id === selectedAccountId && canSendFromAccount(account),
+  );
+  return selected ?? accounts.find(canSendFromAccount);
+}
+
+function canSendFromAccount(account: MailAccountView) {
+  return (
+    account.provider === "gmail" &&
+    (account.status === "connected" || account.status === "syncing")
+  );
+}
+
+function parseAddresses(value: string) {
+  return value
+    .split(",")
+    .map((address) => address.trim().toLowerCase())
+    .filter((address) => address.includes("@"))
+    .map((address) => ({ address }));
+}
+
+function getSendError(error: unknown) {
+  if (error instanceof Error && error.message.trim()) return error.message;
+  return "Could not queue this message.";
 }
 
 function ComposeField({

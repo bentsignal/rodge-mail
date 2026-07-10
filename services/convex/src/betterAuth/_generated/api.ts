@@ -8,16 +8,16 @@
  * @module
  */
 
+import type * as adapter from "../adapter.js";
+import type * as auth from "../auth.js";
+import type * as generatedSchema from "../generatedSchema.js";
+
 import type {
   ApiFromModules,
   FilterApi,
   FunctionReference,
 } from "convex/server";
 import { anyApi, componentsGeneric } from "convex/server";
-
-import type * as adapter from "../adapter.js";
-import type * as auth from "../auth.js";
-import type * as generatedSchema from "../generatedSchema.js";
 
 const fullApi: ApiFromModules<{
   adapter: typeof adapter;

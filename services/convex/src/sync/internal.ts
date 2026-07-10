@@ -221,9 +221,8 @@ export const createRun = internalMutation({
           ["pending", "running"].includes(run.status) &&
           run.createdAt > now - 10 * 60 * 1000,
       )
-    ) {
-      throw new ConvexError("A sync is already in progress");
-    }
+    )
+      return null;
     return await ctx.db.insert("syncRuns", {
       ownerId: args.ownerId,
       accountId: args.accountId,
@@ -308,7 +307,7 @@ export const executeGmailSync = internalAction({
     reason: vSyncReason,
   },
   handler: async (ctx, args): Promise<void> => {
-    const syncRunId: Id<"syncRuns"> = await ctx.runMutation(
+    const syncRunId: Id<"syncRuns"> | null = await ctx.runMutation(
       internal.sync.internal.createRun,
       {
         ownerId: args.ownerId,
@@ -316,6 +315,7 @@ export const executeGmailSync = internalAction({
         reason: args.reason,
       },
     );
+    if (!syncRunId) return;
     await ctx.runMutation(internal.sync.internal.startRun, { syncRunId });
     try {
       const connection = await ctx.runQuery(
@@ -330,6 +330,7 @@ export const executeGmailSync = internalAction({
       });
       const adapter = new GmailAdapter();
       const cursor = connection.account.syncCursor;
+      let reconciledDeletedRemoteMessageIds: string[] = [];
       let syncResult:
         | Awaited<ReturnType<GmailAdapter["fullSync"]>>
         | Awaited<ReturnType<GmailAdapter["incrementalSync"]>>;
@@ -352,6 +353,15 @@ export const executeGmailSync = internalAction({
           error.status === 404
         ) {
           fullSync = true;
+          const knownRemoteMessageIds = await ctx.runQuery(
+            internal.sync.internal.listProviderRemoteMessageIds,
+            { ownerId: args.ownerId, accountId: args.accountId },
+          );
+          reconciledDeletedRemoteMessageIds =
+            await adapter.findDeletedMessageIds(
+              tokens.accessToken,
+              knownRemoteMessageIds,
+            );
           syncResult = await adapter.fullSync(tokens.accessToken);
         } else {
           throw error;
@@ -374,8 +384,14 @@ export const executeGmailSync = internalAction({
           message,
         });
       }
-      if ("deletedRemoteMessageIds" in syncResult) {
-        for (const remoteMessageId of syncResult.deletedRemoteMessageIds) {
+      const deletedRemoteMessageIds = new Set([
+        ...reconciledDeletedRemoteMessageIds,
+        ...("deletedRemoteMessageIds" in syncResult
+          ? syncResult.deletedRemoteMessageIds
+          : []),
+      ]);
+      if (deletedRemoteMessageIds.size > 0) {
+        for (const remoteMessageId of deletedRemoteMessageIds) {
           await ctx.runMutation(internal.sync.internal.deleteProviderMessage, {
             ownerId: args.ownerId,
             accountId: args.accountId,
@@ -412,6 +428,94 @@ export const getGmailSyncContext = internalQuery({
       .withIndex("by_account", (q) => q.eq("accountId", args.accountId))
       .unique();
     return credential ? { account, credential } : null;
+  },
+});
+
+export const listProviderRemoteMessageIds = internalQuery({
+  args: { ownerId: v.string(), accountId: v.id("mailAccounts") },
+  handler: async (ctx, args) => {
+    const account = await ctx.db.get(args.accountId);
+    if (!account || account.ownerId !== args.ownerId) return [];
+    const messages = await ctx.db
+      .query("messages")
+      .withIndex("by_account_remote", (q) => q.eq("accountId", args.accountId))
+      .collect();
+    return messages.map((message) => message.remoteMessageId);
+  },
+});
+
+export const listScheduledGmailAccounts = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    const accounts = await ctx.db.query("mailAccounts").collect();
+    const cutoff = Date.now() - 4 * 60 * 1000;
+    return accounts
+      .filter(
+        (account) =>
+          account.provider === "gmail" &&
+          !account.isDemo &&
+          account.status === "connected" &&
+          (account.lastSyncedAt ?? 0) < cutoff,
+      )
+      .map((account) => ({
+        ownerId: account.ownerId,
+        accountId: account._id,
+      }));
+  },
+});
+
+export const listRecoverableOutbox = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    const now = Date.now();
+    const [pending, failed, sending] = await Promise.all([
+      ctx.db
+        .query("outboxMessages")
+        .withIndex("by_status_created", (q) => q.eq("status", "pending"))
+        .take(100),
+      ctx.db
+        .query("outboxMessages")
+        .withIndex("by_status_created", (q) => q.eq("status", "failed"))
+        .take(100),
+      ctx.db
+        .query("outboxMessages")
+        .withIndex("by_status_created", (q) => q.eq("status", "sending"))
+        .take(100),
+    ]);
+    return [...pending, ...failed, ...sending]
+      .filter(
+        (outbox) =>
+          (outbox.status !== "failed" || outbox.attempt < 3) &&
+          (outbox.status !== "sending" ||
+            outbox.updatedAt < now - 10 * 60 * 1000),
+      )
+      .map((outbox) => outbox._id);
+  },
+});
+
+export const runScheduledProviderWork = internalAction({
+  args: {},
+  handler: async (ctx): Promise<void> => {
+    const [accounts, outboxIds] = await Promise.all([
+      ctx.runQuery(internal.sync.internal.listScheduledGmailAccounts, {}),
+      ctx.runQuery(internal.sync.internal.listRecoverableOutbox, {}),
+    ]);
+    await Promise.all([
+      ...accounts.map((account, index) =>
+        ctx.scheduler.runAfter(
+          index * 500,
+          internal.sync.internal.executeGmailSync,
+          { ...account, reason: "incremental" },
+        ),
+      ),
+      ...outboxIds.map((outboxId, index) =>
+        ctx.scheduler.runAfter(
+          index * 250,
+          internal.sync.internal.deliverGmailOutbox,
+          { outboxId },
+        ),
+      ),
+    ]);
   },
 });
 
@@ -642,19 +746,31 @@ export const claimOutbox = internalMutation({
   args: { outboxId: v.id("outboxMessages") },
   handler: async (ctx, args) => {
     const outbox = await ctx.db.get(args.outboxId);
-    if (!outbox || !["pending", "failed"].includes(outbox.status)) return null;
+    const now = Date.now();
+    const reclaimingExpiredLease =
+      outbox?.status === "sending" &&
+      outbox.updatedAt < now - 10 * 60 * 1000;
+    if (
+      !outbox ||
+      (!reclaimingExpiredLease &&
+        !["pending", "failed"].includes(outbox.status))
+    )
+      return null;
     const account = await ctx.db.get(outbox.accountId);
     if (!account || account.ownerId !== outbox.ownerId) return null;
+    const leaseId = `${now}:${outbox.attempt + 1}`;
     await ctx.db.patch(outbox._id, {
       status: "sending",
       attempt: outbox.attempt + 1,
+      leaseId,
       error: undefined,
-      updatedAt: Date.now(),
+      updatedAt: now,
     });
     return {
       ...outbox,
       attempt: outbox.attempt + 1,
       from: account.address,
+      leaseId,
     };
   },
 });
@@ -662,15 +778,17 @@ export const claimOutbox = internalMutation({
 export const finishOutbox = internalMutation({
   args: {
     outboxId: v.id("outboxMessages"),
+    leaseId: v.string(),
     remoteMessageId: v.optional(v.string()),
     error: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const outbox = await ctx.db.get(args.outboxId);
-    if (outbox?.status !== "sending") return;
+    if (outbox?.status !== "sending" || outbox.leaseId !== args.leaseId) return;
     const now = Date.now();
     await ctx.db.patch(outbox._id, {
       status: args.error ? "failed" : "sent",
+      leaseId: undefined,
       error: args.error,
       remoteMessageId: args.remoteMessageId,
       sentAt: args.error ? undefined : now,
@@ -714,6 +832,7 @@ export const deliverGmailOutbox = internalAction({
       );
       await ctx.runMutation(internal.sync.internal.finishOutbox, {
         outboxId: outbox._id,
+        leaseId: outbox.leaseId,
         remoteMessageId: result.remoteMessageId,
       });
       await ctx.scheduler.runAfter(0, internal.sync.internal.executeGmailSync, {
@@ -724,6 +843,7 @@ export const deliverGmailOutbox = internalAction({
     } catch (error) {
       await ctx.runMutation(internal.sync.internal.finishOutbox, {
         outboxId: outbox._id,
+        leaseId: outbox.leaseId,
         error: safeErrorMessage(error),
       });
       if (outbox.attempt < 3) {

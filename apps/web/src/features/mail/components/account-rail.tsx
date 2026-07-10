@@ -1,7 +1,19 @@
 import type { LucideIcon } from "lucide-react";
-import { BriefcaseBusiness, Cloud, Inbox, Mail, PenLine } from "lucide-react";
+import { useState } from "react";
+import {
+  BriefcaseBusiness,
+  Cloud,
+  Inbox,
+  Link,
+  Loader,
+  Mail,
+  PenLine,
+} from "lucide-react";
+import { useAction } from "convex/react";
 
+import { api } from "@rodge-mail/convex/api";
 import { cn } from "@rodge-mail/std/cn";
+import { toast } from "@rodge-mail/ui-web/toast";
 
 import type { MailAccountView } from "../types";
 import { PasskeyManagementButton } from "~/features/auth/components/passkey-management-button";
@@ -61,6 +73,7 @@ export function AccountRail() {
           );
         })}
         <AccountLoadingState isLoading={isLoadingAccounts} />
+        <GmailConnectionButton accounts={accounts} />
       </nav>
 
       <div className="mt-auto space-y-1.5">
@@ -83,6 +96,56 @@ export function AccountRail() {
       </div>
     </aside>
   );
+}
+
+function GmailConnectionButton({ accounts }: { accounts: MailAccountView[] }) {
+  const connectGmail = useAction(api.accounts.actions.connectGmail);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const gmailAccount = accounts.find((account) => account.provider === "gmail");
+
+  if (gmailAccount && gmailAccount.status !== "reauthorization_required") {
+    return null;
+  }
+
+  async function connect() {
+    setIsConnecting(true);
+    try {
+      const result = await connectGmail({ returnPath: "/" });
+      window.location.assign(result.authorizationUrl);
+    } catch (error) {
+      toast.error(getConnectionError(error));
+      setIsConnecting(false);
+    }
+  }
+
+  return (
+    <button
+      className="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[#b9ad9d] px-3 text-xs font-semibold text-[#756b60] transition hover:border-[#c76749] hover:text-[#a74f37] disabled:opacity-50 xl:justify-start dark:border-[#555a52] dark:text-[#aaa195]"
+      disabled={isConnecting}
+      onClick={() => void connect()}
+      type="button"
+    >
+      <ConnectionIcon isConnecting={isConnecting} />
+      <span className="hidden xl:inline">
+        {getConnectionLabel(gmailAccount)}
+      </span>
+    </button>
+  );
+}
+
+function ConnectionIcon({ isConnecting }: { isConnecting: boolean }) {
+  if (isConnecting) return <Loader className="size-3.5 animate-spin" />;
+  return <Link className="size-3.5" />;
+}
+
+function getConnectionLabel(account: MailAccountView | undefined) {
+  if (account) return "Reconnect Gmail";
+  return "Connect Gmail";
+}
+
+function getConnectionError(error: unknown) {
+  if (error instanceof Error && error.message.trim()) return error.message;
+  return "Could not start Gmail authorization.";
 }
 
 function Brand() {

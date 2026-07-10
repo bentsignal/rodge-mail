@@ -272,6 +272,7 @@ export const vOutboxMessage = v.object({
   replyToInternetMessageId: v.optional(v.string()),
   status: vOutboxStatus,
   attempt: v.number(),
+  leaseId: v.optional(v.string()),
   remoteMessageId: v.optional(v.string()),
   error: v.optional(v.string()),
   sentAt: v.optional(v.number()),

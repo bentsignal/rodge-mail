@@ -129,6 +129,25 @@ export class GmailAdapter implements MailProviderAdapter {
     };
   }
 
+  async findDeletedMessageIds(accessToken: string, remoteMessageIds: string[]) {
+    const results = await mapConcurrent(
+      remoteMessageIds,
+      12,
+      async (messageId) => {
+        try {
+          await this.getMessage(accessToken, messageId);
+          return undefined;
+        } catch (error) {
+          if (error instanceof GmailApiError && error.status === 404) {
+            return messageId;
+          }
+          throw error;
+        }
+      },
+    );
+    return results.filter((messageId): messageId is string => Boolean(messageId));
+  }
+
   async sendPlainText(accessToken: string, payload: OutboxPayload) {
     const internetMessageId = `<rodge-${payload._id}@rodge-mail.local>`;
     const existing = await this.findByInternetMessageId(

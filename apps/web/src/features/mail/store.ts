@@ -31,6 +31,7 @@ function useComposerState() {
   const [composerDraft, setComposerDraft] =
     useState<ComposerDraft>(createEmptyDraft);
   const [deliveryNotice, setDeliveryNotice] = useState<string>();
+  const [idempotencyKey, setIdempotencyKey] = useState(createIdempotencyKey);
   const composerCanSend =
     composerDraft.to.trim().length > 0 &&
     (composerDraft.subject.trim().length > 0 ||
@@ -57,15 +58,17 @@ function useComposerState() {
       to: address,
     });
     setComposerIsOpen(true);
+    setIdempotencyKey(createIdempotencyKey());
   }
 
   function sendComposerDraft() {
     if (!composerCanSend) return;
     setDeliveryNotice(
-      `Draft ready for ${composerDraft.to}. Provider sending is not connected yet.`,
+      `Message queued for ${composerDraft.to}.`,
     );
     setComposerIsOpen(false);
     setComposerDraft(createEmptyDraft());
+    setIdempotencyKey(createIdempotencyKey());
   }
 
   return {
@@ -74,10 +77,12 @@ function useComposerState() {
     composerCanSend,
     composerDraft,
     composerIsOpen,
+    idempotencyKey,
     deliveryNotice,
     dismissDeliveryNotice: () => setDeliveryNotice(undefined),
     openComposer: () => {
       setComposerDraft(createEmptyDraft());
+      setIdempotencyKey(createIdempotencyKey());
       setComposerIsOpen(true);
     },
     openReply,
@@ -89,6 +94,10 @@ function useComposerState() {
     sendComposerDraft,
     updateComposerDraft,
   };
+}
+
+function createIdempotencyKey() {
+  return `rodge-web-${crypto.randomUUID()}`;
 }
 
 function useInternalStore() {
