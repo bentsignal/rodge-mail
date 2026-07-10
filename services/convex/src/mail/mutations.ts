@@ -1,6 +1,7 @@
 import { ConvexError, v } from "convex/values";
 
 import { internal } from "../_generated/api";
+import { reconcileEmbeddingSelection } from "../embedding/internal";
 import { authedMutation } from "../utils";
 import { ensureOwnedAccount, ensureOwnedMessage } from "./helpers";
 import { vMailboxAddress } from "./validators";
@@ -18,6 +19,7 @@ export const setPinned = authedMutation({
       isPinned: args.isPinned,
       updatedAt: Date.now(),
     });
+    await reconcileEmbeddingSelection(ctx, message._id);
   },
 });
 

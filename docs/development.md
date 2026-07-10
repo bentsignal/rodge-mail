@@ -44,6 +44,11 @@ Manager APIs through `expo-better-auth-passkey`. Production credentials use
 Passkeys require a development build or signed app; the native credential
 module is not available in Expo Go.
 
+## Mail intelligence
+
+See [`services/convex/AI.md`](../services/convex/AI.md) for model variables,
+fallback behavior, and the selective semantic-indexing boundary.
+
 ## Validation
 
 Run these commands in order after changes:

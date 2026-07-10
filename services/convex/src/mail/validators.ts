@@ -158,6 +158,7 @@ export const vAttachment = v.object({
 
 export const vClassificationStatus = v.union(
   v.literal("pending"),
+  v.literal("running"),
   v.literal("classified"),
   v.literal("failed"),
 );
@@ -178,6 +179,12 @@ export const vClassificationSource = v.union(
   v.literal("manual"),
 );
 
+export const vClassificationSignal = v.object({
+  code: v.string(),
+  explanation: v.string(),
+  weight: v.number(),
+});
+
 export const vMessageClassification = v.object({
   ownerId: v.string(),
   messageId: v.id("messages"),
@@ -191,9 +198,58 @@ export const vMessageClassification = v.object({
   shouldEmbed: v.boolean(),
   source: vClassificationSource,
   promptVersion: v.string(),
+  outputSchemaVersion: v.optional(v.string()),
+  jobKey: v.optional(v.string()),
+  inputHash: v.optional(v.string()),
+  attempt: v.optional(v.number()),
+  nextAttemptAt: v.optional(v.number()),
+  signals: v.optional(v.array(vClassificationSignal)),
   model: v.optional(v.string()),
   error: v.optional(v.string()),
   classifiedAt: v.optional(v.number()),
+  createdAt: v.number(),
+  updatedAt: v.number(),
+});
+
+export const vEmbeddingReason = v.union(
+  v.literal("focused"),
+  v.literal("pinned"),
+  v.literal("selected"),
+);
+
+export const vEmbeddingJobStatus = v.union(
+  v.literal("pending"),
+  v.literal("running"),
+  v.literal("embedded"),
+  v.literal("failed"),
+);
+
+export const vMessageEmbeddingJob = v.object({
+  ownerId: v.string(),
+  accountId: v.id("mailAccounts"),
+  messageId: v.id("messages"),
+  status: vEmbeddingJobStatus,
+  reason: vEmbeddingReason,
+  jobKey: v.string(),
+  contentHash: v.string(),
+  attempt: v.number(),
+  nextAttemptAt: v.optional(v.number()),
+  model: v.string(),
+  dimensions: v.number(),
+  error: v.optional(v.string()),
+  createdAt: v.number(),
+  updatedAt: v.number(),
+});
+
+export const vMessageEmbedding = v.object({
+  ownerId: v.string(),
+  accountId: v.id("mailAccounts"),
+  messageId: v.id("messages"),
+  reason: vEmbeddingReason,
+  contentHash: v.string(),
+  model: v.string(),
+  dimensions: v.number(),
+  vector: v.array(v.float64()),
   createdAt: v.number(),
   updatedAt: v.number(),
 });

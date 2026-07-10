@@ -233,21 +233,36 @@ async function deleteMessageRecords(
   ctx: MutationCtx,
   messageId: Id<"messages">,
 ) {
-  const [contents, attachments, classifications] = await Promise.all([
-    ctx.db
-      .query("messageContents")
-      .withIndex("by_message", (q) => q.eq("messageId", messageId))
-      .collect(),
-    ctx.db
-      .query("attachments")
-      .withIndex("by_message", (q) => q.eq("messageId", messageId))
-      .collect(),
-    ctx.db
-      .query("messageClassifications")
-      .withIndex("by_message", (q) => q.eq("messageId", messageId))
-      .collect(),
-  ]);
-  for (const row of [...contents, ...attachments, ...classifications]) {
+  const [contents, attachments, classifications, embeddingJobs, embeddings] =
+    await Promise.all([
+      ctx.db
+        .query("messageContents")
+        .withIndex("by_message", (q) => q.eq("messageId", messageId))
+        .collect(),
+      ctx.db
+        .query("attachments")
+        .withIndex("by_message", (q) => q.eq("messageId", messageId))
+        .collect(),
+      ctx.db
+        .query("messageClassifications")
+        .withIndex("by_message", (q) => q.eq("messageId", messageId))
+        .collect(),
+      ctx.db
+        .query("messageEmbeddingJobs")
+        .withIndex("by_message", (q) => q.eq("messageId", messageId))
+        .collect(),
+      ctx.db
+        .query("messageEmbeddings")
+        .withIndex("by_message", (q) => q.eq("messageId", messageId))
+        .collect(),
+    ]);
+  for (const row of [
+    ...contents,
+    ...attachments,
+    ...classifications,
+    ...embeddingJobs,
+    ...embeddings,
+  ]) {
     await ctx.db.delete(row._id);
   }
   await ctx.db.delete(messageId);

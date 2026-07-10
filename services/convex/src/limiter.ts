@@ -21,4 +21,16 @@ export const rateLimiter = new RateLimiter(components.rateLimiter, {
     period: MINUTE,
     capacity: 120,
   },
+  embedMessage: {
+    kind: "token bucket",
+    rate: 60,
+    period: MINUTE,
+    capacity: 120,
+  },
+  semanticSearch: {
+    kind: "token bucket",
+    rate: 30,
+    period: MINUTE,
+    capacity: 60,
+  },
 });

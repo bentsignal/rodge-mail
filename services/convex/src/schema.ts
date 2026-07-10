@@ -7,6 +7,8 @@ import {
   vMessage,
   vMessageClassification,
   vMessageContent,
+  vMessageEmbedding,
+  vMessageEmbeddingJob,
   vOutboxMessage,
   vProviderCredential,
   vProviderOAuthState,
@@ -79,6 +81,18 @@ export default defineSchema(
       .index("by_status", ["status"])
       .index("by_owner_status", ["ownerId", "status"])
       .index("by_owner_bucket_importance", ["ownerId", "bucket", "importance"]),
+    messageEmbeddingJobs: defineTable(vMessageEmbeddingJob)
+      .index("by_message", ["messageId"])
+      .index("by_status", ["status"])
+      .index("by_owner_status", ["ownerId", "status"]),
+    messageEmbeddings: defineTable(vMessageEmbedding)
+      .index("by_message", ["messageId"])
+      .index("by_owner", ["ownerId"])
+      .vectorIndex("search_vector", {
+        vectorField: "vector",
+        dimensions: 512,
+        filterFields: ["ownerId", "accountId"],
+      }),
     syncRuns: defineTable(vSyncRun)
       .index("by_account_created", ["accountId", "createdAt"])
       .index("by_status_created", ["status", "createdAt"]),

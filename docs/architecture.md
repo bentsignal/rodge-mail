@@ -67,14 +67,14 @@ batches, exponential backoff, and periodic reconciliation.
 Classification is an idempotent structured workflow, not a tool-using chat
 agent. Message bodies are untrusted input and the classifier has no tools.
 
-Deterministic signals run before the model: direct recipients, human sender
-history, list and automated headers, security/billing/shipping keywords, user
-rules, and manual overrides. The model returns a bucket, score, category,
-confidence, short reason, summary, and whether semantic indexing is useful.
+Deterministic signals run before the model: conversation direction, list and
+automated headers, action and transactional language, attachments, pin state,
+and manual overrides. The model returns a versioned bucket, category,
+importance, confidence, short reason, and summary.
 
 The result records the content hash, prompt/schema/model versions, attempts,
 and timestamp. A mutation only accepts it if the source revision still matches.
-Pinned messages and explicit Focused/Other/Ignore feedback always win.
+Pinned messages and explicit Focused/Other feedback always win.
 
 Embeddings are generated only for focused, pinned, or manually selected mail.
 Header search remains available for every message.
@@ -82,8 +82,8 @@ Header search remains available for every message.
 ## Privacy boundaries
 
 - Raw mail and credentials never enter client logs, AI telemetry, or analytics.
-- The classifier receives bounded, normalized plain text with quoted history,
-  signatures, and tracking noise removed where possible.
+- The classifier receives bounded, normalized plain text with control
+  characters, excess whitespace, and unneeded headers removed.
 - HTML is sanitized before display. Remote images are blocked or proxied by
   default to avoid tracking pixels.
 - Attachments remain private and require an authorization check before access.

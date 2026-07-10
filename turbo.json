@@ -44,7 +44,10 @@
   "globalEnv": [
     "BETTER_AUTH_SECRET",
     "CONVEX_DEPLOY_KEY",
-    "VITE_NODE_ENV"
+    "VITE_NODE_ENV",
+    "OPENAI_API_KEY",
+    "AI_CLASSIFICATION_MODEL",
+    "AI_EMBEDDING_MODEL"
   ],
   "globalPassThroughEnv": [
     "NODE_ENV",
