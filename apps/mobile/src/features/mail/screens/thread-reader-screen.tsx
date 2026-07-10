@@ -14,12 +14,12 @@ import { Download, Paperclip, Pin, Reply } from "lucide-react-native";
 
 import type { MailMessage, MailThread } from "@rodge-mail/features/mail";
 import { api } from "@rodge-mail/convex/api";
+import { getReplyAddress } from "@rodge-mail/features/mail";
 
 import { useColor } from "~/hooks/use-color";
 import { toConvexId } from "../lib/convex-id";
 import { toMailThreadDetail } from "../lib/convex-mail";
 import { formatMessageTime } from "../lib/mail-format";
-import { useMailStore } from "../store";
 
 export function ThreadReaderScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -29,29 +29,37 @@ export function ThreadReaderScreen() {
 
   if (thread === undefined && threadId) return <ThreadLoading />;
   if (!thread) return <ThreadNotFound />;
-  return <ThreadReader thread={toMailThreadDetail(thread)} />;
+  return (
+    <ThreadReader
+      accountAddress={thread.account.address}
+      thread={toMailThreadDetail(thread)}
+    />
+  );
 }
 
-function ThreadReader({ thread }: { thread: MailThread }) {
+function ThreadReader({
+  accountAddress,
+  thread,
+}: {
+  accountAddress: string;
+  thread: MailThread;
+}) {
   const router = useRouter();
   const setThreadPinned = useMutation(api.mail.mutations.setThreadPinned);
-  const accountAddress = useMailStore(
-    (store) =>
-      store.accounts.find((account) => account.id === thread.accountId)
-        ?.address,
-  );
   const background = useColor("background");
   const foreground = useColor("foreground");
 
   function reply() {
     const latestMessage = thread.messages.at(-1);
     if (!latestMessage) return;
+    const address = getReplyAddress(thread.messages, accountAddress);
+    if (!address) return;
     router.push({
       pathname: "/compose",
       params: {
         accountId: thread.accountId,
-        replyToInternetMessageId: latestMessage.internetMessageId,
-        to: getReplyAddress(thread, accountAddress),
+        replyToMessageId: latestMessage.id,
+        to: address,
         subject: thread.subject.startsWith("Re:")
           ? thread.subject
           : `Re: ${thread.subject}`,
@@ -109,28 +117,6 @@ function ThreadReader({ thread }: { thread: MailThread }) {
       </View>
     </>
   );
-}
-
-function getReplyAddress(
-  thread: MailThread,
-  accountAddress: string | undefined,
-) {
-  const latestMessage = thread.messages.at(-1);
-  if (
-    !latestMessage ||
-    !sameAddress(latestMessage.from.address, accountAddress)
-  ) {
-    return latestMessage?.from.address ?? thread.sender.address;
-  }
-  for (let index = thread.messages.length - 2; index >= 0; index -= 1) {
-    const sender = thread.messages[index]?.from.address;
-    if (sender && !sameAddress(sender, accountAddress)) return sender;
-  }
-  return thread.sender.address;
-}
-
-function sameAddress(left: string, right: string | undefined) {
-  return left.trim().toLowerCase() === right?.trim().toLowerCase();
 }
 
 function ThreadHeader({ thread }: { thread: MailThread }) {

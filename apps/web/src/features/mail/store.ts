@@ -17,7 +17,7 @@ interface ThreadSelection {
 interface ReplyTarget {
   accountId: Id<"mailAccounts">;
   address: string;
-  internetMessageId?: string;
+  messageId: Id<"messages">;
   subject: string;
 }
 
@@ -44,10 +44,8 @@ function useComposerState() {
     useState<WebComposerDraft>(createEmptyDraft);
   const [composerAccountId, setComposerAccountId] =
     useState<Id<"mailAccounts">>();
-  const [
-    composerReplyToInternetMessageId,
-    setComposerReplyToInternetMessageId,
-  ] = useState<string>();
+  const [composerReplyToMessageId, setComposerReplyToMessageId] =
+    useState<Id<"messages">>();
   const [deliveryNotice, setDeliveryNotice] = useState<string>();
   const [idempotencyKey, setIdempotencyKey] = useState(createIdempotencyKey);
   const composerCanSend =
@@ -81,19 +79,14 @@ function useComposerState() {
     }));
   }
 
-  function openReply({
-    accountId,
-    address,
-    internetMessageId,
-    subject,
-  }: ReplyTarget) {
+  function openReply({ accountId, address, messageId, subject }: ReplyTarget) {
     setComposerDraft({
       ...createEmptyDraft(),
       subject: subject.startsWith("Re:") ? subject : `Re: ${subject}`,
       to: address,
     });
     setComposerAccountId(accountId);
-    setComposerReplyToInternetMessageId(internetMessageId);
+    setComposerReplyToMessageId(messageId);
     setComposerIsOpen(true);
     setIdempotencyKey(createIdempotencyKey());
   }
@@ -103,7 +96,7 @@ function useComposerState() {
     setDeliveryNotice(`Message queued for ${composerDraft.to}.`);
     setComposerIsOpen(false);
     setComposerDraft(createEmptyDraft());
-    setComposerReplyToInternetMessageId(undefined);
+    setComposerReplyToMessageId(undefined);
     setIdempotencyKey(createIdempotencyKey());
   }
 
@@ -114,13 +107,13 @@ function useComposerState() {
     composerAccountId,
     composerDraft,
     composerIsOpen,
-    composerReplyToInternetMessageId,
+    composerReplyToMessageId,
     idempotencyKey,
     deliveryNotice,
     dismissDeliveryNotice: () => setDeliveryNotice(undefined),
     openComposer: () => {
       setComposerDraft(createEmptyDraft());
-      setComposerReplyToInternetMessageId(undefined);
+      setComposerReplyToMessageId(undefined);
       setIdempotencyKey(createIdempotencyKey());
       setComposerIsOpen(true);
     },

@@ -17,6 +17,7 @@ import { Paperclip, Send, X } from "lucide-react-native";
 
 import type { ComposerDraft } from "@rodge-mail/features/mail";
 import { api } from "@rodge-mail/convex/api";
+import { getProviderAttachmentError } from "@rodge-mail/convex/attachments/constants";
 
 import type { MobileMailAccount } from "../lib/convex-mail";
 import type { ComposerFieldName } from "./composer-helpers";
@@ -42,7 +43,7 @@ import {
 // eslint-disable-next-line @typescript-eslint/consistent-type-definitions -- Expo Router requires an implicit index signature here.
 type ComposerParams = {
   accountId?: string;
-  replyToInternetMessageId?: string;
+  replyToMessageId?: string;
   subject?: string;
   to?: string;
 };
@@ -59,10 +60,6 @@ export function ComposerScreen() {
   >(params.accountId);
   const [isSending, setIsSending] = useState(false);
   const [draft, setDraft] = useState(() => createComposerDraft(params));
-  const { attachFiles, attachImages, removeAttachment } = useNativeAttachments({
-    draft,
-    setDraft,
-  });
   const canSend = draftCanSend(draft);
   const sendingAccounts = accounts.filter(canSendFromAccount);
   const selectedAccount = getSelectedAccount(
@@ -70,13 +67,14 @@ export function ComposerScreen() {
     selectedAccountId,
     accountFilter,
   );
+  const { attachFiles, attachImages, removeAttachment } = useNativeAttachments({
+    draft,
+    provider: selectedAccount?.provider,
+    setDraft,
+  });
 
   function attach() {
-    Alert.alert("Add attachment", undefined, [
-      { text: "Photos", onPress: () => void attachImages() },
-      { text: "Files", onPress: () => void attachFiles() },
-      { text: "Cancel", style: "cancel" },
-    ]);
+    showAttachmentPicker(attachFiles, attachImages);
   }
 
   function setField(field: ComposerFieldName, value: string) {
@@ -99,6 +97,8 @@ export function ComposerScreen() {
       );
       return;
     }
+    if (!providerAttachmentsCanSend(account.provider, draft.attachments))
+      return;
     const to = parseAddresses(draft.to);
     if (to.length === 0) {
       Alert.alert("Add a recipient", "Enter at least one valid email address.");
@@ -114,7 +114,7 @@ export function ComposerScreen() {
         bcc: parseAddresses(draft.bcc),
         subject: draft.subject.trim(),
         plainText: draft.body,
-        replyToInternetMessageId: params.replyToInternetMessageId,
+        replyToMessageId: toReplyMessageId(params.replyToMessageId),
         attachmentIds: getDraftAttachmentIds(draft.attachments),
       });
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -149,6 +149,31 @@ export function ComposerScreen() {
       />
     </KeyboardAvoidingView>
   );
+}
+
+function providerAttachmentsCanSend(
+  provider: MobileMailAccount["provider"],
+  attachments: NativeComposerAttachment[],
+) {
+  const error = getProviderAttachmentError(provider, attachments);
+  if (!error) return true;
+  Alert.alert("Attachment unavailable", error);
+  return false;
+}
+
+function showAttachmentPicker(
+  attachFiles: () => Promise<void>,
+  attachImages: () => Promise<void>,
+) {
+  Alert.alert("Add attachment", undefined, [
+    { text: "Photos", onPress: () => void attachImages() },
+    { text: "Files", onPress: () => void attachFiles() },
+    { text: "Cancel", style: "cancel" },
+  ]);
+}
+
+function toReplyMessageId(messageId: string | undefined) {
+  return messageId ? toConvexId<"messages">(messageId) : undefined;
 }
 
 function ComposerBody({

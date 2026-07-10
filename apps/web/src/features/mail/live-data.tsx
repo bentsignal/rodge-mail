@@ -11,6 +11,7 @@ import { convexQuery } from "@convex-dev/react-query";
 import { useMutation, usePaginatedQuery } from "convex/react";
 
 import { api } from "@rodge-mail/convex/api";
+import { getReplyAddress } from "@rodge-mail/features/mail";
 import { toast } from "@rodge-mail/ui-web/toast";
 
 import type { MailAccountFilter } from "./store";
@@ -243,10 +244,15 @@ function useLiveMailActions(selectedThread: MailThreadDetail | undefined) {
   function replyToSelectedThread() {
     const latestMessage = selectedThread?.messages.at(-1);
     if (!selectedThread || !latestMessage) return;
+    const address = getReplyAddress(
+      selectedThread.messages,
+      selectedThread.account.address,
+    );
+    if (!address) return;
     openReply({
       accountId: selectedThread.accountId,
-      address: latestMessage.from.address,
-      internetMessageId: latestMessage.internetMessageId,
+      address,
+      messageId: latestMessage._id,
       subject: selectedThread.subject,
     });
   }

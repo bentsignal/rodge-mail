@@ -44,6 +44,7 @@ import type * as mail_helpers from "../mail/helpers.js";
 import type * as mail_mutations from "../mail/mutations.js";
 import type * as mail_outbox from "../mail/outbox.js";
 import type * as mail_queries from "../mail/queries.js";
+import type * as mail_replies from "../mail/replies.js";
 import type * as mail_types from "../mail/types.js";
 import type * as mail_validators from "../mail/validators.js";
 import type * as providers_crypto from "../providers/crypto.js";
@@ -113,6 +114,7 @@ declare const fullApi: ApiFromModules<{
   "mail/mutations": typeof mail_mutations;
   "mail/outbox": typeof mail_outbox;
   "mail/queries": typeof mail_queries;
+  "mail/replies": typeof mail_replies;
   "mail/types": typeof mail_types;
   "mail/validators": typeof mail_validators;
   "providers/crypto": typeof providers_crypto;

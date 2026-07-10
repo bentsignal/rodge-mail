@@ -53,6 +53,7 @@ export const deliver = internalAction({
         subject: outbox.subject,
         plainText: outbox.plainText,
         replyToInternetMessageId: outbox.replyToInternetMessageId,
+        replyToRemoteMessageId: outbox.replyToRemoteMessageId,
         attachments,
       });
       await ctx.runMutation(internal.sync.internal.finishOutbox, {

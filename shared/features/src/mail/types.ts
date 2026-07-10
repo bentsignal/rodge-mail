@@ -33,6 +33,7 @@ export interface MailMessage {
   from: MailAddress;
   id: string;
   internetMessageId?: string;
+  replyTo?: MailAddress[];
   sentAt: string;
   to: MailAddress[];
 }

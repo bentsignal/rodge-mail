@@ -80,12 +80,17 @@ export class MicrosoftGraphAdapter implements MailProviderAdapter {
       );
     }
 
-    const draft = await graphFetch<GraphMessage>(accessToken, "/me/messages", {
-      method: "POST",
-      body: JSON.stringify(createDraftPayload(payload)),
-    });
+    validateSimpleAttachments(payload);
+    const isReply = Boolean(payload.replyToRemoteMessageId);
+    const draft = isReply
+      ? await createReplyDraft(accessToken, payload)
+      : await graphFetch<GraphMessage>(accessToken, "/me/messages", {
+          method: "POST",
+          body: JSON.stringify(createDraftPayload(payload)),
+        });
     if (!draft.id) throw new Error("Microsoft Graph omitted the draft ID");
     await onDraftCreated?.(draft.id);
+    if (isReply) await prepareReplyDraft(accessToken, draft.id, payload);
     await sendDraft(accessToken, draft.id);
     return { remoteMessageId: draft.id };
   }
@@ -115,6 +120,54 @@ export class MicrosoftGraphAdapter implements MailProviderAdapter {
       },
     );
   }
+}
+
+async function createReplyDraft(accessToken: string, payload: OutboxPayload) {
+  const sourceMessageId = payload.replyToRemoteMessageId;
+  if (!sourceMessageId) {
+    throw new Error("Microsoft reply source is unavailable");
+  }
+  const draft = await graphFetch<GraphMessage>(
+    accessToken,
+    `/me/messages/${encodeURIComponent(sourceMessageId)}/createReply`,
+    { method: "POST" },
+  );
+  if (!draft.id) throw new Error("Microsoft Graph omitted the reply draft ID");
+  return draft;
+}
+
+async function prepareReplyDraft(
+  accessToken: string,
+  draftId: string,
+  payload: OutboxPayload,
+) {
+  const draftPath = `/me/messages/${encodeURIComponent(draftId)}`;
+  await graphFetch<GraphMessage>(accessToken, draftPath, {
+    method: "PATCH",
+    body: JSON.stringify(createReplyDraftPayload(payload)),
+  });
+  const existingAttachments = await graphFetch<
+    GraphCollection<GraphAttachment>
+  >(accessToken, `${draftPath}/attachments?$select=id,contentId&$top=10`);
+  const existingContentIds = new Set(
+    (existingAttachments.value ?? []).flatMap((attachment) =>
+      attachment.contentId ? [attachment.contentId] : [],
+    ),
+  );
+  await Promise.all(
+    payload.attachments.map(async (attachment, index) => {
+      const contentId = createAttachmentContentId(payload, index);
+      if (existingContentIds.has(contentId)) return;
+      await graphFetch<GraphAttachment>(
+        accessToken,
+        `${draftPath}/attachments`,
+        {
+          method: "POST",
+          body: JSON.stringify(createAttachmentPayload(attachment, contentId)),
+        },
+      );
+    }),
+  );
 }
 
 async function collectDelta(accessToken: string, initialUrl: string) {
@@ -219,6 +272,9 @@ async function resumeDraftSend(
     const existing = await getMessageState(accessToken, remoteMessageId);
     if (!existing) continue;
     if (!existing.isDraft) return { remoteMessageId };
+    if (payload.replyToRemoteMessageId) {
+      await prepareReplyDraft(accessToken, remoteMessageId, payload);
+    }
     await sendDraft(accessToken, remoteMessageId);
     return { remoteMessageId };
   }
@@ -258,6 +314,34 @@ async function getMessageState(accessToken: string, remoteMessageId: string) {
 }
 
 function createDraftPayload(payload: OutboxPayload) {
+  return {
+    ...createReplyDraftPayload(payload),
+    internetMessageHeaders: [
+      {
+        name: "x-rodge-mail-idempotency-key",
+        value: String(payload._id),
+      },
+    ],
+    attachments: payload.attachments.map((attachment, index) =>
+      createAttachmentPayload(
+        attachment,
+        createAttachmentContentId(payload, index),
+      ),
+    ),
+  };
+}
+
+function createReplyDraftPayload(payload: OutboxPayload) {
+  return {
+    subject: payload.subject,
+    body: { contentType: "Text", content: payload.plainText },
+    toRecipients: toRecipients(payload.to),
+    ccRecipients: toRecipients(payload.cc),
+    bccRecipients: toRecipients(payload.bcc),
+  };
+}
+
+function validateSimpleAttachments(payload: OutboxPayload) {
   for (const attachment of payload.attachments) {
     if (attachment.size > SIMPLE_ATTACHMENT_LIMIT_BYTES) {
       throw new Error(
@@ -265,25 +349,23 @@ function createDraftPayload(payload: OutboxPayload) {
       );
     }
   }
+}
+
+function createAttachmentPayload(
+  attachment: OutboxPayload["attachments"][number],
+  contentId: string,
+) {
   return {
-    subject: payload.subject,
-    body: { contentType: "Text", content: payload.plainText },
-    toRecipients: toRecipients(payload.to),
-    ccRecipients: toRecipients(payload.cc),
-    bccRecipients: toRecipients(payload.bcc),
-    internetMessageHeaders: [
-      {
-        name: "x-rodge-mail-idempotency-key",
-        value: String(payload._id),
-      },
-    ],
-    attachments: payload.attachments.map((attachment) => ({
-      "@odata.type": "#microsoft.graph.fileAttachment",
-      name: attachment.fileName,
-      contentType: attachment.contentType,
-      contentBytes: encodeBase64(attachment.bytes),
-    })),
+    "@odata.type": "#microsoft.graph.fileAttachment",
+    contentId,
+    name: attachment.fileName,
+    contentType: attachment.contentType,
+    contentBytes: encodeBase64(attachment.bytes),
   };
+}
+
+function createAttachmentContentId(payload: OutboxPayload, index: number) {
+  return `${payload._id}-${index}@rodge-mail.local`;
 }
 
 function normalizeMessage(message: GraphMessage): NormalizedMessage {

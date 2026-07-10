@@ -609,6 +609,9 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
+      vitest:
+        specifier: ^4.0.17
+        version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@22.18.12)(vite@7.1.12(@types/node@22.18.12)(jiti@2.7.0)(lightningcss@1.30.1)(terser@5.44.0)(tsx@4.21.0)(yaml@2.8.1))
 
   shared/std:
     dependencies:
@@ -14200,7 +14203,6 @@ snapshots:
       magic-string: 0.30.21
     optionalDependencies:
       vite: 7.1.12(@types/node@22.18.12)(jiti@2.7.0)(lightningcss@1.30.1)(terser@5.44.0)(tsx@4.21.0)(yaml@2.8.1)
-    optional: true
 
   '@vitest/mocker@4.1.10(vite@7.1.12(@types/node@22.19.3)(jiti@2.7.0)(lightningcss@1.30.1)(terser@5.44.0)(tsx@4.21.0)(yaml@2.8.1))':
     dependencies:
@@ -19598,7 +19600,6 @@ snapshots:
       '@types/node': 22.18.12
     transitivePeerDependencies:
       - msw
-    optional: true
 
   vitest@4.1.10(@opentelemetry/api@1.9.0)(@types/node@22.19.3)(vite@7.1.12(@types/node@22.19.3)(jiti@2.7.0)(lightningcss@1.30.1)(terser@5.44.0)(tsx@4.21.0)(yaml@2.8.1)):
     dependencies:

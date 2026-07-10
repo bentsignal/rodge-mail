@@ -4,6 +4,7 @@ import { useMutation } from "convex/react";
 import type { Id } from "@rodge-mail/convex/model";
 import { api } from "@rodge-mail/convex/api";
 import {
+  getProviderAttachmentError,
   MAX_ATTACHMENT_COUNT,
   MAX_TOTAL_ATTACHMENT_BYTES,
   validateAttachmentMetadata,
@@ -11,9 +12,12 @@ import {
 import { toast } from "@rodge-mail/ui-web/toast";
 
 import type { WebComposerAttachment } from "../store";
+import type { MailAccountView } from "../types";
 import { useMailStore } from "../store";
 
-export function useComposeAttachments() {
+export function useComposeAttachments(
+  provider: MailAccountView["provider"] | undefined,
+) {
   const attachments = useMailStore((store) => store.composerDraft.attachments);
   const addAttachments = useMailStore((store) => store.addComposerAttachments);
   const updateAttachment = useMailStore(
@@ -62,7 +66,7 @@ export function useComposeAttachments() {
   }
 
   async function attachFiles(files: File[]) {
-    const error = getSelectionError(attachments, files);
+    const error = getSelectionError(attachments, files, provider);
     if (error) {
       toast.error(error);
       return;
@@ -83,6 +87,7 @@ export function useComposeAttachments() {
 function getSelectionError(
   attachments: WebComposerAttachment[],
   files: File[],
+  provider: MailAccountView["provider"] | undefined,
 ) {
   if (attachments.length + files.length > MAX_ATTACHMENT_COUNT) {
     return `Attach up to ${MAX_ATTACHMENT_COUNT} files per message.`;
@@ -102,7 +107,7 @@ function getSelectionError(
     });
     if (error) return error;
   }
-  return undefined;
+  return getProviderAttachmentError(provider, [...attachments, ...files]);
 }
 
 function createWebAttachment(file: File) {

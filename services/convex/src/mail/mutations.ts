@@ -15,6 +15,7 @@ import {
   validateProviderAttachments,
   validateSendRequest,
 } from "./outbox";
+import { resolveReplyMetadata } from "./replies";
 import { vMailboxAddress } from "./validators";
 
 export const setPinned = authedMutation({
@@ -185,12 +186,18 @@ export const enqueuePlainText = authedMutation({
     bcc: v.optional(v.array(vMailboxAddress)),
     subject: v.string(),
     plainText: v.string(),
-    replyToInternetMessageId: v.optional(v.string()),
+    replyToMessageId: v.optional(v.id("messages")),
     attachmentIds: v.optional(v.array(v.id("draftAttachments"))),
   },
   handler: async (ctx, args) => {
     const account = await ensureOwnedAccount(ctx, ctx.ownerId, args.accountId);
     const idempotencyKey = validateSendRequest(account, args);
+    const replyMessage = args.replyToMessageId
+      ? await ensureOwnedMessage(ctx, ctx.ownerId, args.replyToMessageId)
+      : undefined;
+    const replyMetadata = replyMessage
+      ? resolveReplyMetadata(replyMessage, ctx.ownerId, account._id)
+      : {};
     const { attachmentIds, attachments } = await getReadyDraftAttachments(
       ctx,
       args.attachmentIds ?? [],
@@ -203,6 +210,11 @@ export const enqueuePlainText = authedMutation({
       )
       .unique();
     if (existing) {
+      if (existing.replyToMessageId !== args.replyToMessageId) {
+        throw new ConvexError(
+          "This send attempt already exists with a different reply target",
+        );
+      }
       if (!attachmentIdsMatch(existing.attachmentIds ?? [], attachmentIds)) {
         throw new ConvexError(
           "This send attempt already exists with different attachments",
@@ -221,7 +233,7 @@ export const enqueuePlainText = authedMutation({
       bcc: args.bcc ?? [],
       subject: args.subject,
       plainText: args.plainText,
-      replyToInternetMessageId: args.replyToInternetMessageId,
+      ...replyMetadata,
       attachmentIds,
       status: "pending",
       attempt: 0,

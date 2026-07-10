@@ -1,6 +1,7 @@
 export const MAX_ATTACHMENT_COUNT = 5;
 export const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
 export const MAX_TOTAL_ATTACHMENT_BYTES = 18 * 1024 * 1024;
+export const MAX_MICROSOFT_ATTACHMENT_BYTES = 3 * 1024 * 1024;
 export const MAX_ATTACHMENT_FILE_NAME_LENGTH = 120;
 
 const allowedContentTypes = new Set([
@@ -68,6 +69,21 @@ export function validateAttachmentMetadata({
   }
   if (!allowedContentTypes.has(normalizedType)) {
     return `Files of type ${normalizedType || "unknown"} are not supported.`;
+  }
+  return undefined;
+}
+
+export function getProviderAttachmentError(
+  provider: "gmail" | "icloud" | "microsoft" | undefined,
+  attachments: { size: number }[],
+) {
+  if (
+    provider === "microsoft" &&
+    attachments.some(
+      (attachment) => attachment.size > MAX_MICROSOFT_ATTACHMENT_BYTES,
+    )
+  ) {
+    return "Microsoft 365 attachments must be 3 MB or smaller.";
   }
   return undefined;
 }

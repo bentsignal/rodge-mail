@@ -14,6 +14,7 @@ import type {
 } from "@rodge-mail/features/mail";
 import { api } from "@rodge-mail/convex/api";
 import {
+  getProviderAttachmentError,
   MAX_ATTACHMENT_COUNT,
   MAX_TOTAL_ATTACHMENT_BYTES,
   validateAttachmentMetadata,
@@ -27,9 +28,11 @@ type NativeDraft = ComposerDraft<NativeComposerAttachment>;
 
 export function useNativeAttachments({
   draft,
+  provider,
   setDraft,
 }: {
   draft: NativeDraft;
+  provider: "gmail" | "icloud" | "microsoft" | undefined;
   setDraft: Dispatch<SetStateAction<NativeDraft>>;
 }) {
   const generateUploadUrl = useMutation(
@@ -92,23 +95,16 @@ export function useNativeAttachments({
   async function attachSelected(
     select: (
       current: NativeComposerAttachment[],
+      selectedProvider: "gmail" | "icloud" | "microsoft" | undefined,
     ) => Promise<NativeComposerAttachment[] | undefined>,
   ) {
-    const selected = await select(draft.attachments);
+    const selected = await select(draft.attachments, provider);
     if (!selected) return;
     setDraft((current) => ({
       ...current,
       attachments: [...current.attachments, ...selected],
     }));
     await Promise.all(selected.map(upload));
-  }
-
-  async function attachFiles() {
-    await attachSelected(selectFiles);
-  }
-
-  async function attachImages() {
-    await attachSelected(selectImages);
   }
 
   async function remove(attachment: NativeComposerAttachment) {
@@ -129,7 +125,11 @@ export function useNativeAttachments({
     }
   }
 
-  return { attachFiles, attachImages, removeAttachment: remove };
+  return {
+    attachFiles: () => attachSelected(selectFiles),
+    attachImages: () => attachSelected(selectImages),
+    removeAttachment: remove,
+  };
 }
 
 export function getDraftAttachmentIds(attachments: NativeComposerAttachment[]) {
@@ -141,7 +141,10 @@ export function getDraftAttachmentIds(attachments: NativeComposerAttachment[]) {
   });
 }
 
-async function selectFiles(current: NativeComposerAttachment[]) {
+async function selectFiles(
+  current: NativeComposerAttachment[],
+  provider: "gmail" | "icloud" | "microsoft" | undefined,
+) {
   const selection = await File.pickFileAsync({
     mimeTypes: "*/*",
     multipleFiles: true,
@@ -161,7 +164,7 @@ async function selectFiles(current: NativeComposerAttachment[]) {
       status: "uploading" as const,
     };
   });
-  const error = getSelectionError([...current, ...selected]);
+  const error = getSelectionError([...current, ...selected], provider);
   if (error) {
     Alert.alert("Attachment unavailable", error);
     return undefined;
@@ -169,7 +172,10 @@ async function selectFiles(current: NativeComposerAttachment[]) {
   return selected;
 }
 
-async function selectImages(current: NativeComposerAttachment[]) {
+async function selectImages(
+  current: NativeComposerAttachment[],
+  provider: "gmail" | "icloud" | "microsoft" | undefined,
+) {
   const result = await ImagePicker.launchImageLibraryAsync({
     allowsMultipleSelection: true,
     mediaTypes: ["images"],
@@ -192,7 +198,7 @@ async function selectImages(current: NativeComposerAttachment[]) {
       status: "uploading" as const,
     };
   });
-  const error = getSelectionError([...current, ...selected]);
+  const error = getSelectionError([...current, ...selected], provider);
   if (error) {
     Alert.alert("Attachment unavailable", error);
     return undefined;
@@ -238,7 +244,10 @@ const contentTypesByExtension = new Map([
   ["zip", "application/zip"],
 ]);
 
-function getSelectionError(attachments: NativeComposerAttachment[]) {
+function getSelectionError(
+  attachments: NativeComposerAttachment[],
+  provider: "gmail" | "icloud" | "microsoft" | undefined,
+) {
   const totalBytes = attachments.reduce(
     (total, attachment) => total + attachment.size,
     0,
@@ -250,7 +259,7 @@ function getSelectionError(attachments: NativeComposerAttachment[]) {
     const error = validateAttachmentMetadata(attachment);
     if (error) return error;
   }
-  return undefined;
+  return getProviderAttachmentError(provider, attachments);
 }
 
 function parseStorageId(value: unknown) {

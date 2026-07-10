@@ -58,6 +58,7 @@ export interface OutboxPayload {
   subject: string;
   plainText: string;
   replyToInternetMessageId?: string;
+  replyToRemoteMessageId?: string;
   attachments: OutboxAttachmentPayload[];
 }
 

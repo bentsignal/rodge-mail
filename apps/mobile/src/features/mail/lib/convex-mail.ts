@@ -86,6 +86,10 @@ function toMailMessage(item: ThreadMessage) {
     },
     id: item._id,
     internetMessageId: item.internetMessageId,
+    replyTo: item.replyTo?.map((address) => ({
+      address: address.address,
+      name: getAddressName(address),
+    })),
     sentAt: new Date(item.sentAt ?? item.receivedAt).toISOString(),
     to: item.to.map((address) => ({
       address: address.address,

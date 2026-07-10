@@ -1289,6 +1289,7 @@ export const deliverMicrosoftOutbox = internalAction({
           subject: outbox.subject,
           plainText: outbox.plainText,
           replyToInternetMessageId: outbox.replyToInternetMessageId,
+          replyToRemoteMessageId: outbox.replyToRemoteMessageId,
           attachments,
         },
         async (remoteMessageId) => {

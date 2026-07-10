@@ -5,7 +5,10 @@ import { ArrowUp, Paperclip, Send, X } from "lucide-react";
 
 import type { Id } from "@rodge-mail/convex/model";
 import { api } from "@rodge-mail/convex/api";
-import { MAX_ATTACHMENT_COUNT } from "@rodge-mail/convex/attachments/constants";
+import {
+  getProviderAttachmentError,
+  MAX_ATTACHMENT_COUNT,
+} from "@rodge-mail/convex/attachments/constants";
 import * as Dialog from "@rodge-mail/ui-web/dialog";
 import { Textarea } from "@rodge-mail/ui-web/textarea";
 import { toast } from "@rodge-mail/ui-web/toast";
@@ -120,20 +123,30 @@ function ComposeFooter() {
   const canSend = useMailStore((store) => store.composerCanSend);
   const completeSend = useMailStore((store) => store.sendComposerDraft);
   const composerAccountId = useMailStore((store) => store.composerAccountId);
-  const replyToInternetMessageId = useMailStore(
-    (store) => store.composerReplyToInternetMessageId,
+  const replyToMessageId = useMailStore(
+    (store) => store.composerReplyToMessageId,
   );
   const draft = useMailStore((store) => store.composerDraft);
   const idempotencyKey = useMailStore((store) => store.idempotencyKey);
   const enqueuePlainText = useMutation(api.mail.mutations.enqueuePlainText);
   const { accounts } = useLiveMail();
+  const account = getSendingAccount(accounts, composerAccountId);
   const [isSending, setIsSending] = useState(false);
-  const { attachFiles, attachmentsAreReady } = useComposeAttachments();
+  const { attachFiles, attachmentsAreReady } = useComposeAttachments(
+    account?.provider,
+  );
 
   async function send() {
-    const account = getSendingAccount(accounts, composerAccountId);
     if (!account) {
       toast.error("Connect a mail account before sending.");
+      return;
+    }
+    const attachmentError = getProviderAttachmentError(
+      account.provider,
+      draft.attachments,
+    );
+    if (attachmentError) {
+      toast.error(attachmentError);
       return;
     }
     if (!attachmentsAreReady) {
@@ -155,7 +168,7 @@ function ComposeFooter() {
         bcc: parseAddresses(draft.bcc),
         subject: draft.subject.trim(),
         plainText: draft.body,
-        replyToInternetMessageId,
+        replyToMessageId,
         attachmentIds: draft.attachments.map((attachment) =>
           toDraftAttachmentId(requireDraftAttachmentId(attachment)),
         ),

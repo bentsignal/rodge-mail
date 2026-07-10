@@ -3,6 +3,7 @@ import { ConvexError } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { AuthedMutationCtx } from "../utils";
 import {
+  getProviderAttachmentError,
   MAX_ATTACHMENT_COUNT,
   MAX_TOTAL_ATTACHMENT_BYTES,
 } from "../attachments/constants";
@@ -35,14 +36,11 @@ export function validateProviderAttachments(
   account: Doc<"mailAccounts">,
   attachments: Doc<"draftAttachments">[],
 ) {
-  if (account.provider === "microsoft") {
-    if (attachments.some((attachment) => (attachment.size ?? 0) > 3_145_728)) {
-      throw new ConvexError(
-        "Microsoft 365 attachments must be 3 MB or smaller",
-      );
-    }
-    return;
-  }
+  const error = getProviderAttachmentError(
+    account.provider,
+    attachments.map((attachment) => ({ size: attachment.size ?? 0 })),
+  );
+  if (error) throw new ConvexError(error);
 }
 
 export async function getReadyDraftAttachments(
