@@ -2,7 +2,7 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { Fingerprint, LockKeyhole, ShieldCheck } from "lucide-react";
 import { z } from "zod";
 
-import { OwnerSetupForm } from "~/features/auth/components/owner-setup-form";
+import { RegistrationForm } from "~/features/auth/components/registration-form";
 import { SignInButton } from "~/features/auth/components/sign-in-button";
 import { useAuthStore } from "~/features/auth/store";
 
@@ -69,7 +69,7 @@ function LoginIntroduction() {
       <div className="mt-9 hidden gap-6 sm:flex">
         <TrustNote icon={Fingerprint} label="Biometric or device PIN" />
         <TrustNote icon={ShieldCheck} label="Phishing-resistant" />
-        <TrustNote icon={LockKeyhole} label="Single-owner access" />
+        <TrustNote icon={LockKeyhole} label="No shared secrets" />
       </div>
     </section>
   );
@@ -80,7 +80,7 @@ function LoginCard() {
     <section className="border-border/80 bg-card/88 rounded-[24px] border p-5 shadow-[0_28px_90px_rgba(48,38,24,0.14)] backdrop-blur-xl sm:p-7">
       <div>
         <p className="font-mono text-[8px] tracking-[0.16em] text-[#897d6f] uppercase">
-          Returning owner
+          Welcome back
         </p>
         <h2 className="mt-2 font-serif text-2xl font-semibold tracking-[-0.03em]">
           Open your mail desk
@@ -97,20 +97,20 @@ function LoginCard() {
       <div className="my-7 flex items-center gap-3">
         <span className="bg-border h-px flex-1" />
         <span className="font-mono text-[8px] tracking-[0.15em] text-[#9a8f82] uppercase">
-          First time only
+          New to Rodge Mail
         </span>
         <span className="bg-border h-px flex-1" />
       </div>
 
       <div>
         <p className="font-mono text-[8px] tracking-[0.16em] text-[#897d6f] uppercase">
-          Initial owner setup
+          Create your account
         </p>
         <p className="mt-2 text-xs leading-5 text-[#81776c] dark:text-[#aaa095]">
-          Name this credential and enter the temporary deployment token to
-          create the first owner passkey.
+          Register a passkey for your own Rodge Mail account. You will use it
+          instead of a password each time you return.
         </p>
-        <OwnerSetupForm />
+        <RegistrationForm />
       </div>
     </section>
   );
@@ -135,7 +135,7 @@ function LoginFooter() {
   return (
     <footer className="flex items-center justify-between border-t border-[#d9d0c3]/70 pt-4 font-mono text-[8px] tracking-[0.14em] text-[#93877a] uppercase dark:border-[#3d413b]">
       <span>WebAuthn secure context required</span>
-      <span>Rodge Mail · Owner access</span>
+      <span>Rodge Mail · Passkey access</span>
     </footer>
   );
 }

@@ -14,7 +14,7 @@ iCloud accounts, and learns which messages Shawn actually wants to see.
 - Explainable Focused/Other classification and semantic search for important
   mail
 
-The product implementation includes the shared focused inbox, owner-only
+The product implementation includes the shared focused inbox, user-scoped
 passkey auth, Gmail and Microsoft Graph OAuth providers, the iCloud IMAP/SMTP
 connector, transactional sending, private attachments, and explainable AI
 classification and semantic search. Provider credentials and the public web

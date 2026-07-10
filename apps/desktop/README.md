@@ -11,9 +11,9 @@ The preload currently exposes no API. Keep it that way until a native feature ne
 On macOS, the main process configures Electron's device-bound Touch ID WebAuthn
 authenticator. The signing identity must belong to Apple team `39K6A9FP99`,
 matching the keychain access group in `resources/entitlements.mac.plist`.
-Desktop Touch ID passkeys are local to that Mac and Electron session. The owner
-setup form can register the first desktop credential with the development
-deployment's bootstrap token even when the owner account already exists.
+Desktop Touch ID passkeys are local to that Mac and Electron session. New users
+can register from the shared web login screen, while signed-in users can add a
+passkey for another device from account settings.
 
 ## Packaging
 

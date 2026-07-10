@@ -7,6 +7,8 @@ import { convex, crossDomain } from "@convex-dev/better-auth/plugins";
 import { APIError } from "better-auth/api";
 import { betterAuth } from "better-auth/minimal";
 
+import { parsePasskeyRegistrationContext } from "@rodge-mail/config/auth";
+
 import type { DataModel } from "./_generated/dataModel";
 import { components, internal } from "./_generated/api";
 import { primaryAuthConfig } from "./auth.config";
@@ -16,6 +18,7 @@ import { urls } from "./urls";
 
 // eslint-disable-next-line no-restricted-syntax -- This preserves Better Auth's generated Convex API typing.
 const authFunctions: AuthFunctions = internal.auth;
+const pendingRegistrationPrefix = "pending-passkey:";
 const androidPasskeyOrigins = getAndroidPasskeyOrigins();
 const passkeyRpOrigin = `https://${env.PASSKEY_RP_ID}`;
 const passkeyOrigins = [
@@ -68,23 +71,40 @@ export function createAuthOptions(ctx: GenericCtx<DataModel>) {
         registration: {
           requireSession: false,
           resolveUser: async ({ context, ctx: authCtx }) => {
-            await verifyBootstrapContext(context);
-            const email = normalizeOwnerEmail(env.OWNER_EMAIL);
+            const registration = requirePasskeyRegistration(context);
             const existing =
-              await authCtx.context.internalAdapter.findUserByEmail(email);
-            const user =
-              existing?.user ??
-              (await authCtx.context.internalAdapter.createUser({
-                email,
-                emailVerified: true,
-                name: env.OWNER_NAME,
-              }));
-
+              await authCtx.context.internalAdapter.findUserByEmail(
+                registration.email,
+              );
+            if (existing) {
+              throw new APIError("BAD_REQUEST", {
+                message: "This account already exists. Sign in instead.",
+              });
+            }
             return {
-              id: user.id,
-              name: email,
-              displayName: env.OWNER_NAME,
+              id: `${pendingRegistrationPrefix}${crypto.randomUUID()}`,
+              name: registration.email,
+              displayName: registration.name,
             };
+          },
+          afterVerification: async ({ context, ctx: authCtx, user }) => {
+            if (!user.id.startsWith(pendingRegistrationPrefix)) return;
+            const registration = requirePasskeyRegistration(context);
+            const existing =
+              await authCtx.context.internalAdapter.findUserByEmail(
+                registration.email,
+              );
+            if (existing) {
+              throw new APIError("BAD_REQUEST", {
+                message: "This account already exists. Sign in instead.",
+              });
+            }
+            const created = await authCtx.context.internalAdapter.createUser({
+              email: registration.email,
+              emailVerified: false,
+              name: registration.name,
+            });
+            return { userId: created.id };
           },
         },
       }),
@@ -101,37 +121,14 @@ export function createAuth(ctx: GenericCtx<DataModel>) {
 
 export const { onCreate, onUpdate, onDelete } = authComponent.triggersApi();
 
-async function verifyBootstrapContext(context?: string | null) {
-  const secret = env.OWNER_BOOTSTRAP_TOKEN;
-  if (
-    !secret ||
-    secret.length < 32 ||
-    !context ||
-    !(await securelyEqual(context, secret))
-  ) {
-    throw new APIError("UNAUTHORIZED", {
-      message: "Passkey bootstrap is unavailable",
+function requirePasskeyRegistration(context: string | null | undefined) {
+  const registration = parsePasskeyRegistrationContext(context);
+  if (!registration) {
+    throw new APIError("BAD_REQUEST", {
+      message: "Enter a valid name and email address",
     });
   }
-}
-
-async function securelyEqual(left: string, right: string) {
-  const encoder = new TextEncoder();
-  const [leftHash, rightHash] = await Promise.all([
-    crypto.subtle.digest("SHA-256", encoder.encode(left)),
-    crypto.subtle.digest("SHA-256", encoder.encode(right)),
-  ]);
-  const leftBytes = new Uint8Array(leftHash);
-  const rightBytes = new Uint8Array(rightHash);
-  let difference = 0;
-  for (let index = 0; index < leftBytes.length; index += 1) {
-    difference |= (leftBytes.at(index) ?? 0) ^ (rightBytes.at(index) ?? 0);
-  }
-  return difference === 0;
-}
-
-function normalizeOwnerEmail(email: string) {
-  return email.trim().toLowerCase();
+  return registration;
 }
 
 function getAndroidPasskeyOrigins() {

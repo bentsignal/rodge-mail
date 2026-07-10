@@ -37,8 +37,9 @@ Rodge Mail authentication and mailbox authorization are separate concerns.
 Provider credentials are encrypted at rest with a versioned server-side key.
 They are never returned by Convex queries or written to logs.
 
-Passkey registration is closed to a signed, single-use owner bootstrap flow.
-The owner should register at least two passkeys before bootstrap is disabled.
+Passkey-first registration creates a user only after WebAuthn verification.
+Existing email addresses cannot be claimed through signed-out registration,
+and every mailbox query and mutation remains scoped to the authenticated user.
 
 ## Mail model
 

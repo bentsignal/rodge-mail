@@ -2,7 +2,7 @@ import { ActivityIndicator, View } from "react-native";
 import { Redirect } from "expo-router";
 import { useConvexAuth } from "convex/react";
 
-import { OwnerSignInScreen } from "~/features/auth/owner-sign-in-screen";
+import { PasskeySignInScreen } from "~/features/auth/passkey-sign-in-screen";
 
 export default function Index() {
   const { isAuthenticated, isLoading } = useConvexAuth();
@@ -14,6 +14,6 @@ export default function Index() {
       </View>
     );
   }
-  if (!isAuthenticated) return <OwnerSignInScreen />;
+  if (!isAuthenticated) return <PasskeySignInScreen />;
   return <Redirect href="/(tabs)/(inbox)" />;
 }

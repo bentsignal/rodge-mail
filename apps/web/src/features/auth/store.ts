@@ -1,10 +1,17 @@
 import { useRouteContext } from "@tanstack/react-router";
 import { createStore } from "rostra";
 
+import { createPasskeyRegistrationContext } from "@rodge-mail/config/auth";
 import { useLoading } from "@rodge-mail/std/use-loading";
 import { toast } from "@rodge-mail/ui-web/toast";
 
 import { authClient } from "./lib/client";
+
+interface RegistrationDetails {
+  email: string;
+  name: string;
+  passkeyName: string;
+}
 
 function useInternalStore() {
   const { isLoading, run } = useLoading();
@@ -30,32 +37,26 @@ function useInternalStore() {
     });
   }
 
-  function bootstrapOwnerPasskey({
-    name,
-    token,
-  }: {
-    name: string;
-    token: string;
-  }) {
-    if (isAuthenticated || !name.trim() || !token) {
+  function registerWithPasskey(details: RegistrationDetails) {
+    const { email, name, passkeyName } = normalizeRegistrationDetails(details);
+
+    if (isAuthenticated || !email || !name || !passkeyName) {
       return Promise.resolve(false);
     }
     return run({
       fn: async () => {
         const result = await authClient.passkey.addPasskey({
-          context: token,
-          name: name.trim(),
+          context: createPasskeyRegistrationContext({ email, name }),
+          name: passkeyName,
         });
         if (result.error) {
-          throw new Error(result.error.message ?? "Passkey setup failed");
+          throw new Error(result.error.message ?? "Account creation failed");
         }
-        toast.success("Owner passkey created");
+        toast.success("Account passkey created");
         return true;
       },
       onError: (error) => {
-        toast.error(
-          getErrorMessage(error, "Could not create the owner passkey"),
-        );
+        toast.error(getErrorMessage(error, "Could not create your account"));
       },
     });
   }
@@ -100,10 +101,10 @@ function useInternalStore() {
 
   return {
     addAuthenticatedPasskey,
-    bootstrapOwnerPasskey,
     imSignedIn: isAuthenticated,
     imSignedOut: !isAuthenticated,
     isLoading,
+    registerWithPasskey,
     signInWithPasskey,
     signOut,
   };
@@ -112,6 +113,14 @@ function useInternalStore() {
 function getSafeRedirect(redirectUri: string | undefined) {
   if (!redirectUri?.startsWith("/") || redirectUri.startsWith("//")) return "/";
   return redirectUri;
+}
+
+function normalizeRegistrationDetails(details: RegistrationDetails) {
+  return {
+    email: details.email.trim().toLowerCase(),
+    name: details.name.trim(),
+    passkeyName: details.passkeyName.trim(),
+  };
 }
 
 function getErrorMessage(error: unknown, fallback: string) {

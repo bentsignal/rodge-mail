@@ -4,21 +4,25 @@ import { Check, KeyRound, Loader, ShieldCheck } from "lucide-react";
 import { useAuthStore } from "../store";
 import { SignInButton } from "./sign-in-button";
 
-export function OwnerSetupForm() {
-  const [name, setName] = useState("Primary passkey");
-  const [token, setToken] = useState("");
-  const [setupIsComplete, setSetupIsComplete] = useState(false);
-  const bootstrapOwnerPasskey = useAuthStore(
-    (store) => store.bootstrapOwnerPasskey,
+export function RegistrationForm() {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [passkeyName, setPasskeyName] = useState("");
+  const [registrationIsComplete, setRegistrationIsComplete] = useState(false);
+  const registerWithPasskey = useAuthStore(
+    (store) => store.registerWithPasskey,
   );
   const isLoading = useAuthStore((store) => store.isLoading);
 
-  if (setupIsComplete) return <SetupComplete />;
+  if (registrationIsComplete) return <RegistrationComplete />;
 
   async function handleSubmit() {
-    const wasCreated = await bootstrapOwnerPasskey({ name, token });
-    setToken("");
-    if (wasCreated) setSetupIsComplete(true);
+    const wasCreated = await registerWithPasskey({
+      email,
+      name,
+      passkeyName,
+    });
+    if (wasCreated) setRegistrationIsComplete(true);
   }
 
   return (
@@ -29,39 +33,48 @@ export function OwnerSetupForm() {
         void handleSubmit();
       }}
     >
-      <SetupField
-        label="Passkey name"
+      <RegistrationField
+        autoComplete="name"
+        label="Full name"
         onChange={setName}
-        placeholder="Primary passkey"
+        placeholder="Your name"
         value={name}
       />
-      <SetupField
-        autoComplete="off"
-        label="One-time setup token"
-        onChange={setToken}
-        placeholder="OWNER_BOOTSTRAP_TOKEN"
-        type="password"
-        value={token}
+      <RegistrationField
+        autoComplete="email"
+        label="Email address"
+        onChange={setEmail}
+        placeholder="you@example.com"
+        type="email"
+        value={email}
+      />
+      <RegistrationField
+        autoComplete="webauthn"
+        label="Passkey name"
+        onChange={setPasskeyName}
+        placeholder="e.g. MacBook Touch ID"
+        value={passkeyName}
       />
       <button
         className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#cfc4b5] bg-white/40 text-sm font-semibold text-[#343832] transition hover:border-[#a99a88] hover:bg-white/70 disabled:cursor-not-allowed disabled:opacity-50 dark:border-[#4a4f48] dark:bg-white/[0.025] dark:text-[#eee6da]"
-        disabled={isLoading || !name.trim() || !token}
+        disabled={
+          isLoading || !name.trim() || !email.trim() || !passkeyName.trim()
+        }
         type="submit"
       >
-        <SetupButtonIcon isLoading={isLoading} />
-        Create owner passkey
+        <RegistrationButtonIcon isLoading={isLoading} />
+        Create account with a passkey
       </button>
       <p className="flex gap-2.5 text-[11px] leading-5 text-[#84796d] dark:text-[#aca297]">
         <ShieldCheck className="mt-0.5 size-3.5 shrink-0 text-[#397367]" />
-        The token stays only in this form and is cleared after this attempt.
-        Remove it from the Convex deployment after two passkeys are registered;
-        that permanently closes initial setup.
+        Your passkey stays on your device or in your password manager. Rodge
+        Mail receives only a public credential.
       </p>
     </form>
   );
 }
 
-function SetupField({
+function RegistrationField({
   autoComplete,
   label,
   onChange,
@@ -73,7 +86,7 @@ function SetupField({
   label: string;
   onChange: (value: string) => void;
   placeholder: string;
-  type?: "password" | "text";
+  type?: "email" | "text";
   value: string;
 }) {
   return (
@@ -86,7 +99,8 @@ function SetupField({
         className="border-border bg-background/65 h-11 w-full rounded-xl border px-3.5 text-sm transition outline-none placeholder:text-[#a79d91] focus:border-[#ba6b4f]/60 focus:ring-3 focus:ring-[#ba6b4f]/10"
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        spellCheck={false}
+        required
+        spellCheck={type === "text"}
         type={type}
         value={value}
       />
@@ -94,12 +108,12 @@ function SetupField({
   );
 }
 
-function SetupButtonIcon({ isLoading }: { isLoading: boolean }) {
+function RegistrationButtonIcon({ isLoading }: { isLoading: boolean }) {
   if (isLoading) return <Loader className="size-4 animate-spin" />;
   return <KeyRound className="size-4" />;
 }
 
-function SetupComplete() {
+function RegistrationComplete() {
   return (
     <div className="mt-5 rounded-2xl border border-[#9db9a9] bg-[#edf4ee] p-4 dark:border-[#456356] dark:bg-[#29342d]">
       <div className="flex items-start gap-3">
@@ -108,11 +122,10 @@ function SetupComplete() {
         </span>
         <div>
           <p className="text-sm font-semibold text-[#274a3f] dark:text-[#d5e8dd]">
-            Passkey created
+            Account ready
           </p>
           <p className="mt-1 text-xs leading-5 text-[#557064] dark:text-[#aabfb3]">
-            The credential is ready. Sign in once to open Rodge Mail and add a
-            second passkey from the account rail.
+            Your passkey is registered. Sign in with it to open Rodge Mail.
           </p>
         </div>
       </div>

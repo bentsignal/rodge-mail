@@ -39,7 +39,7 @@ export function PasskeyManagementButton() {
           </Dialog.Title>
           <Dialog.Description className="mt-2 text-xs leading-5 text-[#81766a] dark:text-[#aaa095]">
             Register this device, a password manager, or a security key while
-            your owner session is active. The bootstrap token is not needed.
+            you are signed in to your Rodge Mail account.
           </Dialog.Description>
         </div>
         <form
@@ -71,8 +71,8 @@ export function PasskeyManagementButton() {
           </button>
           <p className="mt-3 flex items-start gap-2 text-[10px] leading-4 text-[#8d8276]">
             <Plus className="mt-0.5 size-3 shrink-0" />
-            Keep at least two independent passkeys before removing the one-time
-            setup token from the deployment.
+            Keep a backup passkey on another trusted device or security key so
+            you can recover access if this one is unavailable.
           </p>
         </form>
       </Dialog.Content>

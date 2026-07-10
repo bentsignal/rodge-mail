@@ -119,7 +119,7 @@ function DevelopmentTools() {
             Load sample mailbox
           </Text>
           <Text className="text-muted-foreground text-sm">
-            Seed idempotent Convex fixtures for this owner.
+            Seed idempotent Convex fixtures for this mailbox.
           </Text>
           <SecurityMessage message={message} />
         </View>
@@ -164,7 +164,7 @@ function AddPasskeyButton() {
         <View className="flex-1 gap-0.5">
           <Text className="text-foreground font-semibold">Add a passkey</Text>
           <Text className="text-muted-foreground text-sm">
-            Save another credential to this device.
+            Save another passkey for your account.
           </Text>
         </View>
       </Pressable>

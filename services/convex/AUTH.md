@@ -4,11 +4,7 @@ Rodge Mail uses Better Auth passkeys backed by a locally installed Convex
 component. Configure these variables on each Convex deployment:
 
 - `BETTER_AUTH_SECRET`: a random Better Auth signing secret.
-- `OWNER_EMAIL`: the single Rodge Mail owner's normalized email address.
-- `OWNER_NAME`: the owner's display name.
 - `PASSKEY_RP_ID`: the WebAuthn relying-party domain, without a scheme or path.
-- `OWNER_BOOTSTRAP_TOKEN`: a temporary, high-entropy secret used as the
-  passkey-first registration `context`. Use at least 32 random characters.
 - `ANDROID_PASSKEY_ORIGINS`: optional comma-separated
   `android:apk-key-hash:<BASE64_SHA256>` origins for every debug, EAS, and Play
   signing certificate that may authenticate on Android versions where
@@ -18,10 +14,12 @@ component. Configure these variables on each Convex deployment:
 server uses `CONVEX_SITE_URL` as its base URL rather than the placeholder URLs
 in shared app configuration.
 
-Pre-auth passkey registration is closed when `OWNER_BOOTSTRAP_TOKEN` is not
-set. Configure it only while bootstrapping, register at least two independent
-passkeys, then remove it from the Convex deployment. An authenticated owner can
-still add or manage passkeys after the bootstrap token is removed.
+Signed-out registration sends normalized name and email fields in the passkey
+registration context. The server rejects malformed input and existing email
+addresses, then creates the Better Auth user only after WebAuthn verification
+succeeds. Authenticated users can add passkeys to their existing account
+without registration context. Passkey sign-in remains usernameless and selects
+the account from the credential.
 
 Android also requires `https://<PASSKEY_RP_ID>/.well-known/assetlinks.json`
 with the package `com.bentsignal.rodgemail` and each signing certificate's raw
