@@ -1,8 +1,7 @@
 #!/usr/bin/env node
-
+import { spawn } from "node:child_process";
 import http from "node:http";
 import net from "node:net";
-import { spawn } from "node:child_process";
 
 const publicPort = Number(process.env.PORT);
 
@@ -44,19 +43,20 @@ function getFreePort() {
 }
 
 const metroPort = await getFreePort();
-const metroOrigin = `http://127.0.0.1:${metroPort}`;
+const metroHost = "localhost";
+const metroOrigin = `http://${metroHost}:${metroPort}`;
 
 function rewriteBody(body) {
   return normalizeNativeBundleUrls(
     body
-    .replaceAll(`https://127.0.0.1:${metroPort}`, publicOrigin)
-    .replaceAll(`http://127.0.0.1:${metroPort}`, publicOrigin)
-    .replaceAll(`https://localhost:${metroPort}`, publicOrigin)
-    .replaceAll(`http://localhost:${metroPort}`, publicOrigin)
-    .replaceAll(`https://${publicHost}:${metroPort}`, publicOrigin)
-    .replaceAll(`http://${publicHost}:${metroPort}`, publicOrigin)
-    .replaceAll(`${publicHost}:${metroPort}`, publicHost)
-    .replaceAll(`127.0.0.1:${metroPort}`, publicHost)
+      .replaceAll(`https://127.0.0.1:${metroPort}`, publicOrigin)
+      .replaceAll(`http://127.0.0.1:${metroPort}`, publicOrigin)
+      .replaceAll(`https://localhost:${metroPort}`, publicOrigin)
+      .replaceAll(`http://localhost:${metroPort}`, publicOrigin)
+      .replaceAll(`https://${publicHost}:${metroPort}`, publicOrigin)
+      .replaceAll(`http://${publicHost}:${metroPort}`, publicOrigin)
+      .replaceAll(`${publicHost}:${metroPort}`, publicHost)
+      .replaceAll(`127.0.0.1:${metroPort}`, publicHost)
       .replaceAll(`localhost:${metroPort}`, publicHost),
   );
 }
@@ -101,7 +101,7 @@ function proxyRequest(req, res) {
 
   const proxyReq = http.request(
     {
-      hostname: "127.0.0.1",
+      hostname: metroHost,
       port: metroPort,
       path: getMetroRequestPath(req),
       method: req.method,
@@ -159,7 +159,7 @@ function proxyUpgrade(req, socket, head) {
     )
     .join("\r\n");
 
-  const upstream = net.connect(metroPort, "127.0.0.1", () => {
+  const upstream = net.connect(metroPort, metroHost, () => {
     upstream.write(
       `${req.method} ${req.url} HTTP/${req.httpVersion}\r\n${headerLines}\r\n\r\n`,
     );
@@ -181,15 +181,19 @@ server.listen(publicPort, "127.0.0.1", () => {
   );
 });
 
-const child = spawn(command[0], [...command.slice(1), "--port", String(metroPort)], {
-  env: {
-    ...process.env,
-    EXPO_PACKAGER_PROXY_URL: publicOrigin,
-    PORT: String(metroPort),
-    REACT_NATIVE_PACKAGER_HOSTNAME: publicHost,
+const child = spawn(
+  command[0],
+  [...command.slice(1), "--localhost", "--port", String(metroPort)],
+  {
+    env: {
+      ...process.env,
+      EXPO_PACKAGER_PROXY_URL: publicOrigin,
+      PORT: String(metroPort),
+      REACT_NATIVE_PACKAGER_HOSTNAME: publicHost,
+    },
+    stdio: "inherit",
   },
-  stdio: "inherit",
-});
+);
 
 function shutdown(signal) {
   child.kill(signal);

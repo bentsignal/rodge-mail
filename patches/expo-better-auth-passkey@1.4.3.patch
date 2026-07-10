@@ -2,7 +2,11 @@ diff --git a/build/plugin.js b/build/plugin.js
 index 34ae122f891ef36941102e3bc8c2b4f0c05cf9c1..39ea965994e8687d8a0d18627017bce597da76ea 100644
 --- a/build/plugin.js
 +++ b/build/plugin.js
-@@ -75,6 +75,7 @@ export const getPasskeyActionsNative = ($fetch, { $listPasskeys, $store, }) => {
+@@ -53,3 +53,2 @@ export const getPasskeyActionsNative = ($fetch, { $listPasskeys, $store, }) => {
+         catch (e) {
+-            console.error("Passkey sign-in error:", e);
+             let errorMessage = "auth cancelled";
+@@ -75,6 +74,7 @@ export const getPasskeyActionsNative = ($fetch, { $listPasskeys, $store, }) => {
                      authenticatorAttachment: opts.authenticatorAttachment,
                  }),
                  ...(opts?.name && { name: opts.name }),
@@ -10,11 +14,19 @@ index 34ae122f891ef36941102e3bc8c2b4f0c05cf9c1..39ea965994e8687d8a0d18627017bce5
              },
          });
          if (!optionsRes.data)
+@@ -102,3 +102,2 @@ export const getPasskeyActionsNative = ($fetch, { $listPasskeys, $store, }) => {
+         catch (e) {
+-            console.error("Passkey registration error:", e);
+             let errorMessage = "auth cancelled";
 diff --git a/src/plugin.ts b/src/plugin.ts
 index 433e4523aa5bffdb7e67f1e50ff87ebaf89f2209..4f71044d2e5d225ea80f2b95b8fefa1bc5a0bf1f 100644
 --- a/src/plugin.ts
 +++ b/src/plugin.ts
-@@ -107,6 +107,7 @@ export const getPasskeyActionsNative = (
+@@ -87,3 +87,2 @@ export const getPasskeyActionsNative = (
+     } catch (e) {
+-      console.error("Passkey sign-in error:", e);
+       let errorMessage = "auth cancelled";
+@@ -107,6 +106,7 @@ export const getPasskeyActionsNative = (
        fetchOptions?: BetterFetchOption;
        name?: string;
        authenticatorAttachment?: "platform" | "cross-platform";
@@ -22,7 +34,7 @@ index 433e4523aa5bffdb7e67f1e50ff87ebaf89f2209..4f71044d2e5d225ea80f2b95b8fefa1b
        useAutoRegister?: boolean;
      },
      fetchOpts?: BetterFetchOption,
-@@ -120,6 +121,7 @@ export const getPasskeyActionsNative = (
+@@ -120,6 +120,7 @@ export const getPasskeyActionsNative = (
              authenticatorAttachment: opts.authenticatorAttachment,
            }),
            ...(opts?.name && { name: opts.name }),
@@ -30,3 +42,51 @@ index 433e4523aa5bffdb7e67f1e50ff87ebaf89f2209..4f71044d2e5d225ea80f2b95b8fefa1b
          },
        },
      );
+@@ -152,3 +153,2 @@ export const getPasskeyActionsNative = (
+     } catch (e) {
+-      console.error("Passkey registration error:", e);
+       let errorMessage = "auth cancelled";
+diff --git a/ios/BetterAuthReactNativePasskeyModule.swift b/ios/BetterAuthReactNativePasskeyModule.swift
+index 0b6c77f3f1126a53747c4391c33b16d035546f55..8b526228b9c7b705fd03d72acd4d6dd9bbbff907 100644
+--- a/ios/BetterAuthReactNativePasskeyModule.swift
++++ b/ios/BetterAuthReactNativePasskeyModule.swift
+@@ -79,5 +79,5 @@ extension BetterAuthReactNativePasskeyModule {
+       promise.resolve(result.toDictionary())
+     }
+     delegate.onError = { error in
+-      promise.reject("ERR_CREATE_PASSKEY", error.localizedDescription)
++      promise.reject(PasskeyException(code: "ERR_CREATE_PASSKEY", error: error))
+     }
+@@ -144,5 +144,5 @@ extension BetterAuthReactNativePasskeyModule {
+       promise.resolve(result.toDictionary())
+     }
+     delegate.onError = { error in
+-      promise.reject("ERR_GET_PASSKEY", error.localizedDescription)
++      promise.reject(PasskeyException(code: "ERR_GET_PASSKEY", error: error))
+     }
+@@ -167,6 +167,24 @@ extension BetterAuthReactNativePasskeyModule {
+   }
+ }
+-
++
++private final class PasskeyException: Exception {
++  private let errorCode: String
++  private let errorReason: String
++
++  override var code: String { errorCode }
++  override var reason: String { errorReason }
++
++  init(code: String, error: Error) {
++    self.errorCode = code
++    self.errorReason = error.localizedDescription
++    super.init(
++      name: code,
++      description: error.localizedDescription,
++      code: code
++    )
++  }
++}
++
+ private class PasskeyDelegate: NSObject, ASAuthorizationControllerDelegate, ASAuthorizationControllerPresentationContextProviding {
+   var onRegistration: ((ASAuthorizationPlatformPublicKeyCredentialRegistration) -> Void)?
+   var onAssertion: ((ASAuthorizationPlatformPublicKeyCredentialAssertion) -> Void)?

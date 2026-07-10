@@ -4,7 +4,25 @@ This package is a hardened Electron shell for Rodge Mail. Packaged builds bundle
 
 ## Development
 
-`pnpm dev` loads `RODGE_WEB_URL` when provided, otherwise it loads `https://www.rodge-mail.local`. Development accepts HTTPS URLs and loopback HTTP URLs. Packaged builds ignore `RODGE_WEB_URL`, serve the bundled web runtime internally, and intercept only the baked `https://www.rodge-mail.local` origin. They continue to use the Convex development deployment and do not require Vercel or Portless at runtime.
+Run `pnpm dev:desktop` from the repository root for normal desktop iteration. It
+starts the Portless web/Vite runtime and the Electron development shell
+together. Renderer changes use Vite HMR; Electron main and preload changes are
+handled by electron-vite. `RODGE_WEB_URL` overrides the default
+`https://www.rodge-mail.local` origin when intentionally testing another safe
+development origin.
+
+Do not launch an app under `apps/desktop/release` for source iteration. Those
+apps are packaged snapshots: they ignore `RODGE_WEB_URL` and serve the web
+output copied into the app at package time. Cmd-R only reloads that embedded
+snapshot and cannot pick up Vite changes. The desktop-dev preflight fails with
+the packaged process path when one is already running, avoiding Electron's
+single-instance lock silently focusing stale UI.
+
+Use `pnpm --filter @rodge-mail/desktop dev` only when the web dev server is
+already running separately. Development accepts HTTPS URLs and loopback HTTP
+URLs. Packaged builds intercept only the baked
+`https://www.rodge-mail.local` origin, continue to use the Convex development
+deployment, and do not require Vercel or Portless at runtime.
 
 The preload currently exposes no API. Keep it that way until a native feature needs a small, typed `contextBridge` contract.
 
@@ -27,6 +45,10 @@ passkey for another device from account settings.
   provisioning profile for Touch ID passkey testing.
 - `pnpm dist:win` creates the Windows x64 NSIS installer, including when run on
   macOS.
+
+Quit the development shell before opening a packaged build, and quit the
+packaged build before returning to `pnpm dev:desktop`; both intentionally share
+the app's single-instance identity.
 
 The `rodge-mail://` protocol is registered in packaged builds. Both `rodge-mail:///inbox/thread-id` and `rodge-mail://inbox/thread-id` translate to paths on the configured hosted origin.
 

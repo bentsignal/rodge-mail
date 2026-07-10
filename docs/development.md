@@ -23,6 +23,13 @@ this Mac and other devices on the same Wi-Fi network:
 - Web: `https://www.rodge-mail.local`
 - Expo/Metro: `https://mobile.rodge-mail.local`
 
+For desktop-only iteration, use `pnpm dev:desktop`. This starts the web/Vite
+runtime and Electron development shell together without starting Expo. The
+renderer receives Vite HMR updates. An app launched from
+`apps/desktop/release` is a packaged snapshot instead: Cmd-R only reloads its
+embedded web bundle. The desktop command detects that stale packaged process
+and asks you to quit it before development starts.
+
 On first use, allow Portless to install its local certificate authority. If the
 certificate was removed or is not trusted, run `pnpm exec portless trust` and
 restart the development command. A physical phone must also trust that local CA

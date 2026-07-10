@@ -32,9 +32,9 @@ export function PasskeySignInScreen() {
         contentContainerClassName="flex-grow justify-center px-6 py-12"
         keyboardShouldPersistTaps="handled"
       >
-        <View className="mx-auto w-full max-w-md gap-6">
+        <View className="mx-auto w-full max-w-md gap-10">
           <BrandHeader />
-          <AuthCard auth={auth} />
+          <AuthPanel auth={auth} />
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -156,20 +156,25 @@ async function signOutAfterFailedPasskey() {
 
 function BrandHeader() {
   return (
-    <View className="items-center gap-3">
+    <View className="items-center gap-4">
       <Image
         accessibilityLabel="Rodge Mail"
-        className="size-24 rounded-[26px]"
+        className="size-20 rounded-[22px]"
         source={roundedIcon}
       />
-      <Text className="text-foreground text-3xl font-bold">Rodge Mail</Text>
+      <View className="items-center gap-1">
+        <Text className="text-foreground text-3xl font-bold">Rodge Mail</Text>
+        <Text className="text-muted-foreground text-sm">
+          Your inbox, quietly organized.
+        </Text>
+      </View>
     </View>
   );
 }
 
-function AuthCard({ auth }: { auth: ReturnType<typeof usePasskeyAuth> }) {
+function AuthPanel({ auth }: { auth: ReturnType<typeof usePasskeyAuth> }) {
   return (
-    <View className="bg-muted/55 border-border gap-4 rounded-3xl border p-5">
+    <View className="gap-5">
       <AuthContent auth={auth} />
       <AuthNavigation auth={auth} />
       <AuthMessage message={auth.message} />
@@ -208,13 +213,10 @@ function AuthContent({ auth }: { auth: ReturnType<typeof usePasskeyAuth> }) {
     );
   }
   return (
-    <>
-      <AuthTitle>Sign in</AuthTitle>
-      <SignInButton
-        isLoading={auth.operation === "sign-in"}
-        onPress={() => void auth.signIn()}
-      />
-    </>
+    <SignInButton
+      isLoading={auth.operation === "sign-in"}
+      onPress={() => void auth.signIn()}
+    />
   );
 }
 
@@ -259,7 +261,7 @@ function NavigationButton({
   return (
     <Pressable
       accessibilityRole="button"
-      className="items-center py-1"
+      className="items-center py-2"
       onPress={onPress}
     >
       <Text className="text-muted-foreground text-sm font-semibold">
@@ -279,7 +281,7 @@ function SignInButton({
   return (
     <Pressable
       accessibilityRole="button"
-      className="h-13 flex-row items-center justify-center gap-3 rounded-xl bg-[#20251f] disabled:opacity-50"
+      className="h-14 flex-row items-center justify-center gap-3 rounded-2xl bg-[#20251f] disabled:opacity-50"
       disabled={isLoading}
       onPress={onPress}
     >
