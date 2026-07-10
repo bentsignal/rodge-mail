@@ -17,6 +17,7 @@
     "clean": "git clean -xdf .cache .turbo node_modules",
     "format": "prettier --check . --ignore-path ../../.gitignore --ignore-path .prettierignore",
     "lint": "eslint",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "setup": "convex dev --until-success",
     "dev": "convex dev",
@@ -31,7 +32,8 @@
     "@types/node": "^22.19.1",
     "eslint": "catalog:",
     "prettier": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "^4.0.17"
   },
   "prettier": "@rodge-mail/prettier-config",
   "dependencies": {
