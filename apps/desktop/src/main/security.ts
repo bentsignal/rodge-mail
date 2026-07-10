@@ -6,6 +6,7 @@ import {
   isSafeExternalUrl,
   translateDeepLink,
 } from "../shared/urls";
+import { isDesktopBrowserAuthUrl } from "./browser-auth-url";
 
 const ALLOWED_PERMISSIONS = new Set(["notifications"]);
 
@@ -57,6 +58,10 @@ export function secureWindow(window: BrowserWindow, webAppUrl: URL) {
     routeBlockedUrl(window, navigationUrl, webAppUrl);
   });
   window.webContents.setWindowOpenHandler(({ url }) => {
+    if (isDesktopBrowserAuthUrl(url, webAppUrl)) {
+      openExternal(url);
+      return { action: "deny" };
+    }
     routeBlockedUrl(window, url, webAppUrl);
     return { action: "deny" };
   });

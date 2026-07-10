@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useRouteContext } from "@tanstack/react-router";
 import { createStore } from "rostra";
 
@@ -5,6 +6,13 @@ import { useLoading } from "@rodge-mail/std/use-loading";
 import { toast } from "@rodge-mail/ui-web/toast";
 
 import { authClient } from "./lib/client";
+import {
+  beginDesktopAuth,
+  cancelDesktopAuth,
+  exchangeDesktopAuth,
+  isDesktopRuntime,
+  readPendingDesktopAuth,
+} from "./lib/desktop-handoff";
 
 interface RegistrationCodeRequest {
   email: string;
@@ -24,25 +32,51 @@ interface NormalizedRegistrationVerification {
 }
 
 function useInternalStore() {
+  const [desktopAuthIsPending, setDesktopAuthIsPending] = useState(false);
   const { isLoading, run } = useLoading();
   const isAuthenticated = useRouteContext({
     from: "__root__",
     select: (context) => context.isAuthenticated,
   });
-
   function signInWithPasskey(redirectUri?: string) {
     if (isAuthenticated) return Promise.resolve(false);
+    if (isDesktopRuntime()) return startDesktopSignIn();
+    return run({
+      fn: () => authenticateWithPasskey(redirectUri),
+      onError: (error) => {
+        toast.error(getErrorMessage(error, "Could not sign in with a passkey"));
+      },
+    });
+  }
+
+  function startDesktopSignIn() {
+    if (isAuthenticated || desktopAuthIsPending) return Promise.resolve(false);
     return run({
       fn: async () => {
-        const result = await authClient.signIn.passkey();
-        if (result.error) {
-          throw new Error(result.error.message ?? "Passkey sign-in failed");
-        }
-        window.location.replace(getSafeRedirect(redirectUri));
+        await beginDesktopAuth();
+        setDesktopAuthIsPending(true);
         return true;
       },
       onError: (error) => {
-        toast.error(getErrorMessage(error, "Could not sign in with a passkey"));
+        toast.error(getErrorMessage(error, "Could not open browser sign-in"));
+      },
+    });
+  }
+
+  function cancelDesktopSignIn() {
+    setDesktopAuthIsPending(false);
+    void cancelDesktopAuth().catch(() => undefined);
+  }
+
+  function finishDesktopSignIn(requestId: string, authorizationCode: string) {
+    return run({
+      fn: async () => {
+        await exchangeDesktopAuth(requestId, authorizationCode);
+        window.location.replace("/");
+        return true;
+      },
+      onError: (error) => {
+        toast.error(getErrorMessage(error, "Could not finish desktop sign-in"));
       },
     });
   }
@@ -72,14 +106,7 @@ function useInternalStore() {
   function addAuthenticatedPasskey() {
     if (!isAuthenticated) return Promise.resolve(false);
     return run({
-      fn: async () => {
-        const result = await authClient.passkey.addPasskey();
-        if (result.error) {
-          throw new Error(result.error.message ?? "Passkey setup failed");
-        }
-        toast.success("Passkey added to Rodge Mail");
-        return true;
-      },
+      fn: addPasskey,
       onError: (error) => {
         toast.error(getErrorMessage(error, "Could not add this passkey"));
       },
@@ -89,16 +116,7 @@ function useInternalStore() {
   function signOut() {
     if (!isAuthenticated) return;
     void run({
-      fn: async () => {
-        await authClient.signOut({
-          fetchOptions: {
-            onSuccess: () => window.location.replace("/login"),
-            onError: () => {
-              toast.error("Failed to sign out");
-            },
-          },
-        });
-      },
+      fn: signOutAndRedirect,
       onError: () => {
         toast.error("Failed to sign out");
       },
@@ -107,13 +125,18 @@ function useInternalStore() {
 
   return {
     addAuthenticatedPasskey,
+    cancelDesktopSignIn,
+    desktopAuthIsPending: desktopAuthIsPending || !!readPendingDesktopAuth(),
+    finishDesktopSignIn,
     finishRegistration,
     imSignedIn: isAuthenticated,
     imSignedOut: !isAuthenticated,
     isLoading,
+    isDesktopApp: isDesktopRuntime(),
     requestRegistrationCode,
     signInWithPasskey,
     signOut,
+    startDesktopSignIn,
   };
 }
 
@@ -128,6 +151,35 @@ function normalizeRegistrationVerification(details: RegistrationVerification) {
   const name = details.name.trim();
   if (!code || !email || !name) return undefined;
   return { code, email, name };
+}
+
+async function authenticateWithPasskey(redirectUri: string | undefined) {
+  const result = await authClient.signIn.passkey();
+  if (result.error) {
+    throw new Error(result.error.message ?? "Passkey sign-in failed");
+  }
+  window.location.replace(getSafeRedirect(redirectUri));
+  return true;
+}
+
+async function addPasskey() {
+  const result = await authClient.passkey.addPasskey();
+  if (result.error) {
+    throw new Error(result.error.message ?? "Passkey setup failed");
+  }
+  toast.success("Passkey added to Rodge Mail");
+  return true;
+}
+
+async function signOutAndRedirect() {
+  await authClient.signOut({
+    fetchOptions: {
+      onSuccess: () => window.location.replace("/login"),
+      onError: () => {
+        toast.error("Failed to sign out");
+      },
+    },
+  });
 }
 
 async function sendRegistrationCode(email: string) {

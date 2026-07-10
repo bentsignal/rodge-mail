@@ -8,6 +8,9 @@ component. Configure these variables on each Convex deployment:
   `Rodge Mail <auth@example.com>`.
 - `PASSKEY_RP_ID`: the WebAuthn relying-party domain, without a scheme or path.
 - `RESEND_API_KEY`: the Resend API key used for registration verification codes.
+- `DESKTOP_BROWSER_AUTH_URL`: optional origin-only HTTPS URL for the public web
+  app that handles packaged desktop authentication. It must match the web
+  bundle's `VITE_DESKTOP_BROWSER_AUTH_URL`.
 - `ANDROID_PASSKEY_ORIGINS`: optional comma-separated
   `android:apk-key-hash:<BASE64_SHA256>` origins for every debug, EAS, and Play
   signing certificate that may authenticate on Android versions where
@@ -26,6 +29,14 @@ alternate sign-in method, the server silently skips delivery for users who
 already have a passkey. Users with no passkeys can request another code to
 resume interrupted onboarding. Passkey sign-in remains usernameless and selects
 the account from the credential.
+
+Desktop browser authentication uses a five-minute, PKCE-bound handoff stored in
+Better Auth's verification table. The system-browser URL contains a random
+request ID. After explicit browser approval, the `rodge-mail://` callback adds a
+fresh one-time authorization code. The verifier remains in Electron session
+storage, and both factors are submitted in the final POST. The server stores
+only their hashes and atomically consumes the verification record before a
+separate desktop session is issued, preventing interception and replay.
 
 Android also requires `https://<PASSKEY_RP_ID>/.well-known/assetlinks.json`
 with the package `com.bentsignal.rodgemail` and each signing certificate's raw

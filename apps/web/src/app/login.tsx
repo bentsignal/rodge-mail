@@ -63,15 +63,58 @@ function LoginBrand() {
 }
 
 function AuthActions({ onCreateAccount }: { onCreateAccount: () => void }) {
+  const cancelDesktopSignIn = useAuthStore(
+    (store) => store.cancelDesktopSignIn,
+  );
+  const desktopAuthIsPending = useAuthStore(
+    (store) => store.desktopAuthIsPending,
+  );
+  const isDesktopApp = useAuthStore((store) => store.isDesktopApp);
+  const isLoading = useAuthStore((store) => store.isLoading);
+  const startDesktopSignIn = useAuthStore((store) => store.startDesktopSignIn);
+
+  if (desktopAuthIsPending) {
+    return <DesktopAuthPending onCancel={cancelDesktopSignIn} />;
+  }
+
+  function createAccount() {
+    if (isDesktopApp) {
+      void startDesktopSignIn();
+      return;
+    }
+    onCreateAccount();
+  }
+
   return (
     <div className="space-y-3">
       <SignInButton />
       <button
         className="border-border flex h-12 w-full items-center justify-center rounded-xl border bg-transparent px-5 text-sm font-semibold text-[#343832] transition hover:border-[#a99a88] hover:bg-white/50 dark:text-[#eee6da] dark:hover:bg-white/[0.04]"
-        onClick={onCreateAccount}
+        disabled={isLoading}
+        onClick={createAccount}
         type="button"
       >
         Create account
+      </button>
+    </div>
+  );
+}
+
+function DesktopAuthPending({ onCancel }: { onCancel: () => void }) {
+  return (
+    <div className="text-center">
+      <h2 className="font-serif text-2xl font-semibold tracking-[-0.03em]">
+        Check your browser
+      </h2>
+      <p className="mt-3 text-sm leading-6 text-[#81776c] dark:text-[#aaa095]">
+        Finish signing in there, then Rodge Mail will reopen here.
+      </p>
+      <button
+        className="mt-6 text-xs font-medium text-[#81776c] transition hover:text-[#343832] dark:text-[#aaa095] dark:hover:text-white"
+        onClick={onCancel}
+        type="button"
+      >
+        Cancel
       </button>
     </div>
   );

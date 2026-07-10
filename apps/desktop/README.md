@@ -24,14 +24,31 @@ URLs. Packaged builds intercept only the baked
 `https://www.rodge-mail.local` origin, continue to use the Convex development
 deployment, and do not require Vercel or Portless at runtime.
 
+Desktop authentication is completed in the system browser. The Electron
+renderer creates a five-minute request and keeps a PKCE verifier in its own
+`sessionStorage`; only the request ID and verifier hash leave the app. After
+normal web authentication, the browser authorizes that request and opens a
+`rodge-mail://` callback containing the request ID and a fresh one-time
+authorization code. Electron exchanges that code with the verifier in a POST
+body, atomically consumes the request, and receives a new HTTP-only Better Auth
+session cookie. The server stores only hashes of the verifier and authorization
+code. Cancellation, expiry, a mismatched factor, and replay all fail closed.
+
+Local development uses the Portless origin for both Electron and the system
+browser. A packaged app's embedded `www.rodge-mail.local` origin is visible only
+inside Electron, so packaged browser handoff requires a deployed HTTPS web
+origin. Build the web bundle with `VITE_DESKTOP_BROWSER_AUTH_URL` set to that
+origin and configure the matching Convex deployment with
+`DESKTOP_BROWSER_AUTH_URL`. Both values must be origin-only HTTPS URLs. Until
+that route is deployed, packaged browser authentication requires Portless and
+is not release-ready.
+
 The preload currently exposes no API. Keep it that way until a native feature needs a small, typed `contextBridge` contract.
 
-On macOS, the main process configures Electron's device-bound Touch ID WebAuthn
-authenticator. The signing identity must belong to Apple team `39K6A9FP99`,
-matching the keychain access group in `resources/entitlements.mac.plist`.
-Desktop Touch ID passkeys are local to that Mac and Electron session. New users
-can register from the shared web login screen, while signed-in users can add a
-passkey for another device from account settings.
+On macOS, the signing identity must belong to Apple team `39K6A9FP99`, matching
+the keychain access group in `resources/entitlements.mac.plist`. The browser
+uses the normal hosted WebAuthn relying party, so desktop authentication does
+not depend on Electron's local Touch ID credential store.
 
 ## Packaging
 
@@ -50,7 +67,12 @@ Quit the development shell before opening a packaged build, and quit the
 packaged build before returning to `pnpm dev:desktop`; both intentionally share
 the app's single-instance identity.
 
-The `rodge-mail://` protocol is registered in packaged builds. Both `rodge-mail:///inbox/thread-id` and `rodge-mail://inbox/thread-id` translate to paths on the configured hosted origin.
+The `rodge-mail://` protocol is registered in packaged builds and attempted in
+the Electron development shell. macOS reliably resolves custom protocols only
+when they are declared in a packaged app's Info.plist, so use a packaged
+development-profile build for end-to-end macOS callback acceptance. Both
+`rodge-mail:///inbox/thread-id` and `rodge-mail://inbox/thread-id` translate to
+paths on the configured hosted origin.
 
 ## Signing and notarization
 

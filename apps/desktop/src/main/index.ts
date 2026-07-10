@@ -114,7 +114,7 @@ async function start() {
     contents.on("will-attach-webview", (event) => event.preventDefault());
   });
 
-  if (app.isPackaged) app.setAsDefaultProtocolClient(APP_PROTOCOL);
+  registerProtocolClient();
   await createMainWindow();
 
   app.on("activate", () => {
@@ -122,6 +122,17 @@ async function start() {
       void createMainWindow().catch(showStartupError);
     }
   });
+}
+
+function registerProtocolClient() {
+  if (app.isPackaged) {
+    app.setAsDefaultProtocolClient(APP_PROTOCOL);
+    return;
+  }
+  const appEntry = process.argv[1];
+  if (process.defaultApp && appEntry) {
+    app.setAsDefaultProtocolClient(APP_PROTOCOL, process.execPath, [appEntry]);
+  }
 }
 
 function registerAppEvents() {

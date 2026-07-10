@@ -10,14 +10,21 @@
 
 import { Route as rootRouteImport } from './app/__root'
 import { Route as LoginRouteImport } from './app/login'
+import { Route as DesktopAuthRouteImport } from './app/desktop-auth'
 import { Route as AuthedRouteImport } from './app/_authed'
 import { Route as AuthedIndexRouteImport } from './app/_authed/index'
+import { Route as AuthDesktopCompleteRouteImport } from './app/auth.desktop-complete'
 import { Route as AuthCallbackRouteImport } from './app/auth.callback'
 import { Route as ApiAuthSplatRouteImport } from './app/api.auth.$'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DesktopAuthRoute = DesktopAuthRouteImport.update({
+  id: '/desktop-auth',
+  path: '/desktop-auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthedRoute = AuthedRouteImport.update({
@@ -28,6 +35,11 @@ const AuthedIndexRoute = AuthedIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AuthedRoute,
+} as any)
+const AuthDesktopCompleteRoute = AuthDesktopCompleteRouteImport.update({
+  id: '/auth/desktop-complete',
+  path: '/auth/desktop-complete',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
   id: '/auth/callback',
@@ -42,42 +54,64 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthedIndexRoute
+  '/desktop-auth': typeof DesktopAuthRoute
   '/login': typeof LoginRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/auth/desktop-complete': typeof AuthDesktopCompleteRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRoutesByTo {
+  '/desktop-auth': typeof DesktopAuthRoute
   '/login': typeof LoginRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/auth/desktop-complete': typeof AuthDesktopCompleteRoute
   '/': typeof AuthedIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authed': typeof AuthedRouteWithChildren
+  '/desktop-auth': typeof DesktopAuthRoute
   '/login': typeof LoginRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/auth/desktop-complete': typeof AuthDesktopCompleteRoute
   '/_authed/': typeof AuthedIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/auth/callback' | '/api/auth/$'
+  fullPaths:
+    | '/'
+    | '/desktop-auth'
+    | '/login'
+    | '/auth/callback'
+    | '/auth/desktop-complete'
+    | '/api/auth/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/login' | '/auth/callback' | '/' | '/api/auth/$'
+  to:
+    | '/desktop-auth'
+    | '/login'
+    | '/auth/callback'
+    | '/auth/desktop-complete'
+    | '/'
+    | '/api/auth/$'
   id:
     | '__root__'
     | '/_authed'
+    | '/desktop-auth'
     | '/login'
     | '/auth/callback'
+    | '/auth/desktop-complete'
     | '/_authed/'
     | '/api/auth/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   AuthedRoute: typeof AuthedRouteWithChildren
+  DesktopAuthRoute: typeof DesktopAuthRoute
   LoginRoute: typeof LoginRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
+  AuthDesktopCompleteRoute: typeof AuthDesktopCompleteRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
@@ -88,6 +122,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/desktop-auth': {
+      id: '/desktop-auth'
+      path: '/desktop-auth'
+      fullPath: '/desktop-auth'
+      preLoaderRoute: typeof DesktopAuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authed': {
@@ -103,6 +144,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof AuthedIndexRouteImport
       parentRoute: typeof AuthedRoute
+    }
+    '/auth/desktop-complete': {
+      id: '/auth/desktop-complete'
+      path: '/auth/desktop-complete'
+      fullPath: '/auth/desktop-complete'
+      preLoaderRoute: typeof AuthDesktopCompleteRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/auth/callback': {
       id: '/auth/callback'
@@ -134,8 +182,10 @@ const AuthedRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   AuthedRoute: AuthedRouteWithChildren,
+  DesktopAuthRoute: DesktopAuthRoute,
   LoginRoute: LoginRoute,
   AuthCallbackRoute: AuthCallbackRoute,
+  AuthDesktopCompleteRoute: AuthDesktopCompleteRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport

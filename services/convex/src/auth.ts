@@ -12,12 +12,14 @@ import { components, internal } from "./_generated/api";
 import { primaryAuthConfig } from "./auth.config";
 import authSchema from "./betterAuth/schema";
 import { env } from "./convex.env";
+import { desktopAuth } from "./desktopAuth";
 import { sendRegistrationEmail } from "./registrationEmail";
 import { urls } from "./urls";
 
 // eslint-disable-next-line no-restricted-syntax -- This preserves Better Auth's generated Convex API typing.
 const authFunctions: AuthFunctions = internal.auth;
 const androidPasskeyOrigins = getAndroidPasskeyOrigins();
+const desktopBrowserAuthOrigin = getDesktopBrowserAuthOrigin();
 const passkeyRpOrigin = `https://${env.PASSKEY_RP_ID}`;
 const passkeyOrigins = [
   ...new Set([urls.web, passkeyRpOrigin, ...androidPasskeyOrigins]),
@@ -25,10 +27,17 @@ const passkeyOrigins = [
 const trustedOrigins = [
   ...new Set(
     env.ENVIRONMENT === "production"
-      ? [urls.web, passkeyRpOrigin, "rodge-mail://", ...androidPasskeyOrigins]
+      ? [
+          urls.web,
+          passkeyRpOrigin,
+          ...(desktopBrowserAuthOrigin ? [desktopBrowserAuthOrigin] : []),
+          "rodge-mail://",
+          ...androidPasskeyOrigins,
+        ]
       : [
           urls.web,
           passkeyRpOrigin,
+          ...(desktopBrowserAuthOrigin ? [desktopBrowserAuthOrigin] : []),
           "https://*.rodge-mail.local",
           "https://*.www.rodge-mail.local",
           "rodge-mail://",
@@ -38,8 +47,16 @@ const trustedOrigins = [
 ];
 export const authCorsAllowedOrigins =
   env.ENVIRONMENT === "production"
-    ? [passkeyRpOrigin]
-    : [passkeyRpOrigin, "*.rodge-mail.local", "*.www.rodge-mail.local"];
+    ? [
+        passkeyRpOrigin,
+        ...(desktopBrowserAuthOrigin ? [desktopBrowserAuthOrigin] : []),
+      ]
+    : [
+        passkeyRpOrigin,
+        ...(desktopBrowserAuthOrigin ? [desktopBrowserAuthOrigin] : []),
+        "*.rodge-mail.local",
+        "*.www.rodge-mail.local",
+      ];
 
 export const authComponent = createClient<DataModel, typeof authSchema>(
   components.betterAuth,
@@ -58,6 +75,7 @@ export function createAuthOptions(ctx: GenericCtx<DataModel>) {
     secret: env.BETTER_AUTH_SECRET,
     trustedOrigins,
     plugins: [
+      desktopAuth(),
       emailOTP({
         allowedAttempts: 3,
         expiresIn: 300,
@@ -112,4 +130,21 @@ function getAndroidPasskeyOrigins() {
     .filter((origin) =>
       /^android:apk-key-hash:[A-Za-z0-9+/]+={0,2}$/u.test(origin),
     );
+}
+
+function getDesktopBrowserAuthOrigin() {
+  const configured = env.DESKTOP_BROWSER_AUTH_URL?.trim();
+  if (!configured) return undefined;
+  const url = new URL(configured);
+  if (
+    url.protocol !== "https:" ||
+    url.pathname !== "/" ||
+    url.search ||
+    url.hash ||
+    url.username ||
+    url.password
+  ) {
+    throw new Error("DESKTOP_BROWSER_AUTH_URL must be an HTTPS origin");
+  }
+  return url.origin;
 }

@@ -12,6 +12,7 @@ const runtimeEnv = import.meta.env.SSR
 export const env = createEnv({
   clientPrefix: "VITE_",
   client: {
+    VITE_DESKTOP_BROWSER_AUTH_URL: z.url().optional(),
     VITE_NODE_ENV: z
       .enum(["development", "production", "test"])
       .default(

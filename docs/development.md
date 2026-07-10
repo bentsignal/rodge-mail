@@ -47,6 +47,15 @@ The desktop app defaults to the Portless web origin in development. Set
 `RODGE_WEB_URL` only when intentionally testing another safe development
 origin; packaged builds continue to use the deployed HTTPS origin.
 
+Desktop authentication opens `/desktop-auth` in the system browser and returns
+through `rodge-mail://`. Local development can use the Portless origin. For a
+packaged build, set the public web bundle's
+`VITE_DESKTOP_BROWSER_AUTH_URL=https://<host>` and the matching Convex variable
+`DESKTOP_BROWSER_AUTH_URL=https://<host>`. A packaged app cannot expose its
+Electron-intercepted `www.rodge-mail.local` runtime to an external browser, so
+the hosted route must be deployed before release acceptance on macOS or
+Windows.
+
 ## Secrets
 
 Keep deployment values in ignored `.env` or `.env.local` files. Keep server
