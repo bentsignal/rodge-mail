@@ -89,14 +89,26 @@ export function useNativeAttachments({
     }
   }
 
-  async function attachImages() {
-    const selected = await selectImages(draft.attachments);
+  async function attachSelected(
+    select: (
+      current: NativeComposerAttachment[],
+    ) => Promise<NativeComposerAttachment[] | undefined>,
+  ) {
+    const selected = await select(draft.attachments);
     if (!selected) return;
     setDraft((current) => ({
       ...current,
       attachments: [...current.attachments, ...selected],
     }));
     await Promise.all(selected.map(upload));
+  }
+
+  async function attachFiles() {
+    await attachSelected(selectFiles);
+  }
+
+  async function attachImages() {
+    await attachSelected(selectImages);
   }
 
   async function remove(attachment: NativeComposerAttachment) {
@@ -117,7 +129,7 @@ export function useNativeAttachments({
     }
   }
 
-  return { attachImages, removeAttachment: remove };
+  return { attachFiles, attachImages, removeAttachment: remove };
 }
 
 export function getDraftAttachmentIds(attachments: NativeComposerAttachment[]) {
@@ -127,6 +139,34 @@ export function getDraftAttachmentIds(attachments: NativeComposerAttachment[]) {
     }
     return attachment.draftAttachmentId as Id<"draftAttachments">;
   });
+}
+
+async function selectFiles(current: NativeComposerAttachment[]) {
+  const selection = await File.pickFileAsync({
+    mimeTypes: "*/*",
+    multipleFiles: true,
+  });
+  if (selection.canceled) return undefined;
+  if (current.length + selection.result.length > MAX_ATTACHMENT_COUNT) {
+    Alert.alert("Too many attachments", "Attach up to 5 files per message.");
+    return undefined;
+  }
+  const selected = selection.result.map((file) => {
+    return {
+      id: randomUUID(),
+      uri: file.uri,
+      fileName: file.name,
+      contentType: getContentType(file.name, file.type),
+      size: file.size,
+      status: "uploading" as const,
+    };
+  });
+  const error = getSelectionError([...current, ...selected]);
+  if (error) {
+    Alert.alert("Attachment unavailable", error);
+    return undefined;
+  }
+  return selected;
 }
 
 async function selectImages(current: NativeComposerAttachment[]) {
@@ -142,11 +182,12 @@ async function selectImages(current: NativeComposerAttachment[]) {
   }
   const selected = result.assets.map((asset, index) => {
     const file = new File(asset.uri);
+    const fileName = asset.fileName ?? `photo-${index + 1}.jpg`;
     return {
       id: randomUUID(),
       uri: asset.uri,
-      fileName: asset.fileName ?? `photo-${index + 1}.jpg`,
-      contentType: asset.mimeType ?? file.type,
+      fileName,
+      contentType: getContentType(fileName, asset.mimeType ?? file.type),
       size: asset.fileSize ?? file.size,
       status: "uploading" as const,
     };
@@ -158,6 +199,44 @@ async function selectImages(current: NativeComposerAttachment[]) {
   }
   return selected;
 }
+
+function getContentType(fileName: string, contentType: string) {
+  if (contentType && contentType !== "application/octet-stream") {
+    return contentType;
+  }
+  return (
+    contentTypesByExtension.get(
+      fileName.split(".").at(-1)?.toLowerCase() ?? "",
+    ) ?? contentType
+  );
+}
+
+const contentTypesByExtension = new Map([
+  ["csv", "text/csv"],
+  ["doc", "application/msword"],
+  [
+    "docx",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ],
+  ["gif", "image/gif"],
+  ["heic", "image/heic"],
+  ["heif", "image/heif"],
+  ["jpeg", "image/jpeg"],
+  ["jpg", "image/jpeg"],
+  ["md", "text/markdown"],
+  ["pdf", "application/pdf"],
+  ["png", "image/png"],
+  ["ppt", "application/vnd.ms-powerpoint"],
+  [
+    "pptx",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  ],
+  ["txt", "text/plain"],
+  ["webp", "image/webp"],
+  ["xls", "application/vnd.ms-excel"],
+  ["xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"],
+  ["zip", "application/zip"],
+]);
 
 function getSelectionError(attachments: NativeComposerAttachment[]) {
   const totalBytes = attachments.reduce(

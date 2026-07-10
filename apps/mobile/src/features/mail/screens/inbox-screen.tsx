@@ -1,13 +1,6 @@
 import type { ListRenderItemInfo } from "react-native";
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  Text,
-  View,
-} from "react-native";
+import { ActivityIndicator, FlatList, Text, View } from "react-native";
 import { useRouter } from "expo-router";
-import { SquarePen } from "lucide-react-native";
 
 import type {
   MailAccount,
@@ -17,6 +10,7 @@ import type {
 
 import { useColor } from "~/hooks/use-color";
 import { AccountFilter } from "../components/account-filter";
+import { NativeMailButton } from "../components/native-mail-button";
 import { ThreadRow } from "../components/thread-row";
 import { useMailStore } from "../store";
 
@@ -30,7 +24,7 @@ export function InboxScreen() {
   const loadMore = useMailStore((store) => store.loadMore);
   const isLoading = useMailStore((store) => store.isLoading);
   const isLoadingMore = useMailStore((store) => store.isLoadingMore);
-  const background = useColor("background");
+  const primary = useColor("primary");
 
   function openThread(threadId: string) {
     markRead(threadId);
@@ -64,14 +58,13 @@ export function InboxScreen() {
         ListEmptyComponent={<EmptyInbox isLoading={isLoading} />}
         ListFooterComponent={<InboxFooter isLoading={isLoadingMore} />}
       />
-      <Pressable
-        accessibilityLabel="Compose email"
-        accessibilityRole="button"
-        className="bg-primary absolute right-5 bottom-5 size-14 items-center justify-center rounded-full shadow-lg"
-        onPress={() => router.push("/compose")}
-      >
-        <SquarePen color={background} />
-      </Pressable>
+      <View className="absolute right-5 bottom-5 shadow-lg">
+        <NativeMailButton
+          label="Compose"
+          onPress={() => router.push("/compose")}
+          seedColor={primary}
+        />
+      </View>
     </View>
   );
 }

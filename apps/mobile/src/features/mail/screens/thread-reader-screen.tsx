@@ -19,6 +19,7 @@ import { useColor } from "~/hooks/use-color";
 import { toConvexId } from "../lib/convex-id";
 import { toMailThreadDetail } from "../lib/convex-mail";
 import { formatMessageTime } from "../lib/mail-format";
+import { useMailStore } from "../store";
 
 export function ThreadReaderScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -34,14 +35,23 @@ export function ThreadReaderScreen() {
 function ThreadReader({ thread }: { thread: MailThread }) {
   const router = useRouter();
   const setThreadPinned = useMutation(api.mail.mutations.setThreadPinned);
+  const accountAddress = useMailStore(
+    (store) =>
+      store.accounts.find((account) => account.id === thread.accountId)
+        ?.address,
+  );
   const background = useColor("background");
   const foreground = useColor("foreground");
 
   function reply() {
+    const latestMessage = thread.messages.at(-1);
+    if (!latestMessage) return;
     router.push({
       pathname: "/compose",
       params: {
-        to: thread.sender.address,
+        accountId: thread.accountId,
+        replyToInternetMessageId: latestMessage.internetMessageId,
+        to: getReplyAddress(thread, accountAddress),
         subject: thread.subject.startsWith("Re:")
           ? thread.subject
           : `Re: ${thread.subject}`,
@@ -99,6 +109,28 @@ function ThreadReader({ thread }: { thread: MailThread }) {
       </View>
     </>
   );
+}
+
+function getReplyAddress(
+  thread: MailThread,
+  accountAddress: string | undefined,
+) {
+  const latestMessage = thread.messages.at(-1);
+  if (
+    !latestMessage ||
+    !sameAddress(latestMessage.from.address, accountAddress)
+  ) {
+    return latestMessage?.from.address ?? thread.sender.address;
+  }
+  for (let index = thread.messages.length - 2; index >= 0; index -= 1) {
+    const sender = thread.messages[index]?.from.address;
+    if (sender && !sameAddress(sender, accountAddress)) return sender;
+  }
+  return thread.sender.address;
+}
+
+function sameAddress(left: string, right: string | undefined) {
+  return left.trim().toLowerCase() === right?.trim().toLowerCase();
 }
 
 function ThreadHeader({ thread }: { thread: MailThread }) {

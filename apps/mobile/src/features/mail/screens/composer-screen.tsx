@@ -19,34 +19,47 @@ import type { ComposerDraft } from "@rodge-mail/features/mail";
 import { api } from "@rodge-mail/convex/api";
 
 import type { MobileMailAccount } from "../lib/convex-mail";
+import type { ComposerFieldName } from "./composer-helpers";
 import type { NativeComposerAttachment } from "./use-native-attachments";
 import { useColor } from "~/hooks/use-color";
 import { toConvexId } from "../lib/convex-id";
 import { useMailStore } from "../store";
 import { ComposerAttachmentList } from "./composer-attachment-list";
+import {
+  canSendFromAccount,
+  createComposerDraft,
+  draftCanSend,
+  getComposerErrorMessage,
+  getSelectedAccount,
+  parseAddresses,
+} from "./composer-helpers";
 import { ComposerSenderField } from "./composer-sender-field";
 import {
   getDraftAttachmentIds,
   useNativeAttachments,
 } from "./use-native-attachments";
 
+// eslint-disable-next-line @typescript-eslint/consistent-type-definitions -- Expo Router requires an implicit index signature here.
+type ComposerParams = {
+  accountId?: string;
+  replyToInternetMessageId?: string;
+  subject?: string;
+  to?: string;
+};
+
 export function ComposerScreen() {
-  const params = useLocalSearchParams<{ subject?: string; to?: string }>();
+  const params = useLocalSearchParams<ComposerParams>();
   const router = useRouter();
   const accounts = useMailStore((store) => store.accounts);
   const accountFilter = useMailStore((store) => store.accountFilter);
   const enqueuePlainText = useMutation(api.mail.mutations.enqueuePlainText);
   const [idempotencyKey] = useState(() => `rodge-native-${randomUUID()}`);
-  const [selectedAccountId, setSelectedAccountId] = useState<string>();
+  const [selectedAccountId, setSelectedAccountId] = useState<
+    string | undefined
+  >(params.accountId);
   const [isSending, setIsSending] = useState(false);
-  const [draft, setDraft] = useState<ComposerDraft<NativeComposerAttachment>>({
-    attachments: [],
-    body: "",
-    cc: "",
-    subject: params.subject ?? "",
-    to: params.to ?? "",
-  });
-  const { attachImages, removeAttachment } = useNativeAttachments({
+  const [draft, setDraft] = useState(() => createComposerDraft(params));
+  const { attachFiles, attachImages, removeAttachment } = useNativeAttachments({
     draft,
     setDraft,
   });
@@ -58,7 +71,15 @@ export function ComposerScreen() {
     accountFilter,
   );
 
-  function setField(field: "body" | "cc" | "subject" | "to", value: string) {
+  function attach() {
+    Alert.alert("Add attachment", undefined, [
+      { text: "Photos", onPress: () => void attachImages() },
+      { text: "Files", onPress: () => void attachFiles() },
+      { text: "Cancel", style: "cancel" },
+    ]);
+  }
+
+  function setField(field: ComposerFieldName, value: string) {
     setDraft((current) => ({ ...current, [field]: value }));
   }
   async function send() {
@@ -90,15 +111,20 @@ export function ComposerScreen() {
         idempotencyKey,
         to,
         cc: parseAddresses(draft.cc),
+        bcc: parseAddresses(draft.bcc),
         subject: draft.subject.trim(),
         plainText: draft.body,
+        replyToInternetMessageId: params.replyToInternetMessageId,
         attachmentIds: getDraftAttachmentIds(draft.attachments),
       });
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.back();
     } catch (error) {
       setIsSending(false);
-      Alert.alert("Couldn’t queue this message", getErrorMessage(error));
+      Alert.alert(
+        "Couldn’t queue this message",
+        getComposerErrorMessage(error),
+      );
     }
   }
 
@@ -115,7 +141,7 @@ export function ComposerScreen() {
       <ComposerBody
         accounts={sendingAccounts}
         draft={draft}
-        onAttach={() => void attachImages()}
+        onAttach={attach}
         onChange={setField}
         onSenderChange={setSelectedAccountId}
         onRemoveAttachment={(attachment) => void removeAttachment(attachment)}
@@ -137,7 +163,7 @@ function ComposerBody({
   accounts: MobileMailAccount[];
   draft: ComposerDraft<NativeComposerAttachment>;
   onAttach: () => void;
-  onChange: (field: "body" | "cc" | "subject" | "to", value: string) => void;
+  onChange: (field: ComposerFieldName, value: string) => void;
   onRemoveAttachment: (attachment: NativeComposerAttachment) => void;
   onSenderChange: (accountId: string) => void;
   selectedAccountId: string | undefined;
@@ -167,6 +193,13 @@ function ComposerBody({
         onChangeText={(value) => onChange("cc", value)}
       />
       <ComposerField
+        autoCapitalize="none"
+        defaultValue={draft.bcc}
+        keyboardType="email-address"
+        label="BCC"
+        onChangeText={(value) => onChange("bcc", value)}
+      />
+      <ComposerField
         defaultValue={draft.subject}
         label="Subject"
         onChangeText={(value) => onChange("subject", value)}
@@ -187,56 +220,16 @@ function ComposerBody({
         onRemove={onRemoveAttachment}
       />
       <Pressable
-        accessibilityLabel="Attach photos"
+        accessibilityLabel="Add attachments"
         accessibilityRole="button"
         className="border-border flex-row items-center justify-center gap-2 rounded-xl border py-3"
         onPress={onAttach}
       >
         <Paperclip color="#777777" size={18} />
-        <Text className="text-foreground font-semibold">Attach photos</Text>
+        <Text className="text-foreground font-semibold">Attach</Text>
       </Pressable>
     </ScrollView>
   );
-}
-
-function getSelectedAccount(
-  accounts: MobileMailAccount[],
-  selectedAccountId: string | undefined,
-  accountFilter: string,
-) {
-  return (
-    accounts.find((account) => account.id === selectedAccountId) ??
-    accounts.find((account) => account.id === accountFilter) ??
-    accounts[0]
-  );
-}
-
-function canSendFromAccount(account: MobileMailAccount) {
-  return (
-    ["gmail", "icloud", "microsoft"].includes(account.provider) &&
-    ["connected", "syncing"].includes(account.status)
-  );
-}
-
-function draftCanSend(draft: ComposerDraft<NativeComposerAttachment>) {
-  return (
-    draft.to.trim().length > 0 &&
-    draft.body.trim().length > 0 &&
-    draft.attachments.every((attachment) => attachment.status === "ready")
-  );
-}
-
-function parseAddresses(value: string) {
-  return value
-    .split(",")
-    .map((address) => address.trim().toLowerCase())
-    .filter((address) => address.includes("@"))
-    .map((address) => ({ address }));
-}
-
-function getErrorMessage(error: unknown) {
-  if (error instanceof Error && error.message.trim()) return error.message;
-  return "Rodge Mail could not add this message to the delivery queue.";
 }
 
 function ComposerHeader({

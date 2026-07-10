@@ -32,6 +32,7 @@ export interface MailMessage {
   cc: MailAddress[];
   from: MailAddress;
   id: string;
+  internetMessageId?: string;
   sentAt: string;
   to: MailAddress[];
 }
@@ -62,6 +63,7 @@ export interface ComposerDraft<
   TAttachment extends ComposerAttachment = ComposerAttachment,
 > {
   attachments: TAttachment[];
+  bcc: string;
   body: string;
   cc: string;
   subject: string;

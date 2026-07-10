@@ -25,9 +25,7 @@ export interface WebComposerAttachment extends ComposerAttachment {
   file: File;
 }
 
-type WebComposerDraft = ComposerDraft<WebComposerAttachment> & {
-  bcc: string;
-};
+type WebComposerDraft = ComposerDraft<WebComposerAttachment>;
 
 function createEmptyDraft() {
   return {
