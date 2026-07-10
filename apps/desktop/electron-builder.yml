@@ -1,0 +1,26 @@
+appId: com.bentsignal.rodge-mail
+productName: Rodge Mail
+asar: true
+directories:
+  output: release
+files:
+  - out/**
+  - package.json
+protocols:
+  - name: Rodge Mail
+    schemes:
+      - rodge-mail
+mac:
+  category: public.app-category.productivity
+  hardenedRuntime: true
+  target:
+    - dmg
+    - zip
+win:
+  target:
+    - nsis
+linux:
+  category: Office
+  target:
+    - AppImage
+artifactName: ${productName}-${version}-${os}-${arch}.${ext}

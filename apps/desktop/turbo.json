@@ -1,0 +1,15 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "env": ["RODGE_WEB_URL"],
+      "outputs": ["out/**"]
+    },
+    "dev": {
+      "cache": false,
+      "env": ["RODGE_WEB_URL"],
+      "persistent": true
+    }
+  }
+}

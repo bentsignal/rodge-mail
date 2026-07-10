@@ -1,0 +1,70 @@
+{
+  "name": "@rodge-mail/mobile",
+  "private": true,
+  "main": "index.ts",
+  "scripts": {
+    "clean": "git clean -xdf .cache .expo .turbo android ios node_modules",
+    "dev": "portless \"$(../../scripts/portless-app-name.sh mobile.rodge-mail)\" node ../../scripts/expo-portless-bridge.mjs expo start",
+    "dev:android": "portless \"$(../../scripts/portless-app-name.sh mobile.rodge-mail)\" node ../../scripts/expo-portless-bridge.mjs expo start --android",
+    "dev:ios": "portless \"$(../../scripts/portless-app-name.sh mobile.rodge-mail)\" node ../../scripts/expo-portless-bridge.mjs expo start --ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "format": "prettier --check . --ignore-path ../../.gitignore --ignore-path .prettierignore",
+    "format:fix": "prettier --write . --ignore-path ../../.gitignore --ignore-path .prettierignore",
+    "lint": "eslint --flag unstable_native_nodejs_ts_config",
+    "typecheck": "tsc --noEmit",
+    "install:ios-sim": "xcrun simctl install booted ./RodgeMail.app"
+  },
+  "dependencies": {
+    "@expo-google-fonts/roboto": "^0.4.2",
+    "@expo/metro-runtime": "~56.0.14",
+    "@expo/ui": "~56.0.16",
+    "@rodge-mail/features": "workspace:*",
+    "@rodge-mail/tailwind-config": "workspace:*",
+    "expo": "~56.0.9",
+    "expo-build-properties": "~56.0.17",
+    "expo-constants": "~56.0.17",
+    "expo-dev-client": "~56.0.19",
+    "expo-glass-effect": "~56.0.4",
+    "expo-haptics": "~56.0.3",
+    "expo-image-picker": "~56.0.16",
+    "expo-linking": "~56.0.13",
+    "expo-router": "~56.2.9",
+    "expo-secure-store": "~56.0.4",
+    "expo-splash-screen": "~56.0.10",
+    "expo-status-bar": "~56.0.4",
+    "expo-system-ui": "~56.0.5",
+    "expo-web-browser": "~56.0.5",
+    "lucide-react-native": "^0.562.0",
+    "react": "catalog:react19",
+    "react-native": "catalog:react19",
+    "react-native-gesture-handler": "~2.31.2",
+    "react-native-reanimated": "~4.3.1",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-screens": "~4.25.2",
+    "react-native-svg": "15.15.4",
+    "react-native-worklets": "~0.8.3",
+    "rostra": "catalog:",
+    "tailwindcss": "catalog:",
+    "uniwind": "catalog:"
+  },
+  "devDependencies": {
+    "@rodge-mail/eslint-config": "workspace:*",
+    "@rodge-mail/prettier-config": "workspace:*",
+    "@rodge-mail/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:react19",
+    "eslint": "catalog:",
+    "prettier": "catalog:",
+    "typescript": "catalog:"
+  },
+  "expo": {
+    "install": {
+      "exclude": [
+        "react",
+        "react-dom"
+      ]
+    }
+  },
+  "prettier": "@rodge-mail/prettier-config"
+}

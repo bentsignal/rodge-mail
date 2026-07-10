@@ -1,0 +1,52 @@
+{
+  "name": "@rodge-mail/convex",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./api": {
+      "types": "./src/_generated/api.d.ts",
+      "default": "./src/_generated/api.js"
+    },
+    "./model": {
+      "types": "./src/_generated/dataModel.d.ts"
+    },
+    "./mail/types": "./src/mail/types.ts"
+  },
+  "scripts": {
+    "build": "tsc --noEmit",
+    "clean": "git clean -xdf .cache .turbo node_modules",
+    "format": "prettier --check . --ignore-path ../../.gitignore --ignore-path .prettierignore",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "setup": "convex dev --until-success",
+    "dev": "convex dev",
+    "deploy": "convex deploy",
+    "logs": "convex logs"
+  },
+  "devDependencies": {
+    "@convex-dev/eslint-plugin": "^1.1.1",
+    "@rodge-mail/eslint-config": "workspace:*",
+    "@rodge-mail/prettier-config": "workspace:*",
+    "@rodge-mail/tsconfig": "workspace:*",
+    "@types/node": "^22.19.1",
+    "eslint": "catalog:",
+    "prettier": "catalog:",
+    "typescript": "catalog:"
+  },
+  "prettier": "@rodge-mail/prettier-config",
+  "dependencies": {
+    "@better-auth/expo": "catalog:",
+    "@better-auth/passkey": "1.6.11",
+    "@better-auth/utils": "0.4.0",
+    "@convex-dev/better-auth": "catalog:",
+    "@convex-dev/rate-limiter": "^0.3.2",
+    "@rodge-mail/config": "workspace:*",
+    "better-auth": "catalog:",
+    "convex": "catalog:",
+    "convex-env": "^2.3.0",
+    "convex-helpers": "^0.1.108"
+  },
+  "peerDependencies": {
+    "react": "catalog:react19"
+  }
+}

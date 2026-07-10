@@ -1,0 +1,35 @@
+{
+  "name": "@rodge-mail/desktop",
+  "version": "0.1.0",
+  "description": "A hardened desktop shell for the Rodge Mail web app.",
+  "author": "Bentsignal",
+  "private": true,
+  "type": "module",
+  "main": "out/main/index.js",
+  "scripts": {
+    "build": "electron-vite build",
+    "dev": "electron-vite dev",
+    "dist": "pnpm run build && electron-builder",
+    "format": "prettier --check . --ignore-path ../../.gitignore",
+    "format:fix": "prettier --write . --ignore-path ../../.gitignore",
+    "lint": "eslint --flag unstable_native_nodejs_ts_config",
+    "package": "pnpm run build && electron-builder --dir",
+    "preview": "electron-vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@rodge-mail/eslint-config": "workspace:*",
+    "@rodge-mail/prettier-config": "workspace:*",
+    "@rodge-mail/tsconfig": "workspace:*",
+    "@swc/core": "1.15.43",
+    "@types/node": "catalog:",
+    "electron": "43.1.0",
+    "electron-builder": "26.15.3",
+    "electron-vite": "5.0.0",
+    "eslint": "catalog:",
+    "prettier": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:"
+  },
+  "prettier": "@rodge-mail/prettier-config"
+}

@@ -1,0 +1,27 @@
+{
+  "name": "@rodge-mail/config",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./auth": "./src/auth.ts",
+    "./title": "./src/title.ts",
+    "./urls": "./src/urls.ts"
+  },
+  "scripts": {
+    "clean": "git clean -xdf .cache .turbo node_modules",
+    "format": "prettier --check . --ignore-path ../../.gitignore",
+    "format:fix": "prettier --write . --ignore-path ../../.gitignore",
+    "lint": "eslint --flag unstable_native_nodejs_ts_config",
+    "typecheck": "tsc"
+  },
+  "devDependencies": {
+    "@rodge-mail/eslint-config": "workspace:*",
+    "@rodge-mail/prettier-config": "workspace:*",
+    "@rodge-mail/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "prettier": "catalog:",
+    "typescript": "catalog:"
+  },
+  "prettier": "@rodge-mail/prettier-config"
+}

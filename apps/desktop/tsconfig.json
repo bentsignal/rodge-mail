@@ -1,0 +1,10 @@
+{
+  "extends": "@rodge-mail/tsconfig/base.json",
+  "compilerOptions": {
+    "lib": ["ES2022"],
+    "strictNullChecks": true,
+    "types": ["node", "electron-vite/node"]
+  },
+  "include": ["src/**/*.ts", "electron.vite.config.ts"],
+  "exclude": ["node_modules", "out", "release"]
+}

@@ -1,0 +1,154 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "@rodge-mail/tailwind-config/theme";
+
+@import "@fontsource-variable/geist";
+@import "@fontsource-variable/geist-mono";
+
+@source "../../../../shared/ui-web/src/*.{ts,tsx}";
+
+@custom-variant dark (&:where(.dark, .dark *));
+@custom-variant light (&:where(.light, .light *));
+@custom-variant auto (&:where(.auto, .auto *));
+
+@layer base {
+  :root {
+    --font-geist-sans: "Geist Variable";
+    --font-geist-mono: "Geist Mono Variable";
+    --font-editorial:
+      "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia,
+      serif;
+    --background: oklch(0.955 0.018 80);
+    --foreground: oklch(0.26 0.018 125);
+    --card: oklch(0.985 0.012 82);
+    --card-foreground: oklch(0.26 0.018 125);
+    --popover: oklch(0.985 0.012 82);
+    --popover-foreground: oklch(0.26 0.018 125);
+    --primary: oklch(0.52 0.13 35);
+    --primary-foreground: oklch(0.98 0.012 80);
+    --secondary: oklch(0.42 0.045 165);
+    --secondary-foreground: oklch(0.98 0.012 80);
+    --muted: oklch(0.92 0.018 80);
+    --muted-foreground: oklch(0.54 0.025 70);
+    --accent: oklch(0.9 0.035 70);
+    --accent-foreground: oklch(0.31 0.025 70);
+    --border: oklch(0.86 0.025 75);
+    --input: oklch(0.86 0.025 75);
+    --ring: oklch(0.58 0.1 40);
+    --sidebar: oklch(0.955 0.018 80);
+    --sidebar-foreground: oklch(0.3 0.02 100);
+    --sidebar-accent: oklch(0.9 0.025 80);
+    --sidebar-accent-foreground: oklch(0.25 0.02 100);
+    --sidebar-border: oklch(0.86 0.025 75);
+  }
+
+  .dark {
+    --background: oklch(0.2 0.015 120);
+    --foreground: oklch(0.92 0.016 78);
+    --card: oklch(0.225 0.016 120);
+    --card-foreground: oklch(0.92 0.016 78);
+    --popover: oklch(0.245 0.016 120);
+    --popover-foreground: oklch(0.92 0.016 78);
+    --primary: oklch(0.67 0.13 38);
+    --primary-foreground: oklch(0.2 0.02 100);
+    --secondary: oklch(0.68 0.07 165);
+    --secondary-foreground: oklch(0.2 0.02 100);
+    --muted: oklch(0.28 0.015 120);
+    --muted-foreground: oklch(0.7 0.02 78);
+    --accent: oklch(0.32 0.025 80);
+    --accent-foreground: oklch(0.92 0.016 78);
+    --border: oklch(0.34 0.018 110);
+    --input: oklch(0.34 0.018 110);
+    --ring: oklch(0.63 0.11 38);
+    --sidebar: oklch(0.2 0.015 120);
+    --sidebar-foreground: oklch(0.88 0.016 78);
+    --sidebar-accent: oklch(0.28 0.015 120);
+    --sidebar-accent-foreground: oklch(0.94 0.012 78);
+    --sidebar-border: oklch(0.34 0.018 110);
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html,
+  body {
+    overscroll-behavior: none;
+  }
+
+  body {
+    letter-spacing: -0.006em;
+  }
+
+  button,
+  input,
+  textarea {
+    font: inherit;
+  }
+
+  button,
+  label[for] {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+.font-serif {
+  font-family: var(--font-editorial);
+}
+
+.mail-atmosphere {
+  background-image:
+    radial-gradient(circle at 8% 12%, rgb(199 103 73 / 7%), transparent 26%),
+    radial-gradient(circle at 92% 88%, rgb(57 115 103 / 6%), transparent 25%),
+    linear-gradient(120deg, rgb(255 255 255 / 25%), transparent 36%);
+}
+
+.mail-atmosphere::before {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+  opacity: 0.16;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.12'/%3E%3C/svg%3E");
+  mix-blend-mode: multiply;
+}
+
+.dark .mail-atmosphere::before {
+  opacity: 0.05;
+  mix-blend-mode: screen;
+}
+
+.mail-scrollbar {
+  scrollbar-color: rgb(120 105 88 / 25%) transparent;
+  scrollbar-width: thin;
+}
+
+.mail-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.mail-scrollbar::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: rgb(120 105 88 / 25%);
+  background-clip: padding-box;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  article {
+    animation: mail-rise 400ms both;
+  }
+}
+
+@keyframes mail-rise {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
