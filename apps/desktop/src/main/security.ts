@@ -63,6 +63,9 @@ export function secureWindow(window: BrowserWindow, webAppUrl: URL) {
 }
 
 export function secureSession(appSession: Session, webAppUrl: URL) {
+  appSession.on("select-webauthn-account", (_event, details, callback) => {
+    callback(details.accounts.at(0)?.credentialId);
+  });
   appSession.setPermissionCheckHandler(
     (webContents, permission, requestingOrigin) =>
       permissionIsAllowed(webContents, permission, requestingOrigin, webAppUrl),

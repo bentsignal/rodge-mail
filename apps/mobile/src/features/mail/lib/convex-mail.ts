@@ -1,7 +1,7 @@
 import type { FunctionReturnType } from "convex/server";
 
 import type { api } from "@rodge-mail/convex/api";
-import type { MailAttachment } from "@rodge-mail/features/mail";
+import type { MailAccount, MailAttachment } from "@rodge-mail/features/mail";
 
 const attachmentTypes = {
   document: "document",
@@ -14,6 +14,8 @@ type InboxItem = InboxResult["page"][number];
 type ThreadDetail = FunctionReturnType<typeof api.mail.queries.getThread>;
 type ThreadMessage = ThreadDetail["messages"][number];
 type Account = FunctionReturnType<typeof api.accounts.queries.list>[number];
+
+export type MobileMailAccount = MailAccount & { status: Account["status"] };
 
 export function toMailThread(item: InboxItem) {
   return {
@@ -66,6 +68,7 @@ export function toMailAccount(account: Account) {
     initials: getInitials(label),
     label,
     provider: account.provider,
+    status: account.status,
   };
 }
 

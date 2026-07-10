@@ -12,6 +12,7 @@ protocols:
       - rodge-mail
 mac:
   category: public.app-category.productivity
+  entitlements: resources/entitlements.mac.plist
   hardenedRuntime: true
   target:
     - dmg

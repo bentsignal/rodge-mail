@@ -1,7 +1,10 @@
 import { join } from "node:path";
 import { app, BrowserWindow, dialog, session } from "electron";
 
-import { APP_PROTOCOL } from "../shared/constants";
+import {
+  APP_PROTOCOL,
+  MACOS_WEBAUTHN_KEYCHAIN_ACCESS_GROUP,
+} from "../shared/constants";
 import { resolveWebAppUrl, translateDeepLink } from "../shared/urls";
 import { desktopEnv } from "./env";
 import { secureSession, secureWindow } from "./security";
@@ -75,6 +78,14 @@ async function createMainWindow() {
 }
 
 async function start() {
+  if (process.platform === "darwin") {
+    app.configureWebAuthn({
+      touchID: {
+        keychainAccessGroup: MACOS_WEBAUTHN_KEYCHAIN_ACCESS_GROUP,
+        promptReason: "sign in to $1",
+      },
+    });
+  }
   webAppUrl = resolveWebAppUrl({
     configuredUrl: desktopEnv.webUrl,
     isPackaged: app.isPackaged,

@@ -25,20 +25,25 @@ export interface WebComposerAttachment extends ComposerAttachment {
   file: File;
 }
 
+type WebComposerDraft = ComposerDraft<WebComposerAttachment> & {
+  bcc: string;
+};
+
 function createEmptyDraft() {
   return {
     attachments: [],
+    bcc: "",
     body: "",
     cc: "",
     subject: "",
     to: "",
-  } satisfies ComposerDraft<WebComposerAttachment>;
+  } satisfies WebComposerDraft;
 }
 
 function useComposerState() {
   const [composerIsOpen, setComposerIsOpen] = useState(false);
   const [composerDraft, setComposerDraft] =
-    useState<ComposerDraft<WebComposerAttachment>>(createEmptyDraft);
+    useState<WebComposerDraft>(createEmptyDraft);
   const [composerAccountId, setComposerAccountId] =
     useState<Id<"mailAccounts">>();
   const [
@@ -48,12 +53,10 @@ function useComposerState() {
   const [deliveryNotice, setDeliveryNotice] = useState<string>();
   const [idempotencyKey, setIdempotencyKey] = useState(createIdempotencyKey);
   const composerCanSend =
-    composerDraft.to.trim().length > 0 &&
-    (composerDraft.subject.trim().length > 0 ||
-      composerDraft.body.trim().length > 0);
+    composerDraft.to.trim().length > 0 && composerDraft.body.trim().length > 0;
 
   function updateComposerDraft(
-    field: "body" | "cc" | "subject" | "to",
+    field: "bcc" | "body" | "cc" | "subject" | "to",
     value: string,
   ) {
     setComposerDraft((current) => ({ ...current, [field]: value }));

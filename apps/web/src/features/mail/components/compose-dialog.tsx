@@ -64,6 +64,12 @@ function ComposeContent() {
           value={draft.cc}
         />
         <ComposeField
+          label="Bcc"
+          onChange={(value) => updateDraft("bcc", value)}
+          placeholder="Optional"
+          value={draft.bcc}
+        />
+        <ComposeField
           label="Subject"
           onChange={(value) => updateDraft("subject", value)}
           placeholder="What is this about?"
@@ -146,6 +152,7 @@ function ComposeFooter() {
         idempotencyKey,
         to,
         cc: parseAddresses(draft.cc),
+        bcc: parseAddresses(draft.bcc),
         subject: draft.subject.trim(),
         plainText: draft.body,
         replyToInternetMessageId,

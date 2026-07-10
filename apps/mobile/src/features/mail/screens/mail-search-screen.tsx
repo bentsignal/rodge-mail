@@ -4,9 +4,14 @@ import { ActivityIndicator, FlatList, Text, View } from "react-native";
 import { Stack, useRouter } from "expo-router";
 import { usePaginatedQuery } from "convex/react";
 
-import type { MailThread } from "@rodge-mail/features/mail";
+import type {
+  MailAccount,
+  MailAccountFilter,
+  MailThread,
+} from "@rodge-mail/features/mail";
 import { api } from "@rodge-mail/convex/api";
 
+import { AccountFilter } from "../components/account-filter";
 import { ThreadRow } from "../components/thread-row";
 import { toConvexId } from "../lib/convex-id";
 import { toMailThreads } from "../lib/convex-mail";
@@ -18,7 +23,9 @@ export function MailSearchScreen() {
   const deferredSearchTerm = useDeferredValue(searchTerm.trim());
   const recentThreads = useMailStore((store) => store.threads);
   const accountFilter = useMailStore((store) => store.accountFilter);
+  const accounts = useMailStore((store) => store.accounts);
   const markRead = useMailStore((store) => store.markRead);
+  const setAccountFilter = useMailStore((store) => store.setAccountFilter);
   const search = usePaginatedQuery(
     api.mail.queries.searchHeaders,
     deferredSearchTerm
@@ -69,11 +76,12 @@ export function MailSearchScreen() {
         }}
         onEndReachedThreshold={0.6}
         ListHeaderComponent={
-          searchTerm ? null : (
-            <Text className="text-muted-foreground px-4 pt-3 pb-2 text-sm">
-              Recent mail
-            </Text>
-          )
+          <SearchHeader
+            accountFilter={accountFilter}
+            accounts={accounts}
+            isShowingRecent={!searchTerm.trim()}
+            onAccountChange={setAccountFilter}
+          />
         }
         ListEmptyComponent={<EmptySearch searchTerm={searchTerm} />}
         ListFooterComponent={
@@ -83,6 +91,36 @@ export function MailSearchScreen() {
         }
       />
     </View>
+  );
+}
+
+function SearchHeader({
+  accountFilter,
+  accounts,
+  isShowingRecent,
+  onAccountChange,
+}: {
+  accountFilter: MailAccountFilter;
+  accounts: MailAccount[];
+  isShowingRecent: boolean;
+  onAccountChange: (value: MailAccountFilter) => void;
+}) {
+  return (
+    <View className="gap-2 pt-2 pb-2">
+      <AccountFilter
+        accounts={accounts}
+        onChange={onAccountChange}
+        value={accountFilter}
+      />
+      <RecentMailLabel isVisible={isShowingRecent} />
+    </View>
+  );
+}
+
+function RecentMailLabel({ isVisible }: { isVisible: boolean }) {
+  if (!isVisible) return null;
+  return (
+    <Text className="text-muted-foreground px-4 pt-1 text-sm">Recent mail</Text>
   );
 }
 

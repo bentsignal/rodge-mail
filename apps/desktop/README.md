@@ -8,6 +8,13 @@ This package is a hardened Electron shell for the hosted Rodge Mail web app. It 
 
 The preload currently exposes no API. Keep it that way until a native feature needs a small, typed `contextBridge` contract.
 
+On macOS, the main process configures Electron's device-bound Touch ID WebAuthn
+authenticator. The signing identity must belong to Apple team `39K6A9FP99`,
+matching the keychain access group in `resources/entitlements.mac.plist`.
+Desktop Touch ID passkeys are local to that Mac and Electron session; register
+one from an authenticated desktop session after the initial browser or security
+key sign-in.
+
 ## Packaging
 
 - `pnpm build` compiles main and preload bundles.

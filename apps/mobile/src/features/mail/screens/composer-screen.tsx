@@ -18,11 +18,13 @@ import { Paperclip, Send, X } from "lucide-react-native";
 import type { ComposerDraft } from "@rodge-mail/features/mail";
 import { api } from "@rodge-mail/convex/api";
 
+import type { MobileMailAccount } from "../lib/convex-mail";
 import type { NativeComposerAttachment } from "./use-native-attachments";
 import { useColor } from "~/hooks/use-color";
 import { toConvexId } from "../lib/convex-id";
 import { useMailStore } from "../store";
 import { ComposerAttachmentList } from "./composer-attachment-list";
+import { ComposerSenderField } from "./composer-sender-field";
 import {
   getDraftAttachmentIds,
   useNativeAttachments,
@@ -35,6 +37,7 @@ export function ComposerScreen() {
   const accountFilter = useMailStore((store) => store.accountFilter);
   const enqueuePlainText = useMutation(api.mail.mutations.enqueuePlainText);
   const [idempotencyKey] = useState(() => `rodge-native-${randomUUID()}`);
+  const [selectedAccountId, setSelectedAccountId] = useState<string>();
   const [isSending, setIsSending] = useState(false);
   const [draft, setDraft] = useState<ComposerDraft<NativeComposerAttachment>>({
     attachments: [],
@@ -48,6 +51,12 @@ export function ComposerScreen() {
     setDraft,
   });
   const canSend = draftCanSend(draft);
+  const sendingAccounts = accounts.filter(canSendFromAccount);
+  const selectedAccount = getSelectedAccount(
+    sendingAccounts,
+    selectedAccountId,
+    accountFilter,
+  );
 
   function setField(field: "body" | "cc" | "subject" | "to", value: string) {
     setDraft((current) => ({ ...current, [field]: value }));
@@ -61,8 +70,7 @@ export function ComposerScreen() {
       );
       return;
     }
-    const account =
-      accounts.find((item) => item.id === accountFilter) ?? accounts[0];
+    const account = selectedAccount;
     if (!account) {
       Alert.alert(
         "Connect an account first",
@@ -105,31 +113,45 @@ export function ComposerScreen() {
         onSend={() => void send()}
       />
       <ComposerBody
+        accounts={sendingAccounts}
         draft={draft}
         onAttach={() => void attachImages()}
         onChange={setField}
+        onSenderChange={setSelectedAccountId}
         onRemoveAttachment={(attachment) => void removeAttachment(attachment)}
+        selectedAccountId={selectedAccount?.id}
       />
     </KeyboardAvoidingView>
   );
 }
 
 function ComposerBody({
+  accounts,
   draft,
   onAttach,
   onChange,
   onRemoveAttachment,
+  onSenderChange,
+  selectedAccountId,
 }: {
+  accounts: MobileMailAccount[];
   draft: ComposerDraft<NativeComposerAttachment>;
   onAttach: () => void;
   onChange: (field: "body" | "cc" | "subject" | "to", value: string) => void;
   onRemoveAttachment: (attachment: NativeComposerAttachment) => void;
+  onSenderChange: (accountId: string) => void;
+  selectedAccountId: string | undefined;
 }) {
   return (
     <ScrollView
       contentContainerClassName="px-4 pb-10"
       keyboardShouldPersistTaps="handled"
     >
+      <ComposerSenderField
+        accounts={accounts}
+        onChange={onSenderChange}
+        selectedAccountId={selectedAccountId}
+      />
       <ComposerField
         autoCapitalize="none"
         defaultValue={draft.to}
@@ -171,9 +193,28 @@ function ComposerBody({
         onPress={onAttach}
       >
         <Paperclip color="#777777" size={18} />
-        <Text className="text-foreground font-semibold">Attach files</Text>
+        <Text className="text-foreground font-semibold">Attach photos</Text>
       </Pressable>
     </ScrollView>
+  );
+}
+
+function getSelectedAccount(
+  accounts: MobileMailAccount[],
+  selectedAccountId: string | undefined,
+  accountFilter: string,
+) {
+  return (
+    accounts.find((account) => account.id === selectedAccountId) ??
+    accounts.find((account) => account.id === accountFilter) ??
+    accounts[0]
+  );
+}
+
+function canSendFromAccount(account: MobileMailAccount) {
+  return (
+    ["gmail", "icloud", "microsoft"].includes(account.provider) &&
+    ["connected", "syncing"].includes(account.status)
   );
 }
 

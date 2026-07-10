@@ -79,7 +79,7 @@ export function MailSettingsScreen() {
       <DevelopmentTools />
       <View className="px-2">
         <Text className="text-muted-foreground text-center text-xs leading-5">
-          Passkey protected · Provider connections are in progress.
+          Passkey protected · Provider connections are managed on the web.
         </Text>
       </View>
     </ScrollView>
