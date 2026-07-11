@@ -17,7 +17,11 @@ import type { ComposerDraft, RecipientFields } from "@rodge-mail/features/mail";
 import type { MobileMailAccount } from "../lib/convex-mail";
 import type { ComposerFieldName } from "./composer-helpers";
 import type { NativeComposerAttachment } from "./use-native-attachments";
-import { PostalSurface, PostalWell } from "~/features/theme/postal-surface";
+import {
+  PostalPaperBackground,
+  PostalSurface,
+  PostalWell,
+} from "~/features/theme/postal-surface";
 import { useColor } from "~/hooks/use-color";
 import { useMailStore } from "../store";
 import { ComposerAttachmentList } from "./composer-attachment-list";
@@ -140,80 +144,136 @@ function ComposerBody({
   selectedAccountId: string | undefined;
   autoFocusBody: boolean;
 }) {
-  const mutedForeground = useColor("muted-foreground");
-
   return (
-    <ScrollView
-      contentContainerClassName="gap-4 px-4 py-4 pb-10"
-      automaticallyAdjustKeyboardInsets
-      keyboardDismissMode="interactive"
-      keyboardShouldPersistTaps="handled"
-    >
-      <PostalSurface className="overflow-hidden rounded-2xl px-4">
-        <ComposerSenderField
+    <PostalPaperBackground>
+      <ScrollView
+        contentContainerClassName="gap-4 px-4 py-4 pb-10"
+        automaticallyAdjustKeyboardInsets
+        keyboardDismissMode="interactive"
+        keyboardShouldPersistTaps="handled"
+      >
+        <ComposerFieldsSurface
           accounts={accounts}
-          onChange={onSenderChange}
+          draft={draft}
+          onChange={onChange}
+          onSenderChange={onSenderChange}
+          recipientErrors={recipientErrors}
           selectedAccountId={selectedAccountId}
         />
-        <ComposerField
-          autoCapitalize="none"
-          defaultValue={draft.to}
-          keyboardType="email-address"
-          label="To"
-          error={recipientErrors.to}
-          onChangeText={(value) => onChange("to", value)}
-        />
-        <ComposerField
-          autoCapitalize="none"
-          defaultValue={draft.cc}
-          keyboardType="email-address"
-          label="CC"
-          error={recipientErrors.cc}
-          onChangeText={(value) => onChange("cc", value)}
-        />
-        <ComposerField
-          autoCapitalize="none"
-          defaultValue={draft.bcc}
-          keyboardType="email-address"
-          label="BCC"
-          error={recipientErrors.bcc}
-          onChangeText={(value) => onChange("bcc", value)}
-        />
-        <ComposerField
-          defaultValue={draft.subject}
-          label="Subject"
-          onChangeText={(value) => onChange("subject", value)}
-        />
-      </PostalSurface>
-      <PostalSurface className="rounded-2xl p-4">
-        <TextInput
-          accessibilityLabel="Message body"
+        <ComposerMessageSurface
           autoFocus={autoFocusBody}
-          className="text-foreground min-h-72 text-base leading-6"
-          defaultValue={draft.body}
-          multiline
-          placeholder="Write a message"
-          placeholderTextColor={mutedForeground}
-          textAlignVertical="top"
-          onChangeText={(value) => onChange("body", value)}
+          draft={draft}
+          onChange={onChange}
+          onRemoveAttachment={onRemoveAttachment}
         />
-        <ComposerAttachmentList
-          attachments={draft.attachments}
-          onRemove={onRemoveAttachment}
-        />
-      </PostalSurface>
-      <PostalWell>
-        <Pressable
-          accessibilityLabel="Add attachments"
-          accessibilityRole="button"
-          className="flex-row items-center justify-center gap-2 rounded-xl py-3"
-          onPress={onAttach}
-        >
-          <Paperclip color={mutedForeground} size={18} />
-          <Text className="text-foreground font-semibold">Attach</Text>
-        </Pressable>
-      </PostalWell>
-    </ScrollView>
+        <ComposerAttachButton onAttach={onAttach} />
+      </ScrollView>
+    </PostalPaperBackground>
+  );
+}
+
+function ComposerFieldsSurface({
+  accounts,
+  draft,
+  onChange,
+  onSenderChange,
+  recipientErrors,
+  selectedAccountId,
+}: {
+  accounts: MobileMailAccount[];
+  draft: ComposerDraft<NativeComposerAttachment>;
+  onChange: (field: ComposerFieldName, value: string) => void;
+  onSenderChange: (accountId: string) => void;
+  recipientErrors: Partial<RecipientFields<string>>;
+  selectedAccountId: string | undefined;
+}) {
+  return (
+    <PostalSurface className="overflow-hidden rounded-xl px-4" transparent>
+      <ComposerSenderField
+        accounts={accounts}
+        onChange={onSenderChange}
+        selectedAccountId={selectedAccountId}
+      />
+      <ComposerField
+        autoCapitalize="none"
+        defaultValue={draft.to}
+        keyboardType="email-address"
+        label="To"
+        error={recipientErrors.to}
+        onChangeText={(value) => onChange("to", value)}
+      />
+      <ComposerField
+        autoCapitalize="none"
+        defaultValue={draft.cc}
+        keyboardType="email-address"
+        label="CC"
+        error={recipientErrors.cc}
+        onChangeText={(value) => onChange("cc", value)}
+      />
+      <ComposerField
+        autoCapitalize="none"
+        defaultValue={draft.bcc}
+        keyboardType="email-address"
+        label="BCC"
+        error={recipientErrors.bcc}
+        onChangeText={(value) => onChange("bcc", value)}
+      />
+      <ComposerField
+        defaultValue={draft.subject}
+        label="Subject"
+        onChangeText={(value) => onChange("subject", value)}
+      />
+    </PostalSurface>
+  );
+}
+
+function ComposerMessageSurface({
+  autoFocus,
+  draft,
+  onChange,
+  onRemoveAttachment,
+}: {
+  autoFocus: boolean;
+  draft: ComposerDraft<NativeComposerAttachment>;
+  onChange: (field: ComposerFieldName, value: string) => void;
+  onRemoveAttachment: (attachment: NativeComposerAttachment) => void;
+}) {
+  const mutedForeground = useColor("muted-foreground");
+  return (
+    <PostalSurface className="rounded-xl p-4" transparent>
+      <TextInput
+        accessibilityLabel="Message body"
+        autoFocus={autoFocus}
+        className="text-foreground min-h-72 text-base leading-6"
+        defaultValue={draft.body}
+        multiline
+        placeholder="Write a message"
+        placeholderTextColor={mutedForeground}
+        textAlignVertical="top"
+        onChangeText={(value) => onChange("body", value)}
+      />
+      <ComposerAttachmentList
+        attachments={draft.attachments}
+        onRemove={onRemoveAttachment}
+      />
+    </PostalSurface>
+  );
+}
+
+function ComposerAttachButton({ onAttach }: { onAttach: () => void }) {
+  const mutedForeground = useColor("muted-foreground");
+  return (
+    <PostalWell>
+      <Pressable
+        accessibilityLabel="Add attachments"
+        accessibilityRole="button"
+        className="min-h-11 flex-row items-center justify-center gap-2 rounded-lg py-3"
+        onPress={onAttach}
+      >
+        <Paperclip color={mutedForeground} size={18} />
+        <Text className="text-foreground font-semibold">Attach</Text>
+      </Pressable>
+    </PostalWell>
   );
 }
 

@@ -9,6 +9,8 @@ import type { MailAccountFilter, MailThread } from "@rodge-mail/features/mail";
 import { api } from "@rodge-mail/convex/api";
 
 import type { MobileMailAccount } from "../lib/convex-mail";
+import { PostalPaperBackground } from "~/features/theme/postal-surface";
+import { postalDisplayFont } from "~/features/theme/postal-typography";
 import { useColor } from "~/hooks/use-color";
 import { useDebouncedValue } from "~/hooks/use-debounced-value";
 import { AccountFilter } from "../components/account-filter";
@@ -170,44 +172,46 @@ function InboxThreadList({
   onToggleUnread: () => void;
 }) {
   return (
-    <FlatList
-      data={data}
-      keyExtractor={threadKey}
-      renderItem={renderThread}
-      contentInsetAdjustmentBehavior="automatic"
-      keyboardDismissMode="on-drag"
-      contentContainerClassName="pb-24"
-      refreshControl={
-        <RefreshControl
-          refreshing={isRefreshing}
-          tintColor={primary}
-          onRefresh={onRefresh}
-        />
-      }
-      onEndReached={onEndReached}
-      onEndReachedThreshold={0.6}
-      ListHeaderComponent={
-        <InboxHeader
-          accountFilter={accountFilter}
-          accounts={accounts}
-          onAccountChange={onAccountChange}
-          refreshError={refreshError}
-          showUnreadOnly={showUnreadOnly}
-          onToggleUnread={onToggleUnread}
-        />
-      }
-      ListEmptyComponent={
-        <EmptyInbox
-          isLoading={emptyIsLoading}
-          primary={primary}
-          searchTerm={searchTerm}
-          showUnreadOnly={showUnreadOnly}
-        />
-      }
-      ListFooterComponent={
-        <InboxFooter isLoading={footerIsLoading} primary={primary} />
-      }
-    />
+    <PostalPaperBackground>
+      <FlatList
+        data={data}
+        keyExtractor={threadKey}
+        renderItem={renderThread}
+        contentInsetAdjustmentBehavior="automatic"
+        keyboardDismissMode="on-drag"
+        contentContainerClassName="pb-24"
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            tintColor={primary}
+            onRefresh={onRefresh}
+          />
+        }
+        onEndReached={onEndReached}
+        onEndReachedThreshold={0.6}
+        ListHeaderComponent={
+          <InboxHeader
+            accountFilter={accountFilter}
+            accounts={accounts}
+            onAccountChange={onAccountChange}
+            refreshError={refreshError}
+            showUnreadOnly={showUnreadOnly}
+            onToggleUnread={onToggleUnread}
+          />
+        }
+        ListEmptyComponent={
+          <EmptyInbox
+            isLoading={emptyIsLoading}
+            primary={primary}
+            searchTerm={searchTerm}
+            showUnreadOnly={showUnreadOnly}
+          />
+        }
+        ListFooterComponent={
+          <InboxFooter isLoading={footerIsLoading} primary={primary} />
+        }
+      />
+    </PostalPaperBackground>
   );
 }
 
@@ -230,9 +234,14 @@ function InboxHeader({
   const primaryForeground = useColor("primary-foreground");
 
   return (
-    <View className="gap-3 pt-4 pb-3">
+    <View className="bg-background border-paper-border gap-3 border-b pt-4 pb-4">
       <View className="flex-row items-center justify-between px-4">
-        <Text className="text-foreground text-3xl font-bold">Inbox</Text>
+        <Text
+          className="text-foreground text-[32px] leading-10"
+          style={{ fontFamily: postalDisplayFont }}
+        >
+          Inbox
+        </Text>
         <Pressable
           accessibilityLabel={
             showUnreadOnly ? "Show all messages" : "Show unread messages only"
@@ -241,8 +250,8 @@ function InboxHeader({
           accessibilityState={{ selected: showUnreadOnly }}
           className={
             showUnreadOnly
-              ? "bg-primary border-brass-soft flex-row items-center gap-2 rounded-full border px-3 py-2"
-              : "bg-paper border-well-border flex-row items-center gap-2 rounded-full border px-3 py-2"
+              ? "bg-primary border-brass-soft min-h-11 flex-row items-center gap-2 rounded-lg border px-3 py-2"
+              : "bg-paper border-paper-border min-h-11 flex-row items-center gap-2 rounded-lg border px-3 py-2"
           }
           onPress={onToggleUnread}
         >

@@ -9,7 +9,11 @@
 @theme inline {
   --color-brass: var(--brass);
   --color-brass-soft: var(--brass-soft);
+  --color-forest: var(--forest);
+  --color-forest-deep: var(--forest-deep);
+  --color-forest-raised: var(--forest-raised);
   --color-paper: var(--paper);
+  --color-paper-border: var(--paper-border);
   --color-paper-deep: var(--paper-deep);
   --color-stamp: var(--stamp);
   --color-well: var(--well);

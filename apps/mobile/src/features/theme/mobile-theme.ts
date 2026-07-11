@@ -10,44 +10,54 @@ const MODE_KEY = "rodge-mail.theme-mode";
 const PALETTES = {
   postal: {
     dark: theme({
-      accent: "#3b4d35",
-      background: "#0d1c14",
-      border: "#42513e",
-      brass: "#d0a148",
-      brassSoft: "#6a5226",
-      card: "#17271d",
-      foreground: "#f1e7cf",
-      muted: "#223328",
-      mutedForeground: "#b9ad94",
-      paper: "#26382a",
-      paperDeep: "#1c2d22",
-      primary: "#d0a148",
-      primaryForeground: "#152016",
-      ring: "#d0a148",
-      shadow: "#020905",
-      stamp: "#bd6658",
-      well: "#0a1710",
-      wellBorder: "#344638",
+      accent: "#214A36",
+      accentForeground: "#F7F0DF",
+      background: "#171B17",
+      border: "#41453B",
+      brass: "#C89A42",
+      brassSoft: "#D4A64B",
+      card: "#242720",
+      foreground: "#F3EBDD",
+      forest: "#173C2B",
+      forestDeep: "#102C20",
+      forestRaised: "#214A36",
+      muted: "#2D3029",
+      mutedForeground: "#BEB8AA",
+      paper: "#242720",
+      paperBorder: "#41453B",
+      paperDeep: "#2D3029",
+      primary: "#C89A42",
+      primaryForeground: "#21190C",
+      ring: "#C89A42",
+      shadow: "#080A08",
+      stamp: "#D56A59",
+      well: "#2D3029",
+      wellBorder: "#41453B",
     }),
     light: theme({
-      accent: "#d9c89e",
-      background: "#e9dfca",
-      border: "#c8b990",
-      brass: "#9c6c20",
-      brassSoft: "#d5b56c",
-      card: "#f5ecd7",
-      foreground: "#183224",
-      muted: "#ddd1b8",
-      mutedForeground: "#716754",
-      paper: "#fff5dc",
-      paperDeep: "#eee1c5",
-      primary: "#8a5d18",
-      primaryForeground: "#fff7e6",
-      ring: "#9c6c20",
-      shadow: "#153021",
-      stamp: "#ad5145",
-      well: "#d8cbb0",
-      wellBorder: "#b8a77e",
+      accent: "#173C2B",
+      accentForeground: "#F7F0DF",
+      background: "#F5F0E5",
+      border: "#D8CFBC",
+      brass: "#C99B43",
+      brassSoft: "#D2A953",
+      card: "#FFFDF6",
+      foreground: "#2B2924",
+      forest: "#173C2B",
+      forestDeep: "#102C20",
+      forestRaised: "#214A36",
+      muted: "#EEE5D3",
+      mutedForeground: "#686158",
+      paper: "#FFFDF6",
+      paperBorder: "#D8CFBC",
+      paperDeep: "#EEE5D3",
+      primary: "#C99B43",
+      primaryForeground: "#251C0E",
+      ring: "#C99B43",
+      shadow: "#372F22",
+      stamp: "#A83F32",
+      well: "#EEE5D3",
+      wellBorder: "#D8CFBC",
     }),
   },
 } satisfies Record<MobilePalette, Record<"dark" | "light", ThemeVariables>>;
@@ -101,15 +111,20 @@ function applyMobileAppearance() {
 
 interface ThemeInput {
   accent: string;
+  accentForeground: string;
   background: string;
   border: string;
   brass: string;
   brassSoft: string;
   card: string;
   foreground: string;
+  forest: string;
+  forestDeep: string;
+  forestRaised: string;
   muted: string;
   mutedForeground: string;
   paper: string;
+  paperBorder: string;
   paperDeep: string;
   primary: string;
   primaryForeground: string;
@@ -125,7 +140,7 @@ type ThemeVariables = ReturnType<typeof theme>;
 function theme(input: ThemeInput) {
   return {
     "--accent": input.accent,
-    "--accent-foreground": input.foreground,
+    "--accent-foreground": input.accentForeground,
     "--background": input.background,
     "--border": input.border,
     "--brass": input.brass,
@@ -133,10 +148,14 @@ function theme(input: ThemeInput) {
     "--card": input.card,
     "--card-foreground": input.foreground,
     "--foreground": input.foreground,
+    "--forest": input.forest,
+    "--forest-deep": input.forestDeep,
+    "--forest-raised": input.forestRaised,
     "--input": input.border,
     "--muted": input.muted,
     "--muted-foreground": input.mutedForeground,
     "--paper": input.paper,
+    "--paper-border": input.paperBorder,
     "--paper-deep": input.paperDeep,
     "--popover": input.card,
     "--popover-foreground": input.foreground,
@@ -146,7 +165,7 @@ function theme(input: ThemeInput) {
     "--shadow-color": input.shadow,
     "--stamp": input.stamp,
     "--secondary": input.accent,
-    "--secondary-foreground": input.foreground,
+    "--secondary-foreground": input.accentForeground,
     "--sidebar": input.background,
     "--sidebar-accent": input.muted,
     "--sidebar-accent-foreground": input.foreground,

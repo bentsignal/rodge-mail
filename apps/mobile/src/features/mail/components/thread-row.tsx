@@ -30,9 +30,9 @@ export function ThreadRow({
 
   return (
     <ReanimatedSwipeable
-      containerStyle={{ marginBottom: 8, marginHorizontal: 12 }}
+      containerStyle={{ marginBottom: -1, marginHorizontal: 14 }}
       enableTrackpadTwoFingerGesture
-      friction={1.4}
+      friction={1.6}
       leftThreshold={48}
       overshootLeft={false}
       overshootRight={false}
@@ -67,7 +67,6 @@ export function ThreadRow({
       <ThreadSummary
         onOpen={onOpen}
         onPin={pin}
-        onRead={toggleThreadRead}
         shadowColor={shadowColor}
         thread={thread}
       />
@@ -78,13 +77,11 @@ export function ThreadRow({
 function ThreadSummary({
   onOpen,
   onPin,
-  onRead,
   shadowColor,
   thread,
 }: {
   onOpen: () => void;
   onPin: () => void;
-  onRead: () => void;
   shadowColor: string;
   thread: MailThread;
 }) {
@@ -93,22 +90,26 @@ function ThreadSummary({
       accessibilityHint="Opens this email thread"
       accessibilityLabel={`${thread.sender.name}, ${thread.subject}`}
       accessibilityRole="button"
-      className="bg-card border-brass/25 flex-row gap-3 rounded-2xl border px-4 py-3.5"
+      className="bg-transparent border-paper-border min-h-[94px] flex-row gap-3 rounded-xl border px-4 py-3"
       onPress={onOpen}
-      style={{
-        elevation: 1,
+      style={({ pressed }) => ({
+        elevation: pressed ? 0 : 1,
         shadowColor,
-        shadowOffset: { height: 2, width: 0 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      }}
+        shadowOffset: { height: 1, width: 0 },
+        shadowOpacity: pressed ? 0.04 : 0.08,
+        shadowRadius: 2,
+        transform: [{ translateY: pressed ? 1 : 0 }],
+      })}
     >
-      <View className="pt-1">
+      <View className="bg-paper-deep border-paper-border relative size-10 items-center justify-center rounded-lg border">
+        <Text className="text-foreground text-xs font-semibold">
+          {getSenderInitials(thread.sender.name)}
+        </Text>
         <View
           className={
             thread.isRead
-              ? "bg-muted size-2 rounded-full"
-              : "bg-stamp size-2 rounded-full"
+              ? "bg-muted absolute -right-1 -bottom-1 size-2.5 rounded-full"
+              : "bg-brass absolute -right-1 -bottom-1 size-2.5 rounded-full"
           }
         />
       </View>
@@ -117,8 +118,8 @@ function ThreadSummary({
           <Text
             className={
               thread.isRead
-                ? "text-foreground min-w-0 flex-1 text-base"
-                : "text-foreground min-w-0 flex-1 text-base font-bold"
+                ? "text-foreground min-w-0 flex-1 text-sm"
+                : "text-foreground min-w-0 flex-1 text-sm font-bold"
             }
             numberOfLines={1}
           >
@@ -139,13 +140,13 @@ function ThreadSummary({
           {thread.subject}
         </Text>
         <Text
-          className="text-muted-foreground text-sm leading-5"
-          numberOfLines={2}
+          className="text-muted-foreground text-[13px] leading-[18px]"
+          numberOfLines={1}
         >
           {thread.preview}
         </Text>
       </View>
-      <ThreadActions thread={thread} onPin={onPin} onRead={onRead} />
+      <ThreadPinAction thread={thread} onPin={onPin} />
     </Pressable>
   );
 }
@@ -174,50 +175,43 @@ function SwipeAction({
   );
 }
 
-function ThreadActions({
+function ThreadPinAction({
   onPin,
-  onRead,
   thread,
 }: {
   onPin: () => void;
-  onRead: () => void;
   thread: MailThread;
 }) {
   const foreground = useColor("foreground");
   const mutedForeground = useColor("muted-foreground");
 
   return (
-    <View className="self-start">
-      <Pressable
-        accessibilityLabel={thread.isPinned ? "Unpin thread" : "Pin thread"}
-        accessibilityRole="button"
-        className="bg-well/70 rounded-full p-2"
-        hitSlop={8}
-        onPress={(event) => {
-          event.stopPropagation();
-          onPin();
-        }}
-      >
-        <Pin
-          color={thread.isPinned ? foreground : mutedForeground}
-          fill={thread.isPinned ? foreground : "transparent"}
-          size={17}
-        />
-      </Pressable>
-      <Pressable
-        accessibilityLabel={thread.isRead ? "Mark unread" : "Mark read"}
-        accessibilityRole="button"
-        className="rounded-full p-2"
-        hitSlop={8}
-        onPress={(event) => {
-          event.stopPropagation();
-          onRead();
-        }}
-      >
-        <ReadIcon isRead={thread.isRead} color={mutedForeground} />
-      </Pressable>
-    </View>
+    <Pressable
+      accessibilityLabel={thread.isPinned ? "Unpin thread" : "Pin thread"}
+      accessibilityRole="button"
+      className="size-11 items-center justify-center rounded-lg"
+      hitSlop={4}
+      onPress={(event) => {
+        event.stopPropagation();
+        onPin();
+      }}
+    >
+      <Pin
+        color={thread.isPinned ? foreground : mutedForeground}
+        fill={thread.isPinned ? foreground : "transparent"}
+        size={17}
+      />
+    </Pressable>
   );
+}
+
+function getSenderInitials(sender: string) {
+  return sender
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.slice(0, 1).toUpperCase())
+    .join("");
 }
 
 function ReadIcon({ isRead, color }: { isRead: boolean; color: string }) {

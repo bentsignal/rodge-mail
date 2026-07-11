@@ -50,15 +50,15 @@ function SenderButton({
       accessibilityState={{ selected }}
       className={
         selected
-          ? "bg-primary border-brass-soft rounded-full border px-3 py-2"
-          : "bg-well border-well-border rounded-full border px-3 py-2"
+          ? "bg-forest border-forest-raised min-h-11 justify-center rounded-lg border px-3 py-2"
+          : "bg-well border-well-border min-h-11 justify-center rounded-lg border px-3 py-2"
       }
       onPress={onPress}
     >
       <Text
         className={
           selected
-            ? "text-primary-foreground text-sm font-semibold"
+            ? "text-accent-foreground text-sm font-semibold"
             : "text-foreground text-sm font-semibold"
         }
         numberOfLines={1}

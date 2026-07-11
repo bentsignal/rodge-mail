@@ -1,6 +1,7 @@
 import { Pressable, Text, View } from "react-native";
 import { Keyboard, Send, X } from "lucide-react-native";
 
+import { postalDisplayFont } from "~/features/theme/postal-typography";
 import { useColor } from "~/hooks/use-color";
 
 export function ComposerHeader({
@@ -17,17 +18,22 @@ export function ComposerHeader({
   const primaryForeground = useColor("primary-foreground");
 
   return (
-    <View className="bg-card border-brass/30 flex-row items-center justify-between border-b px-4 py-3">
+    <View className="bg-background border-paper-border flex-row items-center justify-between border-b px-4 py-3">
       <ComposerLeadingButton
         onCancel={onCancel}
         onDismissKeyboard={onDismissKeyboard}
       />
-      <Text className="text-foreground text-lg font-bold">New</Text>
+      <Text
+        className="text-foreground text-[22px]"
+        style={{ fontFamily: postalDisplayFont }}
+      >
+        New message
+      </Text>
       <Pressable
         accessibilityLabel="Send email"
         accessibilityRole="button"
         accessibilityState={{ disabled: !canSend }}
-        className="bg-primary border-brass-soft rounded-full border p-2.5"
+        className="bg-primary border-brass-soft size-11 items-center justify-center rounded-lg border"
         disabled={!canSend}
         hitSlop={10}
         onPress={onSend}

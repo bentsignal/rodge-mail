@@ -54,15 +54,15 @@ function AccountFilterButton({
       accessibilityState={{ selected }}
       className={
         selected
-          ? "bg-primary border-brass-soft rounded-full border px-4 py-2"
-          : "bg-paper border-well-border rounded-full border px-4 py-2"
+          ? "bg-forest border-forest-raised min-h-11 justify-center rounded-lg border px-4 py-2"
+          : "bg-paper border-paper-border min-h-11 justify-center rounded-lg border px-4 py-2"
       }
       onPress={onPress}
     >
       <Text
         className={
           selected
-            ? "text-primary-foreground text-sm font-semibold"
+            ? "text-accent-foreground text-sm font-semibold"
             : "text-foreground text-sm font-semibold"
         }
       >
