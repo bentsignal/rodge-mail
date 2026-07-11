@@ -10,7 +10,7 @@ export interface NotificationPreferenceOverride {
 
 export const defaultNotificationPreferences = {
   includePreview: true,
-  newMailEnabled: true,
+  newMailEnabled: false,
 } satisfies NotificationPreferenceValues;
 
 export function resolveNotificationPreferences(

@@ -3,10 +3,10 @@ import { describe, expect, it } from "vitest";
 import { resolveNotificationPreferences } from "./preferences";
 
 describe("notification preference inheritance", () => {
-  it("uses enabled global defaults for existing accounts", () => {
+  it("requires explicit notification opt-in", () => {
     expect(resolveNotificationPreferences(undefined, undefined)).toEqual({
       includePreview: true,
-      newMailEnabled: true,
+      newMailEnabled: false,
     });
   });
 
