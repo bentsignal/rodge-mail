@@ -33,8 +33,7 @@ const MESSAGE_SELECT = [
   "parentFolderId",
   "internetMessageHeaders",
 ].join(",");
-const MESSAGE_EXPAND =
-  "attachments($select=id,name,contentType,size,isInline,contentId)";
+const MESSAGE_EXPAND = "attachments($select=id,name,contentType,size,isInline)";
 
 export class MicrosoftGraphError extends Error {
   constructor(
@@ -132,7 +131,7 @@ async function createReplyDraft(accessToken: string, payload: OutboxPayload) {
   const draft = await graphFetch<GraphMessage>(
     accessToken,
     `/me/messages/${encodeURIComponent(sourceMessageId)}/createReply`,
-    { method: "POST" },
+    { body: "", method: "POST" },
   );
   if (!draft.id) throw new Error("Microsoft Graph omitted the reply draft ID");
   return draft;
@@ -150,7 +149,7 @@ async function prepareReplyDraft(
   });
   const existingAttachments = await graphFetch<
     GraphCollection<GraphAttachment>
-  >(accessToken, `${draftPath}/attachments?$select=id,contentId&$top=10`);
+  >(accessToken, `${draftPath}/attachments?$top=10`);
   const existingContentIds = new Set(
     (existingAttachments.value ?? []).flatMap((attachment) =>
       attachment.contentId ? [attachment.contentId] : [],
@@ -336,7 +335,7 @@ async function sendDraft(accessToken: string, remoteMessageId: string) {
     await graphFetch<void>(
       accessToken,
       `/me/messages/${encodeURIComponent(remoteMessageId)}/send`,
-      { method: "POST" },
+      { body: "", method: "POST" },
     );
   } catch (error) {
     if (error instanceof MicrosoftGraphError && error.status < 500) throw error;
@@ -517,7 +516,8 @@ async function graphFetch<T>(
   headers.set("Accept", "application/json");
   headers.set("Prefer", GRAPH_PREFERENCES);
   if (init?.body) headers.set("Content-Type", "application/json");
-  const response = await fetch(validateGraphUrl(path), {
+  const url = validateGraphUrl(path);
+  const response = await fetch(url, {
     ...init,
     headers,
   });
@@ -526,7 +526,7 @@ async function graphFetch<T>(
     const body = parseGraphError(text);
     throw new MicrosoftGraphError(
       body?.error?.message ??
-        `Microsoft Graph request failed with ${response.status}`,
+        `Microsoft Graph ${init?.method ?? "GET"} ${new URL(url).pathname} failed with ${response.status}`,
       response.status,
       body?.error?.code,
     );

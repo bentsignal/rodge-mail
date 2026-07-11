@@ -91,7 +91,7 @@ describe("Microsoft reply delivery", () => {
       },
       {
         method: "GET",
-        url: "https://graph.microsoft.com/v1.0/me/messages/reply-draft-1/attachments?$select=id,contentId&$top=10",
+        url: "https://graph.microsoft.com/v1.0/me/messages/reply-draft-1/attachments?$top=10",
       },
       {
         method: "POST",
@@ -155,7 +155,7 @@ describe("Microsoft reply delivery", () => {
       },
       {
         method: "GET",
-        url: "https://graph.microsoft.com/v1.0/me/messages/reply-draft-1/attachments?$select=id,contentId&$top=10",
+        url: "https://graph.microsoft.com/v1.0/me/messages/reply-draft-1/attachments?$top=10",
       },
       {
         method: "POST",
