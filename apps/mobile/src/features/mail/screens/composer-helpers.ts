@@ -53,14 +53,6 @@ export function draftCanSend(draft: {
   );
 }
 
-export function parseAddresses(value: string) {
-  return value
-    .split(",")
-    .map((address) => address.trim().toLowerCase())
-    .filter((address) => address.includes("@"))
-    .map((address) => ({ address }));
-}
-
 export function getComposerErrorMessage(error: unknown) {
   if (error instanceof Error && error.message.trim()) return error.message;
   return "Rodge Mail could not add this message to the delivery queue.";

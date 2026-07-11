@@ -16,6 +16,7 @@ import {
   reconcileEmbeddingSelection,
 } from "../embedding/internal";
 import { createMessageSearchText } from "../mail/search";
+import { getThreadInboxState } from "../mail/threadState";
 import {
   vEncryptedEnvelope,
   vMailboxAddress,
@@ -982,8 +983,11 @@ export const upsertProviderMessage = internalMutation({
           ...message.cc,
         ]),
         latestMessageAt: message.receivedAt,
+        latestInboxMessageAt: message.inInbox ? message.receivedAt : undefined,
         messageCount: 0,
         unreadCount: 0,
+        inInbox: message.inInbox,
+        isPinned: false,
         hasAttachments: message.hasAttachments,
         createdAt: now,
         updatedAt: now,
@@ -1490,6 +1494,7 @@ async function recalculateThread(ctx: MutationCtx, threadId: Id<"threads">) {
   const latest = messages.reduce((current, message) =>
     message.receivedAt > current.receivedAt ? message : current,
   );
+  const inboxState = getThreadInboxState(messages);
   await ctx.db.patch(threadId, {
     subject: latest.subject,
     snippet: latest.snippet,
@@ -1500,9 +1505,14 @@ async function recalculateThread(ctx: MutationCtx, threadId: Id<"threads">) {
         ...message.cc,
       ]),
     ),
-    latestMessageAt: latest.receivedAt,
+    latestMessageAt:
+      inboxState.latestInboxMessage?.receivedAt ?? latest.receivedAt,
+    latestInboxMessageAt: inboxState.latestInboxMessageAt,
+    latestInboxMessageId: inboxState.latestInboxMessageId,
     messageCount: messages.length,
     unreadCount: messages.filter((message) => !message.isRead).length,
+    inInbox: inboxState.inInbox,
+    isPinned: inboxState.isPinned,
     hasAttachments: messages.some((message) => message.hasAttachments),
     updatedAt: Date.now(),
   });

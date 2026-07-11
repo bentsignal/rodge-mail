@@ -2,6 +2,7 @@ import { ConvexError } from "convex/values";
 
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
+import { getThreadRowFlags } from "./threadState";
 
 type ReadCtx = Pick<QueryCtx, "db"> | Pick<MutationCtx, "db">;
 
@@ -82,6 +83,45 @@ export async function toMessageListItem(
       provider: account.provider,
     },
     classification,
+  };
+}
+
+export async function toThreadListItem(
+  ctx: Pick<QueryCtx, "db">,
+  thread: Doc<"threads">,
+) {
+  const projectedMessage = thread.latestInboxMessageId
+    ? await ctx.db.get(thread.latestInboxMessageId)
+    : null;
+  const latestMessage =
+    projectedMessage?.threadId === thread._id && projectedMessage.inInbox
+      ? projectedMessage
+      : await ctx.db
+          .query("messages")
+          .withIndex("by_thread_received", (q) => q.eq("threadId", thread._id))
+          .order("desc")
+          .filter((q) => q.eq(q.field("inInbox"), true))
+          .first();
+  if (!latestMessage) return null;
+  const [listItem, legacyPinnedMessage] = await Promise.all([
+    toMessageListItem(ctx, latestMessage),
+    thread.isPinned === undefined
+      ? ctx.db
+          .query("messages")
+          .withIndex("by_thread_received", (q) => q.eq("threadId", thread._id))
+          .filter((q) =>
+            q.and(
+              q.eq(q.field("inInbox"), true),
+              q.eq(q.field("isPinned"), true),
+            ),
+          )
+          .first()
+      : null,
+  ]);
+  return {
+    ...listItem,
+    ...getThreadRowFlags(thread, legacyPinnedMessage !== null),
+    receivedAt: thread.latestInboxMessageAt ?? latestMessage.receivedAt,
   };
 }
 

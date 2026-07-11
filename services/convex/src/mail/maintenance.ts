@@ -1,8 +1,34 @@
 /* eslint-disable complexity -- This repair intentionally requires every independent malformed-row signature before mutating data. */
+import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 
 import type { Doc } from "../_generated/dataModel";
 import { internalMutation } from "../_generated/server";
+import { getThreadProjectionUpdate } from "./threadState";
+
+export const backfillThreadInboxProjection = internalMutation({
+  args: { paginationOpts: paginationOptsValidator },
+  handler: async (ctx, args) => {
+    const result = await ctx.db.query("threads").paginate(args.paginationOpts);
+    await Promise.all(
+      result.page.map(async (thread) => {
+        const messages = await ctx.db
+          .query("messages")
+          .withIndex("by_thread_received", (q) => q.eq("threadId", thread._id))
+          .collect();
+        await ctx.db.patch(thread._id, {
+          ...getThreadProjectionUpdate(thread.latestMessageAt, messages),
+          updatedAt: Date.now(),
+        });
+      }),
+    );
+    return {
+      continueCursor: result.continueCursor,
+      isDone: result.isDone,
+      processed: result.page.length,
+    };
+  },
+});
 
 export const repairMalformedMicrosoftMessage = internalMutation({
   args: { messageId: v.id("messages") },
@@ -57,7 +83,14 @@ export const repairMalformedMicrosoftMessage = internalMutation({
         isPinned: false,
         updatedAt: now,
       }),
-      ctx.db.patch(thread._id, { unreadCount: 0, updatedAt: now }),
+      ctx.db.patch(thread._id, {
+        unreadCount: 0,
+        inInbox: false,
+        isPinned: false,
+        latestInboxMessageAt: undefined,
+        latestInboxMessageId: undefined,
+        updatedAt: now,
+      }),
       ...[...contents, ...classifications, ...jobs, ...embeddings].map(
         async (row) => await ctx.db.delete(row._id),
       ),

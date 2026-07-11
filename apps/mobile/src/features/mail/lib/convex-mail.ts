@@ -2,6 +2,7 @@ import type { FunctionReturnType } from "convex/server";
 
 import type { api } from "@rodge-mail/convex/api";
 import type { MailAccount, MailAttachment } from "@rodge-mail/features/mail";
+import { dedupeThreadRows } from "@rodge-mail/features/mail";
 
 const attachmentTypes = {
   document: "document",
@@ -40,9 +41,7 @@ export function toMailThread(item: InboxItem) {
 }
 
 export function toMailThreads(items: InboxItem[]) {
-  return [...new Map(items.map((item) => [item.threadId, item])).values()].map(
-    toMailThread,
-  );
+  return dedupeThreadRows(items).map(toMailThread);
 }
 
 export function toMailThreadDetail(item: ThreadDetail) {

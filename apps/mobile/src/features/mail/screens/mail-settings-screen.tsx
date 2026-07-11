@@ -20,6 +20,7 @@ import {
   unregisterCurrentPushToken,
 } from "../../notifications/mobile-notifications";
 import { NotificationPreferences } from "../../notifications/notification-preferences";
+import { MobileOutboxStatus } from "../components/mobile-outbox-status";
 import { useMailStore } from "../store";
 
 export function MailSettingsScreen() {
@@ -68,6 +69,7 @@ export function MailSettingsScreen() {
       <SettingsSection title="Notifications">
         <NotificationPreferences />
       </SettingsSection>
+      <MobileOutboxStatus />
       <SettingsSection title="Security">
         <AddPasskeyButton />
         <SignOutButton />

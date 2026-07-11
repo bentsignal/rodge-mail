@@ -46,7 +46,6 @@ function useComposerState() {
     useState<Id<"mailAccounts">>();
   const [composerReplyToMessageId, setComposerReplyToMessageId] =
     useState<Id<"messages">>();
-  const [deliveryNotice, setDeliveryNotice] = useState<string>();
   const [idempotencyKey, setIdempotencyKey] = useState(createIdempotencyKey);
   const composerCanSend =
     composerDraft.to.trim().length > 0 && composerDraft.body.trim().length > 0;
@@ -91,9 +90,8 @@ function useComposerState() {
     setIdempotencyKey(createIdempotencyKey());
   }
 
-  function sendComposerDraft() {
+  function completeComposerEnqueue() {
     if (!composerCanSend) return;
-    setDeliveryNotice(`Message queued for ${composerDraft.to}.`);
     setComposerIsOpen(false);
     setComposerDraft(createEmptyDraft());
     setComposerReplyToMessageId(undefined);
@@ -102,6 +100,7 @@ function useComposerState() {
 
   return {
     addComposerAttachments,
+    completeComposerEnqueue,
     closeComposer: () => setComposerIsOpen(false),
     composerCanSend,
     composerAccountId,
@@ -109,8 +108,6 @@ function useComposerState() {
     composerIsOpen,
     composerReplyToMessageId,
     idempotencyKey,
-    deliveryNotice,
-    dismissDeliveryNotice: () => setDeliveryNotice(undefined),
     openComposer: () => {
       setComposerDraft(createEmptyDraft());
       setComposerReplyToMessageId(undefined);
@@ -125,7 +122,6 @@ function useComposerState() {
           (attachment) => attachment.id !== attachmentId,
         ),
       })),
-    sendComposerDraft,
     setComposerAccountId,
     updateComposerAttachment,
     updateComposerDraft,

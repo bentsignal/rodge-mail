@@ -119,7 +119,7 @@ function renderThreadRow({
 }
 
 function getMessageKey(message: InboxMessage) {
-  return message._id;
+  return message.threadId;
 }
 
 function useListContainerHeight() {

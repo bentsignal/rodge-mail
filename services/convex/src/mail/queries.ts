@@ -10,6 +10,7 @@ import {
   ensureOwnedThread,
   toMessageDetail,
   toMessageListItem,
+  toThreadListItem,
 } from "./helpers";
 import { matchesMailSearch, parseMailSearch } from "./search";
 
@@ -22,26 +23,24 @@ export const listInbox = authedQuery({
     const { accountId, paginationOpts } = args;
     if (accountId) {
       await ensureOwnedAccount(ctx, ctx.ownerId, accountId);
-      return await enrichPage(
+      return await enrichThreadPage(
         ctx,
         await ctx.db
-          .query("messages")
-          .withIndex("by_account_inbox_received", (q) =>
-            q.eq("accountId", accountId).eq("inInbox", true),
-          )
+          .query("threads")
+          .withIndex("by_account_latest", (q) => q.eq("accountId", accountId))
           .order("desc")
+          .filter((q) => q.neq(q.field("inInbox"), false))
           .paginate(paginationOpts),
       );
     }
 
-    return await enrichPage(
+    return await enrichThreadPage(
       ctx,
       await ctx.db
-        .query("messages")
-        .withIndex("by_owner_inbox_received", (q) =>
-          q.eq("ownerId", ctx.ownerId).eq("inInbox", true),
-        )
+        .query("threads")
+        .withIndex("by_owner_latest", (q) => q.eq("ownerId", ctx.ownerId))
         .order("desc")
+        .filter((q) => q.neq(q.field("inInbox"), false))
         .paginate(paginationOpts),
     );
   },
@@ -56,29 +55,36 @@ export const listPinned = authedQuery({
     const { accountId, paginationOpts } = args;
     if (accountId) {
       await ensureOwnedAccount(ctx, ctx.ownerId, accountId);
-      return await enrichPage(
+      return await enrichThreadPage(
         ctx,
         await ctx.db
-          .query("messages")
-          .withIndex("by_account_inbox_pinned_received", (q) =>
-            q
-              .eq("accountId", accountId)
-              .eq("inInbox", true)
-              .eq("isPinned", true),
-          )
+          .query("threads")
+          .withIndex("by_account_latest", (q) => q.eq("accountId", accountId))
           .order("desc")
+          .filter((q) =>
+            q.and(
+              q.neq(q.field("inInbox"), false),
+              q.neq(q.field("isPinned"), false),
+            ),
+          )
           .paginate(paginationOpts),
+        true,
       );
     }
-    return await enrichPage(
+    return await enrichThreadPage(
       ctx,
       await ctx.db
-        .query("messages")
-        .withIndex("by_owner_inbox_pinned_received", (q) =>
-          q.eq("ownerId", ctx.ownerId).eq("inInbox", true).eq("isPinned", true),
-        )
+        .query("threads")
+        .withIndex("by_owner_latest", (q) => q.eq("ownerId", ctx.ownerId))
         .order("desc")
+        .filter((q) =>
+          q.and(
+            q.neq(q.field("inInbox"), false),
+            q.neq(q.field("isPinned"), false),
+          ),
+        )
         .paginate(paginationOpts),
+      true,
     );
   },
 });
@@ -232,6 +238,24 @@ async function enrichPage<T extends { page: Doc<"messages">[] }>(
       results.page.map(async (message) => {
         return await toMessageListItem(ctx, message);
       }),
+    ),
+  };
+}
+
+async function enrichThreadPage<T extends { page: Doc<"threads">[] }>(
+  ctx: AuthedQueryCtx,
+  results: T,
+  pinnedOnly = false,
+) {
+  const { page, ...pagination } = results;
+  const items = await Promise.all(
+    page.map(async (thread) => await toThreadListItem(ctx, thread)),
+  );
+  return {
+    ...pagination,
+    page: items.filter(
+      (item): item is NonNullable<typeof item> =>
+        item !== null && (!pinnedOnly || item.isPinned),
     ),
   };
 }

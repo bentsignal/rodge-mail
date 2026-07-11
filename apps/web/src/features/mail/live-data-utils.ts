@@ -1,3 +1,5 @@
+import { dedupeThreadRows } from "@rodge-mail/features/mail";
+
 import type { InboxMessage, MailAccountDocument } from "./types";
 
 const ACCOUNT_ACCENTS = {
@@ -23,12 +25,7 @@ export function sortInboxMessages(messages: InboxMessage[]) {
   const sortedMessages = messages.slice().sort((left, right) => {
     return right.receivedAt - left.receivedAt;
   });
-  const visibleThreadIds = new Set<InboxMessage["threadId"]>();
-  return sortedMessages.filter((message) => {
-    if (visibleThreadIds.has(message.threadId)) return false;
-    visibleThreadIds.add(message.threadId);
-    return true;
-  });
+  return dedupeThreadRows(sortedMessages);
 }
 
 export function getLoadedUnreadCounts(messages: InboxMessage[]) {

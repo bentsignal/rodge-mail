@@ -1,7 +1,5 @@
 import { ConvexError, v } from "convex/values";
 
-import type { Doc } from "../_generated/dataModel";
-import type { AuthedMutationCtx } from "../utils";
 import { internal } from "../_generated/api";
 import { deleteEmbeddingRecords } from "../embedding/storage";
 import { authedMutation } from "../utils";
@@ -11,12 +9,17 @@ import {
   ensureOwnedThread,
 } from "./helpers";
 import {
-  attachmentIdsMatch,
+  canRetryOutbox,
+  getIdempotentEnqueueResult,
   getReadyDraftAttachments,
+  getRetryOutboxUpdate,
   validateProviderAttachments,
+  validateRecipientFields,
   validateSendRequest,
 } from "./outbox";
+import { scheduleProviderReadUpdate } from "./readUpdates";
 import { resolveReplyMetadata } from "./replies";
+import { updateThreadInboxProjection } from "./threadState";
 import { vMailboxAddress } from "./validators";
 
 export const setPinned = authedMutation({
@@ -32,6 +35,7 @@ export const setPinned = authedMutation({
       isPinned: args.isPinned,
       updatedAt: Date.now(),
     });
+    await updateThreadInboxProjection(ctx, message.threadId);
   },
 });
 
@@ -81,16 +85,20 @@ export const setThreadPinned = authedMutation({
       .query("messages")
       .withIndex("by_thread_received", (q) => q.eq("threadId", thread._id))
       .collect();
-    await Promise.all(
-      messages.map(async (message) => {
-        if (message.isPinned !== args.isPinned) {
-          await ctx.db.patch(message._id, {
+    await Promise.all([
+      ...messages
+        .filter((message) => message.isPinned !== args.isPinned)
+        .map((message) =>
+          ctx.db.patch(message._id, {
             isPinned: args.isPinned,
             updatedAt: Date.now(),
-          });
-        }
+          }),
+        ),
+      ctx.db.patch(thread._id, {
+        isPinned: args.isPinned,
+        updatedAt: Date.now(),
       }),
-    );
+    ]);
   },
 });
 
@@ -155,55 +163,19 @@ export const removeThreadFromRodge = authedMutation({
         });
         await deleteEmbeddingRecords(ctx, message._id);
       }),
-      ctx.db.patch(thread._id, { unreadCount: 0, updatedAt: now }),
+      ctx.db.patch(thread._id, {
+        unreadCount: 0,
+        inInbox: false,
+        isPinned: false,
+        latestInboxMessageAt: undefined,
+        latestInboxMessageId: undefined,
+        updatedAt: now,
+      }),
     ]);
 
     return { removedMessages: messages.length };
   },
 });
-
-function scheduleProviderReadUpdate({
-  ctx,
-  account,
-  message,
-  isRead,
-  delay,
-}: {
-  ctx: AuthedMutationCtx;
-  account: Doc<"mailAccounts"> | null;
-  message: Doc<"messages">;
-  isRead: boolean;
-  delay: number;
-}) {
-  if (!account || account.ownerId !== ctx.ownerId || account.isDemo) {
-    return undefined;
-  }
-  const args = {
-    ownerId: ctx.ownerId,
-    accountId: account._id,
-    remoteMessageId: message.remoteMessageId,
-    isRead,
-  };
-  if (account.provider === "gmail") {
-    return ctx.scheduler.runAfter(
-      delay,
-      internal.sync.internal.setGmailMessageRead,
-      args,
-    );
-  }
-  if (account.provider === "microsoft") {
-    return ctx.scheduler.runAfter(
-      delay,
-      internal.sync.internal.setMicrosoftMessageRead,
-      args,
-    );
-  }
-  return ctx.scheduler.runAfter(
-    delay,
-    internal.providers.icloud.outbox.setRead,
-    args,
-  );
-}
 
 export const enqueuePlainText = authedMutation({
   args: {
@@ -219,7 +191,26 @@ export const enqueuePlainText = authedMutation({
   },
   handler: async (ctx, args) => {
     const account = await ensureOwnedAccount(ctx, ctx.ownerId, args.accountId);
+    const recipients = validateRecipientFields(args);
     const idempotencyKey = validateSendRequest(account, args);
+    const existing = await ctx.db
+      .query("outboxMessages")
+      .withIndex("by_account_idempotency", (q) =>
+        q.eq("accountId", args.accountId).eq("idempotencyKey", idempotencyKey),
+      )
+      .unique();
+    if (existing) {
+      return getIdempotentEnqueueResult(existing, {
+        attachmentIds: args.attachmentIds,
+        bcc: recipients.bcc,
+        cc: recipients.cc,
+        plainText: args.plainText,
+        replyToMessageId: args.replyToMessageId,
+        subject: args.subject,
+        to: recipients.to,
+      });
+    }
+
     const replyMessage = args.replyToMessageId
       ? await ensureOwnedMessage(ctx, ctx.ownerId, args.replyToMessageId)
       : undefined;
@@ -231,34 +222,15 @@ export const enqueuePlainText = authedMutation({
       args.attachmentIds ?? [],
     );
     validateProviderAttachments(account, attachments);
-    const existing = await ctx.db
-      .query("outboxMessages")
-      .withIndex("by_account_idempotency", (q) =>
-        q.eq("accountId", args.accountId).eq("idempotencyKey", idempotencyKey),
-      )
-      .unique();
-    if (existing) {
-      if (existing.replyToMessageId !== args.replyToMessageId) {
-        throw new ConvexError(
-          "This send attempt already exists with a different reply target",
-        );
-      }
-      if (!attachmentIdsMatch(existing.attachmentIds ?? [], attachmentIds)) {
-        throw new ConvexError(
-          "This send attempt already exists with different attachments",
-        );
-      }
-      return existing._id;
-    }
 
     const now = Date.now();
     const outboxId = await ctx.db.insert("outboxMessages", {
       ownerId: ctx.ownerId,
       accountId: args.accountId,
       idempotencyKey,
-      to: args.to,
-      cc: args.cc ?? [],
-      bcc: args.bcc ?? [],
+      to: recipients.to,
+      cc: recipients.cc,
+      bcc: recipients.bcc,
       subject: args.subject,
       plainText: args.plainText,
       ...replyMetadata,
@@ -282,7 +254,7 @@ export const enqueuePlainText = authedMutation({
       internal.sync.internal.deliverProviderOutbox,
       { outboxId },
     );
-    return outboxId;
+    return { outboxId, reused: false, status: "pending" } as const;
   },
 });
 
@@ -293,16 +265,15 @@ export const retryOutbox = authedMutation({
     if (!outbox || outbox.ownerId !== ctx.ownerId) {
       throw new ConvexError("Outbox message not found");
     }
-    if (outbox.status !== "failed") return;
-    await ctx.db.patch(outbox._id, {
-      status: "pending",
-      error: undefined,
-      updatedAt: Date.now(),
-    });
+    if (!canRetryOutbox(outbox)) {
+      return { retried: false, status: outbox.status } as const;
+    }
+    await ctx.db.patch(outbox._id, getRetryOutboxUpdate(Date.now()));
     await ctx.scheduler.runAfter(
       0,
       internal.sync.internal.deliverProviderOutbox,
       { outboxId: outbox._id },
     );
+    return { retried: true, status: "pending" } as const;
   },
 });

@@ -13,7 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Paperclip } from "lucide-react-native";
 
-import type { ComposerDraft } from "@rodge-mail/features/mail";
+import type { ComposerDraft, RecipientFields } from "@rodge-mail/features/mail";
 
 import type { MobileMailAccount } from "../lib/convex-mail";
 import type { ComposerFieldName } from "./composer-helpers";
@@ -62,7 +62,7 @@ export function ComposerScreen({
     provider: selectedAccount?.provider,
     setDraft,
   });
-  const { canSend, idempotencyKey, send } = useSendMessage({
+  const { canSend, idempotencyKey, recipientErrors, send } = useSendMessage({
     draft,
     replyToMessageId: params.replyToMessageId,
     selectedAccount,
@@ -100,6 +100,7 @@ export function ComposerScreen({
           onChange={setField}
           onSenderChange={setSelectedAccountId}
           onRemoveAttachment={(attachment) => void removeAttachment(attachment)}
+          recipientErrors={recipientErrors}
           selectedAccountId={selectedAccount?.id}
         />
       </KeyboardAvoidingView>
@@ -124,6 +125,7 @@ function ComposerBody({
   onAttach,
   onChange,
   onRemoveAttachment,
+  recipientErrors,
   onSenderChange,
   selectedAccountId,
 }: {
@@ -132,6 +134,7 @@ function ComposerBody({
   onAttach: () => void;
   onChange: (field: ComposerFieldName, value: string) => void;
   onRemoveAttachment: (attachment: NativeComposerAttachment) => void;
+  recipientErrors: Partial<RecipientFields<string>>;
   onSenderChange: (accountId: string) => void;
   selectedAccountId: string | undefined;
 }) {
@@ -150,6 +153,7 @@ function ComposerBody({
         defaultValue={draft.to}
         keyboardType="email-address"
         label="To"
+        error={recipientErrors.to}
         onChangeText={(value) => onChange("to", value)}
       />
       <ComposerField
@@ -157,6 +161,7 @@ function ComposerBody({
         defaultValue={draft.cc}
         keyboardType="email-address"
         label="CC"
+        error={recipientErrors.cc}
         onChangeText={(value) => onChange("cc", value)}
       />
       <ComposerField
@@ -164,6 +169,7 @@ function ComposerBody({
         defaultValue={draft.bcc}
         keyboardType="email-address"
         label="BCC"
+        error={recipientErrors.bcc}
         onChangeText={(value) => onChange("bcc", value)}
       />
       <ComposerField
@@ -200,20 +206,30 @@ function ComposerBody({
 }
 
 function ComposerField({
+  error,
   label,
   ...props
 }: {
+  error?: string;
   label: string;
 } & React.ComponentProps<typeof TextInput>) {
   return (
-    <View className="border-border flex-row items-center gap-3 border-b py-2">
-      <Text className="text-muted-foreground w-16 text-base">{label}</Text>
-      <TextInput
-        accessibilityLabel={label}
-        className="text-foreground min-h-10 min-w-0 flex-1 text-base"
-        placeholderTextColor="#777777"
-        {...props}
-      />
+    <View className="border-border border-b py-2">
+      <View className="flex-row items-center gap-3">
+        <Text className="text-muted-foreground w-16 text-base">{label}</Text>
+        <TextInput
+          accessibilityLabel={label}
+          className="text-foreground min-h-10 min-w-0 flex-1 text-base"
+          placeholderTextColor="#777777"
+          {...props}
+        />
+      </View>
+      <ComposerFieldError error={error} />
     </View>
   );
+}
+
+function ComposerFieldError({ error }: { error: string | undefined }) {
+  if (!error) return null;
+  return <Text className="text-destructive ml-19 pb-1 text-xs">{error}</Text>;
 }

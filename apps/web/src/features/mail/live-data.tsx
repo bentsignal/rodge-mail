@@ -57,6 +57,7 @@ interface LiveMailContextValue {
   syncAllAccounts: () => Promise<void>;
   selectMessage: (message: InboxMessage) => void;
   selectedMessageId: InboxMessage["_id"] | undefined;
+  selectedThreadId: InboxMessage["threadId"] | undefined;
   selectedThread: MailThreadDetail | undefined;
   togglePinned: (message: InboxMessage) => Promise<void>;
   toggleRead: (message: InboxMessage) => Promise<void>;
@@ -177,6 +178,7 @@ function useLiveMailQueries({
     isLoadingThread: effectiveThreadId !== undefined && threadQuery.isPending,
     loadMore: () => activePage.loadMore(MAIL_PAGE_SIZE),
     selectedMessageId: selectedMessageId ?? inboxMessages[0]?._id,
+    selectedThreadId: effectiveThreadId,
     selectedThread: threadQuery.data,
   };
 }
@@ -210,8 +212,8 @@ function useLiveMailActions(
   const clearSelection = useMailStore((store) => store.clearSelection);
   const openReply = useMailStore((store) => store.openReply);
   const selectThread = useMailStore((store) => store.selectThread);
-  const setPinned = useMutation(api.mail.mutations.setPinned);
-  const setRead = useMutation(api.mail.mutations.setRead);
+  const setThreadPinned = useMutation(api.mail.mutations.setThreadPinned);
+  const setThreadRead = useMutation(api.mail.mutations.setThreadRead);
   const removeThreadFromRodge = useMutation(
     api.mail.mutations.removeThreadFromRodge,
   );
@@ -221,7 +223,10 @@ function useLiveMailActions(
 
   async function togglePinned(message: InboxMessage) {
     try {
-      await setPinned({ messageId: message._id, isPinned: !message.isPinned });
+      await setThreadPinned({
+        threadId: message.threadId,
+        isPinned: !message.isPinned,
+      });
     } catch (error) {
       toast.error(getErrorMessage(error, "Could not update the pin."));
     }
@@ -229,7 +234,10 @@ function useLiveMailActions(
 
   async function toggleRead(message: InboxMessage) {
     try {
-      await setRead({ messageId: message._id, isRead: !message.isRead });
+      await setThreadRead({
+        threadId: message.threadId,
+        isRead: !message.isRead,
+      });
     } catch (error) {
       toast.error(getErrorMessage(error, "Could not update read status."));
     }
@@ -249,9 +257,11 @@ function useLiveMailActions(
   function selectMessage(message: InboxMessage) {
     selectThread({ messageId: message._id, threadId: message.threadId });
     if (message.isRead) return;
-    void setRead({ messageId: message._id, isRead: true }).catch((error) => {
-      toast.error(getErrorMessage(error, "Could not mark the message read."));
-    });
+    void setThreadRead({ threadId: message.threadId, isRead: true }).catch(
+      (error) => {
+        toast.error(getErrorMessage(error, "Could not mark the message read."));
+      },
+    );
   }
 
   function replyToSelectedThread() {

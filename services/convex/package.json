@@ -46,6 +46,7 @@
     "@convex-dev/better-auth": "catalog:",
     "@convex-dev/rate-limiter": "^0.3.2",
     "@rodge-mail/config": "workspace:*",
+    "@rodge-mail/features": "workspace:*",
     "better-auth": "catalog:",
     "convex": "catalog:",
     "convex-env": "^2.3.0",

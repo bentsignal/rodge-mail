@@ -9,6 +9,7 @@ import {
   getProviderAttachmentError,
   MAX_ATTACHMENT_COUNT,
 } from "@rodge-mail/convex/attachments/constants";
+import { parseRecipientFields } from "@rodge-mail/features/mail";
 import * as Dialog from "@rodge-mail/ui-web/dialog";
 import { Textarea } from "@rodge-mail/ui-web/textarea";
 import { toast } from "@rodge-mail/ui-web/toast";
@@ -121,7 +122,9 @@ function ComposeHeader() {
 function ComposeFooter() {
   const attachmentInputId = useId();
   const canSend = useMailStore((store) => store.composerCanSend);
-  const completeSend = useMailStore((store) => store.sendComposerDraft);
+  const completeEnqueue = useMailStore(
+    (store) => store.completeComposerEnqueue,
+  );
   const composerAccountId = useMailStore((store) => store.composerAccountId);
   const replyToMessageId = useMailStore(
     (store) => store.composerReplyToMessageId,
@@ -153,19 +156,16 @@ function ComposeFooter() {
       toast.error("Wait for every attachment to finish uploading.");
       return;
     }
-    const to = parseAddresses(draft.to);
-    if (to.length === 0) {
-      toast.error("Add at least one valid recipient.");
-      return;
-    }
+    const parsedRecipients = getValidRecipients(draft);
+    if (!parsedRecipients) return;
     setIsSending(true);
     try {
-      await enqueuePlainText({
+      const result = await enqueuePlainText({
         accountId: account._id,
         idempotencyKey,
-        to,
-        cc: parseAddresses(draft.cc),
-        bcc: parseAddresses(draft.bcc),
+        to: parsedRecipients.recipients.to,
+        cc: parsedRecipients.recipients.cc,
+        bcc: parsedRecipients.recipients.bcc,
         subject: draft.subject.trim(),
         plainText: draft.body,
         replyToMessageId,
@@ -174,8 +174,8 @@ function ComposeFooter() {
         ),
       });
       setIsSending(false);
-      completeSend();
-      toast.success("Message queued for delivery.");
+      completeEnqueue();
+      toast.success(getEnqueueSuccessMessage(result.status));
     } catch (error) {
       toast.error(getSendError(error));
       setIsSending(false);
@@ -221,6 +221,20 @@ function ComposeFooter() {
   );
 }
 
+function getEnqueueSuccessMessage(status: "pending" | "sending" | "sent") {
+  if (status === "sent") return "Message already delivered.";
+  if (status === "sending") return "Message delivery is already in progress.";
+  return "Message queued for delivery.";
+}
+
+function getValidRecipients(draft: { bcc: string; cc: string; to: string }) {
+  const result = parseRecipientFields(draft);
+  const error = getRecipientError(result);
+  if (!error) return result;
+  toast.error(error);
+  return undefined;
+}
+
 function toDraftAttachmentId(value: string) {
   return value as Id<"draftAttachments">;
 }
@@ -235,12 +249,22 @@ function requireDraftAttachmentId(attachment: {
   return attachment.draftAttachmentId;
 }
 
-function parseAddresses(value: string) {
-  return value
-    .split(",")
-    .map((address) => address.trim().toLowerCase())
-    .filter((address) => address.includes("@"))
-    .map((address) => ({ address }));
+function getRecipientError(result: ReturnType<typeof parseRecipientFields>) {
+  const errors = new Array<string>();
+  for (const [field, label] of [
+    ["to", "To"],
+    ["cc", "CC"],
+    ["bcc", "BCC"],
+  ] as const) {
+    const invalid = result.invalid[field];
+    if (invalid.length > 0) {
+      errors.push(`${label}: invalid ${invalid.join(", ")}`);
+    }
+  }
+  if (result.recipients.to.length === 0 && result.invalid.to.length === 0) {
+    errors.push("To: add at least one valid email address");
+  }
+  return errors.length > 0 ? errors.join(". ") : undefined;
 }
 
 function getSendError(error: unknown) {

@@ -103,6 +103,7 @@ export default defineSchema(
     outboxMessages: defineTable(vOutboxMessage)
       .index("by_account_idempotency", ["accountId", "idempotencyKey"])
       .index("by_owner_created", ["ownerId", "createdAt"])
+      .index("by_owner_status_created", ["ownerId", "status", "createdAt"])
       .index("by_status_created", ["status", "createdAt"]),
     draftAttachments: defineTable(vDraftAttachment)
       .index("by_owner_status_created", ["ownerId", "status", "createdAt"])

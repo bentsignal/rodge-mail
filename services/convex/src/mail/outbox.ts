@@ -1,5 +1,7 @@
 import { ConvexError } from "convex/values";
 
+import { normalizeRecipientFields } from "@rodge-mail/features/mail";
+
 import type { Doc, Id } from "../_generated/dataModel";
 import type { AuthedMutationCtx } from "../utils";
 import {
@@ -7,6 +9,18 @@ import {
   MAX_ATTACHMENT_COUNT,
   MAX_TOTAL_ATTACHMENT_BYTES,
 } from "../attachments/constants";
+
+export function canRetryOutbox(outbox: Pick<Doc<"outboxMessages">, "status">) {
+  return outbox.status === "failed";
+}
+
+export function getRetryOutboxUpdate(now: number) {
+  return {
+    error: undefined,
+    status: "pending" as const,
+    updatedAt: now,
+  };
+}
 
 export function validateSendRequest(
   account: Doc<"mailAccounts">,
@@ -30,6 +44,31 @@ export function validateSendRequest(
     throw new ConvexError("A recipient and message body are required");
   }
   return idempotencyKey;
+}
+
+export function validateRecipientFields(args: {
+  bcc?: readonly { address: string; name?: string }[];
+  cc?: readonly { address: string; name?: string }[];
+  to: readonly { address: string; name?: string }[];
+}) {
+  const result = normalizeRecipientFields({
+    bcc: args.bcc ?? [],
+    cc: args.cc ?? [],
+    to: args.to,
+  });
+  throwForInvalidRecipients("To", result.invalid.to);
+  throwForInvalidRecipients("CC", result.invalid.cc);
+  throwForInvalidRecipients("BCC", result.invalid.bcc);
+  if (result.recipients.to.length === 0) {
+    throw new ConvexError("At least one valid To recipient is required");
+  }
+  return result.recipients;
+}
+
+function throwForInvalidRecipients(field: string, invalid: string[]) {
+  if (invalid.length === 0) return;
+  const noun = invalid.length === 1 ? "recipient" : "recipients";
+  throw new ConvexError(`Invalid ${field} ${noun}: ${invalid.join(", ")}`);
 }
 
 export function validateProviderAttachments(
@@ -74,12 +113,78 @@ export async function getReadyDraftAttachments(
 }
 
 export function attachmentIdsMatch(
-  existingIds: Id<"draftAttachments">[],
-  requestedIds: Id<"draftAttachments">[],
+  existingIds: readonly string[],
+  requestedIds: readonly string[],
 ) {
   return (
     existingIds.length === requestedIds.length &&
     existingIds.every((attachmentId) => requestedIds.includes(attachmentId))
+  );
+}
+
+interface EnqueuePayload {
+  attachmentIds?: readonly string[];
+  bcc: readonly { address: string; name?: string }[];
+  cc: readonly { address: string; name?: string }[];
+  plainText: string;
+  replyToMessageId?: string;
+  subject: string;
+  to: readonly { address: string; name?: string }[];
+}
+
+export function getIdempotentEnqueueResult<TId extends string>(
+  existing: EnqueuePayload & {
+    _id: TId;
+    status: Doc<"outboxMessages">["status"];
+  },
+  requested: EnqueuePayload,
+) {
+  if (!enqueuePayloadsMatch(existing, requested)) {
+    throw new ConvexError(
+      "This send attempt already exists with different message content",
+    );
+  }
+  if (existing.status === "failed") {
+    throw new ConvexError(
+      "This send attempt failed. Retry it from the outbox.",
+    );
+  }
+  return {
+    outboxId: existing._id,
+    reused: true,
+    status: existing.status,
+  } as const;
+}
+
+function enqueuePayloadsMatch(
+  existing: EnqueuePayload,
+  requested: EnqueuePayload,
+) {
+  return (
+    mailboxAddressesMatch(existing.to, requested.to) &&
+    mailboxAddressesMatch(existing.cc, requested.cc) &&
+    mailboxAddressesMatch(existing.bcc, requested.bcc) &&
+    existing.subject === requested.subject &&
+    existing.plainText === requested.plainText &&
+    existing.replyToMessageId === requested.replyToMessageId &&
+    attachmentIdsMatch(
+      existing.attachmentIds ?? [],
+      requested.attachmentIds ?? [],
+    )
+  );
+}
+
+function mailboxAddressesMatch(
+  existing: readonly { address: string; name?: string }[],
+  requested: readonly { address: string; name?: string }[],
+) {
+  return (
+    existing.length === requested.length &&
+    existing.every(
+      (recipient, index) =>
+        recipient.address === requested[index]?.address &&
+        recipient.name === requested[index]?.name,
+    )
   );
 }
 

@@ -19,11 +19,11 @@ export function ThreadRow({
     accounts,
     removeFromRodge,
     selectMessage,
-    selectedMessageId,
+    selectedThreadId,
     togglePinned,
   } = useLiveMail();
   const account = accounts.find((item) => item._id === message.accountId);
-  const isSelected = selectedMessageId === message._id;
+  const isSelected = selectedThreadId === message.threadId;
   const senderName = getSenderName(message);
   const pinLabel = message.isPinned ? "Unpin message" : "Pin message";
   const preview = message.classification?.summary ?? message.snippet;
