@@ -43,9 +43,7 @@ export function useMailboxPage({
     scopeKey,
     status: activePage.status,
   });
-  const fallbackResults = useInitialInbox
-    ? initialInbox
-    : settledResults;
+  const fallbackResults = useInitialInbox ? initialInbox : settledResults;
   const lexicalResults = getVisibleResults(
     activePage.status,
     activePage.results,

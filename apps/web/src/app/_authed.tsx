@@ -1,18 +1,15 @@
+import { useLayoutEffect } from "react";
 import {
   createFileRoute,
   Outlet,
   redirect,
   useRouterState,
 } from "@tanstack/react-router";
-import { useLayoutEffect } from "react";
 import { convexQuery } from "@convex-dev/react-query";
 
 import { api } from "@rodge-mail/convex/api";
 
-import type {
-  MailAccountFilter,
-  ThreadSelection,
-} from "~/features/mail/store";
+import type { MailAccountFilter, ThreadSelection } from "~/features/mail/store";
 import { MailShell } from "~/features/mail/components/mail-shell";
 import { MAIL_PAGE_SIZE } from "~/features/mail/constants";
 import { useMailStore } from "~/features/mail/store";

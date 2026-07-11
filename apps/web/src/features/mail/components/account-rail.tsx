@@ -161,7 +161,7 @@ function Brand() {
         src="/icon-192.png"
       />
       <div className="hidden min-w-0 xl:block">
-        <p className="whitespace-nowrap font-serif text-[17px] leading-5 font-semibold tracking-[-0.02em] text-[var(--mail-chassis-foreground)]">
+        <p className="font-serif text-[17px] leading-5 font-semibold tracking-[-0.02em] whitespace-nowrap text-[var(--mail-chassis-foreground)]">
           Rodge Mail
         </p>
       </div>

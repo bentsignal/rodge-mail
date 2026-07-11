@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Rodge Mail — Image-model UI directions</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0c1712;
+        --panel: #13221a;
+        --line: #34483d;
+        --text: #f4eddc;
+        --muted: #b8b09d;
+        --gold: #d1a443;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background:
+          radial-gradient(circle at 20% 0%, #1c382a 0, transparent 38rem),
+          var(--bg);
+        color: var(--text);
+        font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+      }
+
+      main {
+        width: min(1500px, calc(100% - 40px));
+        margin: 0 auto;
+        padding: 64px 0 96px;
+      }
+
+      header {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(260px, 420px);
+        gap: 48px;
+        align-items: end;
+        margin-bottom: 48px;
+      }
+
+      h1 {
+        max-width: 900px;
+        margin: 0;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: clamp(46px, 7vw, 94px);
+        font-weight: 500;
+        letter-spacing: -0.045em;
+        line-height: 0.94;
+      }
+
+      .lede,
+      p {
+        color: var(--muted);
+        font-size: 16px;
+        line-height: 1.6;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 32px;
+      }
+
+      article {
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        background: color-mix(in srgb, var(--panel) 92%, transparent);
+        box-shadow: 0 28px 70px rgb(0 0 0 / 24%);
+      }
+
+      article img {
+        display: block;
+        width: 100%;
+        aspect-ratio: 3 / 2;
+        object-fit: cover;
+        background: #eee8d9;
+      }
+
+      .copy {
+        padding: 24px 26px 28px;
+      }
+
+      .number {
+        color: var(--gold);
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 12px;
+        letter-spacing: 0.15em;
+      }
+
+      h2 {
+        margin: 8px 0 10px;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 31px;
+        font-weight: 500;
+      }
+
+      article p {
+        min-height: 52px;
+        margin: 0;
+      }
+
+      .notes {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 32px;
+        margin-top: 56px;
+      }
+
+      .note {
+        border-top: 1px solid var(--line);
+        padding-top: 24px;
+      }
+
+      .note h2 {
+        margin-top: 0;
+      }
+
+      code {
+        color: #f1cf79;
+      }
+
+      @media (max-width: 840px) {
+        header,
+        .grid,
+        .notes {
+          grid-template-columns: 1fr;
+        }
+
+        header {
+          gap: 16px;
+        }
+
+        article p {
+          min-height: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Six ways Rodge Mail could feel.</h1>
+        <p class="lede">
+          Image-model explorations grounded in the selected clay mail-slot icon
+          and the live desktop and mobile interfaces. These are design targets,
+          not production screenshots or palette swaps.
+        </p>
+      </header>
+
+      <section class="grid" aria-label="Design directions">
+        <article>
+          <a href="01-tactile-atelier.png">
+            <img src="01-tactile-atelier.png" alt="Tactile Atelier UI direction" />
+          </a>
+          <div class="copy">
+            <span class="number">01</span>
+            <h2>Tactile Atelier</h2>
+            <p>
+              The strongest continuation of the icon: bookbinding, paper grain,
+              and machined brass, kept disciplined enough for daily use.
+            </p>
+          </div>
+        </article>
+
+        <article>
+          <a href="02-editorial-correspondence.png">
+            <img
+              src="02-editorial-correspondence.png"
+              alt="Editorial Correspondence UI direction"
+            />
+          </a>
+          <div class="copy">
+            <span class="number">02</span>
+            <h2>Editorial Correspondence</h2>
+            <p>
+              A print-journal reading experience: rigorous typography, almost no
+              cards, asymmetric hierarchy, and a narrow brand rail.
+            </p>
+          </div>
+        </article>
+
+        <article>
+          <a href="03-quiet-native-utility.png">
+            <img
+              src="03-quiet-native-utility.png"
+              alt="Quiet Native Utility UI direction"
+            />
+          </a>
+          <div class="copy">
+            <span class="number">03</span>
+            <h2>Quiet Native Utility</h2>
+            <p>
+              The least themed option: macOS and iOS conventions do most of the
+              work, while the mail-slot icon and restrained accents carry identity.
+            </p>
+          </div>
+        </article>
+
+        <article>
+          <a href="04-postal-grid.png">
+            <img src="04-postal-grid.png" alt="Postal Grid UI direction" />
+          </a>
+          <div class="copy">
+            <span class="number">04</span>
+            <h2>Postal Grid</h2>
+            <p>
+              Swiss postal graphics translated into a productive interface:
+              crisp rules, stamped status, bolder color fields, and very clear density.
+            </p>
+          </div>
+        </article>
+
+        <article>
+          <a href="05-warm-paper-desk.png">
+            <img src="05-warm-paper-desk.png" alt="Warm Paper Desk UI direction" />
+          </a>
+          <div class="copy">
+            <span class="number">05</span>
+            <h2>Warm Paper Desk</h2>
+            <p>
+              The most openly skeuomorphic direction: shallow paper layers,
+              folded corners, archival folders, and a credible night mode.
+            </p>
+          </div>
+        </article>
+
+        <article>
+          <a href="06-nocturne-brass.png">
+            <img src="06-nocturne-brass.png" alt="Nocturne Brass UI direction" />
+          </a>
+          <div class="copy">
+            <span class="number">06</span>
+            <h2>Nocturne Brass</h2>
+            <p>
+              Dark-mode-first, typographic, and focused. Forest becomes a narrow
+              account layer; charcoal does the heavy lifting; brass marks actions.
+            </p>
+          </div>
+        </article>
+      </section>
+
+      <section class="notes">
+        <div class="note">
+          <h2>Icon crop</h2>
+          <p>
+            Keep the canonical master untouched. For the shipping app icon, use the
+            existing close crop as the starting point and zoom another 4–6%, full
+            bleed, with no baked rounded rectangle or dark outer frame. Let iOS and
+            macOS apply their own mask. Verify the 60 px rendering on-device before
+            replacing every generated size.
+          </p>
+        </div>
+        <div class="note">
+          <h2>Splash treatment</h2>
+          <p>
+            Use the isolated transparent mail-slot cutout, not the square source,
+            over one flat native splash color. Size it around 112–128 points on
+            iPhone and avoid a second card, border, shadow plate, or background baked
+            into the image. The repo’s <code>apps/mobile/assets/splash-icon.png</code>
+            is the correct asset form; the runtime configuration should display it
+            directly.
+          </p>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

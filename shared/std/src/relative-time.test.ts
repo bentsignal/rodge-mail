@@ -15,14 +15,14 @@ describe("formatRelativeTime", () => {
   });
 
   it("uses a compact calendar date after a week", () => {
-    expect(formatRelativeTime(new Date("2026-06-01T12:00:00.000Z").getTime(), NOW)).toBe(
-      "Jun 1",
-    );
+    expect(
+      formatRelativeTime(new Date("2026-06-01T12:00:00.000Z").getTime(), NOW),
+    ).toBe("Jun 1");
   });
 
   it("includes the year for older calendar years", () => {
-    expect(formatRelativeTime(new Date("2025-12-01T12:00:00.000Z").getTime(), NOW)).toBe(
-      "Dec 1, 2025",
-    );
+    expect(
+      formatRelativeTime(new Date("2025-12-01T12:00:00.000Z").getTime(), NOW),
+    ).toBe("Dec 1, 2025");
   });
 });
