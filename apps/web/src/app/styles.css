@@ -183,8 +183,7 @@ html[data-desktop-runtime="true"] .mail-account-rail {
 
 .mail-chassis {
   color: var(--mail-chassis-foreground);
-  background:
-    linear-gradient(rgb(255 255 255 / 2%), rgb(0 0 0 / 5%)), var(--mail-chassis);
+  background: var(--mail-chassis);
   border-color: color-mix(in oklab, var(--mail-chassis-deep) 88%, black);
   box-shadow:
     0 1px 0 rgb(255 244 213 / 10%) inset,
@@ -193,9 +192,6 @@ html[data-desktop-runtime="true"] .mail-account-rail {
 
 .mail-workspace {
   background-color: var(--mail-paper);
-  background-image: url("../../../../shared/design-assets/warm-paper/paper-light.png");
-  background-repeat: repeat;
-  background-size: 128px 128px;
   border-color: var(--mail-seam);
   box-shadow: 0 1px 0 rgb(255 255 255 / 55%) inset;
 }
@@ -204,12 +200,7 @@ html[data-desktop-runtime="true"] .mail-account-rail {
   max-width: 420px;
   color: var(--mail-chassis-foreground);
   border-color: color-mix(in oklab, var(--mail-chassis-deep) 86%, black);
-  background: linear-gradient(
-    145deg,
-    color-mix(in oklab, var(--mail-chassis-raised) 90%, white 10%),
-    var(--mail-chassis) 48%,
-    var(--mail-chassis-deep)
-  );
+  background: var(--mail-chassis);
   box-shadow:
     0 1px 0 rgb(255 244 213 / 13%) inset,
     0 -2px 0 rgb(0 0 0 / 24%) inset,
@@ -240,27 +231,15 @@ html[data-desktop-runtime="true"] .mail-account-rail {
 }
 
 .dark .mail-workspace {
-  background-image: url("../../../../shared/design-assets/warm-paper/paper-dark.png");
   box-shadow: 0 1px 0 rgb(255 239 184 / 8%) inset;
 }
 
 .mail-paper {
   background-color: var(--mail-paper);
-  background-image: url("../../../../shared/design-assets/warm-paper/paper-light.png");
-  background-repeat: repeat;
-  background-size: 128px 128px;
 }
 
 .mail-paper-soft {
   background-color: var(--mail-paper-soft);
-  background-image: url("../../../../shared/design-assets/warm-paper/paper-muted.png");
-  background-repeat: repeat;
-  background-size: 128px 128px;
-}
-
-.dark .mail-paper,
-.dark .mail-paper-soft {
-  background-image: url("../../../../shared/design-assets/warm-paper/paper-dark.png");
 }
 
 .mail-inset {
@@ -353,53 +332,12 @@ html[data-desktop-runtime="true"] .mail-account-rail {
 
 .mail-reader-pane {
   background-color: var(--mail-paper);
-  background-image: url("../../../../shared/design-assets/warm-paper/paper-light.png");
-  background-repeat: repeat;
-  background-size: 128px 128px;
   box-shadow:
     -2px 0 7px rgb(43 41 36 / 7%),
     1px 0 0 rgb(255 255 255 / 55%) inset;
 }
 
-.mail-reader-pane::before {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  z-index: 2;
-  width: 72px;
-  height: 72px;
-  pointer-events: none;
-  content: "";
-  background: linear-gradient(
-    135deg,
-    transparent 0 48%,
-    var(--mail-seam) 49% 50%,
-    var(--mail-paper-soft) 51% 100%
-  );
-  filter: drop-shadow(-4px -3px 5px rgb(43 41 36 / 9%));
-}
-
-.mail-reader-pane::after {
-  position: absolute;
-  right: 13px;
-  bottom: 12px;
-  z-index: 3;
-  width: 30px;
-  height: 36px;
-  pointer-events: none;
-  content: "";
-  border: 5px solid var(--warm-paper-raised);
-  outline: 1px dashed
-    color-mix(in oklab, var(--mail-highlight) 58%, transparent);
-  background: var(--mail-highlight);
-  box-shadow:
-    0 1px 0 rgb(255 255 255 / 35%) inset,
-    0 2px 4px rgb(43 41 36 / 16%);
-  transform: rotate(-3deg);
-}
-
 .dark .mail-reader-pane {
-  background-image: url("../../../../shared/design-assets/warm-paper/paper-dark.png");
   box-shadow:
     -2px 0 8px rgb(0 0 0 / 24%),
     1px 0 0 rgb(255 255 255 / 5%) inset;
@@ -411,15 +349,6 @@ html[data-desktop-runtime="true"] .mail-account-rail {
 
 .dark .mail-reader-toolbar {
   box-shadow: 0 2px 8px rgb(0 0 0 / 22%);
-}
-
-@media (forced-colors: active) {
-  .mail-workspace,
-  .mail-paper,
-  .mail-paper-soft,
-  .mail-reader-pane {
-    background-image: none;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
