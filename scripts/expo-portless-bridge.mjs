@@ -170,6 +170,7 @@ function proxyUpgrade(req, socket, head) {
   });
 
   upstream.on("error", () => socket.destroy());
+  socket.on("error", () => upstream.destroy());
 }
 
 const server = http.createServer(proxyRequest);

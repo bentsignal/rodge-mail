@@ -20,8 +20,8 @@ import {
   shouldRestoreNotificationRegistration,
 } from "./notification-setup";
 
-const installationIdKey = "rodge-mail:notification-installation-id";
-const pushTokenKey = "rodge-mail:expo-push-token";
+const installationIdKey = "rodge-mail.notification-installation-id";
+const pushTokenKey = "rodge-mail.expo-push-token";
 const setupStateListeners = new Set<() => void>();
 let notificationSetupSnapshot: NotificationSetupState | undefined;
 const resolveNotificationResponse = createNotificationResponseResolver();
