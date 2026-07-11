@@ -2,9 +2,80 @@
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 
-import type { Doc } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
+import type { MutationCtx } from "../_generated/server";
 import { internalMutation } from "../_generated/server";
+import {
+  buildThreadAfterMessageCleanup,
+  summarizeICloudCleanup,
+  validateICloudCleanupArgs,
+} from "./icloudCleanup";
 import { getThreadProjectionUpdate } from "./threadState";
+
+export const cleanupOldICloudMessages = internalMutation({
+  args: {
+    accountId: v.id("mailAccounts"),
+    cutoffReceivedAt: v.number(),
+    dryRun: v.boolean(),
+    limit: v.number(),
+  },
+  handler: async (ctx, args) => {
+    validateICloudCleanupArgs(args);
+    const account = await ctx.db.get(args.accountId);
+    if (account?.provider !== "icloud") {
+      throw new Error("The cleanup target must be an existing iCloud account");
+    }
+
+    const page = await ctx.db
+      .query("messages")
+      .withIndex("by_account_received", (q) =>
+        q
+          .eq("accountId", args.accountId)
+          .lt("receivedAt", args.cutoffReceivedAt),
+      )
+      .order("asc")
+      .take(args.limit + 1);
+    const messages = page.slice(0, args.limit);
+    const records = await Promise.all(
+      messages.map(
+        async (message) => await collectMessageRecords(ctx, message),
+      ),
+    );
+    const threadIds = new Set(messages.map((message) => message.threadId));
+    const storageIds = new Set(records.flatMap((record) => record.storageIds));
+    const counts = summarizeICloudCleanup(
+      records.map((record) => ({
+        attachments: record.attachments.length,
+        classifications: record.classifications.length,
+        contents: record.contents.length,
+        embeddingJobs: record.embeddingJobs.length,
+        embeddings: record.embeddings.length,
+        notificationDeliveries: record.deliveries.length,
+        notificationPushTickets: record.tickets.length,
+        storageIds: record.storageIds,
+        threadId: record.message.threadId,
+      })),
+    );
+
+    if (!args.dryRun) {
+      for (const storageId of storageIds) await ctx.storage.delete(storageId);
+      for (const record of records) await deleteMessageRecords(ctx, record);
+      for (const threadId of threadIds) {
+        await recalculateThreadAfterCleanup(ctx, threadId);
+      }
+    }
+
+    return {
+      accountId: account._id,
+      accountAddress: account.address,
+      cutoffReceivedAt: args.cutoffReceivedAt,
+      dryRun: args.dryRun,
+      hasMore: page.length > args.limit,
+      counts,
+      messageIds: messages.map((message) => message._id),
+    };
+  },
+});
 
 export const backfillThreadInboxProjection = internalMutation({
   args: { paginationOpts: paginationOptsValidator },
@@ -133,4 +204,103 @@ function isMalformedPlaceholder({
     attachments.length === 0 &&
     !hasBody
   );
+}
+
+type CleanupRecord = Awaited<ReturnType<typeof collectMessageRecords>>;
+
+async function collectMessageRecords(
+  ctx: MutationCtx,
+  message: Doc<"messages">,
+) {
+  const [
+    contents,
+    attachments,
+    classifications,
+    embeddingJobs,
+    embeddings,
+    deliveries,
+  ] = await Promise.all([
+    ctx.db
+      .query("messageContents")
+      .withIndex("by_message", (q) => q.eq("messageId", message._id))
+      .collect(),
+    ctx.db
+      .query("attachments")
+      .withIndex("by_message", (q) => q.eq("messageId", message._id))
+      .collect(),
+    ctx.db
+      .query("messageClassifications")
+      .withIndex("by_message", (q) => q.eq("messageId", message._id))
+      .collect(),
+    ctx.db
+      .query("messageEmbeddingJobs")
+      .withIndex("by_message", (q) => q.eq("messageId", message._id))
+      .collect(),
+    ctx.db
+      .query("messageEmbeddings")
+      .withIndex("by_message", (q) => q.eq("messageId", message._id))
+      .collect(),
+    ctx.db
+      .query("notificationDeliveries")
+      .withIndex("by_message", (q) => q.eq("messageId", message._id))
+      .collect(),
+  ]);
+  const tickets = (
+    await Promise.all(
+      deliveries.map(async (delivery) =>
+        ctx.db
+          .query("notificationPushTickets")
+          .withIndex("by_delivery", (q) => q.eq("deliveryId", delivery._id))
+          .collect(),
+      ),
+    )
+  ).flat();
+  const storageIds = [
+    ...contents.flatMap((content) => [
+      content.htmlStorageId,
+      content.rawStorageId,
+    ]),
+    ...attachments.map((attachment) => attachment.storageId),
+  ].filter((storageId): storageId is Id<"_storage"> => storageId !== undefined);
+  return {
+    message,
+    contents,
+    attachments,
+    classifications,
+    embeddingJobs,
+    embeddings,
+    deliveries,
+    tickets,
+    storageIds,
+  };
+}
+
+async function deleteMessageRecords(ctx: MutationCtx, record: CleanupRecord) {
+  for (const row of [
+    ...record.tickets,
+    ...record.deliveries,
+    ...record.contents,
+    ...record.attachments,
+    ...record.classifications,
+    ...record.embeddingJobs,
+    ...record.embeddings,
+  ]) {
+    await ctx.db.delete(row._id);
+  }
+  await ctx.db.delete(record.message._id);
+}
+
+async function recalculateThreadAfterCleanup(
+  ctx: MutationCtx,
+  threadId: Id<"threads">,
+) {
+  const thread = await ctx.db.get(threadId);
+  if (!thread) return;
+  const messages = await ctx.db
+    .query("messages")
+    .withIndex("by_thread_received", (q) => q.eq("threadId", threadId))
+    .collect();
+  const update = buildThreadAfterMessageCleanup(messages, Date.now());
+  if (update) await ctx.db.patch(threadId, update);
+  else await ctx.db.delete(threadId);
 }
