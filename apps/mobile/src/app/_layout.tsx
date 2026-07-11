@@ -106,7 +106,26 @@ function AppNavigation({
           />
         </Stack.Protected>
       </Stack>
-      <StatusBar />
+      <StatusBar style={statusBarStyleFor(backgroundColor)} />
     </>
   );
+}
+
+function statusBarStyleFor(backgroundColor: string) {
+  const color = backgroundColor.replace("#", "");
+  const rgb =
+    color.length === 6
+      ? [
+          Number.parseInt(color.slice(0, 2), 16),
+          Number.parseInt(color.slice(2, 4), 16),
+          Number.parseInt(color.slice(4, 6), 16),
+        ]
+      : backgroundColor
+          .match(/[\d.]+/g)
+          ?.slice(0, 3)
+          .map(Number);
+  if (rgb?.length !== 3 || rgb.some(Number.isNaN)) return "auto";
+  const [red = 0, green = 0, blue = 0] = rgb;
+  const luminance = (red * 299 + green * 587 + blue * 114) / 1000;
+  return luminance < 128 ? "light" : "dark";
 }
