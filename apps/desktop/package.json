@@ -6,6 +6,9 @@
   "private": true,
   "type": "module",
   "main": "out/main/index.js",
+  "dependencies": {
+    "@rodge-mail/config": "workspace:*"
+  },
   "scripts": {
     "build": "electron-vite build",
     "build:web": "pnpm --filter @rodge-mail/web build:desktop",

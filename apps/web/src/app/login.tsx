@@ -69,16 +69,18 @@ function AuthActions({ onCreateAccount }: { onCreateAccount: () => void }) {
   const desktopAuthIsPending = useAuthStore(
     (store) => store.desktopAuthIsPending,
   );
-  const isDesktopApp = useAuthStore((store) => store.isDesktopApp);
   const isLoading = useAuthStore((store) => store.isLoading);
   const startDesktopSignIn = useAuthStore((store) => store.startDesktopSignIn);
+  const usesDesktopBrowserAuth = useAuthStore(
+    (store) => store.usesDesktopBrowserAuth,
+  );
 
   if (desktopAuthIsPending) {
     return <DesktopAuthPending onCancel={cancelDesktopSignIn} />;
   }
 
   function createAccount() {
-    if (isDesktopApp) {
+    if (usesDesktopBrowserAuth) {
       void startDesktopSignIn();
       return;
     }

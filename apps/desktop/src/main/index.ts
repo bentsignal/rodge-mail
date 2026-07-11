@@ -1,6 +1,8 @@
 import { join } from "node:path";
 import { app, BrowserWindow, dialog, nativeTheme, session } from "electron";
 
+import { addPackagedDesktopRuntimeUserAgent } from "@rodge-mail/config/desktop";
+
 import {
   APP_PROTOCOL,
   MACOS_WEBAUTHN_KEYCHAIN_ACCESS_GROUP,
@@ -72,6 +74,11 @@ async function createMainWindow() {
   });
 
   mainWindow = window;
+  if (app.isPackaged) {
+    window.webContents.setUserAgent(
+      addPackagedDesktopRuntimeUserAgent(window.webContents.getUserAgent()),
+    );
+  }
   secureWindow(window, webAppUrl);
   window.once("ready-to-show", () => window.show());
   window.on("closed", () => {

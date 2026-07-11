@@ -10,8 +10,8 @@ import {
   beginDesktopAuth,
   cancelDesktopAuth,
   exchangeDesktopAuth,
-  isDesktopRuntime,
   readPendingDesktopAuth,
+  usesDesktopBrowserAuth,
 } from "./lib/desktop-handoff";
 
 interface RegistrationCodeRequest {
@@ -40,7 +40,7 @@ function useInternalStore() {
   });
   function signInWithPasskey(redirectUri?: string) {
     if (isAuthenticated) return Promise.resolve(false);
-    if (isDesktopRuntime()) return startDesktopSignIn();
+    if (usesDesktopBrowserAuth()) return startDesktopSignIn();
     return run({
       fn: () => authenticateWithPasskey(redirectUri),
       onError: (error) => {
@@ -132,7 +132,7 @@ function useInternalStore() {
     imSignedIn: isAuthenticated,
     imSignedOut: !isAuthenticated,
     isLoading,
-    isDesktopApp: isDesktopRuntime(),
+    usesDesktopBrowserAuth: usesDesktopBrowserAuth(),
     requestRegistrationCode,
     signInWithPasskey,
     signOut,

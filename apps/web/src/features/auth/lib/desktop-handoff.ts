@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+import {
+  isDesktopRuntimeUserAgent,
+  resolveDesktopAuthMode,
+} from "@rodge-mail/config/desktop";
+
 import { env } from "~/env";
 import { authClient } from "./client";
 
@@ -21,7 +26,20 @@ export interface PendingDesktopAuth {
 export function isDesktopRuntime() {
   return (
     typeof navigator !== "undefined" &&
-    navigator.userAgent.includes("Electron/")
+    isDesktopRuntimeUserAgent(navigator.userAgent)
+  );
+}
+
+export function usesDesktopBrowserAuth() {
+  if (typeof navigator === "undefined" || typeof window === "undefined") {
+    return false;
+  }
+  return (
+    resolveDesktopAuthMode({
+      browserAuthUrl: env.VITE_DESKTOP_BROWSER_AUTH_URL,
+      currentOrigin: window.location.origin,
+      userAgent: navigator.userAgent,
+    }) === "browser-handoff"
   );
 }
 

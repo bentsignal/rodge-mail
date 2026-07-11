@@ -4,6 +4,7 @@
   "type": "module",
   "exports": {
     "./auth": "./src/auth.ts",
+    "./desktop": "./src/desktop.ts",
     "./title": "./src/title.ts",
     "./urls": "./src/urls.ts"
   },

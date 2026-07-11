@@ -24,9 +24,9 @@ URLs. Packaged builds intercept only the baked
 `https://www.rodge-mail.local` origin, continue to use the Convex development
 deployment, and do not require Vercel or Portless at runtime.
 
-Desktop authentication is completed in the system browser. The Electron
-renderer creates a five-minute request and keeps a PKCE verifier in its own
-`sessionStorage`; only the request ID and verifier hash leave the app. After
+Desktop development completes authentication in the system browser. The
+Electron renderer creates a five-minute request and keeps a PKCE verifier in its
+own `sessionStorage`; only the request ID and verifier hash leave the app. After
 normal web authentication, the browser authorizes that request and opens a
 `rodge-mail://` callback containing the request ID and a fresh one-time
 authorization code. Electron exchanges that code with the verifier in a POST
@@ -36,19 +36,29 @@ code. Cancellation, expiry, a mismatched factor, and replay all fail closed.
 
 Local development uses the Portless origin for both Electron and the system
 browser. A packaged app's embedded `www.rodge-mail.local` origin is visible only
-inside Electron, so packaged browser handoff requires a deployed HTTPS web
-origin. Build the web bundle with `VITE_DESKTOP_BROWSER_AUTH_URL` set to that
-origin and configure the matching Convex deployment with
-`DESKTOP_BROWSER_AUTH_URL`. Both values must be origin-only HTTPS URLs. Until
-that route is deployed, packaged browser authentication requires Portless and
-is not release-ready.
+inside Electron. Until a real hosted authentication origin exists, packaged
+builds perform the same Better Auth passkey sign-in and email-code registration
+directly in that embedded renderer. This makes a fresh install usable without
+Portless, but available passkeys and user-verification UI depend on the
+platform authenticator and password managers exposed to Electron on that Mac or
+Windows machine. A passkey stored only in a browser extension may not be
+available inside the packaged app, so another registered passkey or account
+registration may be required.
+
+The intended long-term packaged flow remains browser-first. Build the web
+bundle with `VITE_DESKTOP_BROWSER_AUTH_URL` set to a hosted HTTPS origin that is
+different from the embedded origin, and configure the matching Convex
+deployment with `DESKTOP_BROWSER_AUTH_URL`. Both values must be origin-only
+HTTPS URLs. Packaged builds then use the same PKCE browser handoff as desktop
+development.
 
 The preload currently exposes no API. Keep it that way until a native feature needs a small, typed `contextBridge` contract.
 
 On macOS, the signing identity must belong to Apple team `39K6A9FP99`, matching
-the keychain access group in `resources/entitlements.mac.plist`. The browser
-uses the normal hosted WebAuthn relying party, so desktop authentication does
-not depend on Electron's local Touch ID credential store.
+the keychain access group in `resources/entitlements.mac.plist`. Direct packaged
+authentication can use Electron's Touch ID credential store when the build has
+the matching entitlement. Once a hosted browser-first origin is configured,
+authentication instead uses authenticators available to the system browser.
 
 ## Packaging
 
