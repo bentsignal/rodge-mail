@@ -36,6 +36,7 @@ import { getUsableMicrosoftTokens } from "../providers/microsoft/tokenAccess";
 import {
   canFinishSyncRun,
   getActiveSyncAccountIds,
+  getOrphanedSyncAccountIds,
   isStaleSyncRun,
   STALE_SYNC_ERROR,
   SYNC_RUN_STALE_AFTER_MS,
@@ -417,7 +418,23 @@ export const recoverStaleRuns = internalMutation({
       )
     ).flat();
     const activeAccountIds = getActiveSyncAccountIds(activeRuns);
-    for (const accountId of accountIds) {
+    const syncingAccounts = await ctx.db
+      .query("mailAccounts")
+      .filter((q) => q.eq(q.field("status"), "syncing"))
+      .take(100);
+    const orphanedAccountIds = getOrphanedSyncAccountIds(
+      syncingAccounts.map((account) => ({
+        accountId: account._id,
+        status: account.status,
+        updatedAt: account.updatedAt,
+      })),
+      activeAccountIds,
+      args.now,
+    );
+    const recoveredAccountIds = [
+      ...new Set([...accountIds, ...orphanedAccountIds]),
+    ];
+    for (const accountId of recoveredAccountIds) {
       const account = await ctx.db.get(accountId);
       if (account?.status !== "syncing") continue;
       if (activeAccountIds.has(accountId)) continue;
@@ -428,7 +445,7 @@ export const recoverStaleRuns = internalMutation({
       });
     }
 
-    return accountIds;
+    return recoveredAccountIds;
   },
 });
 

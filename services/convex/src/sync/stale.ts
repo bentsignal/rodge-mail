@@ -8,8 +8,19 @@ interface SyncRunState {
   updatedAt: number;
 }
 
-interface AccountSyncRunState extends SyncRunState {
-  accountId: string;
+interface AccountSyncRunState<AccountId extends string> extends SyncRunState {
+  accountId: AccountId;
+}
+
+interface MailAccountSyncState<AccountId extends string> {
+  accountId: AccountId;
+  status:
+    | "connected"
+    | "disconnected"
+    | "error"
+    | "reauthorization_required"
+    | "syncing";
+  updatedAt: number;
 }
 
 export function isStaleSyncRun(run: SyncRunState, now: number) {
@@ -23,12 +34,29 @@ export function canFinishSyncRun(status: SyncRunState["status"]) {
   return status === "running";
 }
 
-export function getActiveSyncAccountIds(runs: AccountSyncRunState[]) {
+export function getActiveSyncAccountIds<AccountId extends string>(
+  runs: AccountSyncRunState<AccountId>[],
+) {
   return new Set(
     runs.flatMap((run) =>
       run.status === "pending" || run.status === "running"
         ? [run.accountId]
         : [],
     ),
+  );
+}
+
+export function getOrphanedSyncAccountIds<AccountId extends string>(
+  accounts: MailAccountSyncState<AccountId>[],
+  activeAccountIds: ReadonlySet<AccountId>,
+  now: number,
+) {
+  const cutoff = now - SYNC_RUN_STALE_AFTER_MS;
+  return accounts.flatMap((account) =>
+    account.status === "syncing" &&
+    account.updatedAt <= cutoff &&
+    !activeAccountIds.has(account.accountId)
+      ? [account.accountId]
+      : [],
   );
 }

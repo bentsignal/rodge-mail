@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   canFinishSyncRun,
   getActiveSyncAccountIds,
+  getOrphanedSyncAccountIds,
   isStaleSyncRun,
   SYNC_RUN_STALE_AFTER_MS,
 } from "./stale";
@@ -51,5 +52,55 @@ describe("stale sync runs", () => {
         { accountId: "account-2", status: "succeeded", updatedAt: 2 },
       ]),
     ).toEqual(new Set(["account-1"]));
+  });
+
+  it("finds an old syncing account without an active run", () => {
+    expect(
+      getOrphanedSyncAccountIds(
+        [
+          {
+            accountId: "orphaned",
+            status: "syncing",
+            updatedAt: now - SYNC_RUN_STALE_AFTER_MS,
+          },
+          {
+            accountId: "active",
+            status: "syncing",
+            updatedAt: now - SYNC_RUN_STALE_AFTER_MS,
+          },
+        ],
+        new Set(["active"]),
+        now,
+      ),
+    ).toEqual(["orphaned"]);
+  });
+
+  it("keeps a new syncing account while its run is being scheduled", () => {
+    expect(
+      getOrphanedSyncAccountIds(
+        [
+          {
+            accountId: "account-1",
+            status: "syncing",
+            updatedAt: now - SYNC_RUN_STALE_AFTER_MS + 1,
+          },
+        ],
+        new Set(),
+        now,
+      ),
+    ).toEqual([]);
+  });
+
+  it("ignores settled account states without an active run", () => {
+    expect(
+      getOrphanedSyncAccountIds(
+        [
+          { accountId: "connected", status: "connected", updatedAt: 0 },
+          { accountId: "failed", status: "error", updatedAt: 0 },
+        ],
+        new Set(),
+        now,
+      ),
+    ).toEqual([]);
   });
 });
