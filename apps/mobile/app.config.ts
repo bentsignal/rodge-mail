@@ -13,6 +13,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     scheme: "rodge-mail",
     version: "0.1.0",
     orientation: "portrait",
+    icon: "./assets/rounded-icon.png",
     userInterfaceStyle: "automatic",
     updates: {
       fallbackToCacheTimeout: 0,
@@ -82,10 +83,10 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         "expo-splash-screen",
         {
           backgroundColor: "#f4f1ea",
-          image: "./assets/rounded-icon.png",
+          image: "./assets/splash-icon.png",
           dark: {
             backgroundColor: "#111513",
-            image: "./assets/rounded-icon.png",
+            image: "./assets/splash-icon.png",
           },
         },
       ],

@@ -2,6 +2,7 @@ appId: com.bentsignal.rodge-mail
 productName: Rodge Mail
 asar: true
 directories:
+  buildResources: resources
   output: release
 files:
   - out/**
@@ -19,14 +20,17 @@ mac:
   category: public.app-category.productivity
   entitlements: resources/entitlements.mac.plist
   hardenedRuntime: true
+  icon: resources/icon.icns
   target:
     - dmg
     - zip
 win:
+  icon: resources/icon.ico
   target:
     - nsis
 linux:
   category: Office
+  icon: resources/icon.png
   target:
     - AppImage
 artifactName: ${productName}-${version}-${os}-${arch}.${ext}
