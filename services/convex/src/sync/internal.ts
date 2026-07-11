@@ -1319,6 +1319,25 @@ export const finishOutbox = internalMutation({
       sentAt: args.error ? undefined : now,
       updatedAt: now,
     });
+    if (!args.error) {
+      const attachments = await Promise.all(
+        (outbox.attachmentIds ?? []).map(async (attachmentId) =>
+          ctx.db.get(attachmentId),
+        ),
+      );
+      for (const attachment of attachments) {
+        if (
+          attachment?.ownerId !== outbox.ownerId ||
+          attachment.outboxId !== outbox._id
+        ) {
+          continue;
+        }
+        if (attachment.storageId) {
+          await ctx.storage.delete(attachment.storageId);
+        }
+        await ctx.db.delete(attachment._id);
+      }
+    }
   },
 });
 

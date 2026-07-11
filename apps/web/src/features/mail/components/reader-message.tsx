@@ -11,6 +11,7 @@ import { parseEmailText } from "@rodge-mail/features/mail";
 import { toast } from "@rodge-mail/ui-web/toast";
 
 import type { ThreadMessageDetail } from "../types";
+import { downloadAttachmentFile } from "../download-attachment";
 import { formatFullDate, getInitials } from "../format";
 
 export function ReaderMessage({ message }: { message: ThreadMessageDetail }) {
@@ -153,11 +154,7 @@ function MessageAttachments({
       const { url } = await downloadAttachment({
         attachmentId: attachment._id,
       });
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = attachment.fileName;
-      link.rel = "noopener";
-      link.click();
+      await downloadAttachmentFile({ fileName: attachment.fileName, url });
     } catch (error) {
       toast.error(getDownloadError(error));
     }

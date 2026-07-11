@@ -107,6 +107,7 @@ function toMailMessage(item: ThreadMessage) {
 
 function toMailAttachment(attachment: ThreadMessage["attachments"][number]) {
   return {
+    contentType: attachment.contentType,
     id: attachment._id,
     name: attachment.fileName,
     size: formatByteSize(attachment.size),

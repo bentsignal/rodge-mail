@@ -19,6 +19,7 @@ export interface MailAccount {
 }
 
 export interface MailAttachment {
+  contentType?: string;
   id: string;
   name: string;
   size: string;

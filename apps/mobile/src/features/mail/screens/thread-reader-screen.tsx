@@ -3,18 +3,20 @@ import { useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Linking,
   Pressable,
   ScrollView,
   Text,
   View,
 } from "react-native";
+import { File, Paths } from "expo-file-system";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import * as Sharing from "expo-sharing";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { Download, Paperclip, Pin, Reply } from "lucide-react-native";
 
 import type { MailMessage, MailThread } from "@rodge-mail/features/mail";
 import { api } from "@rodge-mail/convex/api";
+import { normalizeAttachmentFileName } from "@rodge-mail/convex/attachments/constants";
 import { getReplyAddress } from "@rodge-mail/features/mail";
 
 import { PostalSurface } from "~/features/theme/postal-surface";
@@ -184,7 +186,17 @@ function MessageBody({
       const { url } = await downloadAttachment({
         attachmentId: toConvexId<"attachments">(attachment.id),
       });
-      await Linking.openURL(url);
+      const fileName =
+        normalizeAttachmentFileName(attachment.name) || "attachment";
+      const file = await File.downloadFileAsync(
+        url,
+        new File(Paths.cache, fileName),
+        { idempotent: true },
+      );
+      await Sharing.shareAsync(file.uri, {
+        dialogTitle: `Open ${fileName}`,
+        mimeType: attachment.contentType,
+      });
     } catch (error) {
       Alert.alert("Couldn’t download attachment", getDownloadError(error));
     }

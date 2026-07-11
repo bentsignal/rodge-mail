@@ -67,7 +67,19 @@ export const finalizeUpload = authedMutation({
     storageId: v.id("_storage"),
   },
   handler: async (ctx, args) => {
-    const attachment = await getPendingAttachment(ctx, args.attachmentId);
+    const attachment = await getOwnedAttachment(ctx, args.attachmentId);
+    if (attachment.status === "ready") {
+      if (attachment.storageId !== args.storageId) {
+        throw new ConvexError("Draft attachment is already finalized");
+      }
+      if (attachment.size === undefined) {
+        throw new ConvexError("Draft attachment metadata is unavailable");
+      }
+      return readyAttachmentResult({ ...attachment, size: attachment.size });
+    }
+    if (attachment.status !== "pending") {
+      throw new ConvexError("Draft attachment is unavailable");
+    }
     const metadata = await ctx.db.system.get("_storage", args.storageId);
     if (!metadata) {
       await ctx.db.delete(attachment._id);
@@ -100,31 +112,39 @@ export const finalizeUpload = authedMutation({
       status: "ready",
       updatedAt: Date.now(),
     });
-    return {
-      ok: true as const,
-      attachment: {
-        _id: attachment._id,
-        contentType,
-        fileName: attachment.fileName,
-        size: metadata.size,
-      },
-    };
+    return readyAttachmentResult({
+      ...attachment,
+      contentType,
+      size: metadata.size,
+      storageId: args.storageId,
+      status: "ready",
+    });
   },
 });
 
-async function getPendingAttachment(
+async function getOwnedAttachment(
   ctx: AuthedMutationCtx,
   attachmentId: Doc<"draftAttachments">["_id"],
 ) {
   const attachment = await ctx.db.get(attachmentId);
-  if (
-    !attachment ||
-    attachment.ownerId !== ctx.ownerId ||
-    attachment.status !== "pending"
-  ) {
+  if (!attachment || attachment.ownerId !== ctx.ownerId) {
     throw new ConvexError("Draft attachment is unavailable");
   }
   return attachment;
+}
+
+function readyAttachmentResult(
+  attachment: Doc<"draftAttachments"> & { size: number },
+) {
+  return {
+    ok: true as const,
+    attachment: {
+      _id: attachment._id,
+      contentType: attachment.contentType,
+      fileName: attachment.fileName,
+      size: attachment.size,
+    },
+  };
 }
 
 function getFinalizationError({
