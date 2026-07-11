@@ -8,12 +8,6 @@
  * @module
  */
 
-import type {
-  ApiFromModules,
-  FilterApi,
-  FunctionReference,
-} from "convex/server";
-
 import type * as accounts_actions from "../accounts/actions.js";
 import type * as accounts_mutations from "../accounts/mutations.js";
 import type * as accounts_queries from "../accounts/queries.js";
@@ -95,6 +89,7 @@ import type * as notifications_recovery from "../notifications/recovery.js";
 import type * as notifications_validators from "../notifications/validators.js";
 import type * as outbox_queries from "../outbox/queries.js";
 import type * as outbox_recent from "../outbox/recent.js";
+import type * as passkeyRecovery from "../passkeyRecovery.js";
 import type * as providers_crypto from "../providers/crypto.js";
 import type * as providers_env from "../providers/env.js";
 import type * as providers_gmail_api from "../providers/gmail/api.js";
@@ -121,6 +116,12 @@ import type * as sync_internal from "../sync/internal.js";
 import type * as sync_stale from "../sync/stale.js";
 import type * as urls from "../urls.js";
 import type * as utils from "../utils.js";
+
+import type {
+  ApiFromModules,
+  FilterApi,
+  FunctionReference,
+} from "convex/server";
 
 declare const fullApi: ApiFromModules<{
   "accounts/actions": typeof accounts_actions;
@@ -204,6 +205,7 @@ declare const fullApi: ApiFromModules<{
   "notifications/validators": typeof notifications_validators;
   "outbox/queries": typeof outbox_queries;
   "outbox/recent": typeof outbox_recent;
+  passkeyRecovery: typeof passkeyRecovery;
   "providers/crypto": typeof providers_crypto;
   "providers/env": typeof providers_env;
   "providers/gmail/api": typeof providers_gmail_api;
