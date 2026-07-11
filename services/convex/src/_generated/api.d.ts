@@ -89,6 +89,7 @@ import type * as providers_types from "../providers/types.js";
 import type * as registrationEmail from "../registrationEmail.js";
 import type * as sync_gmailOutbox from "../sync/gmailOutbox.js";
 import type * as sync_internal from "../sync/internal.js";
+import type * as sync_stale from "../sync/stale.js";
 import type * as urls from "../urls.js";
 import type * as utils from "../utils.js";
 
@@ -180,6 +181,7 @@ declare const fullApi: ApiFromModules<{
   registrationEmail: typeof registrationEmail;
   "sync/gmailOutbox": typeof sync_gmailOutbox;
   "sync/internal": typeof sync_internal;
+  "sync/stale": typeof sync_stale;
   urls: typeof urls;
   utils: typeof utils;
 }>;

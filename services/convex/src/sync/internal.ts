@@ -34,6 +34,13 @@ import {
   MicrosoftGraphError,
 } from "../providers/microsoft/api";
 import { getUsableMicrosoftTokens } from "../providers/microsoft/tokenAccess";
+import {
+  canFinishSyncRun,
+  getActiveSyncAccountIds,
+  isStaleSyncRun,
+  STALE_SYNC_ERROR,
+  SYNC_RUN_STALE_AFTER_MS,
+} from "./stale";
 
 const vNormalizedAttachment = v.object({
   remoteAttachmentId: v.string(),
@@ -278,19 +285,23 @@ export const createRun = internalMutation({
       throw new ConvexError("Mail account not found");
     }
     const now = Date.now();
-    const recentRuns = await ctx.db
-      .query("syncRuns")
-      .withIndex("by_account_created", (q) => q.eq("accountId", args.accountId))
-      .order("desc")
-      .take(5);
-    if (
-      recentRuns.some(
-        (run) =>
-          ["pending", "running"].includes(run.status) &&
-          run.createdAt > now - 10 * 60 * 1000,
+    const cutoff = now - SYNC_RUN_STALE_AFTER_MS;
+    const activeRuns = (
+      await Promise.all(
+        (["pending", "running"] as const).map(async (status) => {
+          return await ctx.db
+            .query("syncRuns")
+            .withIndex("by_account_status_created", (q) =>
+              q
+                .eq("accountId", args.accountId)
+                .eq("status", status)
+                .gt("createdAt", cutoff),
+            )
+            .collect();
+        }),
       )
-    )
-      return null;
+    ).flat();
+    if (activeRuns.length > 0) return null;
     return await ctx.db.insert("syncRuns", {
       ownerId: args.ownerId,
       accountId: args.accountId,
@@ -336,6 +347,7 @@ export const finishRun = internalMutation({
   handler: async (ctx, args) => {
     const run = await ctx.db.get(args.syncRunId);
     if (!run) throw new ConvexError("Sync run not found");
+    if (!canFinishSyncRun(run.status)) return;
     const account = await ctx.db.get(run.accountId);
     if (!account) throw new ConvexError("Mail account not found");
     const now = Date.now();
@@ -365,6 +377,59 @@ export const finishRun = internalMutation({
         updatedAt: now,
       }),
     ]);
+  },
+});
+
+export const recoverStaleRuns = internalMutation({
+  args: { now: v.number() },
+  handler: async (ctx, args) => {
+    const cutoff = args.now - SYNC_RUN_STALE_AFTER_MS;
+    const candidates = (
+      await Promise.all(
+        (["pending", "running"] as const).map(async (status) => {
+          return await ctx.db
+            .query("syncRuns")
+            .withIndex("by_status_created", (q) =>
+              q.eq("status", status).lte("createdAt", cutoff),
+            )
+            .collect();
+        }),
+      )
+    ).flat();
+    const staleRuns = candidates.filter((run) => isStaleSyncRun(run, args.now));
+    const accountIds = [...new Set(staleRuns.map((run) => run.accountId))];
+
+    for (const run of staleRuns) {
+      await ctx.db.patch(run._id, {
+        completedAt: args.now,
+        error: STALE_SYNC_ERROR,
+        status: "failed",
+        updatedAt: args.now,
+      });
+    }
+    const activeRuns = (
+      await Promise.all(
+        (["pending", "running"] as const).map(async (status) => {
+          return await ctx.db
+            .query("syncRuns")
+            .withIndex("by_status_created", (q) => q.eq("status", status))
+            .collect();
+        }),
+      )
+    ).flat();
+    const activeAccountIds = getActiveSyncAccountIds(activeRuns);
+    for (const accountId of accountIds) {
+      const account = await ctx.db.get(accountId);
+      if (account?.status !== "syncing") continue;
+      if (activeAccountIds.has(accountId)) continue;
+      await ctx.db.patch(accountId, {
+        lastSyncError: STALE_SYNC_ERROR,
+        status: "error",
+        updatedAt: args.now,
+      });
+    }
+
+    return accountIds;
   },
 });
 
@@ -845,6 +910,11 @@ export const listRecoverableProviderOutbox = internalQuery({
 export const runScheduledProviderWork = internalAction({
   args: {},
   handler: async (ctx): Promise<void> => {
+    const recoveredAccountIds: Id<"mailAccounts">[] = await ctx.runMutation(
+      internal.sync.internal.recoverStaleRuns,
+      { now: Date.now() },
+    );
+    const recoveredAccounts = new Set(recoveredAccountIds);
     const [gmailAccounts, microsoftAccounts, icloudAccounts, outboxIds] =
       await Promise.all([
         ctx.runQuery(internal.sync.internal.listScheduledGmailAccounts, {}),
@@ -856,27 +926,33 @@ export const runScheduledProviderWork = internalAction({
         ctx.runQuery(internal.sync.internal.listRecoverableProviderOutbox, {}),
       ]);
     await Promise.all([
-      ...gmailAccounts.map((account, index) =>
-        ctx.scheduler.runAfter(
-          index * 500,
-          internal.sync.internal.executeGmailSync,
-          { ...account, reason: "incremental" },
+      ...gmailAccounts
+        .filter((account) => !recoveredAccounts.has(account.accountId))
+        .map((account, index) =>
+          ctx.scheduler.runAfter(
+            index * 500,
+            internal.sync.internal.executeGmailSync,
+            { ...account, reason: "incremental" },
+          ),
         ),
-      ),
-      ...microsoftAccounts.map((account, index) =>
-        ctx.scheduler.runAfter(
-          index * 500,
-          internal.sync.internal.executeMicrosoftSync,
-          { ...account, reason: "incremental" },
+      ...microsoftAccounts
+        .filter((account) => !recoveredAccounts.has(account.accountId))
+        .map((account, index) =>
+          ctx.scheduler.runAfter(
+            index * 500,
+            internal.sync.internal.executeMicrosoftSync,
+            { ...account, reason: "incremental" },
+          ),
         ),
-      ),
-      ...icloudAccounts.map((account, index) =>
-        ctx.scheduler.runAfter(
-          index * 500,
-          internal.providers.icloud.sync.synchronize,
-          { ...account, reason: "incremental" },
+      ...icloudAccounts
+        .filter((account) => !recoveredAccounts.has(account.accountId))
+        .map((account, index) =>
+          ctx.scheduler.runAfter(
+            index * 500,
+            internal.providers.icloud.sync.synchronize,
+            { ...account, reason: "incremental" },
+          ),
         ),
-      ),
       ...outboxIds.map((outboxId, index) =>
         ctx.scheduler.runAfter(
           index * 250,

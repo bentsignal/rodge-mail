@@ -93,6 +93,7 @@ export default defineSchema(
       }),
     syncRuns: defineTable(vSyncRun)
       .index("by_account_created", ["accountId", "createdAt"])
+      .index("by_account_status_created", ["accountId", "status", "createdAt"])
       .index("by_status_created", ["status", "createdAt"]),
     providerCredentials: defineTable(vProviderCredential)
       .index("by_account", ["accountId"])
