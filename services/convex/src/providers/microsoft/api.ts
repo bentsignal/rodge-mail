@@ -33,6 +33,8 @@ const MESSAGE_SELECT = [
   "parentFolderId",
   "internetMessageHeaders",
 ].join(",");
+const MESSAGE_EXPAND =
+  "attachments($select=id,name,contentType,size,isInline,contentId)";
 
 export class MicrosoftGraphError extends Error {
   constructor(
@@ -192,8 +194,16 @@ async function collectDelta(accessToken: string, initialUrl: string) {
         deleted.add(message.id);
         continue;
       }
-      messages.set(message.id, normalizeMessage(message));
-      deleted.delete(message.id);
+      const resolved = await resolveDeltaMessage(accessToken, message);
+      if (resolved.kind === "deleted") {
+        messages.delete(message.id);
+        deleted.add(message.id);
+        continue;
+      }
+      if (resolved.kind === "message") {
+        messages.set(message.id, normalizeMessage(resolved.message));
+        deleted.delete(message.id);
+      }
     }
     nextUrl = page["@odata.nextLink"]
       ? validateDeltaUrl(page["@odata.nextLink"])
@@ -208,6 +218,44 @@ async function collectDelta(accessToken: string, initialUrl: string) {
     deletedRemoteMessageIds: [...deleted],
     messages: [...messages.values()],
   };
+}
+
+async function resolveDeltaMessage(
+  accessToken: string,
+  message: GraphMessage,
+): Promise<
+  | { kind: "deleted" }
+  | { kind: "message"; message: GraphMessage }
+  | { kind: "skipped" }
+> {
+  if (isCompleteDeltaMessage(message)) {
+    return { kind: "message", message };
+  }
+  if (!message.id) return { kind: "skipped" };
+
+  try {
+    const hydrated = await graphFetch<GraphMessage>(
+      accessToken,
+      `/me/messages/${encodeURIComponent(message.id)}?$select=${MESSAGE_SELECT}&$expand=${MESSAGE_EXPAND}`,
+    );
+    return isCompleteDeltaMessage(hydrated)
+      ? { kind: "message", message: hydrated }
+      : { kind: "skipped" };
+  } catch (error) {
+    if (error instanceof MicrosoftGraphError && error.status === 404) {
+      return { kind: "deleted" };
+    }
+    throw error;
+  }
+}
+
+function isCompleteDeltaMessage(message: GraphMessage) {
+  return Boolean(
+    message.id &&
+      message.conversationId &&
+      parseDate(message.receivedDateTime) !== undefined &&
+      normalizeAddress(message.from),
+  );
 }
 
 async function listFolders(accessToken: string) {
@@ -447,10 +495,7 @@ function toRecipients(addresses: OutboxPayload["to"]) {
 function initialDeltaUrl() {
   const url = new URL(`${GRAPH_ROOT}/me/mailFolders/inbox/messages/delta`);
   url.searchParams.set("$select", MESSAGE_SELECT);
-  url.searchParams.set(
-    "$expand",
-    "attachments($select=id,name,contentType,size,isInline)",
-  );
+  url.searchParams.set("$expand", MESSAGE_EXPAND);
   url.searchParams.set(
     "$filter",
     `receivedDateTime ge ${new Date(

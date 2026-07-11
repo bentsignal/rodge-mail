@@ -1,3 +1,5 @@
+import type { ThreadSelection } from "../store";
+import type { InboxMessage } from "../types";
 import { LiveMailProvider } from "../live-data";
 import { MailStore, useMailStore } from "../store";
 import { AccountRail } from "./account-rail";
@@ -6,11 +8,20 @@ import { InboxPane } from "./inbox-pane";
 import { MailDataErrorBoundary } from "./mail-data-error-boundary";
 import { ReaderPane } from "./reader-pane";
 
-export function MailShell() {
+export function MailShell({
+  children,
+  initialInbox,
+  initialSelection,
+}: {
+  children?: React.ReactNode;
+  initialInbox: InboxMessage[];
+  initialSelection?: ThreadSelection;
+}) {
   return (
-    <MailStore>
+    <MailStore initialSelection={initialSelection}>
       <MailDataErrorBoundary>
-        <LiveMailProvider>
+        <LiveMailProvider initialInbox={initialInbox}>
+          {children}
           <MailWorkspace />
         </LiveMailProvider>
       </MailDataErrorBoundary>

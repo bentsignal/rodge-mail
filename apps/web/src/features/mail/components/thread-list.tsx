@@ -1,5 +1,9 @@
+import type { LegendListRenderItemProps } from "@legendapp/list/react";
+import { useLayoutEffect, useRef, useState } from "react";
+import { LegendList } from "@legendapp/list/react";
 import { Inbox, LoaderCircle, Sparkles } from "lucide-react";
 
+import type { InboxMessage } from "../types";
 import { useLiveMail } from "../live-data";
 import { useMailStore } from "../store";
 import { ThreadRow } from "./thread-row";
@@ -12,12 +16,17 @@ export function ThreadList() {
     inboxMessages,
     isLoadingInbox,
     isLoadingMore,
+    isSearchingInbox,
     isSeedingDemo,
     loadMore,
     seedDemoMail,
   } = useLiveMail();
 
   if (isLoadingInbox) return <ThreadListSkeleton />;
+
+  if (isSearchingInbox && inboxMessages.length === 0) {
+    return <SearchPendingState />;
+  }
 
   if (inboxMessages.length === 0) {
     return (
@@ -31,17 +40,105 @@ export function ThreadList() {
   }
 
   return (
-    <div className="mail-scrollbar min-h-0 flex-1 overflow-y-auto">
-      {inboxMessages.map((message, index) => (
-        <ThreadRow index={index} key={message._id} message={message} />
-      ))}
-      <ThreadListFooter
-        canLoadMore={canLoadMore}
-        isLoadingMore={isLoadingMore}
-        loadMore={loadMore}
+    <VirtualizedThreadList
+      canLoadMore={canLoadMore}
+      isLoadingMore={isLoadingMore}
+      isSearching={isSearchingInbox}
+      loadMore={loadMore}
+      messages={inboxMessages}
+    />
+  );
+}
+
+function VirtualizedThreadList({
+  canLoadMore,
+  isLoadingMore,
+  isSearching,
+  loadMore,
+  messages,
+}: {
+  canLoadMore: boolean;
+  isLoadingMore: boolean;
+  isSearching: boolean;
+  loadMore: () => void;
+  messages: InboxMessage[];
+}) {
+  const { containerHeight, containerRef } = useListContainerHeight();
+
+  function loadOlderMessages() {
+    if (!canLoadMore || isLoadingMore || isSearching) return;
+    loadMore();
+  }
+
+  return (
+    <div className="min-h-0 flex-1" ref={containerRef}>
+      <LegendList
+        aria-busy={isLoadingMore || isSearching}
+        aria-label="Messages"
+        className="mail-scrollbar"
+        data={messages}
+        keyExtractor={getMessageKey}
+        maintainVisibleContentPosition={true}
+        onEndReached={loadOlderMessages}
+        onEndReachedThreshold={0.75}
+        recycleItems={true}
+        renderItem={renderThreadRow}
+        role="feed"
+        style={{ height: containerHeight }}
+        ListFooterComponent={
+          <ThreadListFooter
+            canLoadMore={canLoadMore}
+            isLoadingMore={isLoadingMore}
+            isSearching={isSearching}
+          />
+        }
       />
     </div>
   );
+}
+
+function SearchPendingState() {
+  return (
+    <div
+      className="flex min-h-0 flex-1 items-center justify-center gap-2 text-[#8e8377]"
+      role="status"
+    >
+      <LoaderCircle className="size-3.5 animate-spin" />
+      <span className="font-mono text-[9px] tracking-[0.12em] uppercase">
+        Searching
+      </span>
+    </div>
+  );
+}
+
+function renderThreadRow({
+  index,
+  item,
+}: LegendListRenderItemProps<InboxMessage>) {
+  return <ThreadRow message={item} position={index + 1} />;
+}
+
+function getMessageKey(message: InboxMessage) {
+  return message._id;
+}
+
+function useListContainerHeight() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerHeight, setContainerHeight] = useState(0);
+
+  useLayoutEffect(() => {
+    const element = containerRef.current;
+    if (!element) return;
+
+    setContainerHeight(element.clientHeight);
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry) setContainerHeight(entry.contentRect.height);
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  return { containerHeight, containerRef };
 }
 
 function EmptyThreadList({
@@ -149,32 +246,23 @@ function ThreadListEnd() {
 function ThreadListFooter({
   canLoadMore,
   isLoadingMore,
-  loadMore,
+  isSearching,
 }: {
   canLoadMore: boolean;
   isLoadingMore: boolean;
-  loadMore: () => void;
+  isSearching: boolean;
 }) {
+  if (isSearching) return <div aria-hidden="true" className="h-6" />;
   if (!canLoadMore && !isLoadingMore) return <ThreadListEnd />;
+  if (!isLoadingMore) return <div aria-hidden="true" className="h-6" />;
   return (
-    <button
-      className="mx-auto my-5 flex h-9 items-center gap-2 rounded-full border border-[#cfc4b5] px-4 font-mono text-[9px] tracking-[0.1em] text-[#776e64] uppercase transition hover:border-[#20251f] hover:text-[#20251f] disabled:cursor-wait dark:border-[#4b5049] dark:text-[#aaa095]"
-      disabled={isLoadingMore}
-      onClick={loadMore}
-      type="button"
+    <div
+      aria-live="polite"
+      className="flex h-16 items-center justify-center gap-2 font-mono text-[9px] tracking-[0.1em] text-[#776e64] uppercase dark:text-[#aaa095]"
+      role="status"
     >
-      <LoadingMoreIcon isLoading={isLoadingMore} />
-      <LoadingMoreLabel isLoading={isLoadingMore} />
-    </button>
+      <LoaderCircle className="size-3 animate-spin" />
+      Loading older mail
+    </div>
   );
-}
-
-function LoadingMoreIcon({ isLoading }: { isLoading: boolean }) {
-  if (!isLoading) return null;
-  return <LoaderCircle className="size-3 animate-spin" />;
-}
-
-function LoadingMoreLabel({ isLoading }: { isLoading: boolean }) {
-  if (isLoading) return "Loading letters";
-  return "Load older mail";
 }

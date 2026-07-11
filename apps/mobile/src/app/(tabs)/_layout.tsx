@@ -3,10 +3,15 @@ import { NativeTabs } from "expo-router/unstable-native-tabs";
 import { useColor } from "~/hooks/use-color";
 
 export default function TabLayout() {
+  const backgroundColor = useColor("background");
   const primary = useColor("primary");
 
   return (
-    <NativeTabs tintColor={primary} minimizeBehavior="onScrollDown">
+    <NativeTabs
+      backgroundColor={backgroundColor}
+      minimizeBehavior="onScrollDown"
+      tintColor={primary}
+    >
       <NativeTabs.Trigger name="(inbox)">
         <NativeTabs.Trigger.Icon
           sf={{ default: "tray", selected: "tray.fill" }}
@@ -14,9 +19,9 @@ export default function TabLayout() {
         />
         <NativeTabs.Trigger.Label>Inbox</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="(search)" role="search">
-        <NativeTabs.Trigger.Icon sf="magnifyingglass" md="search" />
-        <NativeTabs.Trigger.Label>Search</NativeTabs.Trigger.Label>
+      <NativeTabs.Trigger name="(new)">
+        <NativeTabs.Trigger.Icon sf="square.and.pencil" md="edit" />
+        <NativeTabs.Trigger.Label>New</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="(settings)">
         <NativeTabs.Trigger.Icon

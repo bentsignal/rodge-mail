@@ -1,8 +1,9 @@
 import type { LucideIcon } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
 import {
-  Archive,
   ArrowLeft,
   CheckCheck,
+  EyeOff,
   MailOpen,
   MoreHorizontal,
   Pin,
@@ -50,7 +51,9 @@ function ReaderState({
 
 function ReaderContent() {
   const closeMobileReader = useMailStore((store) => store.closeMobileReader);
+  const navigate = useNavigate();
   const {
+    removeFromRodge,
     replyToSelectedThread,
     selectedMessageId,
     selectedThread,
@@ -64,7 +67,11 @@ function ReaderContent() {
   return (
     <>
       <ReaderToolbar
-        closeMobileReader={closeMobileReader}
+        closeMobileReader={() => {
+          closeMobileReader();
+          void navigate({ to: "/" });
+        }}
+        removeFromRodge={removeFromRodge}
         replyToSelectedThread={replyToSelectedThread}
         selectedMessage={selectedMessage}
         togglePinned={togglePinned}
@@ -81,12 +88,14 @@ function ReaderContent() {
 
 function ReaderToolbar({
   closeMobileReader,
+  removeFromRodge,
   replyToSelectedThread,
   selectedMessage,
   togglePinned,
   toggleRead,
 }: {
   closeMobileReader: () => void;
+  removeFromRodge: (message: ThreadMessageDetail) => Promise<void>;
   replyToSelectedThread: () => void;
   selectedMessage: ThreadMessageDetail | undefined;
   togglePinned: (message: ThreadMessageDetail) => Promise<void>;
@@ -103,7 +112,10 @@ function ReaderToolbar({
       <div className="mx-1 h-5 w-px bg-[#ded5c8] lg:hidden dark:bg-[#3f433d]" />
       <PinReaderAction message={selectedMessage} togglePinned={togglePinned} />
       <ReadReaderAction message={selectedMessage} toggleRead={toggleRead} />
-      <ReaderIconButton icon={Archive} label="Archive is not available yet" />
+      <RemoveReaderAction
+        message={selectedMessage}
+        removeFromRodge={removeFromRodge}
+      />
       <div className="mx-1 h-5 w-px bg-[#ded5c8] dark:bg-[#3f433d]" />
       <ReaderIconButton icon={MoreHorizontal} label="More actions" />
       <button
@@ -115,6 +127,22 @@ function ReaderToolbar({
         Reply
       </button>
     </header>
+  );
+}
+
+function RemoveReaderAction({
+  message,
+  removeFromRodge,
+}: {
+  message: ThreadMessageDetail | undefined;
+  removeFromRodge: (message: ThreadMessageDetail) => Promise<void>;
+}) {
+  return (
+    <ReaderIconButton
+      icon={EyeOff}
+      label="Remove from Rodge (provider copy stays unchanged)"
+      onClick={message ? () => void removeFromRodge(message) : undefined}
+    />
   );
 }
 

@@ -1,4 +1,4 @@
-/* eslint-disable complexity, max-lines-per-function, no-restricted-syntax, @typescript-eslint/consistent-type-assertions, @typescript-eslint/no-base-to-string, @typescript-eslint/require-await -- Graph adapter tests model stateful fetch boundaries and representative branded IDs. */
+/* eslint-disable complexity, max-lines, max-lines-per-function, no-restricted-syntax, @typescript-eslint/consistent-type-assertions, @typescript-eslint/no-base-to-string, @typescript-eslint/require-await -- Graph adapter tests model stateful fetch boundaries and representative branded IDs. */
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { Id } from "../../_generated/dataModel";
@@ -247,6 +247,111 @@ describe("Microsoft reply delivery", () => {
   });
 });
 
+describe("Microsoft delta hydration", () => {
+  it("hydrates sparse delta events before normalizing them", async () => {
+    const requestedUrls: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: string | URL | Request) => {
+        const url = String(input);
+        requestedUrls.push(url);
+        if (url.includes("/me/messages/message-1?")) {
+          return jsonResponse(graphMessage("message-1"));
+        }
+        return jsonResponse({
+          "@odata.deltaLink": deltaUrl("next"),
+          value: [{ id: "message-1", isRead: true }],
+        });
+      }),
+    );
+
+    const result = await new MicrosoftGraphAdapter().incrementalSync(
+      "access-token",
+      deltaUrl("current"),
+    );
+
+    expect(result.messages).toHaveLength(1);
+    expect(result.messages[0]).toMatchObject({
+      from: { address: "sender@example.com" },
+      remoteMessageId: "message-1",
+      remoteThreadId: "conversation-1",
+      subject: "A complete message",
+    });
+    expect(requestedUrls[1]).toContain("/me/messages/message-1?$select=");
+    expect(requestedUrls[1]).toContain("&$expand=attachments(");
+  });
+
+  it("treats a sparse event that disappeared during hydration as deleted", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: string | URL | Request) => {
+        const url = String(input);
+        if (url.includes("/me/messages/message-gone?")) {
+          return jsonErrorResponse(404, "ErrorItemNotFound", "Not found");
+        }
+        return jsonResponse({
+          "@odata.deltaLink": deltaUrl("next"),
+          value: [{ id: "message-gone" }],
+        });
+      }),
+    );
+
+    const result = await new MicrosoftGraphAdapter().incrementalSync(
+      "access-token",
+      deltaUrl("current"),
+    );
+
+    expect(result.messages).toEqual([]);
+    expect(result.deletedRemoteMessageIds).toEqual(["message-gone"]);
+  });
+
+  it("skips a hydrated event that still lacks safe message identity", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: string | URL | Request) => {
+        const url = String(input);
+        if (url.includes("/me/messages/message-empty?")) {
+          return jsonResponse({ id: "message-empty" });
+        }
+        return jsonResponse({
+          "@odata.deltaLink": deltaUrl("next"),
+          value: [{ id: "message-empty" }],
+        });
+      }),
+    );
+
+    const result = await new MicrosoftGraphAdapter().incrementalSync(
+      "access-token",
+      deltaUrl("current"),
+    );
+
+    expect(result.messages).toEqual([]);
+    expect(result.deletedRemoteMessageIds).toEqual([]);
+  });
+});
+
+function deltaUrl(token: string) {
+  return `https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages/delta?$deltatoken=${token}`;
+}
+
+function graphMessage(id: string) {
+  return {
+    body: { content: "Full body", contentType: "text" },
+    bodyPreview: "Full body",
+    conversationId: "conversation-1",
+    from: {
+      emailAddress: { address: "sender@example.com", name: "Sender" },
+    },
+    id,
+    isRead: false,
+    receivedDateTime: "2026-07-10T12:00:00.000Z",
+    subject: "A complete message",
+    toRecipients: [
+      { emailAddress: { address: "owner@example.com", name: "Owner" } },
+    ],
+  };
+}
+
 function jsonResponse(value: unknown) {
   return new Response(JSON.stringify(value), {
     headers: { "content-type": "application/json" },
@@ -256,4 +361,11 @@ function jsonResponse(value: unknown) {
 
 function emptyResponse() {
   return new Response(null, { status: 204 });
+}
+
+function jsonErrorResponse(status: number, code: string, message: string) {
+  return new Response(JSON.stringify({ error: { code, message } }), {
+    headers: { "content-type": "application/json" },
+    status,
+  });
 }

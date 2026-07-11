@@ -9,36 +9,26 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { randomUUID } from "expo-crypto";
-import * as Haptics from "expo-haptics";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useMutation } from "convex/react";
-import { Paperclip, Send, X } from "lucide-react-native";
+import { Paperclip } from "lucide-react-native";
 
 import type { ComposerDraft } from "@rodge-mail/features/mail";
-import { api } from "@rodge-mail/convex/api";
-import { getProviderAttachmentError } from "@rodge-mail/convex/attachments/constants";
 
 import type { MobileMailAccount } from "../lib/convex-mail";
 import type { ComposerFieldName } from "./composer-helpers";
 import type { NativeComposerAttachment } from "./use-native-attachments";
-import { useColor } from "~/hooks/use-color";
-import { toConvexId } from "../lib/convex-id";
 import { useMailStore } from "../store";
 import { ComposerAttachmentList } from "./composer-attachment-list";
+import { ComposerHeader } from "./composer-header";
 import {
   canSendFromAccount,
   createComposerDraft,
-  draftCanSend,
-  getComposerErrorMessage,
   getSelectedAccount,
-  parseAddresses,
 } from "./composer-helpers";
 import { ComposerSenderField } from "./composer-sender-field";
-import {
-  getDraftAttachmentIds,
-  useNativeAttachments,
-} from "./use-native-attachments";
+import { useNativeAttachments } from "./use-native-attachments";
+import { useSendMessage } from "./use-send-message";
 
 // eslint-disable-next-line @typescript-eslint/consistent-type-definitions -- Expo Router requires an implicit index signature here.
 type ComposerParams = {
@@ -48,19 +38,19 @@ type ComposerParams = {
   to?: string;
 };
 
-export function ComposerScreen() {
+export function ComposerScreen({
+  variant = "modal",
+}: {
+  variant?: "modal" | "tab";
+}) {
   const params = useLocalSearchParams<ComposerParams>();
   const router = useRouter();
   const accounts = useMailStore((store) => store.accounts);
   const accountFilter = useMailStore((store) => store.accountFilter);
-  const enqueuePlainText = useMutation(api.mail.mutations.enqueuePlainText);
-  const [idempotencyKey] = useState(() => `rodge-native-${randomUUID()}`);
   const [selectedAccountId, setSelectedAccountId] = useState<
     string | undefined
   >(params.accountId);
-  const [isSending, setIsSending] = useState(false);
   const [draft, setDraft] = useState(() => createComposerDraft(params));
-  const canSend = draftCanSend(draft);
   const sendingAccounts = accounts.filter(canSendFromAccount);
   const selectedAccount = getSelectedAccount(
     sendingAccounts,
@@ -72,6 +62,14 @@ export function ComposerScreen() {
     provider: selectedAccount?.provider,
     setDraft,
   });
+  const { canSend, idempotencyKey, send } = useSendMessage({
+    draft,
+    replyToMessageId: params.replyToMessageId,
+    selectedAccount,
+    setDraft,
+    setSelectedAccountId,
+    variant,
+  });
 
   function attach() {
     showAttachmentPicker(attachFiles, attachImages);
@@ -80,85 +78,33 @@ export function ComposerScreen() {
   function setField(field: ComposerFieldName, value: string) {
     setDraft((current) => ({ ...current, [field]: value }));
   }
-  async function send() {
-    if (!canSend || isSending) return;
-    if (draft.attachments.some((attachment) => attachment.status !== "ready")) {
-      Alert.alert(
-        "Attachments are still uploading",
-        "Wait for every file or remove the failed attachment.",
-      );
-      return;
-    }
-    const account = selectedAccount;
-    if (!account) {
-      Alert.alert(
-        "Connect an account first",
-        "Add Gmail, Microsoft 365, or iCloud from Rodge Mail on the web before sending.",
-      );
-      return;
-    }
-    if (!providerAttachmentsCanSend(account.provider, draft.attachments))
-      return;
-    const to = parseAddresses(draft.to);
-    if (to.length === 0) {
-      Alert.alert("Add a recipient", "Enter at least one valid email address.");
-      return;
-    }
-    setIsSending(true);
-    try {
-      await enqueuePlainText({
-        accountId: toConvexId<"mailAccounts">(account.id),
-        idempotencyKey,
-        to,
-        cc: parseAddresses(draft.cc),
-        bcc: parseAddresses(draft.bcc),
-        subject: draft.subject.trim(),
-        plainText: draft.body,
-        replyToMessageId: toReplyMessageId(params.replyToMessageId),
-        attachmentIds: getDraftAttachmentIds(draft.attachments),
-      });
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.back();
-    } catch (error) {
-      setIsSending(false);
-      Alert.alert(
-        "Couldn’t queue this message",
-        getComposerErrorMessage(error),
-      );
-    }
-  }
-
   return (
-    <KeyboardAvoidingView
+    <SafeAreaView
       className="bg-background flex-1"
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      edges={variant === "tab" ? ["top"] : []}
     >
-      <ComposerHeader
-        canSend={canSend && !isSending}
-        onCancel={router.back}
-        onSend={() => void send()}
-      />
-      <ComposerBody
-        accounts={sendingAccounts}
-        draft={draft}
-        onAttach={attach}
-        onChange={setField}
-        onSenderChange={setSelectedAccountId}
-        onRemoveAttachment={(attachment) => void removeAttachment(attachment)}
-        selectedAccountId={selectedAccount?.id}
-      />
-    </KeyboardAvoidingView>
+      <KeyboardAvoidingView
+        className="flex-1"
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <ComposerHeader
+          canSend={canSend}
+          onCancel={variant === "modal" ? router.back : undefined}
+          onSend={() => void send()}
+        />
+        <ComposerBody
+          key={idempotencyKey}
+          accounts={sendingAccounts}
+          draft={draft}
+          onAttach={attach}
+          onChange={setField}
+          onSenderChange={setSelectedAccountId}
+          onRemoveAttachment={(attachment) => void removeAttachment(attachment)}
+          selectedAccountId={selectedAccount?.id}
+        />
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
-}
-
-function providerAttachmentsCanSend(
-  provider: MobileMailAccount["provider"],
-  attachments: NativeComposerAttachment[],
-) {
-  const error = getProviderAttachmentError(provider, attachments);
-  if (!error) return true;
-  Alert.alert("Attachment unavailable", error);
-  return false;
 }
 
 function showAttachmentPicker(
@@ -170,10 +116,6 @@ function showAttachmentPicker(
     { text: "Files", onPress: () => void attachFiles() },
     { text: "Cancel", style: "cancel" },
   ]);
-}
-
-function toReplyMessageId(messageId: string | undefined) {
-  return messageId ? toConvexId<"messages">(messageId) : undefined;
 }
 
 function ComposerBody({
@@ -254,44 +196,6 @@ function ComposerBody({
         <Text className="text-foreground font-semibold">Attach</Text>
       </Pressable>
     </ScrollView>
-  );
-}
-
-function ComposerHeader({
-  canSend,
-  onCancel,
-  onSend,
-}: {
-  canSend: boolean;
-  onCancel: () => void;
-  onSend: () => void;
-}) {
-  const foreground = useColor("foreground");
-
-  return (
-    <View className="border-border flex-row items-center justify-between border-b px-4 py-3">
-      <Pressable
-        accessibilityLabel="Close composer"
-        accessibilityRole="button"
-        className="p-2"
-        hitSlop={10}
-        onPress={onCancel}
-      >
-        <X color={foreground} size={22} />
-      </Pressable>
-      <Text className="text-foreground text-lg font-bold">New message</Text>
-      <Pressable
-        accessibilityLabel="Send email"
-        accessibilityRole="button"
-        accessibilityState={{ disabled: !canSend }}
-        className="p-2"
-        disabled={!canSend}
-        hitSlop={10}
-        onPress={onSend}
-      >
-        <Send color={foreground} opacity={canSend ? 1 : 0.3} size={21} />
-      </Pressable>
-    </View>
   );
 }
 

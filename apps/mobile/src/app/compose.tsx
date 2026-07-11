@@ -1,5 +1,5 @@
 import { ComposerScreen } from "~/features/mail/screens/composer-screen";
 
-export default function Compose() {
+export default function NewMessage() {
   return <ComposerScreen />;
 }

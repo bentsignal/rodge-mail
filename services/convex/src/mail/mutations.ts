@@ -3,6 +3,7 @@ import { ConvexError, v } from "convex/values";
 import type { Doc } from "../_generated/dataModel";
 import type { AuthedMutationCtx } from "../utils";
 import { internal } from "../_generated/api";
+import { deleteEmbeddingRecords } from "../embedding/storage";
 import { authedMutation } from "../utils";
 import {
   ensureOwnedAccount,
@@ -131,6 +132,33 @@ export const setThreadRead = authedMutation({
         return update ? [update] : [];
       }),
     ]);
+  },
+});
+
+export const removeThreadFromRodge = authedMutation({
+  args: { threadId: v.id("threads") },
+  handler: async (ctx, args) => {
+    const thread = await ensureOwnedThread(ctx, ctx.ownerId, args.threadId);
+    const messages = await ctx.db
+      .query("messages")
+      .withIndex("by_thread_received", (q) => q.eq("threadId", thread._id))
+      .collect();
+    const now = Date.now();
+
+    await Promise.all([
+      ...messages.map(async (message) => {
+        await ctx.db.patch(message._id, {
+          hiddenAt: now,
+          inInbox: false,
+          isPinned: false,
+          updatedAt: now,
+        });
+        await deleteEmbeddingRecords(ctx, message._id);
+      }),
+      ctx.db.patch(thread._id, { unreadCount: 0, updatedAt: now }),
+    ]);
+
+    return { removedMessages: messages.length };
   },
 });
 

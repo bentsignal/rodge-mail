@@ -15,7 +15,7 @@ export type ClassificationCategory =
 
 export type ClassificationBucket = "focused" | "other";
 
-export type EmbeddingReason = "focused" | "pinned" | "selected";
+export type EmbeddingReason = "focused" | "inbox" | "pinned" | "selected";
 
 export interface ClassificationSignal {
   code: string;

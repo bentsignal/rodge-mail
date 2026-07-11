@@ -9,7 +9,7 @@ import type {
 
 export type MailAccountFilter = "all" | Id<"mailAccounts">;
 
-interface ThreadSelection {
+export interface ThreadSelection {
   messageId: Id<"messages">;
   threadId: Id<"threads">;
 }
@@ -136,12 +136,18 @@ function createIdempotencyKey() {
   return `rodge-web-${crypto.randomUUID()}`;
 }
 
-function useInternalStore() {
+function useInternalStore({
+  initialSelection,
+}: {
+  initialSelection?: ThreadSelection;
+}) {
   const [accountFilter, setAccountFilterState] =
     useState<MailAccountFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [selection, setSelection] = useState<ThreadSelection>();
-  const [mobileReaderIsOpen, setMobileReaderIsOpen] = useState(false);
+  const [selection, setSelection] = useState(initialSelection);
+  const [mobileReaderIsOpen, setMobileReaderIsOpen] = useState(
+    initialSelection !== undefined,
+  );
   const composer = useComposerState();
 
   function resetSelection() {
@@ -162,6 +168,7 @@ function useInternalStore() {
   return {
     ...composer,
     accountFilter,
+    clearSelection: resetSelection,
     closeMobileReader: () => setMobileReaderIsOpen(false),
     mobileReaderIsOpen,
     searchQuery,

@@ -116,6 +116,7 @@ export const vMessage = v.object({
   receivedAt: v.number(),
   hasAttachments: v.boolean(),
   inInbox: v.boolean(),
+  hiddenAt: v.optional(v.number()),
   isRead: v.boolean(),
   isPinned: v.boolean(),
   focusBucket: v.optional(vFocusBucket),

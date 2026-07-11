@@ -5,6 +5,7 @@ import type { Id } from "../_generated/dataModel";
 import { stableHash } from "../classification/normalize";
 import { createEmbedding, isAiConfigured } from "../classification/openai";
 import { rateLimiter } from "../limiter";
+import { parseMailSearch } from "../mail/search";
 import { authedAction } from "../utils";
 
 interface ScopeArgs extends Record<string, unknown> {
@@ -18,7 +19,11 @@ interface ScoredEmbedding {
 }
 
 interface HydrateArgs extends ScopeArgs {
+  after?: number;
+  before?: number;
   matches: ScoredEmbedding[];
+  sender?: string;
+  subject?: string;
 }
 
 interface SearchResult {
@@ -48,8 +53,8 @@ export const semanticSearch = authedAction({
     }),
   ),
   handler: async (ctx, args) => {
-    const searchTerm = args.searchTerm.trim().slice(0, 500);
-    if (!searchTerm) return [];
+    const searchPlan = parseMailSearch(args.searchTerm.slice(0, 500));
+    if (!searchPlan.lexicalQuery) return [];
     const ownsScope = await ctx.runQuery(VALIDATE_SCOPE, {
       ownerId: ctx.ownerId,
       accountId: args.accountId,
@@ -63,8 +68,8 @@ export const semanticSearch = authedAction({
     if (!limited.ok)
       throw new ConvexError("Semantic search rate limit exceeded");
     const vector = await createEmbedding(
-      searchTerm,
-      `search:${ctx.ownerId}:${stableHash(searchTerm)}`,
+      searchPlan.lexicalQuery,
+      `search:${ctx.ownerId}:${stableHash(searchPlan.lexicalQuery)}`,
     );
     const matches = await ctx.vectorSearch(
       "messageEmbeddings",
@@ -72,12 +77,19 @@ export const semanticSearch = authedAction({
       {
         vector,
         limit: Math.max(1, Math.min(50, Math.floor(args.limit ?? 16))),
-        filter: (q) => q.eq("ownerId", ctx.ownerId),
+        filter: (q) =>
+          args.accountId
+            ? q.eq("accountId", args.accountId)
+            : q.eq("ownerId", ctx.ownerId),
       },
     );
     return await ctx.runQuery(HYDRATE_RESULTS, {
       ownerId: ctx.ownerId,
       accountId: args.accountId,
+      after: searchPlan.after,
+      before: searchPlan.before,
+      sender: searchPlan.sender,
+      subject: searchPlan.subject,
       matches: matches.map((match) => ({
         embeddingId: match._id,
         score: match._score,

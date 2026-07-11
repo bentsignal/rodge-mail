@@ -12,6 +12,11 @@ import {
   internalQuery,
 } from "../_generated/server";
 import {
+  queueEmbeddingForMessage,
+  reconcileEmbeddingSelection,
+} from "../embedding/internal";
+import { createMessageSearchText } from "../mail/search";
+import {
   vEncryptedEnvelope,
   vMailboxAddress,
   vMailFolderKind,
@@ -19,6 +24,8 @@ import {
   vMessageHeader,
   vSyncReason,
 } from "../mail/validators";
+import { queueNewMailNotification } from "../notifications/internal";
+import { shouldNotifyForProviderMessage } from "../notifications/policy";
 import { GmailAdapter, GmailApiError } from "../providers/gmail/api";
 import { getUsableGmailTokens } from "../providers/gmail/tokenAccess";
 import {
@@ -442,6 +449,12 @@ export const executeGmailSync = internalAction({
           ownerId: args.ownerId,
           accountId: args.accountId,
           message,
+          notifyNewMail: shouldNotifyForProviderMessage({
+            fullSync,
+            now: Date.now(),
+            reason: args.reason,
+            receivedAt: message.receivedAt,
+          }),
         });
       }
       const deletedRemoteMessageIds = new Set([
@@ -554,6 +567,12 @@ export const executeMicrosoftSync = internalAction({
           ownerId: args.ownerId,
           accountId: args.accountId,
           message,
+          notifyNewMail: shouldNotifyForProviderMessage({
+            fullSync,
+            now: Date.now(),
+            reason: args.reason,
+            receivedAt: message.receivedAt,
+          }),
         });
       }
       const deletedRemoteMessageIds = new Set([
@@ -932,6 +951,7 @@ export const upsertProviderMessage = internalMutation({
     ownerId: v.string(),
     accountId: v.id("mailAccounts"),
     message: vNormalizedMessage,
+    notifyNewMail: v.boolean(),
   },
   handler: async (ctx, args) => {
     const account = await ensureInternalOwnedAccount(
@@ -980,6 +1000,7 @@ export const upsertProviderMessage = internalMutation({
           .eq("remoteMessageId", message.remoteMessageId),
       )
       .unique();
+    const inInbox = existing?.hiddenAt ? false : message.inInbox;
     const messageFields = {
       ownerId: args.ownerId,
       accountId: args.accountId,
@@ -994,7 +1015,15 @@ export const upsertProviderMessage = internalMutation({
       bcc: message.bcc,
       subject: message.subject,
       snippet: message.snippet,
-      searchText: createProviderSearchText(message, account.address),
+      searchText: createMessageSearchText({
+        accountAddress: account.address,
+        body: message.plainText,
+        cc: message.cc,
+        from: message.from,
+        snippet: message.snippet,
+        subject: message.subject,
+        to: message.to,
+      }),
       headers: message.headers,
       remoteLabelIds: message.remoteLabelIds,
       bodyState: message.plainText
@@ -1003,7 +1032,7 @@ export const upsertProviderMessage = internalMutation({
       sentAt: message.sentAt,
       receivedAt: message.receivedAt,
       hasAttachments: message.hasAttachments,
-      inInbox: message.inInbox,
+      inInbox,
       isRead: message.isRead,
       updatedAt: now,
     };
@@ -1032,7 +1061,27 @@ export const upsertProviderMessage = internalMutation({
       message.attachments,
       now,
     );
+    if (inInbox) {
+      await queueEmbeddingForMessage(ctx, {
+        ownerId: args.ownerId,
+        messageId,
+        reason: "inbox",
+      });
+    } else {
+      await reconcileEmbeddingSelection(ctx, messageId);
+    }
     await recalculateThread(ctx, thread._id);
+    if (
+      args.notifyNewMail &&
+      !existing &&
+      message.direction === "incoming" &&
+      message.inInbox
+    ) {
+      await queueNewMailNotification(ctx, {
+        ownerId: args.ownerId,
+        messageId,
+      });
+    }
   },
 });
 
@@ -1465,24 +1514,6 @@ function uniqueAddresses(addresses: { address: string; name?: string }[]) {
       addresses.map((address) => [address.address.toLowerCase(), address]),
     ).values(),
   ];
-}
-
-function createProviderSearchText(
-  message: NormalizedMessage,
-  accountAddress: string,
-) {
-  return [
-    message.from.name,
-    message.from.address,
-    ...message.to.flatMap((address) => [address.name, address.address]),
-    ...message.cc.flatMap((address) => [address.name, address.address]),
-    accountAddress,
-    message.subject,
-    message.snippet,
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
 }
 
 function safeErrorMessage(error: unknown) {

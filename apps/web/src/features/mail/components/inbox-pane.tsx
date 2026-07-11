@@ -2,6 +2,7 @@ import { PenLine, Search, X } from "lucide-react";
 
 import { cn } from "@rodge-mail/std/cn";
 
+import type { MailAccountView } from "../types";
 import { useLiveMail } from "../live-data";
 import { useMailStore } from "../store";
 import { ThreadList } from "./thread-list";
@@ -34,29 +35,27 @@ function InboxHeader() {
 
   return (
     <header className="border-border/70 bg-card/80 shrink-0 border-b px-4 pt-4 pb-3.5 sm:px-5 sm:pt-5">
-      <div className="mb-4 flex items-start justify-between gap-4">
-        <div>
+      <div className="mb-4 flex items-end justify-between gap-4">
+        <div className="min-w-0">
           <div className="flex items-center gap-2.5">
             <MobileBrand />
             <p className="font-mono text-[9px] tracking-[0.18em] text-[#8c8174] uppercase">
-              {currentAccount?.label ?? "All accounts"}
+              {getMailboxContextLabel(currentAccount)}
             </p>
           </div>
-          <div className="mt-1 flex items-baseline gap-2">
-            <h1 className="font-serif text-[28px] leading-none font-semibold tracking-[-0.035em] sm:text-[31px]">
+          <div className="mt-1.5 flex items-end gap-2.5">
+            <h1 className="font-serif text-[32px] leading-none font-semibold tracking-[-0.04em] sm:text-[35px]">
               Inbox
             </h1>
-            <span className="font-mono text-[10px] text-[#9b8e80] tabular-nums">
-              <InboxCount
-                count={inboxMessages.length}
-                isLoading={isLoadingInbox}
-              />
-            </span>
+            <InboxCount
+              count={inboxMessages.length}
+              isLoading={isLoadingInbox}
+            />
           </div>
         </div>
         <button
-          aria-label="Compose message"
-          className="flex size-10 items-center justify-center rounded-full bg-[#20251f] text-[#f8f1e6] shadow-md transition hover:-translate-y-0.5 hover:bg-[#30362f] md:hidden"
+          aria-label="New message"
+          className="flex size-10 items-center justify-center rounded-full bg-[#20251f] text-[#f8f1e6] shadow-md transition-colors hover:bg-[#30362f] md:hidden"
           onClick={openComposer}
           type="button"
         >
@@ -77,8 +76,35 @@ function InboxCount({
   count: number;
   isLoading: boolean;
 }) {
+  return (
+    <span
+      aria-label={isLoading ? "Loading messages" : `${count} messages shown`}
+      className="mb-0.5 flex items-baseline gap-1 rounded-full bg-[#e9e1d5] px-2 py-1 font-mono text-[#8e8174] dark:bg-white/[0.05] dark:text-[#aaa095]"
+    >
+      <span className="text-[10px] font-semibold tabular-nums">
+        <InboxCountValue count={count} isLoading={isLoading} />
+      </span>
+      <span className="text-[7px] tracking-[0.1em] uppercase">shown</span>
+    </span>
+  );
+}
+
+function InboxCountValue({
+  count,
+  isLoading,
+}: {
+  count: number;
+  isLoading: boolean;
+}) {
   if (isLoading) return "··";
-  return count.toString().padStart(2, "0");
+  return count;
+}
+
+function getMailboxContextLabel(account: MailAccountView | undefined) {
+  if (!account) return "Unified inbox";
+  if (account.provider === "gmail") return "Gmail account";
+  if (account.provider === "icloud") return "iCloud account";
+  return "Microsoft 365 account";
 }
 
 function SearchInput() {

@@ -49,6 +49,13 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
     plugins: [
       "expo-router",
+      [
+        "expo-notifications",
+        {
+          color: "#20251f",
+          defaultChannel: "new-mail",
+        },
+      ],
       "expo-secure-store",
       "expo-web-browser",
       "expo-system-ui",

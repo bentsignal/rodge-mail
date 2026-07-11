@@ -1,5 +1,13 @@
 import type { LucideIcon } from "lucide-react";
-import { BriefcaseBusiness, Cloud, Inbox, Mail, PenLine } from "lucide-react";
+import {
+  AlertCircle,
+  BriefcaseBusiness,
+  Cloud,
+  Inbox,
+  Mail,
+  PenLine,
+  RefreshCw,
+} from "lucide-react";
 
 import { cn } from "@rodge-mail/std/cn";
 
@@ -9,7 +17,7 @@ import { SignOutLink } from "~/features/auth/components/sign-out-link";
 import { ThemeToggle } from "~/features/theme/components/theme-toggle";
 import { useLiveMail } from "../live-data";
 import { useMailStore } from "../store";
-import { ProviderConnectionButtons } from "./provider-connection-buttons";
+import { AddAccountButton } from "./provider-connection-buttons";
 
 const ACCOUNT_ICONS = {
   gmail: Mail,
@@ -21,21 +29,25 @@ export function AccountRail() {
   const accountFilter = useMailStore((store) => store.accountFilter);
   const setAccountFilter = useMailStore((store) => store.setAccountFilter);
   const openComposer = useMailStore((store) => store.openComposer);
-  const { accounts, isLoadingAccounts, unreadCounts } = useLiveMail();
+  const {
+    accounts,
+    isLoadingAccounts,
+    isSyncingAccounts,
+    syncAllAccounts,
+    unreadCounts,
+  } = useLiveMail();
 
   return (
     <aside className="relative z-10 hidden h-full w-[82px] shrink-0 flex-col px-2.5 py-4 md:flex xl:w-[244px] xl:px-4">
       <Brand />
       <button
-        className="group mt-8 flex h-11 items-center justify-center gap-2.5 rounded-xl bg-[#20251f] px-3 text-sm font-semibold text-[#f7f1e6] shadow-[0_8px_24px_rgba(32,37,31,0.16)] transition hover:-translate-y-0.5 hover:bg-[#2c332b] xl:justify-start xl:px-4"
+        aria-label="New message"
+        className="mt-8 flex h-11 items-center justify-center gap-2.5 rounded-xl bg-[#20251f] px-3 text-sm font-semibold text-[#f7f1e6] shadow-[0_8px_24px_rgba(32,37,31,0.14)] transition-colors hover:bg-[#2c332b] xl:justify-start xl:px-4"
         onClick={openComposer}
         type="button"
       >
-        <PenLine className="size-[17px] transition-transform group-hover:-rotate-3" />
-        <span className="hidden xl:inline">Compose</span>
-        <kbd className="ml-auto hidden rounded border border-white/15 px-1.5 py-0.5 font-mono text-[9px] font-normal text-white/55 xl:block">
-          C
-        </kbd>
+        <PenLine className="size-[17px]" />
+        <span className="hidden xl:inline">New</span>
       </button>
 
       <nav aria-label="Mail accounts" className="mt-8 space-y-1.5">
@@ -62,29 +74,82 @@ export function AccountRail() {
           );
         })}
         <AccountLoadingState isLoading={isLoadingAccounts} />
-        <ProviderConnectionButtons accounts={accounts} />
+        <AddAccountButton accounts={accounts} />
+        <SyncAllButton
+          accounts={accounts}
+          isSyncing={isSyncingAccounts}
+          onSync={syncAllAccounts}
+        />
       </nav>
 
       <div className="mt-auto space-y-1.5">
-        <div className="hidden px-3 pb-3 xl:block">
-          <p className="font-mono text-[9px] tracking-[0.18em] text-[#897d6f] uppercase">
-            All systems quiet
-          </p>
-          <p className="mt-1 text-xs text-[#6e665d] dark:text-[#a89f94]">
-            {getSyncLabel(accounts)}
-          </p>
-        </div>
         <div className="border-border/80 mx-3 mb-3 border-t" />
         <PasskeyManagementButton />
-        <div className="flex justify-center xl:justify-start xl:px-2">
-          <ThemeToggle />
-        </div>
-        <div className="hidden px-1 xl:block">
-          <SignOutLink />
-        </div>
+        <ThemeToggle />
+        <SignOutLink />
       </div>
     </aside>
   );
+}
+
+function SyncAllButton({
+  accounts,
+  isSyncing,
+  onSync,
+}: {
+  accounts: MailAccountView[];
+  isSyncing: boolean;
+  onSync: () => Promise<void>;
+}) {
+  const failedAccounts = accounts.filter(
+    (account) => account.status === "error" || account.lastSyncError,
+  );
+  const state = getSyncButtonState(isSyncing, failedAccounts.length);
+  const Icon = state === "failed" ? AlertCircle : RefreshCw;
+  const label = getSyncButtonLabel(state, failedAccounts.length);
+
+  return (
+    <button
+      aria-label={label}
+      className={cn(
+        "group flex h-10 w-full items-center justify-center gap-3 rounded-xl px-3 text-xs transition-colors xl:justify-start",
+        state === "failed"
+          ? "text-[#b95d41] hover:bg-[#b95d41]/8 dark:text-[#e58b6d]"
+          : "text-[#756c62] hover:bg-black/[0.035] hover:text-[#20251f] dark:text-[#aaa195] dark:hover:bg-white/[0.05] dark:hover:text-[#f8f1e6]",
+      )}
+      disabled={accounts.length === 0 || isSyncing}
+      onClick={() => void onSync()}
+      title={failedAccounts[0]?.lastSyncError ?? label}
+      type="button"
+    >
+      <Icon className={cn("size-[17px]", isSyncing && "animate-spin")} />
+      <span className="hidden truncate xl:block">
+        <SyncButtonText state={state} />
+      </span>
+    </button>
+  );
+}
+
+type SyncButtonState = "failed" | "idle" | "syncing";
+
+function getSyncButtonState(isSyncing: boolean, failedCount: number) {
+  if (isSyncing) return "syncing";
+  if (failedCount > 0) return "failed";
+  return "idle";
+}
+
+function getSyncButtonLabel(state: SyncButtonState, failedCount: number) {
+  if (state === "syncing") return "Syncing accounts";
+  if (state === "failed") {
+    return `Retry sync for ${failedCount} account${failedCount === 1 ? "" : "s"}`;
+  }
+  return "Sync all accounts";
+}
+
+function SyncButtonText({ state }: { state: SyncButtonState }) {
+  if (state === "syncing") return <>Syncing…</>;
+  if (state === "failed") return <>Retry sync</>;
+  return <>Sync all</>;
 }
 
 function Brand() {
@@ -97,9 +162,6 @@ function Brand() {
       <div className="hidden min-w-0 xl:block">
         <p className="font-serif text-[17px] leading-5 font-semibold tracking-[-0.02em]">
           Rodge Mail
-        </p>
-        <p className="font-mono text-[8px] tracking-[0.18em] text-[#897d6f] uppercase">
-          Personal dispatch
         </p>
       </div>
     </div>
@@ -123,9 +185,10 @@ function AccountButton({
 }) {
   return (
     <button
+      aria-label={label}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "group relative flex h-11 w-full items-center justify-center gap-3 rounded-xl px-3 text-sm transition xl:justify-start",
+        "group relative flex h-11 w-full items-center justify-center gap-3 rounded-xl px-3 text-sm transition-colors xl:justify-start",
         active
           ? "bg-[#e8e0d2] text-[#20251f] shadow-[inset_0_0_0_1px_rgba(82,67,48,0.06)] dark:bg-[#343832] dark:text-[#f8f1e6]"
           : "text-[#6e665d] hover:bg-black/[0.035] hover:text-[#20251f] dark:text-[#aaa195] dark:hover:bg-white/[0.05] dark:hover:text-[#f8f1e6]",
@@ -191,21 +254,4 @@ function AccountSkeletons() {
 function AccountLoadingState({ isLoading }: { isLoading: boolean }) {
   if (!isLoading) return null;
   return <AccountSkeletons />;
-}
-
-function getSyncLabel(accounts: MailAccountView[]) {
-  if (accounts.length === 0) return "Waiting for an account";
-  if (accounts.some((account) => account.status === "syncing")) {
-    return "Syncing mail…";
-  }
-  if (accounts.some((account) => account.status === "error")) {
-    return "One account needs attention";
-  }
-  const latestSync = Math.max(
-    ...accounts.map((account) => account.lastSyncedAt ?? 0),
-  );
-  if (latestSync === 0) return "Waiting for first sync";
-  return `Last sync ${new Intl.RelativeTimeFormat(undefined, {
-    numeric: "auto",
-  }).format(Math.round((latestSync - Date.now()) / 60_000), "minute")}`;
 }

@@ -74,3 +74,56 @@ export const syncICloudNow = authedMutation({
     );
   },
 });
+
+export const syncAllNow = authedMutation({
+  args: {},
+  handler: async (ctx) => {
+    const accounts = await ctx.db
+      .query("mailAccounts")
+      .withIndex("by_owner", (q) => q.eq("ownerId", ctx.ownerId))
+      .collect();
+    const syncable = accounts.filter(
+      (account) =>
+        !account.isDemo &&
+        account.status !== "disconnected" &&
+        account.status !== "reauthorization_required",
+    );
+
+    await Promise.all(
+      syncable.map(async (account, index) => {
+        const args = {
+          ownerId: ctx.ownerId,
+          accountId: account._id,
+          reason: "manual" as const,
+        };
+        const delay = index * 100;
+        if (account.provider === "gmail") {
+          await ctx.scheduler.runAfter(
+            delay,
+            internal.sync.internal.executeGmailSync,
+            args,
+          );
+          return;
+        }
+        if (account.provider === "microsoft") {
+          await ctx.scheduler.runAfter(
+            delay,
+            internal.sync.internal.executeMicrosoftSync,
+            args,
+          );
+          return;
+        }
+        await ctx.scheduler.runAfter(
+          delay,
+          internal.providers.icloud.sync.synchronize,
+          args,
+        );
+      }),
+    );
+
+    return {
+      scheduled: syncable.length,
+      skipped: accounts.length - syncable.length,
+    };
+  },
+});

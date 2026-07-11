@@ -243,6 +243,7 @@ export async function reconcileEmbeddingSelection(
   if (!message) return;
   const plan = embeddingSelectionPlan({
     clearSelected,
+    inInbox: message.inInbox,
     isPinned: message.isPinned,
     bucket: classification?.bucket,
     jobReason: job?.reason,

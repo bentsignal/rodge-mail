@@ -1,75 +1,109 @@
-import { Paperclip, Pin } from "lucide-react";
+import { EyeOff, Paperclip, Pin } from "lucide-react";
 
 import { cn } from "@rodge-mail/std/cn";
+import * as ContextMenu from "@rodge-mail/ui-web/context-menu";
 
 import type { InboxMessage, MailAccountView } from "../types";
+import { QuickLink } from "~/components/quick-link";
 import { formatInboxDate, getInitials } from "../format";
 import { useLiveMail } from "../live-data";
 
 export function ThreadRow({
-  index,
   message,
+  position,
 }: {
-  index: number;
   message: InboxMessage;
+  position: number;
 }) {
-  const { accounts, selectMessage, selectedMessageId, togglePinned } =
-    useLiveMail();
+  const {
+    accounts,
+    removeFromRodge,
+    selectMessage,
+    selectedMessageId,
+    togglePinned,
+  } = useLiveMail();
   const account = accounts.find((item) => item._id === message.accountId);
   const isSelected = selectedMessageId === message._id;
   const senderName = getSenderName(message);
+  const pinLabel = message.isPinned ? "Unpin message" : "Pin message";
+  const preview = message.classification?.summary ?? message.snippet;
 
   return (
-    <article
-      className={cn(
-        "group relative border-b border-[#e2dacd] transition dark:border-[#373b35]",
-        isSelected
-          ? "bg-[#f0e9dc] dark:bg-[#30342e]"
-          : "hover:bg-[#faf7f0] dark:hover:bg-white/[0.025]",
-      )}
-      style={{ animationDelay: `${Math.min(index * 34, 220)}ms` }}
-    >
-      <SelectedMarker selected={isSelected} />
-      <button
-        className="w-full px-4 py-4 pr-12 text-left sm:px-5"
-        onClick={() => selectMessage(message)}
-        type="button"
+    <ContextMenu.Container>
+      <article
+        aria-posinset={position}
+        aria-setsize={-1}
+        className={cn(
+          "group relative border-b border-[#e2dacd] transition-colors dark:border-[#373b35]",
+          isSelected
+            ? "bg-[#f0e9dc] dark:bg-[#30342e]"
+            : "hover:bg-[#faf7f0] dark:hover:bg-white/[0.025]",
+        )}
       >
-        <div className="flex items-start gap-3">
-          <SenderAvatar account={account} name={senderName} />
-          <div className="min-w-0 flex-1">
-            <div className="flex items-baseline gap-2">
-              <p
-                className={cn(
-                  "min-w-0 flex-1 truncate text-[13px]",
-                  message.isRead ? "font-medium" : "font-bold text-[#1f241f]",
-                )}
-              >
-                {senderName}
-              </p>
-              <time className="shrink-0 font-mono text-[9px] text-[#978b7e] tabular-nums">
-                {formatInboxDate(new Date(message.receivedAt).toISOString())}
-              </time>
+        <SelectedMarker selected={isSelected} />
+        <ContextMenu.Trigger asChild>
+          <QuickLink
+            className="w-full px-4 py-4 pr-12 text-left sm:px-5"
+            onClick={() => selectMessage(message)}
+            params={{ messageId: message._id }}
+            preload="intent"
+            to="/messages/$messageId"
+          >
+            <div className="flex items-start gap-3">
+              <SenderAvatar account={account} name={senderName} />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-baseline gap-2">
+                  <p
+                    className={cn(
+                      "min-w-0 flex-1 truncate text-[13px]",
+                      message.isRead
+                        ? "font-medium"
+                        : "font-bold text-[#1f241f]",
+                    )}
+                  >
+                    {senderName}
+                  </p>
+                  <time className="shrink-0 font-mono text-[9px] text-[#978b7e] tabular-nums">
+                    {formatInboxDate(
+                      new Date(message.receivedAt).toISOString(),
+                    )}
+                  </time>
+                </div>
+                <p
+                  className={cn(
+                    "mt-1 truncate font-serif text-[16px] leading-5 tracking-[-0.01em]",
+                    message.isRead
+                      ? "text-[#514b44] dark:text-[#cec6ba]"
+                      : "font-semibold",
+                  )}
+                >
+                  {message.subject}
+                </p>
+                <p className="mt-1 line-clamp-2 text-[12px] leading-[1.55] text-[#81766a] dark:text-[#aaa095]">
+                  {preview}
+                </p>
+                <ThreadMetadata message={message} />
+              </div>
             </div>
-            <p
-              className={cn(
-                "mt-1 truncate font-serif text-[16px] leading-5 tracking-[-0.01em]",
-                message.isRead
-                  ? "text-[#514b44] dark:text-[#cec6ba]"
-                  : "font-semibold",
-              )}
-            >
-              {message.subject}
-            </p>
-            <p className="mt-1 line-clamp-2 text-[12px] leading-[1.55] text-[#81766a] dark:text-[#aaa095]">
-              {message.classification?.summary ?? message.snippet}
-            </p>
-            <ThreadMetadata message={message} />
-          </div>
-        </div>
-      </button>
-      <PinMessageButton message={message} togglePinned={togglePinned} />
-    </article>
+          </QuickLink>
+        </ContextMenu.Trigger>
+        <PinMessageButton message={message} togglePinned={togglePinned} />
+        <ContextMenu.Content>
+          <ContextMenu.Item onSelect={() => void togglePinned(message)}>
+            <Pin className="size-3.5" />
+            {pinLabel}
+          </ContextMenu.Item>
+          <ContextMenu.Separator />
+          <ContextMenu.Item
+            className="text-[#ad533a] dark:text-[#e58b6d]"
+            onSelect={() => void removeFromRodge(message)}
+          >
+            <EyeOff className="size-3.5" />
+            Remove from Rodge
+          </ContextMenu.Item>
+        </ContextMenu.Content>
+      </article>
+    </ContextMenu.Container>
   );
 }
 

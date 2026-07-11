@@ -1,3 +1,6 @@
+import type { ConvexReactClient } from "convex/react";
+// eslint-disable-next-line no-restricted-imports -- Convex requires a stable auth hook and token callback across renders.
+import { useCallback, useMemo, useRef, useState } from "react";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import { QueryClientProvider } from "@tanstack/react-query";
 import {
@@ -9,7 +12,7 @@ import {
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { createServerFn } from "@tanstack/react-start";
 import { getCookie } from "@tanstack/react-start/server";
-import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
+import { ConvexProviderWithAuth } from "convex/react";
 import { convert } from "great-time";
 
 import { createPageTitle } from "@rodge-mail/config/title";
@@ -20,7 +23,6 @@ import type { RouterContext } from "~/router";
 import appStyles from "~/app/styles.css?url";
 import { env } from "~/env";
 import { getAuth } from "~/features/auth/lib/auth.functions";
-import { authClient } from "~/features/auth/lib/client";
 import { AuthStore } from "~/features/auth/store";
 import { ThemeStore } from "~/features/theme/store";
 import { getTheme } from "~/features/theme/utils";
@@ -115,15 +117,13 @@ function RootComponent() {
           "bg-background text-foreground min-h-screen font-sans antialiased",
         )}
       >
-        <ConvexBetterAuthProvider
+        <ServerTokenConvexProvider
           client={context.convex}
-          authClient={authClient}
           initialToken={context.token}
         >
           <QueryClientProvider client={context.queryClient}>
             <ThemeStore
               attribute="class"
-              defaultTheme="light"
               disableTransitionOnChange
               initialTheme={context.theme}
             >
@@ -146,9 +146,60 @@ function RootComponent() {
             </ThemeStore>
             <Scripts />
           </QueryClientProvider>
-        </ConvexBetterAuthProvider>
+        </ServerTokenConvexProvider>
       </body>
     </html>
+  );
+}
+
+function ServerTokenConvexProvider({
+  children,
+  client,
+  initialToken,
+}: {
+  children: React.ReactNode;
+  client: ConvexReactClient;
+  initialToken: string | null;
+}) {
+  const useServerTokenAuth = useMemo(
+    () =>
+      function useServerTokenAuth() {
+        const [token, setToken] = useState(initialToken);
+        const pendingToken = useRef<Promise<string | null>>(undefined);
+
+        const fetchAccessToken = useCallback(
+          async ({ forceRefreshToken = false } = {}) => {
+            if (token && !forceRefreshToken) return token;
+            let refresh = pendingToken.current;
+            if (!refresh) {
+              refresh = getAuthToken().finally(() => {
+                pendingToken.current = undefined;
+              });
+              pendingToken.current = refresh;
+            }
+            const refreshed = await refresh;
+            setToken(refreshed);
+            return refreshed;
+          },
+          [token],
+        );
+
+        return useMemo(
+          () => ({
+            fetchAccessToken,
+            isAuthenticated: token !== null,
+            isLoading: false,
+          }),
+          [fetchAccessToken, token],
+        );
+      },
+    [initialToken],
+  );
+
+  return (
+    <ConvexProviderWithAuth client={client} useAuth={useServerTokenAuth}>
+      {children}
+    </ConvexProviderWithAuth>
   );
 }
 

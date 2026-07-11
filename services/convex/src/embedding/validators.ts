@@ -2,6 +2,7 @@ import { v } from "convex/values";
 
 export const vEmbeddingReason = v.union(
   v.literal("focused"),
+  v.literal("inbox"),
   v.literal("pinned"),
   v.literal("selected"),
 );

@@ -1,18 +1,32 @@
 import type { ListRenderItemInfo } from "react-native";
-import { ActivityIndicator, FlatList, Text, View } from "react-native";
-import { useRouter } from "expo-router";
+import { useState } from "react";
+import {
+  ActivityIndicator,
+  FlatList,
+  RefreshControl,
+  Text,
+  View,
+} from "react-native";
+import { Stack, useRouter } from "expo-router";
+import { usePaginatedQuery } from "convex/react";
 
-import type {
-  MailAccount,
-  MailAccountFilter,
-  MailThread,
-} from "@rodge-mail/features/mail";
+import type { MailAccountFilter, MailThread } from "@rodge-mail/features/mail";
+import { api } from "@rodge-mail/convex/api";
 
+import type { MobileMailAccount } from "../lib/convex-mail";
 import { useColor } from "~/hooks/use-color";
+import { useDebouncedValue } from "~/hooks/use-debounced-value";
 import { AccountFilter } from "../components/account-filter";
-import { NativeMailButton } from "../components/native-mail-button";
 import { ThreadRow } from "../components/thread-row";
+import { useSemanticMailSearch } from "../hooks/use-semantic-mail-search";
+import { toConvexId } from "../lib/convex-id";
+import { toMailThreads } from "../lib/convex-mail";
 import { useMailStore } from "../store";
+import { getEmptyIsLoading, getFooterIsLoading } from "./inbox-list-state";
+import { InboxSyncStatus } from "./inbox-sync-status";
+import { useInboxRefresh } from "./use-inbox-refresh";
+
+const skippedSearch = "skip";
 
 export function InboxScreen() {
   const router = useRouter();
@@ -24,7 +38,40 @@ export function InboxScreen() {
   const loadMore = useMailStore((store) => store.loadMore);
   const isLoading = useMailStore((store) => store.isLoading);
   const isLoadingMore = useMailStore((store) => store.isLoadingMore);
+  const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearchTerm = useDebouncedValue(searchTerm.trim(), 250);
+  const backgroundColor = useColor("background");
+  const foreground = useColor("foreground");
   const primary = useColor("primary");
+  const { isRefreshing, refresh, refreshError } = useInboxRefresh(accounts);
+  const selectedAccountId = getSelectedAccountId(accountFilter);
+  const search = usePaginatedQuery(
+    api.mail.queries.searchHeaders,
+    getSearchArgs(debouncedSearchTerm, selectedAccountId),
+    { initialNumItems: 30 },
+  );
+  const isSearching = searchTerm.trim().length > 0;
+  const semanticSearch = useSemanticMailSearch({
+    accountId: selectedAccountId,
+    lexicalResults: search.results,
+    searchTerm: debouncedSearchTerm,
+  });
+  const results = isSearching ? toMailThreads(semanticSearch.results) : threads;
+  const emptyIsLoading = getEmptyIsLoading({
+    debouncedSearchTerm,
+    isLoading,
+    isSearching,
+    lexicalResultCount: search.results.length,
+    searchIsLoading: semanticSearch.isLoading,
+    searchStatus: search.status,
+    searchTerm,
+  });
+  const footerIsLoading = getFooterIsLoading({
+    isLoadingMore,
+    isSearching,
+    searchIsLoading: semanticSearch.isLoading,
+    searchStatus: search.status,
+  });
 
   function openThread(threadId: string) {
     markRead(threadId);
@@ -38,34 +85,105 @@ export function InboxScreen() {
     return <ThreadRow thread={item} onOpen={() => openThread(item.id)} />;
   }
 
+  function loadNextPage() {
+    if (!isSearching) loadMore();
+    else if (search.status === "CanLoadMore") search.loadMore(30);
+  }
+
   return (
     <View className="bg-background flex-1">
-      <FlatList
-        data={threads}
-        keyExtractor={threadKey}
-        renderItem={renderThread}
-        contentInsetAdjustmentBehavior="automatic"
-        keyboardDismissMode="on-drag"
-        onEndReached={loadMore}
-        onEndReachedThreshold={0.6}
-        ListHeaderComponent={
-          <InboxHeader
-            accountFilter={accountFilter}
-            accounts={accounts}
-            onAccountChange={setAccountFilter}
-          />
-        }
-        ListEmptyComponent={<EmptyInbox isLoading={isLoading} />}
-        ListFooterComponent={<InboxFooter isLoading={isLoadingMore} />}
+      <Stack.Screen
+        options={{
+          headerSearchBarOptions: {
+            barTintColor: backgroundColor,
+            hideWhenScrolling: false,
+            headerIconColor: foreground,
+            onCancelButtonPress: () => setSearchTerm(""),
+            onChangeText: (event) => setSearchTerm(event.nativeEvent.text),
+            placeholder: "Sender, subject, or message",
+            placement: "stacked",
+            textColor: foreground,
+            tintColor: primary,
+          },
+        }}
       />
-      <View className="absolute right-5 bottom-5 shadow-lg">
-        <NativeMailButton
-          label="Compose"
-          onPress={() => router.push("/compose")}
-          seedColor={primary}
-        />
-      </View>
+      <InboxThreadList
+        accountFilter={accountFilter}
+        accounts={accounts}
+        data={results}
+        emptyIsLoading={emptyIsLoading}
+        footerIsLoading={footerIsLoading}
+        isRefreshing={isRefreshing}
+        primary={primary}
+        refreshError={refreshError}
+        renderThread={renderThread}
+        searchTerm={isSearching ? searchTerm.trim() : undefined}
+        onAccountChange={setAccountFilter}
+        onEndReached={loadNextPage}
+        onRefresh={() => void refresh()}
+      />
     </View>
+  );
+}
+
+function InboxThreadList({
+  accountFilter,
+  accounts,
+  data,
+  emptyIsLoading,
+  footerIsLoading,
+  isRefreshing,
+  onAccountChange,
+  onEndReached,
+  onRefresh,
+  primary,
+  refreshError,
+  renderThread,
+  searchTerm,
+}: {
+  accountFilter: MailAccountFilter;
+  accounts: MobileMailAccount[];
+  data: MailThread[];
+  emptyIsLoading: boolean;
+  footerIsLoading: boolean;
+  isRefreshing: boolean;
+  onAccountChange: (value: MailAccountFilter) => void;
+  onEndReached: () => void;
+  onRefresh: () => void;
+  primary: string;
+  refreshError: string | undefined;
+  renderThread: (info: ListRenderItemInfo<MailThread>) => React.ReactElement;
+  searchTerm: string | undefined;
+}) {
+  return (
+    <FlatList
+      data={data}
+      keyExtractor={threadKey}
+      renderItem={renderThread}
+      contentInsetAdjustmentBehavior="automatic"
+      keyboardDismissMode="on-drag"
+      refreshControl={
+        <RefreshControl
+          refreshing={isRefreshing}
+          tintColor={primary}
+          onRefresh={onRefresh}
+        />
+      }
+      onEndReached={onEndReached}
+      onEndReachedThreshold={0.6}
+      ListHeaderComponent={
+        <InboxHeader
+          accountFilter={accountFilter}
+          accounts={accounts}
+          onAccountChange={onAccountChange}
+          refreshError={refreshError}
+        />
+      }
+      ListEmptyComponent={
+        <EmptyInbox isLoading={emptyIsLoading} searchTerm={searchTerm} />
+      }
+      ListFooterComponent={<InboxFooter isLoading={footerIsLoading} />}
+    />
   );
 }
 
@@ -73,27 +191,48 @@ function InboxHeader({
   accountFilter,
   accounts,
   onAccountChange,
+  refreshError,
 }: {
   accountFilter: MailAccountFilter;
-  accounts: MailAccount[];
+  accounts: MobileMailAccount[];
   onAccountChange: (value: MailAccountFilter) => void;
+  refreshError: string | undefined;
 }) {
   return (
-    <View className="gap-4 pt-2 pb-3">
+    <View className="gap-2 pt-2 pb-3">
       <AccountFilter
         accounts={accounts}
         value={accountFilter}
         onChange={onAccountChange}
       />
+      <InboxSyncStatus accounts={accounts} error={refreshError} />
     </View>
   );
 }
 
-function EmptyInbox({ isLoading }: { isLoading: boolean }) {
+function EmptyInbox({
+  isLoading,
+  searchTerm,
+}: {
+  isLoading: boolean;
+  searchTerm?: string;
+}) {
   if (isLoading) {
     return (
       <View className="items-center py-24">
         <ActivityIndicator color="#d77a55" size="large" />
+      </View>
+    );
+  }
+  if (searchTerm) {
+    return (
+      <View className="items-center px-8 py-24">
+        <Text className="text-foreground text-lg font-bold">
+          No matching mail
+        </Text>
+        <Text className="text-muted-foreground mt-2 text-center leading-5">
+          Nothing matched “{searchTerm}”. Try a sender or a shorter subject.
+        </Text>
       </View>
     );
   }
@@ -120,4 +259,17 @@ function InboxFooter({ isLoading }: { isLoading: boolean }) {
 
 function threadKey(thread: MailThread) {
   return thread.id;
+}
+
+function getSelectedAccountId(accountFilter: MailAccountFilter) {
+  if (accountFilter === "all") return undefined;
+  return toConvexId<"mailAccounts">(accountFilter);
+}
+
+function getSearchArgs(
+  searchTerm: string,
+  accountId: ReturnType<typeof getSelectedAccountId>,
+) {
+  if (!searchTerm) return skippedSearch;
+  return { accountId, searchTerm };
 }

@@ -9,6 +9,7 @@ import type { ICloudCredential } from "./credentialAccess";
 import { internal } from "../../_generated/api";
 import { internalAction } from "../../_generated/server";
 import { vSyncReason } from "../../mail/validators";
+import { shouldNotifyForProviderMessage } from "../../notifications/policy";
 import {
   createImapClient,
   isAuthenticationFailure,
@@ -61,6 +62,7 @@ export const synchronize = internalAction({
         accountAddress: connection.account.address,
         credential,
         knownRemoteIds,
+        reason: args.reason,
       });
       await ctx.runMutation(internal.sync.internal.finishRun, {
         syncRunId,
@@ -93,6 +95,7 @@ async function synchronizeMailboxes(args: {
   accountAddress: string;
   credential: ICloudCredential;
   knownRemoteIds: string[];
+  reason: "incremental" | "initial" | "manual" | "reconcile";
 }) {
   const client = createImapClient(args.credential);
   try {
@@ -121,6 +124,7 @@ async function synchronizeMailbox(
     accountId: Id<"mailAccounts">;
     accountAddress: string;
     knownRemoteIds: string[];
+    reason: "incremental" | "initial" | "manual" | "reconcile";
   },
 ) {
   const opened = await client.mailboxOpen(mailbox.path, { readOnly: true });
@@ -167,15 +171,22 @@ async function synchronizeMailbox(
       },
       { uid: true },
     )) {
+      const normalized = await normalizeMessage(
+        args.accountAddress,
+        mailbox,
+        uidValidity,
+        message,
+      );
       await args.ctx.runMutation(internal.sync.internal.upsertProviderMessage, {
         ownerId: args.ownerId,
         accountId: args.accountId,
-        message: await normalizeMessage(
-          args.accountAddress,
-          mailbox,
-          uidValidity,
-          message,
-        ),
+        message: normalized,
+        notifyNewMail: shouldNotifyForProviderMessage({
+          fullSync: args.reason !== "incremental",
+          now: Date.now(),
+          reason: args.reason,
+          receivedAt: normalized.receivedAt,
+        }),
       });
     }
   }

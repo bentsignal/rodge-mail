@@ -38,7 +38,7 @@ export const setManualOverride = authedMutation({
       confidence: 1,
       reason: (args.reason ?? "Priority set manually").slice(0, 240),
       summary: existing?.summary,
-      shouldEmbed: args.bucket === "focused" || message.isPinned,
+      shouldEmbed: message.inInbox,
       source: "manual" as const,
       promptVersion: "manual-v1",
       outputSchemaVersion: CLASSIFICATION_OUTPUT_SCHEMA_VERSION,

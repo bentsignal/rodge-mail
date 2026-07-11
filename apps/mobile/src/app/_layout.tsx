@@ -10,6 +10,7 @@ import { useConvexAuth } from "convex/react";
 
 import { authClient, convex } from "~/features/auth/client";
 import { MailStore } from "~/features/mail/store";
+import { useMobileNotifications } from "~/features/notifications/mobile-notifications";
 import { useColor } from "~/hooks/use-color";
 import { useInitApp } from "~/hooks/use-init-app";
 
@@ -38,6 +39,7 @@ function AppShell({ readiness }: { readiness: ReturnType<typeof useInitApp> }) {
   const backgroundColor = useColor("background");
   const liquidGlassIsAvailable = isLiquidGlassAvailable();
   const { isAuthenticated } = useConvexAuth();
+  useMobileNotifications(isAuthenticated);
 
   // eslint-disable-next-line no-restricted-syntax -- Native splash visibility must follow asynchronous font and system-color initialization.
   useEffect(() => {

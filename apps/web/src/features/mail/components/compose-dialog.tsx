@@ -102,12 +102,12 @@ function ComposeHeader() {
         <Dialog.Title className="font-serif text-xl font-semibold tracking-[-0.02em]">
           New message
         </Dialog.Title>
-        <Dialog.Description className="mt-0.5 font-mono text-[8px] tracking-[0.16em] text-[#8c8174] uppercase">
-          Plain text · secure attachments
+        <Dialog.Description className="sr-only">
+          Write a new email message.
         </Dialog.Description>
       </div>
       <button
-        aria-label="Close composer"
+        aria-label="Close new message"
         className="ml-auto flex size-9 items-center justify-center rounded-full text-[#84796d] hover:bg-black/[0.05] hover:text-[#20251f] dark:hover:bg-white/[0.06] dark:hover:text-white"
         onClick={closeComposer}
         type="button"

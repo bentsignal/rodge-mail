@@ -4,7 +4,6 @@ import {
   Image,
   Pressable,
   ScrollView,
-  Switch,
   Text,
   View,
 } from "react-native";
@@ -15,10 +14,14 @@ import { api } from "@rodge-mail/convex/api";
 
 import roundedIcon from "../../../../assets/rounded-icon.png";
 import { authClient } from "../../auth/client";
+import {
+  registerForNewMailNotifications,
+  unregisterCurrentPushToken,
+} from "../../notifications/mobile-notifications";
+import { NotificationPreferences } from "../../notifications/notification-preferences";
 import { useMailStore } from "../store";
 
 export function MailSettingsScreen() {
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const accounts = useMailStore((store) => store.accounts);
 
   return (
@@ -34,9 +37,6 @@ export function MailSettingsScreen() {
           className="size-20 rounded-[22px]"
         />
         <Text className="text-foreground text-xl font-bold">Rodge Mail</Text>
-        <Text className="text-muted-foreground text-sm">
-          Your mail, without the noise.
-        </Text>
       </View>
       <SettingsSection title="Mail accounts">
         {accounts.map((account) => (
@@ -59,31 +59,37 @@ export function MailSettingsScreen() {
               </Text>
             </View>
             <Text className="text-muted-foreground text-xs capitalize">
-              {account.provider}
+              {getAccountStatusLabel(account.status, account.provider)}
             </Text>
           </View>
         ))}
       </SettingsSection>
-      <SettingsSection title="Inbox">
-        <SettingsToggle
-          label="Notifications"
-          description="Notify for new unread mail."
-          value={notificationsEnabled}
-          onChange={setNotificationsEnabled}
-        />
+      <SettingsSection title="Notifications">
+        <NotificationPreferences />
       </SettingsSection>
       <SettingsSection title="Security">
         <AddPasskeyButton />
         <SignOutButton />
       </SettingsSection>
       <DevelopmentTools />
-      <View className="px-2">
-        <Text className="text-muted-foreground text-center text-xs leading-5">
-          Passkey protected · Provider connections are managed on the web.
-        </Text>
-      </View>
     </ScrollView>
   );
+}
+
+function getAccountStatusLabel(
+  status:
+    | "connected"
+    | "disconnected"
+    | "error"
+    | "reauthorization_required"
+    | "syncing",
+  provider: "gmail" | "icloud" | "microsoft",
+) {
+  if (status === "syncing") return "Syncing";
+  if (status === "error") return "Sync error";
+  if (status === "reauthorization_required") return "Reconnect";
+  if (status === "disconnected") return "Offline";
+  return provider;
 }
 
 function DevelopmentTools() {
@@ -186,30 +192,52 @@ function SecurityMessage({ message }: { message: string | undefined }) {
 
 function SignOutButton() {
   const [isLoading, setIsLoading] = useState(false);
+  const [message, setMessage] = useState<string>();
+  const registerPushToken = useMutation(
+    api.notifications.mutations.registerPushToken,
+  );
+  const unregisterPushToken = useMutation(
+    api.notifications.mutations.unregisterPushToken,
+  );
 
   async function signOut() {
     setIsLoading(true);
+    setMessage(undefined);
+    try {
+      await unregisterCurrentPushToken(unregisterPushToken);
+    } catch {
+      setMessage("Could not disable notifications. Try signing out again.");
+      setIsLoading(false);
+      return;
+    }
     const result = await authClient.signOut();
     if (result.error) {
+      await registerForNewMailNotifications(registerPushToken).catch(
+        () => undefined,
+      );
+      setMessage(result.error.message ?? "Could not sign out. Try again.");
       setIsLoading(false);
     }
   }
 
   return (
-    <Pressable
-      accessibilityRole="button"
-      className="flex-row items-center gap-3 px-4 py-4 disabled:opacity-50"
-      disabled={isLoading}
-      onPress={() => void signOut()}
-    >
-      <SignOutIcon isLoading={isLoading} />
-      <View className="flex-1 gap-0.5">
-        <Text className="text-foreground font-semibold">Sign out</Text>
-        <Text className="text-muted-foreground text-sm">
-          Remove this device&apos;s Rodge Mail session.
-        </Text>
-      </View>
-    </Pressable>
+    <View>
+      <Pressable
+        accessibilityRole="button"
+        className="flex-row items-center gap-3 px-4 py-4 disabled:opacity-50"
+        disabled={isLoading}
+        onPress={() => void signOut()}
+      >
+        <SignOutIcon isLoading={isLoading} />
+        <View className="flex-1 gap-0.5">
+          <Text className="text-foreground font-semibold">Sign out</Text>
+          <Text className="text-muted-foreground text-sm">
+            Remove this device&apos;s Rodge Mail session.
+          </Text>
+        </View>
+      </Pressable>
+      <SecurityMessage message={message} />
+    </View>
   );
 }
 
@@ -233,34 +261,6 @@ function SettingsSection({
       <View className="bg-muted/60 border-border overflow-hidden rounded-2xl border">
         {children}
       </View>
-    </View>
-  );
-}
-
-function SettingsToggle({
-  label,
-  description,
-  value,
-  onChange,
-}: {
-  label: string;
-  description: string;
-  value: boolean;
-  onChange: (value: boolean) => void;
-}) {
-  return (
-    <View className="border-border flex-row items-center gap-4 border-b px-4 py-3 last:border-b-0">
-      <View className="min-w-0 flex-1 gap-1">
-        <Text className="text-foreground font-semibold">{label}</Text>
-        <Text className="text-muted-foreground text-sm leading-5">
-          {description}
-        </Text>
-      </View>
-      <Switch
-        accessibilityLabel={label}
-        value={value}
-        onValueChange={onChange}
-      />
     </View>
   );
 }

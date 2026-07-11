@@ -11,6 +11,7 @@ import {
   toMessageDetail,
   toMessageListItem,
 } from "./helpers";
+import { matchesMailSearch, parseMailSearch } from "./search";
 
 export const listInbox = authedQuery({
   args: {
@@ -143,23 +144,81 @@ export const searchHeaders = authedQuery({
     if (args.accountId) {
       await ensureOwnedAccount(ctx, ctx.ownerId, args.accountId);
     }
-    const searchTerm = args.searchTerm.trim();
-    if (!searchTerm) return emptyMessagePage();
+    const searchPlan = parseMailSearch(args.searchTerm);
+    if (
+      !searchPlan.lexicalQuery &&
+      searchPlan.after === undefined &&
+      searchPlan.before === undefined
+    ) {
+      return emptyMessagePage();
+    }
 
-    const results = await ctx.db
-      .query("messages")
-      .withSearchIndex("search_headers", (q) => {
-        const byOwner = q
-          .search("searchText", searchTerm)
-          .eq("ownerId", ctx.ownerId)
-          .eq("inInbox", true);
-        return args.accountId
-          ? byOwner.eq("accountId", args.accountId)
-          : byOwner;
-      })
-      .paginate(args.paginationOpts);
+    const accountId = args.accountId;
+    const results = searchPlan.lexicalQuery
+      ? await ctx.db
+          .query("messages")
+          .withSearchIndex("search_headers", (q) => {
+            const byOwner = q
+              .search("searchText", searchPlan.lexicalQuery)
+              .eq("ownerId", ctx.ownerId)
+              .eq("inInbox", true);
+            return accountId ? byOwner.eq("accountId", accountId) : byOwner;
+          })
+          .paginate(args.paginationOpts)
+      : accountId
+        ? await ctx.db
+            .query("messages")
+            .withIndex("by_account_inbox_received", (q) => {
+              const range = q.eq("accountId", accountId).eq("inInbox", true);
+              if (
+                searchPlan.after !== undefined &&
+                searchPlan.before !== undefined
+              ) {
+                return range
+                  .gte("receivedAt", searchPlan.after)
+                  .lt("receivedAt", searchPlan.before);
+              }
+              if (searchPlan.after !== undefined) {
+                return range.gte("receivedAt", searchPlan.after);
+              }
+              if (searchPlan.before !== undefined) {
+                return range.lt("receivedAt", searchPlan.before);
+              }
+              return range;
+            })
+            .order("desc")
+            .paginate(args.paginationOpts)
+        : await ctx.db
+            .query("messages")
+            .withIndex("by_owner_inbox_received", (q) => {
+              const range = q.eq("ownerId", ctx.ownerId).eq("inInbox", true);
+              if (
+                searchPlan.after !== undefined &&
+                searchPlan.before !== undefined
+              ) {
+                return range
+                  .gte("receivedAt", searchPlan.after)
+                  .lt("receivedAt", searchPlan.before);
+              }
+              if (searchPlan.after !== undefined) {
+                return range.gte("receivedAt", searchPlan.after);
+              }
+              if (searchPlan.before !== undefined) {
+                return range.lt("receivedAt", searchPlan.before);
+              }
+              return range;
+            })
+            .order("desc")
+            .paginate(args.paginationOpts);
 
-    return await enrichPage(ctx, results);
+    const filtered = {
+      ...results,
+      page: results.page.filter((message) =>
+        matchesMailSearch(message, searchPlan),
+      ),
+    };
+
+    return await enrichPage(ctx, filtered);
   },
 });
 

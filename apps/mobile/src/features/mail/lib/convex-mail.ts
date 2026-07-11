@@ -15,7 +15,12 @@ type ThreadDetail = FunctionReturnType<typeof api.mail.queries.getThread>;
 type ThreadMessage = ThreadDetail["messages"][number];
 type Account = FunctionReturnType<typeof api.accounts.queries.list>[number];
 
-export type MobileMailAccount = MailAccount & { status: Account["status"] };
+export type MobileMailAccount = MailAccount & {
+  isDemo: boolean;
+  lastSyncError: string | undefined;
+  lastSyncedAt: number | undefined;
+  status: Account["status"];
+};
 
 export function toMailThread(item: InboxItem) {
   return {
@@ -66,7 +71,10 @@ export function toMailAccount(account: Account) {
     address: account.address,
     id: account._id,
     initials: getInitials(label),
+    isDemo: account.isDemo ?? false,
     label,
+    lastSyncError: account.lastSyncError,
+    lastSyncedAt: account.lastSyncedAt,
     provider: account.provider,
     status: account.status,
   };

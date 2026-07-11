@@ -7,6 +7,7 @@ packages:
   - "!shared/ui-mobile"
 
 catalog:
+  "@legendapp/list": 3.0.0
   "@better-auth/expo": 1.6.11
   "@convex-dev/better-auth": 0.12.2
   "@convex-dev/react-query": 0.1.0

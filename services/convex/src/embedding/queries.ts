@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 
 import { internalQuery } from "../_generated/server";
+import { matchesMailSearch } from "../mail/search";
 
 const vScoredEmbedding = v.object({
   embeddingId: v.id("messageEmbeddings"),
@@ -23,6 +24,10 @@ export const hydrateResults = internalQuery({
   args: {
     ownerId: v.string(),
     accountId: v.optional(v.id("mailAccounts")),
+    after: v.optional(v.number()),
+    before: v.optional(v.number()),
+    sender: v.optional(v.string()),
+    subject: v.optional(v.string()),
     matches: v.array(vScoredEmbedding),
   },
   returns: v.array(
@@ -40,6 +45,7 @@ export const hydrateResults = internalQuery({
       const message = await ctx.db.get(embedding.messageId);
       if (!message || message.ownerId !== args.ownerId || !message.inInbox)
         continue;
+      if (!matchesMailSearch(message, args)) continue;
       results.push({
         score: match.score,
         messageId: message._id,

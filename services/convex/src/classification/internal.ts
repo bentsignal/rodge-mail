@@ -4,11 +4,7 @@ import { ConvexError, v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { internalMutation, internalQuery } from "../_generated/server";
-import {
-  queueEmbeddingForMessage,
-  reconcileEmbeddingSelection,
-  removeFocusedEmbedding,
-} from "../embedding/internal";
+import { reconcileEmbeddingSelection } from "../embedding/internal";
 import { rateLimiter } from "../limiter";
 import {
   vClassificationCategory,
@@ -169,7 +165,7 @@ export const complete = internalMutation({
         confidence: args.confidence,
         reason: args.reason.slice(0, 240),
         summary: args.summary.slice(0, 280),
-        shouldEmbed: args.bucket === "focused" || message.isPinned,
+        shouldEmbed: message.inInbox,
         signals: args.signals,
         source: args.source,
         model: args.model,
@@ -181,15 +177,7 @@ export const complete = internalMutation({
       }),
     ]);
 
-    if (args.bucket === "focused" || message.isPinned) {
-      await queueEmbeddingForMessage(ctx, {
-        ownerId: message.ownerId,
-        messageId: message._id,
-        reason: message.isPinned ? "pinned" : "focused",
-      });
-    } else {
-      await removeFocusedEmbedding(ctx, message._id);
-    }
+    await reconcileEmbeddingSelection(ctx, message._id);
     return true;
   },
 });

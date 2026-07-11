@@ -17,6 +17,7 @@ import { api } from "@rodge-mail/convex/api";
 import { getReplyAddress } from "@rodge-mail/features/mail";
 
 import { useColor } from "~/hooks/use-color";
+import { MobileEmailBody } from "../components/mobile-email-body";
 import { toConvexId } from "../lib/convex-id";
 import { toMailThreadDetail } from "../lib/convex-mail";
 import { formatMessageTime } from "../lib/mail-format";
@@ -170,15 +171,7 @@ function MessageBody({ message }: { message: MailMessage }) {
       <Text className="text-muted-foreground text-xs">
         To: {message.to.map((recipient) => recipient.address).join(", ")}
       </Text>
-      {message.body.map((paragraph, index) => (
-        <Text
-          key={`${message.id}-${index}`}
-          className="text-foreground text-[16px] leading-7"
-          selectable
-        >
-          {paragraph}
-        </Text>
-      ))}
+      <MobileEmailBody messageId={message.id} source={message.body} />
       {message.attachments.map((attachment) => (
         <Pressable
           key={attachment.id}

@@ -162,12 +162,7 @@ function BrandHeader() {
         className="size-20 rounded-[22px]"
         source={roundedIcon}
       />
-      <View className="items-center gap-1">
-        <Text className="text-foreground text-3xl font-bold">Rodge Mail</Text>
-        <Text className="text-muted-foreground text-sm">
-          Your inbox, quietly organized.
-        </Text>
-      </View>
+      <Text className="text-foreground text-3xl font-bold">Rodge Mail</Text>
     </View>
   );
 }
@@ -286,7 +281,9 @@ function SignInButton({
       onPress={onPress}
     >
       <SignInIcon isLoading={isLoading} />
-      <Text className="font-semibold text-[#f7f1e6]">Sign in</Text>
+      <Text className="font-semibold" style={{ color: "#f7f1e6" }}>
+        Sign in
+      </Text>
     </Pressable>
   );
 }

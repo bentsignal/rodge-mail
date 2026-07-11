@@ -15,8 +15,9 @@ function useInternalStore({ initialTheme }: { initialTheme: Theme }) {
 
   // eslint-disable-next-line no-restricted-syntax -- Theme changes must be persisted to a browser cookie.
   useEffect(() => {
+    setNextTheme(theme);
     document.cookie = `theme=${theme}; path=/; max-age=${60 * 60 * 24 * 30}`;
-  }, [theme]);
+  }, [setNextTheme, theme]);
 
   function changeTheme(newTheme: Theme) {
     setNextTheme(newTheme);
@@ -35,7 +36,7 @@ function ThemeStore({
   ...props
 }: React.ComponentProps<typeof NextThemeProvider> & { initialTheme: Theme }) {
   return (
-    <NextThemeProvider {...props}>
+    <NextThemeProvider {...props} defaultTheme={initialTheme}>
       <InternalThemeStore initialTheme={initialTheme}>
         {children}
       </InternalThemeStore>

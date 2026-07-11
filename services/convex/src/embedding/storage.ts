@@ -55,6 +55,7 @@ export function hasSelectedReason(
 
 export function embeddingSelectionPlan(args: {
   clearSelected: boolean;
+  inInbox: boolean;
   isPinned: boolean;
   bucket: string | undefined;
   jobReason: EmbeddingReason | undefined;
@@ -63,7 +64,7 @@ export function embeddingSelectionPlan(args: {
   const preserveSelected =
     !args.clearSelected &&
     hasSelectedReason(args.jobReason, args.embeddingReason);
-  const reason = desiredReason(args.isPinned, args.bucket);
+  const reason = desiredReason(args.inInbox, args.isPinned, args.bucket);
   return {
     preserveSelected,
     reason,
@@ -87,10 +88,15 @@ function reasonToDelete(
   return args.jobReason ?? args.embeddingReason;
 }
 
-export function desiredReason(isPinned: boolean, bucket: string | undefined) {
+export function desiredReason(
+  inInbox: boolean,
+  isPinned: boolean,
+  bucket: string | undefined,
+) {
+  if (!inInbox) return null;
   if (isPinned) return "pinned" satisfies EmbeddingReason;
   if (bucket === "focused") return "focused" satisfies EmbeddingReason;
-  return null;
+  return "inbox" satisfies EmbeddingReason;
 }
 
 export function preferredReason(
@@ -116,7 +122,8 @@ function shouldDelete(
 function priority(reason: EmbeddingReason) {
   if (reason === "selected") return 3;
   if (reason === "pinned") return 2;
-  return 1;
+  if (reason === "focused") return 1;
+  return 0;
 }
 
 function isReason(

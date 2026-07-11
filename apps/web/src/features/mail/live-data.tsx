@@ -7,8 +7,9 @@ import {
 } from "react";
 // eslint-disable-next-line no-restricted-imports -- Mail has intentional loading states and a selection-dependent thread query.
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 import { convexQuery } from "@convex-dev/react-query";
-import { useMutation, usePaginatedQuery } from "convex/react";
+import { useMutation } from "convex/react";
 
 import { api } from "@rodge-mail/convex/api";
 import { getReplyAddress } from "@rodge-mail/features/mail";
@@ -22,15 +23,20 @@ import type {
   MailThreadDetail,
 } from "./types";
 import { env } from "~/env";
+import { MAIL_PAGE_SIZE } from "./constants";
 import {
   getErrorMessage,
   getLoadedUnreadCounts,
   sortInboxMessages,
   toAccountView,
 } from "./live-data-utils";
+import {
+  getIsLoadingInbox,
+  getIsSearchingInbox,
+  useMailboxPage,
+} from "./mailbox-page";
 import { useMailStore } from "./store";
-
-const PAGE_SIZE = 30;
+import { useSyncAll } from "./use-sync-all";
 
 interface LiveMailContextValue {
   accounts: MailAccountView[];
@@ -40,11 +46,15 @@ interface LiveMailContextValue {
   isLoadingAccounts: boolean;
   isLoadingInbox: boolean;
   isLoadingMore: boolean;
+  isSearchingInbox: boolean;
   isLoadingThread: boolean;
   isSeedingDemo: boolean;
+  isSyncingAccounts: boolean;
   loadMore: () => void;
+  removeFromRodge: (message: Pick<InboxMessage, "threadId">) => Promise<void>;
   replyToSelectedThread: () => void;
   seedDemoMail: () => Promise<void>;
+  syncAllAccounts: () => Promise<void>;
   selectMessage: (message: InboxMessage) => void;
   selectedMessageId: InboxMessage["_id"] | undefined;
   selectedThread: MailThreadDetail | undefined;
@@ -57,8 +67,14 @@ const LiveMailContext = createContext<LiveMailContextValue | undefined>(
   undefined,
 );
 
-export function LiveMailProvider({ children }: { children: React.ReactNode }) {
-  const value = useLiveMailValue();
+export function LiveMailProvider({
+  children,
+  initialInbox,
+}: {
+  children: React.ReactNode;
+  initialInbox: InboxMessage[];
+}) {
+  const value = useLiveMailValue(initialInbox);
   return (
     <LiveMailContext.Provider value={value}>
       {children}
@@ -74,7 +90,7 @@ export function useLiveMail() {
   return context;
 }
 
-function useLiveMailValue() {
+function useLiveMailValue(initialInbox: InboxMessage[]) {
   const accountFilter = useMailStore((store) => store.accountFilter);
   const searchQuery = useMailStore((store) => store.searchQuery);
   const selectedMessageId = useMailStore((store) => store.selectedMessageId);
@@ -89,6 +105,7 @@ function useLiveMailValue() {
     searchQuery,
     selectedMessageId,
     selectedThreadId,
+    initialInbox,
   });
   const firstMessage = queryState.inboxMessages[0];
   // eslint-disable-next-line no-restricted-syntax -- The live query's first result initializes stable local selection once per view.
@@ -99,7 +116,10 @@ function useLiveMailValue() {
       threadId: firstMessage.threadId,
     });
   }, [firstMessage, setInitialSelection]);
-  const actions = useLiveMailActions(queryState.selectedThread);
+  const actions = useLiveMailActions(
+    queryState.accounts,
+    queryState.selectedThread,
+  );
 
   return {
     ...actions,
@@ -114,17 +134,20 @@ function useLiveMailQueries({
   searchQuery,
   selectedMessageId,
   selectedThreadId,
+  initialInbox,
 }: {
   accountFilter: MailAccountFilter;
   deferredSearchQuery: string;
   searchQuery: string;
   selectedMessageId: InboxMessage["_id"] | undefined;
   selectedThreadId: InboxMessage["threadId"] | undefined;
+  initialInbox: InboxMessage[];
 }) {
   const accountId = accountFilter === "all" ? undefined : accountFilter;
   const accountQuery = useAccountsQuery();
   const activePage = useMailboxPage({
     accountId,
+    initialInbox,
     searchTerm: deferredSearchQuery,
   });
   const inboxMessages = sortInboxMessages(activePage.results);
@@ -141,12 +164,18 @@ function useLiveMailQueries({
     isLoadingAccounts: accountQuery.isPending,
     isLoadingInbox: getIsLoadingInbox({
       deferredSearchQuery,
+      hasVisibleMessages: inboxMessages.length > 0,
       pageStatus: activePage.status,
       searchQuery,
     }),
     isLoadingMore: activePage.status === "LoadingMore",
+    isSearchingInbox: getIsSearchingInbox({
+      deferredSearchQuery,
+      pageStatus: activePage.status,
+      searchQuery,
+    }),
     isLoadingThread: effectiveThreadId !== undefined && threadQuery.isPending,
-    loadMore: () => activePage.loadMore(PAGE_SIZE),
+    loadMore: () => activePage.loadMore(MAIL_PAGE_SIZE),
     selectedMessageId: selectedMessageId ?? inboxMessages[0]?._id,
     selectedThread: threadQuery.data,
   };
@@ -156,47 +185,11 @@ function canSeedDemoMail(accounts: MailAccountDocument[] | undefined) {
   return env.VITE_NODE_ENV === "development" && accounts?.length === 0;
 }
 
-function getIsLoadingInbox({
-  deferredSearchQuery,
-  pageStatus,
-  searchQuery,
-}: {
-  deferredSearchQuery: string;
-  pageStatus: string;
-  searchQuery: string;
-}) {
-  return (
-    searchQuery.trim() !== deferredSearchQuery ||
-    pageStatus === "LoadingFirstPage"
-  );
-}
-
 function useAccountsQuery() {
   return useQuery({
     ...convexQuery(api.accounts.queries.list, {}),
     select: (accounts) => accounts,
   });
-}
-
-function useMailboxPage({
-  accountId,
-  searchTerm,
-}: {
-  accountId: InboxMessage["accountId"] | undefined;
-  searchTerm: string;
-}) {
-  const isSearching = searchTerm.length > 0;
-  const inbox = usePaginatedQuery(
-    api.mail.queries.listInbox,
-    isSearching ? "skip" : { accountId },
-    { initialNumItems: PAGE_SIZE },
-  );
-  const search = usePaginatedQuery(
-    api.mail.queries.searchHeaders,
-    isSearching ? { accountId, searchTerm } : "skip",
-    { initialNumItems: PAGE_SIZE },
-  );
-  return isSearching ? search : inbox;
 }
 
 function useThreadQuery(threadId: InboxMessage["threadId"] | undefined) {
@@ -209,13 +202,22 @@ function useThreadQuery(threadId: InboxMessage["threadId"] | undefined) {
   });
 }
 
-function useLiveMailActions(selectedThread: MailThreadDetail | undefined) {
+function useLiveMailActions(
+  accounts: MailAccountView[],
+  selectedThread: MailThreadDetail | undefined,
+) {
+  const navigate = useNavigate();
+  const clearSelection = useMailStore((store) => store.clearSelection);
   const openReply = useMailStore((store) => store.openReply);
   const selectThread = useMailStore((store) => store.selectThread);
   const setPinned = useMutation(api.mail.mutations.setPinned);
   const setRead = useMutation(api.mail.mutations.setRead);
+  const removeThreadFromRodge = useMutation(
+    api.mail.mutations.removeThreadFromRodge,
+  );
   const seedDemo = useMutation(api.devSeed.seedDemoMail);
   const [isSeedingDemo, setIsSeedingDemo] = useState(false);
+  const sync = useSyncAll(accounts);
 
   async function togglePinned(message: InboxMessage) {
     try {
@@ -230,6 +232,17 @@ function useLiveMailActions(selectedThread: MailThreadDetail | undefined) {
       await setRead({ messageId: message._id, isRead: !message.isRead });
     } catch (error) {
       toast.error(getErrorMessage(error, "Could not update read status."));
+    }
+  }
+
+  async function removeFromRodge(message: Pick<InboxMessage, "threadId">) {
+    try {
+      await removeThreadFromRodge({ threadId: message.threadId });
+      clearSelection();
+      await navigate({ to: "/" });
+      toast.success("Removed from Rodge. Your provider copy is unchanged.");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Could not remove the conversation."));
     }
   }
 
@@ -275,6 +288,8 @@ function useLiveMailActions(selectedThread: MailThreadDetail | undefined) {
 
   return {
     isSeedingDemo,
+    ...sync,
+    removeFromRodge,
     replyToSelectedThread,
     seedDemoMail,
     selectMessage,

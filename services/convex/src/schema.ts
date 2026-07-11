@@ -18,6 +18,11 @@ import {
   vSyncRun,
   vThread,
 } from "./mail/validators";
+import {
+  vMobilePushToken,
+  vNotificationDelivery,
+  vNotificationPreference,
+} from "./notifications/validators";
 
 export default defineSchema(
   {
@@ -102,6 +107,16 @@ export default defineSchema(
       .index("by_status_created", ["status", "createdAt"])
       .index("by_outbox", ["outboxId"])
       .index("by_storage", ["storageId"]),
+    mobilePushTokens: defineTable(vMobilePushToken)
+      .index("by_owner", ["ownerId"])
+      .index("by_token", ["token"]),
+    notificationPreferences: defineTable(vNotificationPreference).index(
+      "by_owner",
+      ["ownerId"],
+    ),
+    notificationDeliveries: defineTable(vNotificationDelivery)
+      .index("by_owner_created", ["ownerId", "createdAt"])
+      .index("by_message", ["messageId"]),
   },
   { schemaValidation: true },
 );

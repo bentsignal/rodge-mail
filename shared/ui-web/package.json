@@ -4,6 +4,7 @@
   "type": "module",
   "exports": {
     "./button": "./src/button.tsx",
+    "./context-menu": "./src/context-menu.tsx",
     "./dialog": "./src/dialog.tsx",
     "./textarea": "./src/textarea.tsx",
     "./toast": "./src/toast.tsx"
