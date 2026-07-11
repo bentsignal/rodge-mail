@@ -1,0 +1,73 @@
+:root {
+  --warm-canvas: #f5f0e5;
+  --warm-paper: #fffdf6;
+  --warm-paper-muted: #eee5d3;
+  --warm-paper-raised: #fffaf0;
+  --warm-ink: #2b2924;
+  --warm-ink-muted: #686158;
+  --warm-ink-subtle: #756e63;
+  --warm-forest: #173c2b;
+  --warm-forest-raised: #214a36;
+  --warm-forest-deep: #102c20;
+  --warm-brass: #c99b43;
+  --warm-brass-hover: #d2a953;
+  --warm-brass-pressed: #b38632;
+  --warm-danger: #a83f32;
+  --warm-border: #d8cfbc;
+  --warm-border-strong: #b9ad95;
+
+  --warm-space-1: 2px;
+  --warm-space-2: 4px;
+  --warm-space-3: 6px;
+  --warm-space-4: 8px;
+  --warm-space-5: 12px;
+  --warm-space-6: 16px;
+  --warm-space-7: 20px;
+  --warm-space-8: 24px;
+  --warm-space-9: 32px;
+  --warm-space-10: 40px;
+  --warm-space-11: 48px;
+  --warm-space-12: 64px;
+
+  --warm-radius-control: 8px;
+  --warm-radius-card: 12px;
+  --warm-radius-sheet: 16px;
+  --warm-radius-dialog: 22px;
+
+  --warm-shadow-resting:
+    0 1px 2px rgb(43 41 36 / 8%), 0 4px 12px rgb(43 41 36 / 5%);
+  --warm-shadow-raised:
+    0 2px 4px rgb(43 41 36 / 10%), 0 10px 28px rgb(43 41 36 / 10%);
+  --warm-shadow-floating:
+    0 4px 8px rgb(43 41 36 / 12%), 0 20px 48px rgb(43 41 36 / 16%);
+  --warm-shadow-inset:
+    inset 0 1px 0 rgb(255 255 255 / 55%), inset 0 -1px 0 rgb(43 41 36 / 8%);
+}
+
+:is([data-theme="dark"], .dark) {
+  --warm-canvas: #171b17;
+  --warm-paper: #242720;
+  --warm-paper-muted: #2d3029;
+  --warm-paper-raised: #33362e;
+  --warm-ink: #f3ebdd;
+  --warm-ink-muted: #beb8aa;
+  --warm-ink-subtle: #aaa397;
+  --warm-forest: #173c2b;
+  --warm-forest-raised: #214a36;
+  --warm-forest-deep: #102c20;
+  --warm-brass: #c89a42;
+  --warm-brass-hover: #d3aa55;
+  --warm-brass-pressed: #af812d;
+  --warm-danger: #d56a59;
+  --warm-border: #41453b;
+  --warm-border-strong: #5a5d52;
+
+  --warm-shadow-resting:
+    0 1px 2px rgb(0 0 0 / 22%), 0 4px 12px rgb(0 0 0 / 12%);
+  --warm-shadow-raised:
+    0 2px 4px rgb(0 0 0 / 26%), 0 10px 28px rgb(0 0 0 / 20%);
+  --warm-shadow-floating:
+    0 4px 8px rgb(0 0 0 / 30%), 0 20px 48px rgb(0 0 0 / 30%);
+  --warm-shadow-inset:
+    inset 0 1px 0 rgb(255 255 255 / 6%), inset 0 -1px 0 rgb(0 0 0 / 24%);
+}
