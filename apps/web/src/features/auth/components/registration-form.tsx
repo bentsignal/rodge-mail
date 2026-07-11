@@ -139,7 +139,7 @@ function RegistrationCodeStep({
   );
 }
 
-function StepHeading({ step, title }: { step: string; title: string }) {
+export function StepHeading({ step, title }: { step: string; title: string }) {
   return (
     <div>
       <p className="mail-label font-mono text-[8px] tracking-[0.16em] uppercase">
@@ -152,7 +152,7 @@ function StepHeading({ step, title }: { step: string; title: string }) {
   );
 }
 
-function RegistrationField({
+export function RegistrationField({
   autoComplete,
   inputMode,
   label,
@@ -186,7 +186,7 @@ function RegistrationField({
   );
 }
 
-function PrimaryButton({
+export function PrimaryButton({
   disabled,
   isLoading,
   label,
@@ -212,7 +212,7 @@ function LoadingIndicator({ isLoading }: { isLoading: boolean }) {
   return <Loader className="size-4 animate-spin" />;
 }
 
-function BackButton({
+export function BackButton({
   label,
   onClick,
 }: {

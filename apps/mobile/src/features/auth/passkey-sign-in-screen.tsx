@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -14,13 +13,11 @@ import { PostalSurface } from "~/features/theme/postal-surface";
 import { useColor } from "~/hooks/use-color";
 import roundedIcon from "../../../assets/rounded-icon.png";
 import {
+  RecoveryEmailForm,
   RegistrationDetailsForm,
   VerificationCodeForm,
 } from "./account-registration-form";
-import { authClient } from "./client";
-
-type AuthOperation = "request-code" | "sign-in" | "verify";
-type AuthView = "details" | "sign-in" | "verify";
+import { usePasskeyAuth } from "./use-passkey-auth";
 
 export function PasskeySignInScreen() {
   const auth = usePasskeyAuth();
@@ -41,119 +38,6 @@ export function PasskeySignInScreen() {
       </ScrollView>
     </KeyboardAvoidingView>
   );
-}
-
-function usePasskeyAuth() {
-  const [view, setView] = useState<AuthView>("sign-in");
-  const [operation, setOperation] = useState<AuthOperation>();
-  const [message, setMessage] = useState<string>();
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [code, setCode] = useState("");
-
-  async function signIn() {
-    setOperation("sign-in");
-    setMessage(undefined);
-    try {
-      const result = await authClient.signIn.passkey();
-      setOperation(undefined);
-      if (result.error) {
-        setMessage(result.error.message ?? "Passkey sign-in failed");
-      }
-    } catch (error) {
-      finishWithError(error);
-    }
-  }
-
-  async function requestCode() {
-    const normalizedEmail = email.trim().toLowerCase();
-    if (!name.trim() || !normalizedEmail) return;
-    setEmail(normalizedEmail);
-    setOperation("request-code");
-    setMessage(undefined);
-    try {
-      const result = await authClient.emailOtp.sendVerificationOtp({
-        email: normalizedEmail,
-        type: "sign-in",
-      });
-      setOperation(undefined);
-      if (result.error) {
-        setMessage(
-          result.error.message ?? "Could not send a verification code",
-        );
-        return;
-      }
-      setView("verify");
-    } catch (error) {
-      finishWithError(error);
-    }
-  }
-
-  async function verifyAndCreatePasskey() {
-    const otp = code.trim();
-    if (otp.length !== 6) return;
-    let didVerify = false;
-    setOperation("verify");
-    setMessage(undefined);
-    try {
-      const verification = await authClient.signIn.emailOtp({
-        email,
-        name: name.trim(),
-        otp,
-      });
-      if (verification.error) {
-        setOperation(undefined);
-        setMessage(verification.error.message ?? "Verification failed");
-        return;
-      }
-      didVerify = true;
-      const passkey = await authClient.passkey.addPasskey({
-        authenticatorAttachment: "platform",
-      });
-      setOperation(undefined);
-      if (passkey.error) {
-        await signOutAfterFailedPasskey();
-        setMessage(passkey.error.message ?? "Could not create a passkey");
-      }
-    } catch (error) {
-      if (didVerify) await signOutAfterFailedPasskey();
-      finishWithError(error);
-    }
-  }
-
-  function finishWithError(error: unknown) {
-    setOperation(undefined);
-    setMessage(getErrorMessage(error));
-  }
-
-  function show(nextView: AuthView) {
-    setView(nextView);
-    setMessage(undefined);
-  }
-
-  return {
-    code,
-    email,
-    message,
-    name,
-    operation,
-    requestCode,
-    setCode,
-    setEmail,
-    setName,
-    show,
-    signIn,
-    verifyAndCreatePasskey,
-    view,
-  };
-}
-
-async function signOutAfterFailedPasskey() {
-  try {
-    await authClient.signOut();
-  } catch {
-    return;
-  }
 }
 
 function BrandHeader() {
@@ -217,6 +101,33 @@ function AuthContent({ auth }: { auth: ReturnType<typeof usePasskeyAuth> }) {
       </>
     );
   }
+  if (auth.view === "recover") {
+    return (
+      <>
+        <AuthTitle>Restore your sign-in</AuthTitle>
+        <RecoveryEmailForm
+          email={auth.email}
+          isLoading={auth.operation === "request-code"}
+          onEmailChange={auth.setEmail}
+          onSubmit={() => void auth.requestRecoveryCode()}
+        />
+      </>
+    );
+  }
+  if (auth.view === "recover-code") {
+    return (
+      <>
+        <AuthTitle>Check your email</AuthTitle>
+        <VerificationCodeForm
+          code={auth.code}
+          email={auth.email}
+          isLoading={auth.operation === "verify"}
+          onCodeChange={auth.setCode}
+          onSubmit={() => void auth.recoverPasskey()}
+        />
+      </>
+    );
+  }
   return (
     <SignInButton
       isLoading={auth.operation === "sign-in"}
@@ -230,11 +141,13 @@ function AuthTitle({ children }: { children: string }) {
 }
 
 function AuthNavigation({ auth }: { auth: ReturnType<typeof usePasskeyAuth> }) {
-  if (auth.view === "verify") {
+  if (auth.view === "verify" || auth.view === "recover-code") {
     return (
       <NavigationButton
         label="Change email"
-        onPress={() => auth.show("details")}
+        onPress={() =>
+          auth.show(auth.view === "verify" ? "details" : "recover")
+        }
       />
     );
   }
@@ -246,11 +159,25 @@ function AuthNavigation({ auth }: { auth: ReturnType<typeof usePasskeyAuth> }) {
       />
     );
   }
+  if (auth.view === "recover") {
+    return (
+      <NavigationButton
+        label="Back to sign in"
+        onPress={() => auth.show("sign-in")}
+      />
+    );
+  }
   return (
-    <NavigationButton
-      label="Create an account"
-      onPress={() => auth.show("details")}
-    />
+    <View className="gap-1">
+      <NavigationButton
+        label="Create an account"
+        onPress={() => auth.show("details")}
+      />
+      <NavigationButton
+        label="Can’t use your passkey?"
+        onPress={() => auth.show("recover")}
+      />
+    </View>
   );
 }
 
@@ -305,9 +232,4 @@ function AuthMessage({ message }: { message: string | undefined }) {
   return (
     <Text className="text-muted-foreground text-center text-sm">{message}</Text>
   );
-}
-
-function getErrorMessage(error: unknown) {
-  if (error instanceof Error && error.message.trim()) return error.message;
-  return "Authentication did not complete.";
 }

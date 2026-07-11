@@ -18,6 +18,11 @@ interface RegistrationCodeRequest {
   email: string;
 }
 
+interface RecoveryVerification {
+  code: string;
+  email: string;
+}
+
 interface RegistrationVerification {
   code: string;
   email: string;
@@ -38,6 +43,8 @@ function useInternalStore() {
     from: "__root__",
     select: (context) => context.isAuthenticated,
   });
+  const registrationActions = createRegistrationActions(isAuthenticated, run);
+  const recoveryActions = createRecoveryActions(isAuthenticated, run);
   function signInWithPasskey(redirectUri?: string) {
     if (isAuthenticated) return Promise.resolve(false);
     if (usesDesktopBrowserAuth()) return startDesktopSignIn();
@@ -81,28 +88,6 @@ function useInternalStore() {
     });
   }
 
-  function requestRegistrationCode(details: RegistrationCodeRequest) {
-    const email = details.email.trim().toLowerCase();
-    if (isAuthenticated || !email) return Promise.resolve(false);
-    return run({
-      fn: () => sendRegistrationCode(email),
-      onError: (error) => {
-        toast.error(getErrorMessage(error, "Could not send the code"));
-      },
-    });
-  }
-
-  function finishRegistration(details: RegistrationVerification) {
-    const normalized = normalizeRegistrationVerification(details);
-    if (isAuthenticated || !normalized) return Promise.resolve(false);
-    return run({
-      fn: () => completeRegistration(normalized, details.redirectUri),
-      onError: (error) => {
-        toast.error(getErrorMessage(error, "Could not create your account"));
-      },
-    });
-  }
-
   function addAuthenticatedPasskey() {
     if (!isAuthenticated) return Promise.resolve(false);
     return run({
@@ -128,16 +113,77 @@ function useInternalStore() {
     cancelDesktopSignIn,
     desktopAuthIsPending: desktopAuthIsPending || !!readPendingDesktopAuth(),
     finishDesktopSignIn,
-    finishRegistration,
+    finishRecovery: recoveryActions.finishRecovery,
+    finishRegistration: registrationActions.finishRegistration,
     imSignedIn: isAuthenticated,
     imSignedOut: !isAuthenticated,
     isLoading,
     usesDesktopBrowserAuth: usesDesktopBrowserAuth(),
-    requestRegistrationCode,
+    requestRegistrationCode: registrationActions.requestRegistrationCode,
+    requestRecoveryCode: recoveryActions.requestRecoveryCode,
     signInWithPasskey,
     signOut,
     startDesktopSignIn,
   };
+}
+
+function createRegistrationActions(
+  isAuthenticated: boolean,
+  run: ReturnType<typeof useLoading>["run"],
+) {
+  function requestRegistrationCode(details: RegistrationCodeRequest) {
+    const email = details.email.trim().toLowerCase();
+    if (isAuthenticated || !email) return Promise.resolve(false);
+    return run({
+      fn: () => sendRegistrationCode(email),
+      onError: (error) => {
+        toast.error(getErrorMessage(error, "Could not send the code"));
+      },
+    });
+  }
+
+  function finishRegistration(details: RegistrationVerification) {
+    const normalized = normalizeRegistrationVerification(details);
+    if (isAuthenticated || !normalized) return Promise.resolve(false);
+    return run({
+      fn: () => completeRegistration(normalized, details.redirectUri),
+      onError: (error) => {
+        toast.error(getErrorMessage(error, "Could not create your account"));
+      },
+    });
+  }
+
+  return { finishRegistration, requestRegistrationCode };
+}
+
+function createRecoveryActions(
+  isAuthenticated: boolean,
+  run: ReturnType<typeof useLoading>["run"],
+) {
+  function requestRecoveryCode(details: RegistrationCodeRequest) {
+    const email = details.email.trim().toLowerCase();
+    if (isAuthenticated || !email) return Promise.resolve(false);
+    return run({
+      fn: () => sendRecoveryCode(email),
+      onError: (error) => {
+        toast.error(getErrorMessage(error, "Could not send the code"));
+      },
+    });
+  }
+
+  function finishRecovery(details: RecoveryVerification) {
+    const email = details.email.trim().toLowerCase();
+    const code = details.code.trim();
+    if (isAuthenticated || !email || !code) return Promise.resolve(false);
+    return run({
+      fn: () => completeRecovery(email, code),
+      onError: (error) => {
+        toast.error(getErrorMessage(error, "Could not recover your account"));
+      },
+    });
+  }
+
+  return { finishRecovery, requestRecoveryCode };
 }
 
 function getSafeRedirect(redirectUri: string | undefined) {
@@ -212,6 +258,41 @@ async function completeRegistration(
     throw new Error(passkey.error.message ?? "Passkey setup failed");
   }
   window.location.replace(getSafeRedirect(redirectUri));
+  return true;
+}
+
+async function sendRecoveryCode(email: string) {
+  const result = await authClient.$fetch<{ success: boolean }>(
+    "/passkey-recovery/request",
+    { body: { email }, method: "POST" },
+  );
+  if (result.error) {
+    throw new Error(result.error.message ?? "Could not send the code");
+  }
+  return true;
+}
+
+async function completeRecovery(email: string, code: string) {
+  const verification = await authClient.$fetch<{ recoveryToken: string }>(
+    "/passkey-recovery/verify",
+    { body: { code, email }, method: "POST" },
+  );
+  if (verification.error) {
+    throw new Error(
+      verification.error.message ?? "The recovery code is invalid or expired",
+    );
+  }
+  if (!verification.data.recoveryToken) {
+    throw new Error("The recovery code is invalid or expired");
+  }
+
+  const passkey = await authClient.passkey.addPasskey({
+    context: verification.data.recoveryToken,
+  });
+  if (passkey.error) {
+    throw new Error(passkey.error.message ?? "Could not create a passkey");
+  }
+  toast.success("Passkey restored. Sign in to continue.");
   return true;
 }
 

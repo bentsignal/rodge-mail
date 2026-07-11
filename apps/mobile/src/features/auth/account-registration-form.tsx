@@ -103,6 +103,47 @@ export function VerificationCodeForm({
   );
 }
 
+export function RecoveryEmailForm({
+  email,
+  isLoading,
+  onEmailChange,
+  onSubmit,
+}: {
+  email: string;
+  isLoading: boolean;
+  onEmailChange: (value: string) => void;
+  onSubmit: () => void;
+}) {
+  const placeholder = useColor("muted-foreground");
+
+  return (
+    <View className="gap-3">
+      <Text className="text-muted-foreground text-sm leading-5">
+        We’ll email a short code before this device creates a new passkey.
+      </Text>
+      <TextInput
+        accessibilityLabel="Email address"
+        autoCapitalize="none"
+        autoComplete="email"
+        autoCorrect={false}
+        className="bg-paper border-well-border text-foreground h-12 rounded-xl border px-4"
+        defaultValue={email}
+        editable={!isLoading}
+        inputMode="email"
+        onChangeText={onEmailChange}
+        placeholder="Email address"
+        placeholderTextColor={placeholder}
+      />
+      <ActionButton
+        disabled={isLoading || !email.trim()}
+        isLoading={isLoading}
+        label="Send recovery code"
+        onPress={onSubmit}
+      />
+    </View>
+  );
+}
+
 function ActionButton({
   disabled,
   isLoading,

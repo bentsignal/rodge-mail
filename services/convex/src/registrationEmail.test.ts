@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { sendRegistrationEmail } from "./registrationEmail";
+import { sendRecoveryEmail, sendRegistrationEmail } from "./registrationEmail";
 
 describe("sendRegistrationEmail", () => {
   afterEach(() => {
@@ -52,5 +52,31 @@ describe("sendRegistrationEmail", () => {
         to: "person@example.com",
       }),
     ).rejects.toThrow("Resend rejected the verification email (403)");
+  });
+
+  it("labels recovery codes and explains unsolicited requests", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response(null, { status: 202 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await sendRecoveryEmail({
+      apiKey: "resend-key",
+      from: "Rodge Mail <auth@example.com>",
+      otp: "654321",
+      to: "person@example.com",
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.resend.com/emails",
+      expect.objectContaining({
+        body: JSON.stringify({
+          from: "Rodge Mail <auth@example.com>",
+          to: ["person@example.com"],
+          subject: "Recover your Rodge Mail account",
+          text: "Your Rodge Mail recovery code is 654321. It expires in 5 minutes. If you did not request this, you can ignore this email.",
+        }),
+      }),
+    );
   });
 });

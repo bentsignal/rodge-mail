@@ -2,6 +2,7 @@ import { useState } from "react";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { z } from "zod";
 
+import { RecoveryForm } from "~/features/auth/components/recovery-form";
 import { RegistrationForm } from "~/features/auth/components/registration-form";
 import { SignInButton } from "~/features/auth/components/sign-in-button";
 import { useAuthStore } from "~/features/auth/store";
@@ -17,7 +18,9 @@ export const Route = createFileRoute("/login")({
 });
 
 function Login() {
-  const [isCreatingAccount, setIsCreatingAccount] = useState(false);
+  const [view, setView] = useState<"recover" | "register" | "sign-in">(
+    "sign-in",
+  );
   const imLoggedIn = useAuthStore((store) => store.imSignedIn);
   if (imLoggedIn) return null;
 
@@ -27,9 +30,10 @@ function Login() {
         <div className="mail-auth-paper rounded-[16px] border px-7 py-8 sm:px-9 sm:py-9">
           <LoginBrand />
           <LoginContent
-            isCreatingAccount={isCreatingAccount}
-            onCancel={() => setIsCreatingAccount(false)}
-            onCreateAccount={() => setIsCreatingAccount(true)}
+            onCancel={() => setView("sign-in")}
+            onCreateAccount={() => setView("register")}
+            onRecover={() => setView("recover")}
+            view={view}
           />
         </div>
       </section>
@@ -38,16 +42,21 @@ function Login() {
 }
 
 function LoginContent({
-  isCreatingAccount,
   onCancel,
   onCreateAccount,
+  onRecover,
+  view,
 }: {
-  isCreatingAccount: boolean;
   onCancel: () => void;
   onCreateAccount: () => void;
+  onRecover: () => void;
+  view: "recover" | "register" | "sign-in";
 }) {
-  if (isCreatingAccount) return <RegistrationForm onCancel={onCancel} />;
-  return <AuthActions onCreateAccount={onCreateAccount} />;
+  if (view === "register") return <RegistrationForm onCancel={onCancel} />;
+  if (view === "recover") return <RecoveryForm onCancel={onCancel} />;
+  return (
+    <AuthActions onCreateAccount={onCreateAccount} onRecover={onRecover} />
+  );
 }
 
 function LoginBrand() {
@@ -65,7 +74,13 @@ function LoginBrand() {
   );
 }
 
-function AuthActions({ onCreateAccount }: { onCreateAccount: () => void }) {
+function AuthActions({
+  onCreateAccount,
+  onRecover,
+}: {
+  onCreateAccount: () => void;
+  onRecover: () => void;
+}) {
   const cancelDesktopSignIn = useAuthStore(
     (store) => store.cancelDesktopSignIn,
   );
@@ -90,6 +105,14 @@ function AuthActions({ onCreateAccount }: { onCreateAccount: () => void }) {
     onCreateAccount();
   }
 
+  function recoverAccount() {
+    if (usesDesktopBrowserAuth) {
+      void startDesktopSignIn();
+      return;
+    }
+    onRecover();
+  }
+
   return (
     <div className="space-y-3">
       <SignInButton />
@@ -100,6 +123,14 @@ function AuthActions({ onCreateAccount }: { onCreateAccount: () => void }) {
         type="button"
       >
         Create account
+      </button>
+      <button
+        className="mail-label hover:text-foreground w-full py-2 text-center text-xs font-medium transition"
+        disabled={isLoading}
+        onClick={recoverAccount}
+        type="button"
+      >
+        Can’t use your passkey?
       </button>
     </div>
   );

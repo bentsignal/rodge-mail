@@ -5,6 +5,8 @@ interface SendRegistrationEmailOptions {
   to: string;
 }
 
+type SendRecoveryEmailOptions = SendRegistrationEmailOptions;
+
 export async function sendRegistrationEmail({
   apiKey,
   from,
@@ -29,5 +31,30 @@ export async function sendRegistrationEmail({
     throw new Error(
       `Resend rejected the verification email (${response.status})`,
     );
+  }
+}
+
+export async function sendRecoveryEmail({
+  apiKey,
+  from,
+  otp,
+  to,
+}: SendRecoveryEmailOptions) {
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from,
+      to: [to],
+      subject: "Recover your Rodge Mail account",
+      text: `Your Rodge Mail recovery code is ${otp}. It expires in 5 minutes. If you did not request this, you can ignore this email.`,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Resend rejected the recovery email (${response.status})`);
   }
 }
