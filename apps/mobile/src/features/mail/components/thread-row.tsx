@@ -90,7 +90,7 @@ function ThreadSummary({
       accessibilityHint="Opens this email thread"
       accessibilityLabel={`${thread.sender.name}, ${thread.subject}`}
       accessibilityRole="button"
-      className="bg-transparent border-paper-border min-h-[94px] flex-row gap-3 rounded-xl border px-4 py-3"
+      className="border-paper-border min-h-[94px] flex-row gap-3 rounded-xl border bg-transparent px-4 py-3"
       onPress={onOpen}
       style={({ pressed }) => ({
         elevation: pressed ? 0 : 1,

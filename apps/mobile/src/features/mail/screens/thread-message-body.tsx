@@ -10,7 +10,7 @@ import type { MailMessage } from "@rodge-mail/features/mail";
 import { api } from "@rodge-mail/convex/api";
 import { normalizeAttachmentFileName } from "@rodge-mail/convex/attachments/constants";
 
-import { PostalStamp, PostalSurface } from "~/features/theme/postal-surface";
+import { PostalSurface } from "~/features/theme/postal-surface";
 import { useColor } from "~/hooks/use-color";
 import { MobileEmailBody } from "../components/mobile-email-body";
 import { toConvexId } from "../lib/convex-id";
@@ -18,11 +18,9 @@ import { toConvexId } from "../lib/convex-id";
 export function ThreadMessageBody({
   message,
   onLayout,
-  showStamp,
 }: {
   message: MailMessage;
   onLayout?: (event: LayoutChangeEvent) => void;
-  showStamp: boolean;
 }) {
   const downloadAttachment = useAction(api.attachments.actions.download);
   const mutedForeground = useColor("muted-foreground");
@@ -85,17 +83,7 @@ export function ThreadMessageBody({
           />
         </Pressable>
       ))}
-      <MessageStamp isVisible={showStamp} />
     </PostalSurface>
-  );
-}
-
-function MessageStamp({ isVisible }: { isVisible: boolean }) {
-  if (!isVisible) return null;
-  return (
-    <View className="items-end pt-3 pr-1">
-      <PostalStamp />
-    </View>
   );
 }
 

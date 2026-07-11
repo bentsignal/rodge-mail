@@ -105,11 +105,10 @@ function ThreadReader({
           contentInsetAdjustmentBehavior="automatic"
         >
           <ThreadHeader thread={thread} />
-          {thread.messages.map((message, index) => (
+          {thread.messages.map((message) => (
             <ThreadMessageBody
               key={message.id}
               message={message}
-              showStamp={index === thread.messages.length - 1}
               onLayout={
                 message.id === targetMessageId
                   ? (event) => scrollToMessage(scrollViewRef.current, event)
