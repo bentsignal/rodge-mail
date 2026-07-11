@@ -8,6 +8,12 @@
  * @module
  */
 
+import type {
+  ApiFromModules,
+  FilterApi,
+  FunctionReference,
+} from "convex/server";
+
 import type * as accounts_actions from "../accounts/actions.js";
 import type * as accounts_mutations from "../accounts/mutations.js";
 import type * as accounts_queries from "../accounts/queries.js";
@@ -79,11 +85,13 @@ import type * as notifications_delivery from "../notifications/delivery.js";
 import type * as notifications_deliveryState from "../notifications/deliveryState.js";
 import type * as notifications_expo from "../notifications/expo.js";
 import type * as notifications_internal from "../notifications/internal.js";
+import type * as notifications_maintenance from "../notifications/maintenance.js";
 import type * as notifications_mutations from "../notifications/mutations.js";
 import type * as notifications_payload from "../notifications/payload.js";
 import type * as notifications_policy from "../notifications/policy.js";
 import type * as notifications_preferences from "../notifications/preferences.js";
 import type * as notifications_queries from "../notifications/queries.js";
+import type * as notifications_recovery from "../notifications/recovery.js";
 import type * as notifications_validators from "../notifications/validators.js";
 import type * as outbox_queries from "../outbox/queries.js";
 import type * as outbox_recent from "../outbox/recent.js";
@@ -113,12 +121,6 @@ import type * as sync_internal from "../sync/internal.js";
 import type * as sync_stale from "../sync/stale.js";
 import type * as urls from "../urls.js";
 import type * as utils from "../utils.js";
-
-import type {
-  ApiFromModules,
-  FilterApi,
-  FunctionReference,
-} from "convex/server";
 
 declare const fullApi: ApiFromModules<{
   "accounts/actions": typeof accounts_actions;
@@ -192,11 +194,13 @@ declare const fullApi: ApiFromModules<{
   "notifications/deliveryState": typeof notifications_deliveryState;
   "notifications/expo": typeof notifications_expo;
   "notifications/internal": typeof notifications_internal;
+  "notifications/maintenance": typeof notifications_maintenance;
   "notifications/mutations": typeof notifications_mutations;
   "notifications/payload": typeof notifications_payload;
   "notifications/policy": typeof notifications_policy;
   "notifications/preferences": typeof notifications_preferences;
   "notifications/queries": typeof notifications_queries;
+  "notifications/recovery": typeof notifications_recovery;
   "notifications/validators": typeof notifications_validators;
   "outbox/queries": typeof outbox_queries;
   "outbox/recent": typeof outbox_recent;

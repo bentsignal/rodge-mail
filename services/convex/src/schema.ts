@@ -137,7 +137,8 @@ export default defineSchema(
       .index("by_owner_account", ["ownerId", "accountId"]),
     notificationDeliveries: defineTable(vNotificationDelivery)
       .index("by_owner_created", ["ownerId", "createdAt"])
-      .index("by_message", ["messageId"]),
+      .index("by_message", ["messageId"])
+      .index("by_status_updated", ["status", "updatedAt"]),
     notificationPushTickets: defineTable(vNotificationPushTicket)
       .index("by_delivery", ["deliveryId"])
       .index("by_expo_ticket", ["expoTicketId"]),

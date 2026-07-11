@@ -36,3 +36,9 @@ up to 1,000 receipts and retries missing or transient receipt requests at most
 three times. Permanent receipt HTTP failures stop immediately. This provides a
 bounded follow-up without an always-on process and does not resend a notification
 whose final device outcome is unknown.
+
+Every five minutes, maintenance also finalizes `sending` deliveries whose
+15-minute send lease expired. Persisted tickets are summarized and their receipt
+checks resume. A delivery with no persisted ticket is marked failed with an
+unknown outcome and is never resent, because the Expo request may have reached a
+device before the action was interrupted.

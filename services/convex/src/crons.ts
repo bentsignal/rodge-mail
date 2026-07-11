@@ -56,4 +56,11 @@ crons.interval(
   { limit: 25 },
 );
 
+crons.interval(
+  "finalize abandoned notification deliveries",
+  { minutes: 5 },
+  internal.notifications.maintenance.recoverStaleDeliveries,
+  { limit: 50 },
+);
+
 export default crons;

@@ -12,15 +12,19 @@ import { api } from "@rodge-mail/convex/api";
 
 import type { NotificationSetupState } from "./notification-setup";
 import {
+  createNotificationResponseResolver,
+  MOBILE_THREAD_ROUTE,
+} from "./notification-routing";
+import {
   resolveNotificationSetupState,
   shouldRestoreNotificationRegistration,
 } from "./notification-setup";
 
 const installationIdKey = "rodge-mail:notification-installation-id";
 const pushTokenKey = "rodge-mail:expo-push-token";
-const threadRoute = "/(tabs)/(inbox)/thread/[id]";
 const setupStateListeners = new Set<() => void>();
 let notificationSetupSnapshot: NotificationSetupState | undefined;
+const resolveNotificationResponse = createNotificationResponseResolver();
 
 Notifications.setNotificationHandler({
   handleNotification: () =>
@@ -74,12 +78,13 @@ export function useMobileNotifications(isAuthenticated: boolean) {
   useEffect(() => {
     if (!isAuthenticated) return;
     function openResponse(response: Notifications.NotificationResponse) {
-      const target = getNotificationTarget(
+      const target = resolveNotificationResponse(
+        response.notification.request.identifier,
         response.notification.request.content.data,
       );
       if (!target) return;
       router.push({
-        pathname: threadRoute,
+        pathname: MOBILE_THREAD_ROUTE,
         params: { id: target.threadId, messageId: target.messageId },
       });
     }
@@ -193,23 +198,10 @@ export async function scheduleLocalNotificationPreview(
       title: "Rodge Mail",
       body: "Simulator notification preview",
       sound: "default",
-      data: { messageId, route: threadRoute, threadId },
+      data: { messageId, route: MOBILE_THREAD_ROUTE, threadId },
     },
     trigger: null,
   });
-}
-
-export function getNotificationTarget(
-  data: Record<string, unknown> | undefined,
-) {
-  if (
-    data?.route !== threadRoute ||
-    typeof data.messageId !== "string" ||
-    typeof data.threadId !== "string"
-  ) {
-    return undefined;
-  }
-  return { messageId: data.messageId, threadId: data.threadId };
 }
 
 async function getInstallationId() {
