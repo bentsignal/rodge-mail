@@ -4,7 +4,7 @@ import { useMutation, useQuery } from "convex/react";
 
 import { api } from "@rodge-mail/convex/api";
 
-import { registerForNewMailNotifications } from "./mobile-notifications";
+import type { NotificationSetupState } from "./notification-setup";
 
 const options = [
   { label: "Inherit", value: null },
@@ -12,16 +12,21 @@ const options = [
   { label: "Off", value: false },
 ] as const;
 
-export function AccountNotificationPreferences() {
+export function AccountNotificationPreferences({
+  globalNewMailEnabled,
+  onEnableDevice,
+  setupState,
+}: {
+  globalNewMailEnabled: boolean;
+  onEnableDevice: () => Promise<boolean>;
+  setupState: NotificationSetupState | undefined;
+}) {
   const preferences = useQuery(
     api.notifications.queries.listAccountPreferences,
     {},
   );
   const setAccountPreferences = useMutation(
     api.notifications.mutations.setAccountPreferences,
-  );
-  const registerPushToken = useMutation(
-    api.notifications.mutations.registerPushToken,
   );
   const [savingAccountId, setSavingAccountId] = useState<string>();
   const [message, setMessage] = useState<string>();
@@ -42,13 +47,11 @@ export function AccountNotificationPreferences() {
     setSavingAccountId(preference.accountId);
     setMessage(undefined);
     try {
-      if (newMailEnabled) {
-        const result = await registerForNewMailNotifications(registerPushToken);
-        if (result.kind === "denied") {
-          setMessage("Allow notifications in system settings first.");
-          setSavingAccountId(undefined);
-          return;
-        }
+      const willEnable = newMailEnabled ?? globalNewMailEnabled;
+      if (willEnable && setupState !== "ready" && !(await onEnableDevice())) {
+        setMessage("Set up notifications on this device first.");
+        setSavingAccountId(undefined);
+        return;
       }
       await setAccountPreferences({
         accountId: preference.accountId,
@@ -67,6 +70,7 @@ export function AccountNotificationPreferences() {
       <Text className="text-muted-foreground mt-1 text-sm leading-5">
         Override new mail alerts for individual accounts.
       </Text>
+      <AccountSetupMessage setupState={setupState} />
       <View className="mt-4 gap-4">
         {preferences.map((preference) => (
           <View key={preference.accountId} className="gap-2">
@@ -94,6 +98,19 @@ export function AccountNotificationPreferences() {
       </View>
       <PreferenceMessage message={message} />
     </View>
+  );
+}
+
+function AccountSetupMessage({
+  setupState,
+}: {
+  setupState: NotificationSetupState | undefined;
+}) {
+  if (setupState === undefined || setupState === "ready") return null;
+  return (
+    <Text className="text-muted-foreground mt-1 text-xs leading-4">
+      These preferences cannot deliver alerts until this device is set up.
+    </Text>
   );
 }
 

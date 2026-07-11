@@ -4,8 +4,13 @@ import { useMutation, useQuery } from "convex/react";
 
 import { api } from "@rodge-mail/convex/api";
 
+import type { NotificationSetupState } from "./notification-setup";
 import { AccountNotificationPreferences } from "./account-notification-preferences";
-import { registerForNewMailNotifications } from "./mobile-notifications";
+import {
+  registerForNewMailNotifications,
+  useNotificationSetupState,
+} from "./mobile-notifications";
+import { isNotificationDeliveryEnabled } from "./notification-setup";
 
 export function NotificationPreferences() {
   const preferences = useQuery(api.notifications.queries.getPreferences, {});
@@ -17,6 +22,7 @@ export function NotificationPreferences() {
   );
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<string>();
+  const { refresh, setupState } = useNotificationSetupState();
 
   if (!preferences) {
     return (
@@ -26,6 +32,12 @@ export function NotificationPreferences() {
     );
   }
   const currentPreferences = preferences;
+  const deliveryEnabled =
+    setupState !== undefined &&
+    isNotificationDeliveryEnabled(
+      currentPreferences.newMailEnabled,
+      setupState,
+    );
 
   async function update(newMailEnabled: boolean, includePreview: boolean) {
     setIsSaving(true);
@@ -39,38 +51,48 @@ export function NotificationPreferences() {
   }
 
   async function setNewMailEnabled(value: boolean) {
-    if (value) {
-      setIsSaving(true);
-      setMessage(undefined);
-      try {
-        const result = await registerForNewMailNotifications(registerPushToken);
-        if (result.kind === "denied") {
-          setMessage("Allow notifications in system settings first.");
-          setIsSaving(false);
-          return;
-        }
-      } catch {
-        setMessage("Could not enable notifications on this device.");
+    if (value && !(await enableDevice())) return;
+    await update(value, currentPreferences.includePreview);
+  }
+
+  async function enableDevice() {
+    if (setupState === "ready") return true;
+    setIsSaving(true);
+    setMessage(undefined);
+    try {
+      const result = await registerForNewMailNotifications(registerPushToken);
+      const nextState = await refresh();
+      if (result.kind === "denied" || nextState === "permission-denied") {
+        setMessage("Allow notifications in system settings first.");
         setIsSaving(false);
-        return;
+        return false;
+      }
+      if (result.kind === "simulator" || nextState === "unsupported") {
+        setMessage("Remote notifications require a physical device.");
+        setIsSaving(false);
+        return false;
       }
       setIsSaving(false);
+      return nextState === "ready";
+    } catch {
+      setMessage("Could not enable notifications on this device.");
+      setIsSaving(false);
+      return false;
     }
-    await update(value, currentPreferences.includePreview);
   }
 
   return (
     <>
       <NotificationToggle
-        description="Alerts for newly received mail."
-        disabled={isSaving}
+        description={getSetupDescription(setupState)}
+        disabled={isSaving || setupState === undefined}
         label="New mail"
-        value={currentPreferences.newMailEnabled}
+        value={deliveryEnabled}
         onChange={(value) => void setNewMailEnabled(value)}
       />
       <NotificationToggle
         description="Include the sender and subject."
-        disabled={isSaving || !currentPreferences.newMailEnabled}
+        disabled={isSaving || !deliveryEnabled}
         label="Show preview"
         value={currentPreferences.includePreview}
         onChange={(value) =>
@@ -78,9 +100,27 @@ export function NotificationPreferences() {
         }
       />
       <PreferenceMessage message={message} />
-      <AccountNotificationPreferences />
+      <AccountNotificationPreferences
+        globalNewMailEnabled={currentPreferences.newMailEnabled}
+        setupState={setupState}
+        onEnableDevice={enableDevice}
+      />
     </>
   );
+}
+
+function getSetupDescription(setupState: NotificationSetupState | undefined) {
+  if (setupState === undefined) return "Checking this device…";
+  if (setupState === "permission-denied") {
+    return "Blocked in system settings. Tap after allowing notifications.";
+  }
+  if (setupState === "setup-required") {
+    return "Tap to allow notifications and register this device.";
+  }
+  if (setupState === "unsupported") {
+    return "Remote notifications require a physical device.";
+  }
+  return "This device is ready for newly received mail alerts.";
 }
 
 function NotificationToggle({

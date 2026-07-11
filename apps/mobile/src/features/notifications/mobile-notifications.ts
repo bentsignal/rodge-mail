@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { Platform } from "react-native";
+import { useEffect, useSyncExternalStore } from "react";
+import { AppState, Platform } from "react-native";
 import Constants from "expo-constants";
 import * as Crypto from "expo-crypto";
 import * as Device from "expo-device";
@@ -10,9 +10,17 @@ import { useMutation, useQuery } from "convex/react";
 
 import { api } from "@rodge-mail/convex/api";
 
+import type { NotificationSetupState } from "./notification-setup";
+import {
+  resolveNotificationSetupState,
+  shouldRestoreNotificationRegistration,
+} from "./notification-setup";
+
 const installationIdKey = "rodge-mail:notification-installation-id";
 const pushTokenKey = "rodge-mail:expo-push-token";
 const threadRoute = "/(tabs)/(inbox)/thread/[id]";
+const setupStateListeners = new Set<() => void>();
+let notificationSetupSnapshot: NotificationSetupState | undefined;
 
 Notifications.setNotificationHandler({
   handleNotification: () =>
@@ -46,9 +54,20 @@ export function useMobileNotifications(isAuthenticated: boolean) {
   // eslint-disable-next-line no-restricted-syntax -- Registration synchronizes native permission/token state with the signed-in owner.
   useEffect(() => {
     if (!isAuthenticated || !registrationEnabled) return;
-    void registerForNewMailNotifications(registerPushToken, {
-      requestPermission: false,
-    }).catch(() => undefined);
+    void getNotificationPermission().then((permission) => {
+      if (
+        !shouldRestoreNotificationRegistration({
+          isDevice: Device.isDevice,
+          permission,
+          preferenceEnabled: registrationEnabled,
+        })
+      ) {
+        return;
+      }
+      void registerForNewMailNotifications(registerPushToken, {
+        requestPermission: false,
+      }).catch(() => undefined);
+    });
   }, [isAuthenticated, registerPushToken, registrationEnabled]);
 
   // eslint-disable-next-line no-restricted-syntax -- Notification response subscriptions bridge native lifecycle events into Expo Router.
@@ -73,6 +92,15 @@ export function useMobileNotifications(isAuthenticated: boolean) {
     });
     return () => subscription.remove();
   }, [isAuthenticated, router]);
+}
+
+export function useNotificationSetupState() {
+  const setupState = useSyncExternalStore(
+    subscribeNotificationSetup,
+    getNotificationSetupSnapshot,
+    getNotificationSetupSnapshot,
+  );
+  return { refresh: refreshNotificationSetupState, setupState };
 }
 
 export async function registerForNewMailNotifications(
@@ -101,6 +129,7 @@ export async function registerForNewMailNotifications(
     token: pushToken.data,
   });
   await SecureStore.setItemAsync(pushTokenKey, pushToken.data);
+  void refreshNotificationSetupState();
   return { kind: "registered" as const, token: pushToken.data };
 }
 
@@ -111,6 +140,7 @@ export async function unregisterCurrentPushToken(
   if (!token) return;
   await unregisterPushToken({ token });
   await SecureStore.deleteItemAsync(pushTokenKey);
+  void refreshNotificationSetupState();
 }
 
 async function prepareNotificationPermissions(requestPermission = true) {
@@ -125,6 +155,29 @@ async function prepareNotificationPermissions(requestPermission = true) {
   if (!requestPermission) return false;
   const requested = await Notifications.requestPermissionsAsync();
   return requested.status === Notifications.PermissionStatus.GRANTED;
+}
+
+export async function getNotificationSetupState() {
+  const [permission, token] = await Promise.all([
+    getNotificationPermission(),
+    SecureStore.getItemAsync(pushTokenKey),
+  ]);
+  return resolveNotificationSetupState({
+    hasStoredToken: token !== null,
+    isDevice: Device.isDevice,
+    permission,
+  });
+}
+
+async function getNotificationPermission() {
+  const permission = await Notifications.getPermissionsAsync();
+  if (permission.status === Notifications.PermissionStatus.GRANTED) {
+    return "granted" as const;
+  }
+  if (permission.status === Notifications.PermissionStatus.DENIED) {
+    return "denied" as const;
+  }
+  return "undetermined" as const;
 }
 
 export async function scheduleLocalNotificationPreview(
@@ -165,4 +218,28 @@ async function getInstallationId() {
   const installationId = Crypto.randomUUID();
   await SecureStore.setItemAsync(installationIdKey, installationId);
   return installationId;
+}
+
+function subscribeNotificationSetup(listener: () => void) {
+  setupStateListeners.add(listener);
+  void refreshNotificationSetupState();
+  const subscription = AppState.addEventListener("change", (state) => {
+    if (state === "active") void refreshNotificationSetupState();
+  });
+  return () => {
+    setupStateListeners.delete(listener);
+    subscription.remove();
+  };
+}
+
+function getNotificationSetupSnapshot() {
+  return notificationSetupSnapshot;
+}
+
+async function refreshNotificationSetupState() {
+  const nextState = await getNotificationSetupState();
+  if (notificationSetupSnapshot === nextState) return nextState;
+  notificationSetupSnapshot = nextState;
+  setupStateListeners.forEach((listener) => listener());
+  return nextState;
 }
