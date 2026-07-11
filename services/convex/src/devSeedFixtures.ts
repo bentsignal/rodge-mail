@@ -1,6 +1,5 @@
 import type {
   ClassificationCategory,
-  FocusBucket,
   MailboxAddress,
   MailProvider,
 } from "./mail/types";
@@ -32,7 +31,6 @@ export interface DemoMessage {
   receivedAt: number;
   isRead: boolean;
   isPinned: boolean;
-  bucket: Exclude<FocusBucket, "unclassified">;
   category: ClassificationCategory;
   importance: number;
   confidence: number;
@@ -84,7 +82,6 @@ export const DEMO_MESSAGES = [
     receivedAt: hoursAgo(1),
     isRead: false,
     isPinned: true,
-    bucket: "focused",
     category: "transactional",
     importance: 0.91,
     confidence: 0.97,
@@ -104,7 +101,6 @@ export const DEMO_MESSAGES = [
     receivedAt: hoursAgo(2),
     isRead: false,
     isPinned: false,
-    bucket: "focused",
     category: "action_required",
     importance: 0.96,
     confidence: 0.99,
@@ -124,7 +120,6 @@ export const DEMO_MESSAGES = [
     receivedAt: hoursAgo(4),
     isRead: true,
     isPinned: true,
-    bucket: "focused",
     category: "personal",
     importance: 0.94,
     confidence: 0.98,
@@ -150,7 +145,6 @@ export const DEMO_MESSAGES = [
     receivedAt: hoursAgo(8),
     isRead: false,
     isPinned: false,
-    bucket: "focused",
     category: "action_required",
     importance: 0.88,
     confidence: 0.95,
@@ -176,7 +170,6 @@ export const DEMO_MESSAGES = [
     receivedAt: hoursAgo(12),
     isRead: true,
     isPinned: false,
-    bucket: "focused",
     category: "action_required",
     importance: 0.9,
     confidence: 0.94,
@@ -196,7 +189,6 @@ export const DEMO_MESSAGES = [
     receivedAt: hoursAgo(20),
     isRead: true,
     isPinned: false,
-    bucket: "other",
     category: "transactional",
     importance: 0.38,
     confidence: 0.96,
@@ -216,7 +208,6 @@ export const DEMO_MESSAGES = [
     receivedAt: hoursAgo(30),
     isRead: false,
     isPinned: false,
-    bucket: "other",
     category: "newsletter",
     importance: 0.22,
     confidence: 0.98,
@@ -236,7 +227,6 @@ export const DEMO_MESSAGES = [
     receivedAt: hoursAgo(36),
     isRead: false,
     isPinned: false,
-    bucket: "other",
     category: "notification",
     importance: 0.16,
     confidence: 0.99,
@@ -257,7 +247,6 @@ export const DEMO_MESSAGES = [
     receivedAt: hoursAgo(48),
     isRead: true,
     isPinned: false,
-    bucket: "other",
     category: "noise",
     importance: 0.04,
     confidence: 0.99,

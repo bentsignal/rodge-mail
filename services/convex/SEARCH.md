@@ -22,11 +22,10 @@ owner-scoped inbox messages, and appends unique semantic matches after lexical
 matches. Semantic failure, missing AI configuration, or rate limiting does not
 hide or delay lexical results.
 
-New inbox messages queue a baseline inbox embedding during provider upsert.
-Embeddings cover the unified inbox without running or writing Focused/Other
-classification. The dormant classification infrastructure remains available
-for a future product iteration, but search ingestion and backfill do not invoke
-it.
+New inbox messages queue importance classification during provider upsert.
+Messages above the shared scalar importance threshold receive embeddings;
+pinned and explicitly selected messages remain eligible overrides. Historical
+Focused/Other fields are not written or consulted by new classification work.
 
 Rows synced before unified indexing need a one-time backfill. Call the
 authenticated `embedding/mutations:backfillInboxIndexing` mutation with

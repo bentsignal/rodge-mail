@@ -1,14 +1,9 @@
 # AI classification and semantic search
 
-AI classification is deferred while Rodge Mail uses one chronological inbox.
-New provider mail is not queued for classification. The existing pipeline and
-stored classification rows remain temporarily available for migration and
-experimentation, but the inbox API and clients do not depend on them.
-
-If classification is re-enabled, message fields are bounded and normalized
-before they are sent as untrusted JSON to the model. The model receives no
-tools, URLs are not fetched, and its structured response is validated again
-before storage.
+New provider inbox mail is classified asynchronously while Rodge Mail keeps one
+chronological inbox. Message fields are bounded and normalized before they are
+sent as untrusted JSON to the model. The model receives no tools, URLs are not
+fetched, and its structured response is validated again before storage.
 
 ## Provider setup
 
@@ -28,21 +23,27 @@ configured. Never put the API key in a client environment variable.
 
 ## Classification lifecycle
 
-The dormant `classification/internal:queue` boundary creates one job per message revision and
-prompt version. Re-queuing the same input is a no-op. Scheduled actions use a
+The `classification/internal:queue` boundary creates one job per message
+revision and prompt version. Re-queuing the same input is a no-op. Scheduled actions use a
 per-owner rate limit, retry transient failures with bounded backoff, and reject
 stale completions by job key. After the final model failure, deterministic
 signals provide an explainable fallback instead of leaving the message stuck.
 
 The stored record includes the input hash, prompt and output-schema versions,
 model, attempts, signals, reason, and confidence. Legacy bucket fields are
-optional so existing rows remain valid without requiring new messages to adopt
-that product model.
+optional so existing rows remain valid. New model, rule, manual, and seed
+classifications do not write them.
+
+Category, scalar importance, reason, and summary are required on every stored
+classification. A brand-new pending job uses the neutral `unclassified`
+category; reclassifying an existing message preserves its last completed
+payload until the replacement result commits, so an abandoned job cannot
+silently discard importance or a valid embedding.
 
 ## Selective embeddings
 
-The retained experimental pipeline only embeds legacy-prioritized, pinned, or
-explicitly selected messages. Vectors live in a separate table and use 512
+The pipeline embeds messages above the shared scalar importance threshold,
+plus pinned or explicitly selected messages. Vectors live in a separate table and use 512
 dimensions to keep normal mail reads small. Removing the last selection reason
 removes the vector.
 

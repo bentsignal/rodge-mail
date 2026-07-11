@@ -78,7 +78,7 @@ export default defineSchema(
       .index("by_message", ["messageId"])
       .index("by_status", ["status"])
       .index("by_owner_status", ["ownerId", "status"])
-      .index("by_owner_bucket_importance", ["ownerId", "bucket", "importance"]),
+      .index("by_owner_status_importance", ["ownerId", "status", "importance"]),
     messageEmbeddingJobs: defineTable(vMessageEmbeddingJob)
       .index("by_message", ["messageId"])
       .index("by_status", ["status"])

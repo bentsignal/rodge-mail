@@ -10,7 +10,7 @@ model instead of rendering Gmail, Microsoft, or IMAP payloads directly.
 Gmail API + Pub/Sub ─┐
 Microsoft Graph ─────┼─> provider adapters ─> Convex mail model
 iCloud IMAP/SMTP ────┘                          │
-                                               ├─> focused inbox classifier
+                                               ├─> importance classifier
                                                ├─> selective embeddings
                                                └─> text/vector search
 
@@ -69,21 +69,27 @@ Webhooks are wake-up hints; provider cursors are the source of truth.
 All adapters normalize into one internal mutation and use leases, bounded
 batches, exponential backoff, and periodic reconciliation.
 
-## Focused inbox
+## Importance classification
 
 Classification is an idempotent structured workflow, not a tool-using chat
 agent. Message bodies are untrusted input and the classifier has no tools.
 
 Deterministic signals run before the model: conversation direction, list and
 automated headers, action and transactional language, attachments, pin state,
-and manual overrides. The model returns a versioned bucket, category,
-importance, confidence, short reason, and summary.
+and manual overrides. The model returns versioned scalar importance, category,
+confidence, a short reason, and a summary.
 
 The result records the content hash, prompt/schema/model versions, attempts,
 and timestamp. A mutation only accepts it if the source revision still matches.
-Pinned messages and explicit Focused/Other feedback always win.
+Pinned messages and explicit importance feedback always win. Optional historical
+bucket fields are compatibility data, not the product abstraction.
 
-Embeddings are generated only for focused, pinned, or manually selected mail.
+Stored category, importance, reason, and summary are always present. Pending
+reclassification retains the previous completed payload; a message without a
+prior result uses a neutral `unclassified` category until classification
+finishes.
+
+Embeddings are generated only for important, pinned, or manually selected mail.
 Header search remains available for every message.
 
 ## Privacy boundaries

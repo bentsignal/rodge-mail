@@ -57,8 +57,8 @@ describe("mail normalization", () => {
   });
 });
 
-describe("deterministic focused inbox", () => {
-  it("focuses concrete action requests with an explanation", () => {
+describe("deterministic importance classification", () => {
+  it("scores concrete action requests highly with an explanation", () => {
     const mail = normalizeMail(
       {
         ...baseMessage,
@@ -69,13 +69,13 @@ describe("deterministic focused inbox", () => {
     );
     const result = deterministicClassification(mail, deriveSignals(mail));
 
-    expect(result.bucket).toBe("focused");
+    expect(result).not.toHaveProperty("bucket");
     expect(result.category).toBe("action_required");
     expect(result.reason).toContain("concrete request or deadline");
     expect(result.importance).toBeGreaterThan(0.7);
   });
 
-  it("keeps bulk newsletters out of Focused", () => {
+  it("scores bulk newsletters as low importance", () => {
     const mail = normalizeMail(
       {
         ...baseMessage,
@@ -90,7 +90,7 @@ describe("deterministic focused inbox", () => {
     );
     const result = deterministicClassification(mail, deriveSignals(mail));
 
-    expect(result.bucket).toBe("other");
+    expect(result).not.toHaveProperty("bucket");
     expect(result.category).toBe("newsletter");
     expect(result.importance).toBeLessThan(0.25);
   });

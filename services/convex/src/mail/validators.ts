@@ -177,6 +177,11 @@ export const vClassificationCategory = v.union(
   v.literal("noise"),
 );
 
+export const vStoredClassificationCategory = v.union(
+  v.literal("unclassified"),
+  vClassificationCategory,
+);
+
 export const vClassificationSource = v.union(
   v.literal("seed"),
   v.literal("rules"),
@@ -195,11 +200,11 @@ export const vMessageClassification = v.object({
   messageId: v.id("messages"),
   status: vClassificationStatus,
   bucket: v.optional(vFocusBucket),
-  category: v.optional(vClassificationCategory),
+  category: vStoredClassificationCategory,
   importance: v.number(),
   confidence: v.number(),
-  reason: v.optional(v.string()),
-  summary: v.optional(v.string()),
+  reason: v.string(),
+  summary: v.string(),
   shouldEmbed: v.boolean(),
   source: vClassificationSource,
   promptVersion: v.string(),

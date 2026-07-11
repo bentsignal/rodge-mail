@@ -1,5 +1,5 @@
-export const CLASSIFICATION_PROMPT_VERSION = "focused-mail-v1";
-export const CLASSIFICATION_OUTPUT_SCHEMA_VERSION = "classification-v1";
+export const CLASSIFICATION_PROMPT_VERSION = "importance-mail-v2";
+export const CLASSIFICATION_OUTPUT_SCHEMA_VERSION = "classification-v2";
 export const DEFAULT_CLASSIFICATION_MODEL = "gpt-5-mini";
 export const DEFAULT_EMBEDDING_MODEL = "text-embedding-3-small";
 export const EMBEDDING_DIMENSIONS = 512;
@@ -12,8 +12,6 @@ export type ClassificationCategory =
   | "newsletter"
   | "notification"
   | "noise";
-
-export type ClassificationBucket = "focused" | "other";
 
 export type EmbeddingReason =
   | "focused"
@@ -30,7 +28,6 @@ export interface ClassificationSignal {
 
 export interface ClassificationResult {
   schemaVersion: typeof CLASSIFICATION_OUTPUT_SCHEMA_VERSION;
-  bucket: ClassificationBucket;
   category: ClassificationCategory;
   importance: number;
   confidence: number;

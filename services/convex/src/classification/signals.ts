@@ -22,14 +22,12 @@ export function deterministicClassification(
   signals: ClassificationSignal[],
 ) {
   const score = signals.reduce((total, signal) => total + signal.weight, 0);
-  const bucket = bucketForScore(score);
   const category = inferCategory(mail, signals);
   const topSignals = [...signals]
     .sort((left, right) => Math.abs(right.weight) - Math.abs(left.weight))
     .slice(0, 3);
   return {
     schemaVersion: CLASSIFICATION_OUTPUT_SCHEMA_VERSION,
-    bucket,
     category,
     importance: clamp(0.5 + score / 2),
     confidence: clamp(0.58 + Math.abs(score) / 3),
@@ -38,11 +36,6 @@ export function deterministicClassification(
       "No strong priority signals were detected.",
     summary: mail.snippet || mail.subject || "No message preview available.",
   } satisfies ClassificationResult;
-}
-
-function bucketForScore(score: number) {
-  if (score >= 0.15) return "focused";
-  return "other";
 }
 
 function detectPinned(mail: NormalizedMail) {

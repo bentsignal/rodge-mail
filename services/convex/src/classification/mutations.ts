@@ -8,7 +8,7 @@ import {
   ensureOwnedMessage,
   getClassificationForMessage,
 } from "../mail/helpers";
-import { vClassificationCategory, vFocusBucket } from "../mail/validators";
+import { vClassificationCategory } from "../mail/validators";
 import { resolveNewMailNotification } from "../notifications/internal";
 import { authedMutation } from "../utils";
 import {
@@ -17,30 +17,32 @@ import {
 } from "./constants";
 import { isImportantMessage } from "./importance";
 import { queueClassificationForMessage } from "./internal";
+import { assertProbability } from "./jobHelpers";
 
 export const setManualOverride = authedMutation({
   args: {
     messageId: v.id("messages"),
-    bucket: vFocusBucket,
     category: vClassificationCategory,
+    importance: v.number(),
     reason: v.optional(v.string()),
+    summary: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    if (args.bucket === "unclassified") {
-      throw new Error("Manual classification needs a focused or other bucket");
-    }
+    assertProbability(args.importance, "importance");
     const message = await ensureOwnedMessage(ctx, ctx.ownerId, args.messageId);
     const existing = await getClassificationForMessage(ctx, message._id);
     const now = Date.now();
     const values = {
       status: "classified" as const,
-      bucket: args.bucket,
       category: args.category,
-      importance: args.bucket === "focused" ? 1 : 0.2,
+      importance: args.importance,
       confidence: 1,
       reason: (args.reason ?? "Priority set manually").slice(0, 240),
-      summary: existing?.summary,
-      shouldEmbed: message.inInbox,
+      summary: (args.summary ?? existing?.summary ?? message.snippet).slice(
+        0,
+        280,
+      ),
+      shouldEmbed: message.inInbox && isImportantMessage(args.importance),
       source: "manual" as const,
       promptVersion: "manual-v1",
       outputSchemaVersion: CLASSIFICATION_OUTPUT_SCHEMA_VERSION,
@@ -63,10 +65,6 @@ export const setManualOverride = authedMutation({
         createdAt: now,
       });
     }
-    await ctx.db.patch(message._id, {
-      focusBucket: args.bucket,
-      updatedAt: now,
-    });
     await reconcileEmbeddingSelection(ctx, message._id);
     await resolveNewMailNotification(ctx, {
       important: isImportantMessage(values.importance),

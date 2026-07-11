@@ -201,11 +201,4 @@ export async function reconcileEmbeddingSelection(
   }
 }
 
-export async function removeFocusedEmbedding(
-  ctx: MutationCtx,
-  messageId: Id<"messages">,
-) {
-  await deleteEmbeddingRecords(ctx, messageId, "focused");
-}
-
 export { queueEmbeddingForMessage };

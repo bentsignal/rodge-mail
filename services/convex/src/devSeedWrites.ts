@@ -121,7 +121,6 @@ export async function ensureDemoMessage(
     inInbox: true,
     isRead: fixture.isRead,
     isPinned: fixture.isPinned,
-    focusBucket: fixture.bucket,
     createdAt: now,
     updatedAt: now,
   });
@@ -139,7 +138,6 @@ export async function ensureDemoMessage(
       ownerId,
       messageId,
       status: "classified",
-      bucket: fixture.bucket,
       category: fixture.category,
       importance: fixture.importance,
       confidence: fixture.confidence,

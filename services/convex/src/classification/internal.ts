@@ -10,7 +10,6 @@ import {
   vClassificationCategory,
   vClassificationSignal,
   vClassificationSource,
-  vFocusBucket,
 } from "../mail/validators";
 import { resolveNewMailNotification } from "../notifications/internal";
 import {
@@ -25,6 +24,7 @@ import {
   isClassificationRunnable,
 } from "./jobHelpers";
 import { normalizeMail, stableHash } from "./normalize";
+import { pendingClassificationMetadata } from "./pending";
 import { isClassificationInputStale } from "./stale";
 
 interface ClassificationActionArgs extends Record<string, unknown> {
@@ -128,7 +128,6 @@ export const complete = internalMutation({
     messageId: v.id("messages"),
     jobKey: v.string(),
     schemaVersion: v.literal(CLASSIFICATION_OUTPUT_SCHEMA_VERSION),
-    bucket: vFocusBucket,
     category: vClassificationCategory,
     importance: v.number(),
     confidence: v.number(),
@@ -140,9 +139,6 @@ export const complete = internalMutation({
     error: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    if (args.bucket === "unclassified") {
-      throw new ConvexError("Completed classification needs a bucket");
-    }
     assertProbability(args.importance, "importance");
     assertProbability(args.confidence, "confidence");
 
@@ -154,30 +150,23 @@ export const complete = internalMutation({
     if (classification.source === "manual") return false;
 
     const now = Date.now();
-    await Promise.all([
-      ctx.db.patch(message._id, {
-        focusBucket: args.bucket,
-        updatedAt: now,
-      }),
-      ctx.db.patch(classification._id, {
-        status: "classified",
-        bucket: args.bucket,
-        category: args.category,
-        importance: args.importance,
-        confidence: args.confidence,
-        reason: args.reason.slice(0, 240),
-        summary: args.summary.slice(0, 280),
-        shouldEmbed: message.inInbox,
-        signals: args.signals,
-        source: args.source,
-        model: args.model,
-        error: args.error,
-        outputSchemaVersion: CLASSIFICATION_OUTPUT_SCHEMA_VERSION,
-        classifiedAt: now,
-        nextAttemptAt: undefined,
-        updatedAt: now,
-      }),
-    ]);
+    await ctx.db.patch(classification._id, {
+      status: "classified",
+      category: args.category,
+      importance: args.importance,
+      confidence: args.confidence,
+      reason: args.reason.slice(0, 240),
+      summary: args.summary.slice(0, 280),
+      shouldEmbed: message.inInbox && isImportantMessage(args.importance),
+      signals: args.signals,
+      source: args.source,
+      model: args.model,
+      error: args.error,
+      outputSchemaVersion: CLASSIFICATION_OUTPUT_SCHEMA_VERSION,
+      classifiedAt: now,
+      nextAttemptAt: undefined,
+      updatedAt: now,
+    });
 
     await reconcileEmbeddingSelection(ctx, message._id);
     await resolveNewMailNotification(ctx, {
@@ -250,12 +239,10 @@ export async function queueClassificationForMessage(
   }
 
   const now = Date.now();
+  const metadata = pendingClassificationMetadata(existing, message.snippet);
   const values = {
     status: "pending" as const,
-    bucket: "unclassified" as const,
-    importance: 0,
-    confidence: 0,
-    shouldEmbed: false,
+    ...metadata,
     source: "rules" as const,
     promptVersion: args.promptVersion,
     outputSchemaVersion: CLASSIFICATION_OUTPUT_SCHEMA_VERSION,
@@ -263,19 +250,12 @@ export async function queueClassificationForMessage(
     inputHash,
     attempt: 0,
     nextAttemptAt: undefined,
-    category: undefined,
-    reason: undefined,
-    summary: undefined,
     signals: undefined,
     model: undefined,
     error: undefined,
     classifiedAt: undefined,
     updatedAt: now,
   };
-  await ctx.db.patch(message._id, {
-    focusBucket: "unclassified",
-    updatedAt: now,
-  });
   const classificationId = existing
     ? existing._id
     : await ctx.db.insert("messageClassifications", {
