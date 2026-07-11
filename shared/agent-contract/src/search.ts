@@ -6,7 +6,7 @@ import {
   mailboxAddressSchema,
   timestampSchema,
   untrustedContentMarkerSchema,
-} from "./common";
+} from "./common.ts";
 
 export const MAX_AGENT_SEARCH_RESULTS = 25;
 export const MAX_AGENT_SEARCH_QUERY_LENGTH = 500;

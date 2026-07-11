@@ -5,7 +5,7 @@ import {
   mailboxAddressSchema,
   timestampSchema,
   untrustedContentMarkerSchema,
-} from "./common";
+} from "./common.ts";
 
 export const MAX_AGENT_THREAD_MESSAGES = 100;
 export const MAX_AGENT_MESSAGE_BODY_LENGTH = 50_000;

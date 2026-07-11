@@ -2,7 +2,7 @@
   "extends": "@rodge-mail/tsconfig/base.json",
   "compilerOptions": {
     "allowImportingTsExtensions": true,
-    "lib": ["ES2022"],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "rootDir": "."
   },
   "include": ["src"],

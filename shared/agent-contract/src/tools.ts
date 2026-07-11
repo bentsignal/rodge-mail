@@ -1,9 +1,12 @@
 import { z } from "zod";
 
-import { listAccountsInputSchema, listAccountsOutputSchema } from "./accounts";
-import { UNTRUSTED_MAIL_NOTICE } from "./common";
-import { searchMailInputSchema, searchMailOutputSchema } from "./search";
-import { getThreadInputSchema, getThreadOutputSchema } from "./thread";
+import {
+  listAccountsInputSchema,
+  listAccountsOutputSchema,
+} from "./accounts.ts";
+import { UNTRUSTED_MAIL_NOTICE } from "./common.ts";
+import { searchMailInputSchema, searchMailOutputSchema } from "./search.ts";
+import { getThreadInputSchema, getThreadOutputSchema } from "./thread.ts";
 
 export const readOnlyToolAnnotations = {
   readOnlyHint: true,

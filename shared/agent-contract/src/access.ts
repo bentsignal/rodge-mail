@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { convexIdSchema } from "./common";
+import { convexIdSchema } from "./common.ts";
 
 export const agentScopeSchema = z.enum([
   "accounts:read",
