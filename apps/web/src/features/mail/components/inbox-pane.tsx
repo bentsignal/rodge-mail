@@ -2,7 +2,6 @@ import { PenLine, Search, X } from "lucide-react";
 
 import { cn } from "@rodge-mail/std/cn";
 
-import type { MailAccountView } from "../types";
 import { useLiveMail } from "../live-data";
 import { useMailStore } from "../store";
 import { useMailboxNavigation } from "../use-mailbox-navigation";
@@ -15,7 +14,7 @@ export function InboxPane() {
     <section
       aria-label="Inbox"
       className={cn(
-        "min-w-0 flex-1 flex-col border-r border-[var(--mail-seam)] bg-[var(--mail-paper-soft)] lg:max-w-[430px] lg:min-w-[360px] lg:flex-none xl:max-w-[460px]",
+        "min-w-0 flex-1 flex-col border-r border-[var(--mail-seam)] bg-[var(--mail-paper-soft)] lg:w-[360px] lg:min-w-[340px] lg:flex-none xl:w-[385px] xl:min-w-[385px]",
         mobileReaderIsOpen ? "hidden lg:flex" : "flex",
       )}
     >
@@ -26,26 +25,16 @@ export function InboxPane() {
 }
 
 function InboxHeader() {
-  const accountFilter = useMailStore((store) => store.accountFilter);
   const openComposer = useMailStore((store) => store.openComposer);
-  const { accounts, inboxMessages, isLoadingInbox } = useLiveMail();
-  const currentAccount =
-    accountFilter === "all"
-      ? undefined
-      : accounts.find((account) => account._id === accountFilter);
+  const { inboxMessages, isLoadingInbox } = useLiveMail();
 
   return (
-    <header className="mail-paper shrink-0 border-b border-[var(--mail-seam)] px-4 pt-4 pb-3.5 shadow-[0_2px_6px_rgba(55,40,19,0.08)] sm:px-5 sm:pt-5 dark:shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
-      <div className="mb-4 flex items-end justify-between gap-4">
+    <header className="mail-paper shrink-0 border-b border-[var(--mail-seam)] px-4 pt-5 pb-4 shadow-[0_2px_6px_rgba(55,40,19,0.08)] sm:px-5 dark:shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
+      <div className="mb-5 flex items-end justify-between gap-4">
         <div className="min-w-0">
           <div className="flex items-center gap-2.5">
             <MobileBrand />
-            <p className="mail-label font-mono text-[9px] tracking-[0.18em] uppercase">
-              {getMailboxContextLabel(currentAccount)}
-            </p>
-          </div>
-          <div className="mt-1.5 flex items-end gap-2.5">
-            <h1 className="font-serif text-[32px] leading-none font-semibold tracking-[-0.04em] sm:text-[35px]">
+            <h1 className="font-serif text-[32px] leading-none font-semibold tracking-[-0.04em] sm:text-[34px]">
               Inbox
             </h1>
             <InboxCount
@@ -101,13 +90,6 @@ function InboxCountValue({
   return count;
 }
 
-function getMailboxContextLabel(account: MailAccountView | undefined) {
-  if (!account) return "Unified inbox";
-  if (account.provider === "gmail") return "Gmail account";
-  if (account.provider === "icloud") return "iCloud account";
-  return "Microsoft 365 account";
-}
-
 function SearchInput() {
   const searchQuery = useMailStore((store) => store.searchQuery);
   const setSearchQuery = useMailStore((store) => store.setSearchQuery);
@@ -117,7 +99,7 @@ function SearchInput() {
       <Search className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[var(--mail-ink-soft)]" />
       <input
         aria-label="Search mail"
-        className="mail-field h-10 w-full rounded-[10px] border pr-10 pl-10 text-sm transition outline-none"
+        className="mail-field h-11 w-full rounded-lg border pr-11 pl-10 text-sm transition outline-none"
         onChange={(event) => setSearchQuery(event.target.value)}
         placeholder="Search mail"
         type="search"
@@ -135,7 +117,7 @@ function ClearSearchButton({ query }: { query: string }) {
   return (
     <button
       aria-label="Clear search"
-      className="mail-icon-button absolute top-1/2 right-2.5 flex size-7 -translate-y-1/2 items-center justify-center rounded-full"
+      className="mail-icon-button absolute top-1/2 right-1 flex size-9 -translate-y-1/2 items-center justify-center rounded-lg"
       onClick={() => setSearchQuery("")}
       type="button"
     >

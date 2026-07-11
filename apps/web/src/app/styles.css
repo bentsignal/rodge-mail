@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "@rodge-mail/tailwind-config/theme";
+@import "../../../../shared/design-assets/warm-paper/tokens.css";
 
 @import "@fontsource-variable/geist";
 @import "@fontsource-variable/geist-mono";
@@ -19,108 +20,84 @@
       "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia,
       serif;
     color-scheme: light;
-    --background: oklch(0.88 0.025 93);
-    --foreground: oklch(0.25 0.035 143);
-    --card: oklch(0.965 0.025 91);
-    --card-foreground: oklch(0.25 0.035 143);
-    --popover: oklch(0.975 0.022 91);
-    --popover-foreground: oklch(0.25 0.035 143);
-    --primary: oklch(0.38 0.075 145);
-    --primary-foreground: oklch(0.97 0.035 91);
-    --secondary: oklch(0.63 0.105 78);
-    --secondary-foreground: oklch(0.24 0.04 80);
-    --muted: oklch(0.91 0.028 91);
-    --muted-foreground: oklch(0.49 0.03 78);
-    --accent: oklch(0.84 0.065 83);
-    --accent-foreground: oklch(0.28 0.045 105);
-    --border: oklch(0.76 0.045 84);
-    --input: oklch(0.72 0.05 84);
-    --ring: oklch(0.57 0.105 79);
-    --sidebar: oklch(0.34 0.075 145);
-    --sidebar-foreground: oklch(0.96 0.035 91);
-    --sidebar-accent: oklch(0.42 0.075 143);
-    --sidebar-accent-foreground: oklch(0.98 0.025 91);
-    --sidebar-border: oklch(0.26 0.06 144);
-    --mail-brand: #18442f;
-    --mail-brand-hover: #22543c;
-    --mail-brand-foreground: #fff3cf;
-    --mail-highlight: #b44c3c;
-    --mail-reader: #f8f0d9;
-    --mail-row-hover: #fbf6e8;
-    --mail-selected: #eadcb5;
-    --mail-avatar: #e7d7aa;
-    --mail-avatar-foreground: #3d4939;
-    --mail-chassis: #17432f;
-    --mail-chassis-deep: #0f3323;
-    --mail-chassis-raised: #20513a;
-    --mail-chassis-foreground: #fff4d5;
-    --mail-paper: #fbf3dc;
-    --mail-paper-soft: #f3e7c7;
-    --mail-paper-deep: #dfcf9f;
-    --mail-ink-soft: #746951;
-    --mail-brass: #b88932;
-    --mail-brass-bright: #d4aa4d;
-    --mail-brass-deep: #775118;
-    --mail-seam: rgb(80 61 28 / 28%);
-    --mail-shadow-ambient: 0 18px 46px rgb(30 38 25 / 18%);
-    --mail-shadow-raised:
-      0 1px 0 rgb(255 255 255 / 58%) inset, 0 -1px 0 rgb(93 65 20 / 18%) inset,
-      0 5px 12px rgb(64 48 24 / 15%);
-    --mail-shadow-inset:
-      0 1px 2px rgb(74 53 21 / 22%) inset, 0 -1px 0 rgb(255 255 255 / 42%) inset;
+    --background: var(--warm-canvas);
+    --foreground: var(--warm-ink);
+    --card: var(--warm-paper);
+    --card-foreground: var(--warm-ink);
+    --popover: var(--warm-paper-raised);
+    --popover-foreground: var(--warm-ink);
+    --primary: var(--warm-forest);
+    --primary-foreground: #f7f0df;
+    --secondary: var(--warm-brass);
+    --secondary-foreground: #251c0e;
+    --muted: var(--warm-paper-muted);
+    --muted-foreground: var(--warm-ink-muted);
+    --accent: var(--warm-paper-muted);
+    --accent-foreground: var(--warm-ink);
+    --border: var(--warm-border);
+    --input: var(--warm-border-strong);
+    --ring: var(--warm-brass);
+    --sidebar: var(--warm-forest);
+    --sidebar-foreground: #f7f0df;
+    --sidebar-accent: var(--warm-forest-raised);
+    --sidebar-accent-foreground: #f7f0df;
+    --sidebar-border: var(--warm-forest-deep);
+    --mail-brand: var(--warm-forest);
+    --mail-brand-hover: var(--warm-forest-raised);
+    --mail-brand-foreground: #f7f0df;
+    --mail-highlight: var(--warm-danger);
+    --mail-reader: var(--warm-paper);
+    --mail-row-hover: var(--warm-paper-raised);
+    --mail-selected: color-mix(
+      in oklab,
+      var(--warm-brass) 16%,
+      var(--warm-paper)
+    );
+    --mail-avatar: var(--warm-paper-muted);
+    --mail-avatar-foreground: var(--warm-ink);
+    --mail-chassis: var(--warm-forest);
+    --mail-chassis-deep: var(--warm-forest-deep);
+    --mail-chassis-raised: var(--warm-forest-raised);
+    --mail-chassis-foreground: #f7f0df;
+    --mail-paper: var(--warm-paper);
+    --mail-paper-soft: var(--warm-paper-muted);
+    --mail-paper-deep: var(--warm-border);
+    --mail-ink-soft: var(--warm-ink-muted);
+    --mail-brass: var(--warm-brass);
+    --mail-brass-bright: var(--warm-brass-hover);
+    --mail-brass-deep: var(--warm-brass-pressed);
+    --mail-seam: var(--warm-border);
+    --mail-border-strong: var(--warm-border-strong);
+    --mail-shadow-ambient: var(--warm-shadow-floating);
+    --mail-shadow-raised: var(--warm-shadow-raised);
+    --mail-shadow-inset: var(--warm-shadow-inset);
   }
 
   .dark {
     color-scheme: dark;
-    --background: oklch(0.17 0.025 145);
-    --foreground: oklch(0.91 0.033 88);
-    --card: oklch(0.205 0.03 143);
-    --card-foreground: oklch(0.91 0.033 88);
-    --popover: oklch(0.23 0.032 143);
-    --popover-foreground: oklch(0.93 0.03 88);
-    --primary: oklch(0.67 0.11 80);
-    --primary-foreground: oklch(0.18 0.03 140);
-    --secondary: oklch(0.68 0.11 80);
-    --secondary-foreground: oklch(0.18 0.03 140);
-    --muted: oklch(0.265 0.028 140);
-    --muted-foreground: oklch(0.69 0.03 88);
-    --accent: oklch(0.31 0.04 105);
-    --accent-foreground: oklch(0.91 0.033 88);
-    --border: oklch(0.33 0.035 130);
-    --input: oklch(0.39 0.045 125);
-    --ring: oklch(0.68 0.11 80);
-    --sidebar: oklch(0.16 0.03 145);
-    --sidebar-foreground: oklch(0.91 0.033 88);
-    --sidebar-accent: oklch(0.245 0.035 143);
-    --sidebar-accent-foreground: oklch(0.95 0.025 88);
-    --sidebar-border: oklch(0.29 0.04 140);
-    --mail-brand: #23523b;
-    --mail-brand-hover: #2c6248;
-    --mail-brand-foreground: #fff0c4;
-    --mail-highlight: #dc725e;
-    --mail-reader: #20231c;
-    --mail-row-hover: #243126;
-    --mail-selected: #344232;
-    --mail-avatar: #3b4938;
-    --mail-avatar-foreground: #f0dfb7;
-    --mail-chassis: #102b1e;
-    --mail-chassis-deep: #091c13;
-    --mail-chassis-raised: #183a29;
-    --mail-chassis-foreground: #f5e7bf;
-    --mail-paper: #25281f;
-    --mail-paper-soft: #2d3025;
-    --mail-paper-deep: #393828;
-    --mail-ink-soft: #b0a58b;
-    --mail-brass: #a5792d;
-    --mail-brass-bright: #d0a64d;
-    --mail-brass-deep: #654614;
-    --mail-seam: rgb(8 18 12 / 65%);
-    --mail-shadow-ambient: 0 22px 56px rgb(0 0 0 / 46%);
-    --mail-shadow-raised:
-      0 1px 0 rgb(255 239 184 / 11%) inset, 0 -1px 0 rgb(0 0 0 / 44%) inset,
-      0 6px 14px rgb(0 0 0 / 28%);
-    --mail-shadow-inset:
-      0 2px 3px rgb(0 0 0 / 42%) inset, 0 -1px 0 rgb(255 239 184 / 8%) inset;
+    --background: var(--warm-canvas);
+    --foreground: var(--warm-ink);
+    --card: var(--warm-paper);
+    --card-foreground: var(--warm-ink);
+    --popover: var(--warm-paper-raised);
+    --popover-foreground: var(--warm-ink);
+    --primary: var(--warm-brass);
+    --primary-foreground: #21190c;
+    --secondary: var(--warm-brass);
+    --secondary-foreground: #21190c;
+    --muted: var(--warm-paper-muted);
+    --muted-foreground: var(--warm-ink-muted);
+    --accent: var(--warm-paper-raised);
+    --accent-foreground: var(--warm-ink);
+    --border: var(--warm-border);
+    --input: var(--warm-border-strong);
+    --ring: var(--warm-brass);
+    --mail-highlight: var(--warm-danger);
+    --mail-selected: color-mix(
+      in oklab,
+      var(--warm-brass) 13%,
+      var(--warm-paper)
+    );
   }
 
   * {
@@ -153,56 +130,6 @@
   }
 }
 
-:root.light {
-  --background: oklch(0.88 0.025 93);
-  --foreground: oklch(0.25 0.035 143);
-  --card: oklch(0.965 0.025 91);
-  --card-foreground: oklch(0.25 0.035 143);
-  --popover: oklch(0.975 0.022 91);
-  --popover-foreground: oklch(0.25 0.035 143);
-  --primary: oklch(0.38 0.075 145);
-  --primary-foreground: oklch(0.97 0.035 91);
-  --secondary: oklch(0.63 0.105 78);
-  --secondary-foreground: oklch(0.24 0.04 80);
-  --muted: oklch(0.91 0.028 91);
-  --muted-foreground: oklch(0.49 0.03 78);
-  --accent: oklch(0.84 0.065 83);
-  --accent-foreground: oklch(0.28 0.045 105);
-  --border: oklch(0.76 0.045 84);
-  --input: oklch(0.72 0.05 84);
-  --ring: oklch(0.57 0.105 79);
-  --sidebar: oklch(0.34 0.075 145);
-  --sidebar-foreground: oklch(0.96 0.035 91);
-  --sidebar-accent: oklch(0.42 0.075 143);
-  --sidebar-accent-foreground: oklch(0.98 0.025 91);
-  --sidebar-border: oklch(0.26 0.06 144);
-}
-
-:root.dark {
-  --background: oklch(0.17 0.025 145);
-  --foreground: oklch(0.91 0.033 88);
-  --card: oklch(0.205 0.03 143);
-  --card-foreground: oklch(0.91 0.033 88);
-  --popover: oklch(0.23 0.032 143);
-  --popover-foreground: oklch(0.93 0.03 88);
-  --primary: oklch(0.67 0.11 80);
-  --primary-foreground: oklch(0.18 0.03 140);
-  --secondary: oklch(0.68 0.11 80);
-  --secondary-foreground: oklch(0.18 0.03 140);
-  --muted: oklch(0.265 0.028 140);
-  --muted-foreground: oklch(0.69 0.03 88);
-  --accent: oklch(0.31 0.04 105);
-  --accent-foreground: oklch(0.91 0.033 88);
-  --border: oklch(0.33 0.035 130);
-  --input: oklch(0.39 0.045 125);
-  --ring: oklch(0.68 0.11 80);
-  --sidebar: oklch(0.16 0.03 145);
-  --sidebar-foreground: oklch(0.91 0.033 88);
-  --sidebar-accent: oklch(0.245 0.035 143);
-  --sidebar-accent-foreground: oklch(0.95 0.025 88);
-  --sidebar-border: oklch(0.29 0.04 140);
-}
-
 .font-serif {
   font-family: var(--font-editorial);
 }
@@ -222,7 +149,7 @@ html[data-desktop-runtime="true"] .desktop-drag-region {
   top: 0;
   left: 0;
   display: block;
-  width: 244px;
+  width: 216px;
   height: 52px;
   -webkit-app-region: drag;
 }
@@ -238,8 +165,8 @@ html[data-desktop-runtime="true"] .mail-account-rail {
 
   html[data-desktop-runtime="true"] .mail-brand {
     justify-content: flex-start;
-    gap: 8px;
-    padding-left: 72px;
+    gap: 7px;
+    padding-left: 64px;
   }
 
   html[data-desktop-runtime="true"] .mail-brand img {
@@ -248,25 +175,16 @@ html[data-desktop-runtime="true"] .mail-account-rail {
   }
 }
 
-.mail-atmosphere::before {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  content: "";
-  z-index: -1;
-  opacity: 0.055;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.12'/%3E%3C/svg%3E");
-  mix-blend-mode: multiply;
-}
-
-.dark .mail-atmosphere::before {
-  opacity: 0.035;
-  mix-blend-mode: screen;
+.mail-app-frame {
+  border: 1px solid var(--mail-border-strong);
+  background: var(--mail-paper);
+  box-shadow: var(--warm-shadow-floating);
 }
 
 .mail-chassis {
   color: var(--mail-chassis-foreground);
-  background-color: var(--mail-chassis);
+  background:
+    linear-gradient(rgb(255 255 255 / 2%), rgb(0 0 0 / 5%)), var(--mail-chassis);
   border-color: color-mix(in oklab, var(--mail-chassis-deep) 88%, black);
   box-shadow:
     0 1px 0 rgb(255 244 213 / 10%) inset,
@@ -275,10 +193,11 @@ html[data-desktop-runtime="true"] .mail-account-rail {
 
 .mail-workspace {
   background-color: var(--mail-paper);
+  background-image: url("../../../../shared/design-assets/warm-paper/paper-light.png");
+  background-repeat: repeat;
+  background-size: 128px 128px;
   border-color: var(--mail-seam);
-  box-shadow:
-    0 1px 0 rgb(255 255 255 / 55%) inset,
-    var(--mail-shadow-ambient);
+  box-shadow: 0 1px 0 rgb(255 255 255 / 55%) inset;
 }
 
 .mail-auth-frame {
@@ -321,17 +240,27 @@ html[data-desktop-runtime="true"] .mail-account-rail {
 }
 
 .dark .mail-workspace {
-  box-shadow:
-    0 1px 0 rgb(255 239 184 / 8%) inset,
-    var(--mail-shadow-ambient);
+  background-image: url("../../../../shared/design-assets/warm-paper/paper-dark.png");
+  box-shadow: 0 1px 0 rgb(255 239 184 / 8%) inset;
 }
 
 .mail-paper {
   background-color: var(--mail-paper);
+  background-image: url("../../../../shared/design-assets/warm-paper/paper-light.png");
+  background-repeat: repeat;
+  background-size: 128px 128px;
 }
 
 .mail-paper-soft {
   background-color: var(--mail-paper-soft);
+  background-image: url("../../../../shared/design-assets/warm-paper/paper-muted.png");
+  background-repeat: repeat;
+  background-size: 128px 128px;
+}
+
+.dark .mail-paper,
+.dark .mail-paper-soft {
+  background-image: url("../../../../shared/design-assets/warm-paper/paper-dark.png");
 }
 
 .mail-inset {
@@ -347,7 +276,7 @@ html[data-desktop-runtime="true"] .mail-account-rail {
 }
 
 .mail-brass-button {
-  color: color-mix(in oklab, var(--mail-brass-deep) 82%, black);
+  color: #251c0e;
   background-color: var(--mail-brass);
   border: 1px solid var(--mail-brass-deep);
   box-shadow:
@@ -368,7 +297,7 @@ html[data-desktop-runtime="true"] .mail-account-rail {
 }
 
 .dark .mail-brass-button {
-  color: #1a160d;
+  color: #21190c;
 }
 
 .mail-icon-button {
@@ -420,6 +349,77 @@ html[data-desktop-runtime="true"] .mail-account-rail {
 .mail-dialog > [data-slot="dialog-close"]:hover {
   color: var(--mail-chassis-foreground);
   background-color: rgb(255 255 255 / 8%);
+}
+
+.mail-reader-pane {
+  background-color: var(--mail-paper);
+  background-image: url("../../../../shared/design-assets/warm-paper/paper-light.png");
+  background-repeat: repeat;
+  background-size: 128px 128px;
+  box-shadow:
+    -2px 0 7px rgb(43 41 36 / 7%),
+    1px 0 0 rgb(255 255 255 / 55%) inset;
+}
+
+.mail-reader-pane::before {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  width: 72px;
+  height: 72px;
+  pointer-events: none;
+  content: "";
+  background: linear-gradient(
+    135deg,
+    transparent 0 48%,
+    var(--mail-seam) 49% 50%,
+    var(--mail-paper-soft) 51% 100%
+  );
+  filter: drop-shadow(-4px -3px 5px rgb(43 41 36 / 9%));
+}
+
+.mail-reader-pane::after {
+  position: absolute;
+  right: 13px;
+  bottom: 12px;
+  z-index: 3;
+  width: 30px;
+  height: 36px;
+  pointer-events: none;
+  content: "";
+  border: 5px solid var(--warm-paper-raised);
+  outline: 1px dashed
+    color-mix(in oklab, var(--mail-highlight) 58%, transparent);
+  background: var(--mail-highlight);
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 35%) inset,
+    0 2px 4px rgb(43 41 36 / 16%);
+  transform: rotate(-3deg);
+}
+
+.dark .mail-reader-pane {
+  background-image: url("../../../../shared/design-assets/warm-paper/paper-dark.png");
+  box-shadow:
+    -2px 0 8px rgb(0 0 0 / 24%),
+    1px 0 0 rgb(255 255 255 / 5%) inset;
+}
+
+.mail-reader-toolbar {
+  box-shadow: 0 2px 8px rgb(43 41 36 / 7%);
+}
+
+.dark .mail-reader-toolbar {
+  box-shadow: 0 2px 8px rgb(0 0 0 / 22%);
+}
+
+@media (forced-colors: active) {
+  .mail-workspace,
+  .mail-paper,
+  .mail-paper-soft,
+  .mail-reader-pane {
+    background-image: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

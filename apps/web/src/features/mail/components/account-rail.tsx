@@ -37,11 +37,11 @@ export function AccountRail() {
   } = useLiveMail();
 
   return (
-    <aside className="mail-account-rail mail-chassis relative z-10 hidden h-full w-[82px] shrink-0 flex-col px-2.5 py-4 md:flex xl:w-[244px] xl:px-4">
+    <aside className="mail-account-rail mail-chassis relative z-10 hidden h-full w-[76px] shrink-0 flex-col px-2.5 py-4 md:flex xl:w-[216px] xl:px-4">
       <Brand />
       <button
         aria-label="New message"
-        className="mail-brass-button mt-8 flex h-11 items-center justify-center gap-2.5 rounded-[10px] px-3 text-sm font-bold transition-colors xl:justify-start xl:px-4"
+        className="mail-brass-button mt-5 flex h-11 items-center justify-center gap-2.5 rounded-lg px-3 text-sm font-bold transition-colors xl:justify-start xl:px-4"
         onClick={openComposer}
         type="button"
       >
@@ -51,7 +51,7 @@ export function AccountRail() {
 
       <nav
         aria-label="Mail accounts"
-        className="mail-scrollbar mt-8 min-h-0 flex-1 space-y-1.5 overflow-x-hidden overflow-y-auto"
+        className="mail-scrollbar mt-5 min-h-0 flex-1 space-y-1.5 overflow-x-hidden overflow-y-auto"
       >
         <AccountButton
           active={accountFilter === "all"}
@@ -60,7 +60,10 @@ export function AccountRail() {
           label="Unified inbox"
           onClick={() => selectMailbox("all")}
         />
-        <div className="mx-3 my-3 border-t border-white/10" />
+        <div className="mx-3 mt-4 mb-3 border-t border-white/10" />
+        <p className="mb-1 hidden px-3 font-mono text-[9px] tracking-[0.14em] text-[var(--mail-chassis-foreground)]/48 uppercase xl:block">
+          Accounts
+        </p>
         {accounts.map((account) => {
           const Icon = ACCOUNT_ICONS[account.provider];
           return (
@@ -154,14 +157,14 @@ function SyncButtonText({ state }: { state: SyncButtonState }) {
 
 function Brand() {
   return (
-    <div className="mail-brand flex items-center justify-center gap-3 xl:justify-start xl:px-2">
+    <div className="mail-brand flex min-h-10 items-center justify-center gap-3 xl:justify-start xl:px-1">
       <img
         alt="Rodge Mail"
-        className="size-10 shrink-0 rounded-[11px] border border-[var(--mail-brass-deep)] shadow-[0_1px_0_rgba(255,255,255,0.22)_inset,0_5px_12px_rgba(0,0,0,0.24)]"
+        className="size-10 shrink-0 rounded-[10px] border border-[var(--mail-brass-deep)] shadow-[0_1px_0_rgba(255,255,255,0.22)_inset,0_5px_12px_rgba(0,0,0,0.24)]"
         src="/icon-192.png"
       />
       <div className="hidden min-w-0 xl:block">
-        <p className="font-serif text-[17px] leading-5 font-semibold tracking-[-0.02em] whitespace-nowrap text-[var(--mail-chassis-foreground)]">
+        <p className="font-serif text-[16px] leading-5 font-semibold tracking-[-0.02em] whitespace-nowrap text-[var(--mail-chassis-foreground)]">
           Rodge Mail
         </p>
       </div>
@@ -189,9 +192,9 @@ function AccountButton({
       aria-label={label}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "group relative flex h-11 w-full items-center justify-center gap-3 rounded-xl px-3 text-sm transition-colors xl:justify-start",
+        "group relative flex h-11 w-full items-center justify-center gap-3 rounded-lg px-3 text-sm transition-colors xl:justify-start",
         active
-          ? "border border-[var(--mail-brass-deep)] bg-[var(--mail-brass)] text-[#201a0d] shadow-[var(--mail-shadow-raised)]"
+          ? "border border-white/10 bg-white/[0.09] text-[var(--mail-chassis-foreground)] shadow-[var(--warm-shadow-inset)] after:absolute after:inset-y-2 after:left-0 after:w-0.5 after:rounded-r after:bg-[var(--mail-brass)]"
           : "border border-transparent text-[var(--mail-chassis-foreground)]/72 hover:border-white/10 hover:bg-white/[0.07] hover:text-[var(--mail-chassis-foreground)]",
       )}
       onClick={onClick}
@@ -232,7 +235,7 @@ function UnreadCount({
       className={cn(
         "ml-auto hidden min-w-5 rounded-full px-1.5 py-0.5 font-mono text-[9px] tabular-nums xl:block",
         active
-          ? "bg-[var(--mail-chassis-deep)] text-[var(--mail-chassis-foreground)]"
+          ? "bg-[var(--mail-brass)] text-[#251c0e]"
           : "bg-white/10 text-[var(--mail-chassis-foreground)]",
       )}
     >

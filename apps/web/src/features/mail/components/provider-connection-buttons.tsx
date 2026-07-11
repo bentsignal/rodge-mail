@@ -94,7 +94,7 @@ export function AddAccountButton({
         <Dialog.Trigger asChild>
           <button
             aria-label="Add account"
-            className="mt-3 flex h-10 w-full items-center justify-center gap-2.5 rounded-[10px] border border-dashed border-white/25 px-3 text-xs font-semibold text-[var(--mail-chassis-foreground)]/72 transition-colors hover:border-[var(--mail-brass)] hover:bg-white/[0.06] hover:text-[var(--mail-chassis-foreground)] xl:justify-start"
+            className="mt-3 flex h-11 w-full items-center justify-center gap-2.5 rounded-lg border border-dashed border-white/25 px-3 text-xs font-semibold text-[var(--mail-chassis-foreground)]/72 transition-colors hover:border-[var(--mail-brass)] hover:bg-white/[0.06] hover:text-[var(--mail-chassis-foreground)] xl:justify-start"
             type="button"
           >
             <Plus className="size-4" />

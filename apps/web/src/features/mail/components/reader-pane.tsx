@@ -24,7 +24,7 @@ export function ReaderPane() {
     <section
       aria-label="Message reader"
       className={cn(
-        "min-w-0 flex-1 flex-col bg-[var(--mail-reader)]",
+        "mail-reader-pane relative min-w-0 flex-1 flex-col bg-[var(--mail-reader)] lg:-ml-[3px] lg:border-l lg:border-[var(--mail-seam)]",
         mobileReaderIsOpen ? "flex" : "hidden lg:flex",
       )}
     >
@@ -101,7 +101,7 @@ function ReaderToolbar({
   toggleRead: (message: ThreadMessageDetail) => Promise<void>;
 }) {
   return (
-    <header className="mail-paper-soft flex h-[68px] shrink-0 items-center gap-1 border-b border-[var(--mail-seam)] px-3 shadow-[0_2px_7px_rgba(56,41,17,0.09)] sm:px-5 dark:shadow-[0_2px_8px_rgba(0,0,0,0.26)]">
+    <header className="mail-reader-toolbar mail-paper-soft relative z-[3] flex h-16 shrink-0 items-center gap-1 border-b border-[var(--mail-seam)] px-4 sm:px-6">
       <ReaderIconButton
         className="lg:hidden"
         icon={ArrowLeft}
@@ -116,7 +116,7 @@ function ReaderToolbar({
         removeFromRodge={removeFromRodge}
       />
       <button
-        className="mail-brass-button ml-auto flex h-9 items-center gap-2 rounded-[9px] px-4 text-xs font-bold transition-colors"
+        className="mail-brass-button ml-auto flex h-11 items-center gap-2 rounded-lg px-4 text-xs font-bold transition-colors"
         onClick={replyToSelectedThread}
         type="button"
       >
@@ -189,18 +189,18 @@ function ReaderArticle({
 }) {
   return (
     <div className="mail-scrollbar min-h-0 flex-1 overflow-y-auto">
-      <article className="mx-auto w-full max-w-[780px] px-5 pt-8 pb-24 sm:px-9 sm:pt-11 xl:px-14">
-        <h1 className="max-w-3xl font-serif text-[34px] leading-[1.08] font-semibold tracking-[-0.04em] text-balance sm:text-[42px]">
+      <article className="relative z-[1] mx-auto w-full max-w-[840px] px-6 pt-8 pb-28 sm:px-10 sm:pt-10 xl:px-12 xl:pt-12">
+        <h1 className="max-w-3xl font-serif text-[34px] leading-[1.1] font-semibold tracking-[-0.035em] text-balance sm:text-[40px]">
           {selectedThread.subject}
         </h1>
-        <div className="mt-8 h-px bg-[var(--mail-seam)]" />
+        <div className="mt-8 h-px bg-[var(--mail-seam)] sm:mt-10" />
 
         {selectedThread.messages.map((message) => (
           <ReaderMessage key={message._id} message={message} />
         ))}
 
         <button
-          className="mail-raised text-foreground mt-9 flex h-10 items-center gap-2 rounded-[9px] border px-4 text-sm font-semibold transition hover:border-[var(--mail-brass)]"
+          className="mail-raised text-foreground mt-10 flex h-11 items-center gap-2 rounded-lg border px-4 text-sm font-semibold transition hover:border-[var(--mail-brass)]"
           onClick={replyToSelectedThread}
           type="button"
         >
@@ -229,7 +229,7 @@ function ReaderIconButton({
     <button
       aria-label={label}
       className={cn(
-        "mail-icon-button flex size-9 items-center justify-center rounded-[9px] transition disabled:cursor-not-allowed disabled:opacity-40",
+        "mail-icon-button flex size-11 items-center justify-center rounded-lg transition disabled:cursor-not-allowed disabled:opacity-40",
         active && "text-[var(--mail-highlight)]",
         className,
       )}

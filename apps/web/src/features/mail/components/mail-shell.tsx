@@ -37,10 +37,10 @@ export function MailShell({
 
 function MailWorkspace() {
   return (
-    <main className="mail-atmosphere bg-background text-foreground relative flex h-dvh min-h-0 overflow-hidden">
-      <AccountRail />
-      <div className="relative z-10 flex min-w-0 flex-1 p-0 md:p-3">
-        <div className="mail-workspace flex min-w-0 flex-1 overflow-hidden border md:rounded-[18px]">
+    <main className="mail-atmosphere bg-background text-foreground relative flex h-dvh min-h-0 overflow-hidden md:p-4">
+      <div className="mail-app-frame relative z-10 flex min-w-0 flex-1 overflow-hidden md:rounded-[20px]">
+        <AccountRail />
+        <div className="mail-workspace flex min-w-0 flex-1 overflow-hidden">
           <InboxPane />
           <ReaderPane />
         </div>

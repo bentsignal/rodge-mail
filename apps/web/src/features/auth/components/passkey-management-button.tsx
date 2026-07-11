@@ -30,7 +30,7 @@ export function PasskeyManagementButton() {
       <Dialog.Trigger asChild>
         <button
           aria-label="Account settings"
-          className="flex h-10 w-full items-center justify-center gap-2.5 rounded-[10px] border border-transparent px-3 text-[var(--mail-chassis-foreground)]/72 transition-colors hover:border-white/10 hover:bg-white/[0.07] hover:text-[var(--mail-chassis-foreground)] xl:justify-start"
+          className="flex h-11 w-full items-center justify-center gap-2.5 rounded-lg border border-transparent px-3 text-[var(--mail-chassis-foreground)]/72 transition-colors hover:border-white/10 hover:bg-white/[0.07] hover:text-[var(--mail-chassis-foreground)] xl:justify-start"
           type="button"
         >
           <Settings className="size-4" />

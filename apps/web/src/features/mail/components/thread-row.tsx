@@ -35,16 +35,16 @@ export function ThreadRow({
         aria-posinset={position}
         aria-setsize={-1}
         className={cn(
-          "group relative border-b border-[var(--mail-seam)] bg-[var(--mail-paper-soft)] transition-colors",
+          "group relative mx-2 mt-2 overflow-hidden rounded-xl border border-[var(--mail-seam)] bg-[var(--mail-paper)] shadow-[var(--warm-shadow-resting)] transition-[background-color,border-color,box-shadow,transform] duration-150",
           isSelected
-            ? "z-[1] bg-[var(--mail-selected)] shadow-[0_1px_0_rgba(255,255,255,0.48)_inset,0_3px_8px_rgba(57,43,20,0.10)] dark:shadow-[0_1px_0_rgba(255,239,184,0.06)_inset,0_3px_10px_rgba(0,0,0,0.24)]"
-            : "hover:bg-[var(--mail-row-hover)]",
+            ? "z-[1] -translate-y-px border-[var(--mail-border-strong)] bg-[var(--mail-selected)] shadow-[var(--warm-shadow-raised)]"
+            : "hover:border-[var(--mail-border-strong)] hover:bg-[var(--mail-row-hover)]",
         )}
       >
         <SelectedMarker selected={isSelected} />
         <ContextMenu.Trigger asChild>
           <QuickLink
-            className="w-full px-5 py-4 pr-14 text-left sm:px-6"
+            className="w-full px-5 py-3 pr-14 text-left"
             onClick={() => selectMessage(message)}
             params={{ messageId: message._id }}
             preload="intent"
@@ -75,13 +75,13 @@ export function ThreadRow({
                 </div>
                 <p
                   className={cn(
-                    "mt-1 truncate font-serif text-[16px] leading-5 tracking-[-0.01em]",
+                    "mt-0.5 truncate font-serif text-[16px] leading-5 tracking-[-0.01em]",
                     message.isRead ? "text-foreground/80" : "font-semibold",
                   )}
                 >
                   {message.subject}
                 </p>
-                <p className="mail-label mt-1 line-clamp-2 text-[12px] leading-[1.55]">
+                <p className="mail-label mt-0.5 line-clamp-2 text-[12px] leading-[1.45]">
                   {preview}
                 </p>
                 <ThreadMetadata message={message} />
@@ -135,7 +135,7 @@ function ThreadRowMenu({
 
 function ThreadMetadata({ message }: { message: InboxMessage }) {
   return (
-    <div className="mt-2.5 flex h-4 items-center gap-2">
+    <div className="mt-1.5 flex h-3 items-center gap-2">
       <UnreadDot isRead={message.isRead} />
       <AttachmentMarker hasAttachments={message.hasAttachments} />
     </div>

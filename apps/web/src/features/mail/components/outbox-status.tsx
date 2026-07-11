@@ -33,7 +33,7 @@ export function OutboxStatus() {
   if (query.isPending || outboxes.length === 0) return null;
 
   return (
-    <aside className="fixed right-4 bottom-4 z-40 w-[min(340px,calc(100vw-2rem))] sm:right-6 sm:bottom-6">
+    <aside className="fixed right-4 bottom-4 z-40 w-[min(340px,calc(100vw-2rem))] sm:right-24 sm:bottom-6">
       <OutboxPanel isOpen={isOpen} outboxes={outboxes} />
       <button
         aria-expanded={isOpen}
