@@ -63,6 +63,7 @@ import type * as embedding_validators from "../embedding/validators.js";
 import type * as http from "../http.js";
 import type * as limiter from "../limiter.js";
 import type * as mail_helpers from "../mail/helpers.js";
+import type * as mail_icloudCleanup from "../mail/icloudCleanup.js";
 import type * as mail_maintenance from "../mail/maintenance.js";
 import type * as mail_mutations from "../mail/mutations.js";
 import type * as mail_outbox from "../mail/outbox.js";
@@ -175,6 +176,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   limiter: typeof limiter;
   "mail/helpers": typeof mail_helpers;
+  "mail/icloudCleanup": typeof mail_icloudCleanup;
   "mail/maintenance": typeof mail_maintenance;
   "mail/mutations": typeof mail_mutations;
   "mail/outbox": typeof mail_outbox;
