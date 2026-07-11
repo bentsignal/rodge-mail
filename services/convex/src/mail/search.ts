@@ -33,6 +33,7 @@ export function parseMailSearch(input: string, now = Date.now()) {
   remaining = extractExplicitDate(remaining, "before", plan);
   remaining = extractOnDate(remaining, plan);
   remaining = extractRelativeDate(remaining, now, plan);
+  remaining = extractRelativeAge(remaining, now, plan);
   remaining = extractField(remaining, "from", (value) => {
     plan.sender = value;
   });
@@ -151,6 +152,55 @@ function extractRelativeDate(input: string, now: number, plan: MailSearchPlan) {
     return input.replace(thisWeek[0], " ");
   }
   return input;
+}
+
+function extractRelativeAge(input: string, now: number, plan: MailSearchPlan) {
+  return (
+    extractRelativePoint(input, now, plan) ??
+    extractRecentRange(input, now, plan) ??
+    extractAgeBoundary(input, now, plan) ??
+    input
+  );
+}
+
+function extractRelativePoint(
+  input: string,
+  now: number,
+  plan: MailSearchPlan,
+) {
+  const match = /\b(\d{1,3})\s+(days?|weeks?)\s+ago\b/iu.exec(input);
+  if (!match?.[1] || !match[2]) return undefined;
+  const unitDays = daysInUnit(match[2]);
+  const start = startOfUtcDay(now) - Number(match[1]) * unitDays * DAY_MS;
+  plan.after = start;
+  plan.before = start + unitDays * DAY_MS;
+  return input.replace(match[0], " ");
+}
+
+function extractRecentRange(input: string, now: number, plan: MailSearchPlan) {
+  const match =
+    /\b(?:in\s+the\s+)?(?:past|last)\s+(\d{1,3})\s+(days?|weeks?)\b/iu.exec(
+      input,
+    );
+  if (!match?.[1] || !match[2]) return undefined;
+  plan.after = now - Number(match[1]) * daysInUnit(match[2]) * DAY_MS;
+  plan.before = now + 1;
+  return input.replace(match[0], " ");
+}
+
+function extractAgeBoundary(input: string, now: number, plan: MailSearchPlan) {
+  const match = /\b(older|newer)\s+than\s+(\d{1,3})\s+(days?|weeks?)\b/iu.exec(
+    input,
+  );
+  if (!match?.[1] || !match[2] || !match[3]) return undefined;
+  const boundary = now - Number(match[2]) * daysInUnit(match[3]) * DAY_MS;
+  if (match[1].toLowerCase() === "older") plan.before = boundary;
+  else plan.after = boundary;
+  return input.replace(match[0], " ");
+}
+
+function daysInUnit(unit: string) {
+  return /^week/iu.test(unit) ? 7 : 1;
 }
 
 function extractField(

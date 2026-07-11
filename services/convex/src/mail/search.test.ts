@@ -42,6 +42,36 @@ describe("mail search parsing", () => {
       lexicalQuery: "",
     });
   });
+
+  it("finds mail from a specific number of days ago", () => {
+    expect(
+      parseMailSearch("mail from Sarah 3 days ago about budget", now),
+    ).toEqual({
+      after: Date.parse("2026-07-07T00:00:00.000Z"),
+      before: Date.parse("2026-07-08T00:00:00.000Z"),
+      lexicalQuery: "Sarah budget",
+      sender: "Sarah",
+    });
+  });
+
+  it("finds mail within a relative week range", () => {
+    expect(parseMailSearch("order updates in the past 2 weeks", now)).toEqual({
+      after: now - 14 * 24 * 60 * 60 * 1000,
+      before: now + 1,
+      lexicalQuery: "order updates",
+    });
+  });
+
+  it("finds mail older or newer than a relative age", () => {
+    expect(parseMailSearch("invoices older than 30 days", now)).toEqual({
+      before: now - 30 * 24 * 60 * 60 * 1000,
+      lexicalQuery: "invoices",
+    });
+    expect(parseMailSearch("security alerts newer than 1 week", now)).toEqual({
+      after: now - 7 * 24 * 60 * 60 * 1000,
+      lexicalQuery: "security alerts",
+    });
+  });
 });
 
 describe("mail search matching and indexing", () => {

@@ -9,6 +9,7 @@ deterministic operators and phrases:
 - `subject:"launch plan"` and `subject launch`
 - `after:2026-07-01`, `before:2026-07-10`, and `on:2026-07-09`
 - `today`, `yesterday`, `this week`, `last week`, and `last 7 days`
+- `3 days ago`, `past 2 weeks`, `older than 30 days`, and `newer than 1 week`
 
 Relative calendar boundaries are evaluated in UTC because the backend does not
 receive the user's timezone. Provider messages without a downloaded plain-text
