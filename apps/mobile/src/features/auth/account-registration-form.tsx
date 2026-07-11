@@ -6,6 +6,9 @@ import {
   View,
 } from "react-native";
 
+import { PostalWell } from "~/features/theme/postal-surface";
+import { useColor } from "~/hooks/use-color";
+
 export function RegistrationDetailsForm({
   email,
   isLoading,
@@ -21,30 +24,32 @@ export function RegistrationDetailsForm({
   onNameChange: (value: string) => void;
   onSubmit: () => void;
 }) {
+  const placeholder = useColor("muted-foreground");
+
   return (
     <View className="gap-3">
       <TextInput
         accessibilityLabel="Full name"
         autoCapitalize="words"
-        className="bg-background border-border text-foreground h-12 rounded-xl border px-4"
+        className="bg-paper border-well-border text-foreground h-12 rounded-xl border px-4"
         defaultValue={name}
         editable={!isLoading}
         onChangeText={onNameChange}
         placeholder="Full name"
-        placeholderTextColor="#8f897f"
+        placeholderTextColor={placeholder}
       />
       <TextInput
         accessibilityLabel="Email address"
         autoCapitalize="none"
         autoComplete="email"
         autoCorrect={false}
-        className="bg-background border-border text-foreground h-12 rounded-xl border px-4"
+        className="bg-paper border-well-border text-foreground h-12 rounded-xl border px-4"
         defaultValue={email}
         editable={!isLoading}
         inputMode="email"
         onChangeText={onEmailChange}
         placeholder="Email address"
-        placeholderTextColor="#8f897f"
+        placeholderTextColor={placeholder}
       />
       <ActionButton
         disabled={isLoading || !name.trim() || !email.trim()}
@@ -69,6 +74,8 @@ export function VerificationCodeForm({
   onCodeChange: (value: string) => void;
   onSubmit: () => void;
 }) {
+  const placeholder = useColor("muted-foreground");
+
   return (
     <View className="gap-3">
       <Text className="text-muted-foreground text-sm leading-5">
@@ -77,14 +84,14 @@ export function VerificationCodeForm({
       <TextInput
         accessibilityLabel="Verification code"
         autoComplete="one-time-code"
-        className="bg-background border-border text-foreground h-12 rounded-xl border px-4 font-mono tracking-[0.3em]"
+        className="bg-paper border-well-border text-foreground h-12 rounded-xl border px-4 font-mono tracking-[0.3em]"
         defaultValue={code}
         editable={!isLoading}
         inputMode="numeric"
         maxLength={6}
         onChangeText={onCodeChange}
         placeholder="000000"
-        placeholderTextColor="#8f897f"
+        placeholderTextColor={placeholder}
       />
       <ActionButton
         disabled={isLoading || code.trim().length !== 6}
@@ -108,19 +115,22 @@ function ActionButton({
   onPress: () => void;
 }) {
   return (
-    <Pressable
-      accessibilityRole="button"
-      className="border-border h-12 flex-row items-center justify-center gap-2 rounded-xl border disabled:opacity-50"
-      disabled={disabled}
-      onPress={onPress}
-    >
-      <ActionIcon isLoading={isLoading} />
-      <Text className="text-foreground font-semibold">{label}</Text>
-    </Pressable>
+    <PostalWell>
+      <Pressable
+        accessibilityRole="button"
+        className="h-12 flex-row items-center justify-center gap-2 rounded-xl disabled:opacity-50"
+        disabled={disabled}
+        onPress={onPress}
+      >
+        <ActionIcon isLoading={isLoading} />
+        <Text className="text-foreground font-semibold">{label}</Text>
+      </Pressable>
+    </PostalWell>
   );
 }
 
 function ActionIcon({ isLoading }: { isLoading: boolean }) {
-  if (isLoading) return <ActivityIndicator color="#d77a55" />;
+  const primary = useColor("primary");
+  if (isLoading) return <ActivityIndicator color={primary} />;
   return null;
 }

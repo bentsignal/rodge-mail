@@ -5,3 +5,13 @@
 @import "uniwind";
 
 @import "@rodge-mail/tailwind-config/theme";
+
+@theme inline {
+  --color-brass: var(--brass);
+  --color-brass-soft: var(--brass-soft);
+  --color-paper: var(--paper);
+  --color-paper-deep: var(--paper-deep);
+  --color-stamp: var(--stamp);
+  --color-well: var(--well);
+  --color-well-border: var(--well-border);
+}

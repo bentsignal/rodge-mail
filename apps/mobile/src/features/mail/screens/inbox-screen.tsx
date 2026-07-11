@@ -40,7 +40,7 @@ export function InboxScreen() {
   const isLoadingMore = useMailStore((store) => store.isLoadingMore);
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearchTerm = useDebouncedValue(searchTerm.trim(), 250);
-  const backgroundColor = useColor("background");
+  const card = useColor("card");
   const foreground = useColor("foreground");
   const primary = useColor("primary");
   const { isRefreshing, refresh, refreshError } = useInboxRefresh(accounts);
@@ -95,7 +95,7 @@ export function InboxScreen() {
       <Stack.Screen
         options={{
           headerSearchBarOptions: {
-            barTintColor: backgroundColor,
+            barTintColor: card,
             hideWhenScrolling: false,
             headerIconColor: foreground,
             onCancelButtonPress: () => setSearchTerm(""),
@@ -162,6 +162,7 @@ function InboxThreadList({
       renderItem={renderThread}
       contentInsetAdjustmentBehavior="automatic"
       keyboardDismissMode="on-drag"
+      contentContainerClassName="pb-24"
       refreshControl={
         <RefreshControl
           refreshing={isRefreshing}
@@ -205,7 +206,7 @@ function InboxHeader({
   refreshError: string | undefined;
 }) {
   return (
-    <View className="gap-2 pt-2 pb-3">
+    <View className="gap-2 pt-3 pb-3">
       <AccountFilter
         accounts={accounts}
         value={accountFilter}

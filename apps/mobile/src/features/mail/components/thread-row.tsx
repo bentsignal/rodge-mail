@@ -1,4 +1,3 @@
-import type { GestureResponderEvent } from "react-native";
 import { Pressable, Text, View } from "react-native";
 import { Mail, MailOpen, Pin } from "lucide-react-native";
 
@@ -17,33 +16,29 @@ export function ThreadRow({
 }) {
   const togglePin = useMailStore((store) => store.togglePin);
   const toggleRead = useMailStore((store) => store.toggleRead);
-  const foreground = useColor("foreground");
-  const mutedForeground = useColor("muted-foreground");
-
-  function handlePin(event: GestureResponderEvent) {
-    event.stopPropagation();
-    togglePin(thread.id, thread.isPinned);
-  }
-
-  function handleRead(event: GestureResponderEvent) {
-    event.stopPropagation();
-    toggleRead(thread.id, thread.isRead);
-  }
+  const shadowColor = useColor("shadow-color");
 
   return (
     <Pressable
       accessibilityHint="Opens this email thread"
       accessibilityLabel={`${thread.sender.name}, ${thread.subject}`}
       accessibilityRole="button"
-      className="border-border flex-row gap-3 border-b px-4 py-4"
+      className="bg-card border-brass/25 mx-3 mb-2 flex-row gap-3 rounded-2xl border px-4 py-3.5"
       onPress={onOpen}
+      style={{
+        elevation: 1,
+        shadowColor,
+        shadowOffset: { height: 2, width: 0 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      }}
     >
       <View className="pt-1">
         <View
           className={
             thread.isRead
               ? "bg-muted size-2 rounded-full"
-              : "bg-primary size-2 rounded-full"
+              : "bg-stamp size-2 rounded-full"
           }
         />
       </View>
@@ -80,31 +75,58 @@ export function ThreadRow({
           {thread.preview}
         </Text>
       </View>
-      <View className="self-start">
-        <Pressable
-          accessibilityLabel={thread.isPinned ? "Unpin thread" : "Pin thread"}
-          accessibilityRole="button"
-          className="rounded-full p-2"
-          hitSlop={8}
-          onPress={handlePin}
-        >
-          <Pin
-            color={thread.isPinned ? foreground : mutedForeground}
-            fill={thread.isPinned ? foreground : "transparent"}
-            size={17}
-          />
-        </Pressable>
-        <Pressable
-          accessibilityLabel={thread.isRead ? "Mark unread" : "Mark read"}
-          accessibilityRole="button"
-          className="rounded-full p-2"
-          hitSlop={8}
-          onPress={handleRead}
-        >
-          <ReadIcon isRead={thread.isRead} color={mutedForeground} />
-        </Pressable>
-      </View>
+      <ThreadActions
+        thread={thread}
+        onPin={() => togglePin(thread.id, thread.isPinned)}
+        onRead={() => toggleRead(thread.id, thread.isRead)}
+      />
     </Pressable>
+  );
+}
+
+function ThreadActions({
+  onPin,
+  onRead,
+  thread,
+}: {
+  onPin: () => void;
+  onRead: () => void;
+  thread: MailThread;
+}) {
+  const foreground = useColor("foreground");
+  const mutedForeground = useColor("muted-foreground");
+
+  return (
+    <View className="self-start">
+      <Pressable
+        accessibilityLabel={thread.isPinned ? "Unpin thread" : "Pin thread"}
+        accessibilityRole="button"
+        className="bg-well/70 rounded-full p-2"
+        hitSlop={8}
+        onPress={(event) => {
+          event.stopPropagation();
+          onPin();
+        }}
+      >
+        <Pin
+          color={thread.isPinned ? foreground : mutedForeground}
+          fill={thread.isPinned ? foreground : "transparent"}
+          size={17}
+        />
+      </Pressable>
+      <Pressable
+        accessibilityLabel={thread.isRead ? "Mark unread" : "Mark read"}
+        accessibilityRole="button"
+        className="rounded-full p-2"
+        hitSlop={8}
+        onPress={(event) => {
+          event.stopPropagation();
+          onRead();
+        }}
+      >
+        <ReadIcon isRead={thread.isRead} color={mutedForeground} />
+      </Pressable>
+    </View>
   );
 }
 

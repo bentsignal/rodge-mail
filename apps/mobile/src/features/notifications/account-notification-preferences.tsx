@@ -5,6 +5,7 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "@rodge-mail/convex/api";
 
 import type { NotificationSetupState } from "./notification-setup";
+import { useColor } from "~/hooks/use-color";
 
 const options = [
   { label: "Inherit", value: null },
@@ -21,6 +22,7 @@ export function AccountNotificationPreferences({
   onEnableDevice: () => Promise<boolean>;
   setupState: NotificationSetupState | undefined;
 }) {
+  const primary = useColor("primary");
   const preferences = useQuery(
     api.notifications.queries.listAccountPreferences,
     {},
@@ -34,7 +36,7 @@ export function AccountNotificationPreferences({
   if (!preferences) {
     return (
       <View className="items-center py-5">
-        <ActivityIndicator color="#d77a55" />
+        <ActivityIndicator color={primary} />
       </View>
     );
   }
@@ -82,7 +84,7 @@ export function AccountNotificationPreferences({
                 {preference.address}
               </Text>
             </View>
-            <View className="bg-background flex-row rounded-lg p-1">
+            <View className="bg-well border-well-border flex-row rounded-lg border p-1">
               {options.map((option) => (
                 <PreferenceOption
                   key={option.label}

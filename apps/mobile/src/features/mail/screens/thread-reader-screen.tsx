@@ -17,6 +17,7 @@ import type { MailMessage, MailThread } from "@rodge-mail/features/mail";
 import { api } from "@rodge-mail/convex/api";
 import { getReplyAddress } from "@rodge-mail/features/mail";
 
+import { PostalSurface } from "~/features/theme/postal-surface";
 import { useColor } from "~/hooks/use-color";
 import { MobileEmailBody } from "../components/mobile-email-body";
 import { toConvexId } from "../lib/convex-id";
@@ -54,8 +55,8 @@ function ThreadReader({
 }) {
   const router = useRouter();
   const setThreadPinned = useMutation(api.mail.mutations.setThreadPinned);
-  const background = useColor("background");
   const foreground = useColor("foreground");
+  const primaryForeground = useColor("primary-foreground");
   const scrollViewRef = useRef<ScrollView>(null);
 
   function reply() {
@@ -107,7 +108,7 @@ function ThreadReader({
       <View className="bg-background flex-1">
         <ScrollView
           ref={scrollViewRef}
-          contentContainerClassName="gap-6 px-5 pt-4 pb-28"
+          contentContainerClassName="gap-4 px-4 pt-4 pb-28"
           contentInsetAdjustmentBehavior="automatic"
         >
           <ThreadHeader thread={thread} />
@@ -126,11 +127,11 @@ function ThreadReader({
         <Pressable
           accessibilityLabel="Reply"
           accessibilityRole="button"
-          className="bg-foreground absolute right-5 bottom-5 flex-row items-center gap-2 rounded-full px-5 py-3"
+          className="bg-primary border-brass-soft absolute right-5 bottom-5 flex-row items-center gap-2 rounded-full border px-5 py-3"
           onPress={reply}
         >
-          <Reply color={background} size={17} />
-          <Text className="text-background font-semibold">Reply</Text>
+          <Reply color={primaryForeground} size={17} />
+          <Text className="text-primary-foreground font-semibold">Reply</Text>
         </Pressable>
       </View>
     </>
@@ -139,12 +140,12 @@ function ThreadReader({
 
 function ThreadHeader({ thread }: { thread: MailThread }) {
   return (
-    <View className="gap-4">
+    <View className="gap-4 px-1 pb-2">
       <Text className="text-foreground text-3xl leading-9 font-bold">
         {thread.subject}
       </Text>
       <View className="flex-row items-center gap-3">
-        <View className="bg-muted size-11 items-center justify-center rounded-full">
+        <View className="bg-brass-soft border-brass size-11 items-center justify-center rounded-full border">
           <Text className="text-foreground text-base font-bold">
             {thread.sender.name.slice(0, 1)}
           </Text>
@@ -173,6 +174,7 @@ function MessageBody({
   onLayout?: (event: LayoutChangeEvent) => void;
 }) {
   const downloadAttachment = useAction(api.attachments.actions.download);
+  const mutedForeground = useColor("muted-foreground");
   const [downloadingId, setDownloadingId] = useState<string>();
 
   async function download(attachment: MailMessage["attachments"][number]) {
@@ -190,7 +192,7 @@ function MessageBody({
   }
 
   return (
-    <View className="gap-4" onLayout={onLayout}>
+    <PostalSurface className="gap-4 rounded-2xl px-4 py-5" onLayout={onLayout}>
       <Text className="text-muted-foreground text-xs">
         To: {message.to.map((recipient) => recipient.address).join(", ")}
       </Text>
@@ -200,11 +202,11 @@ function MessageBody({
           key={attachment.id}
           accessibilityLabel={`${attachment.name}, ${attachment.size}`}
           accessibilityRole="button"
-          className="bg-muted flex-row items-center gap-3 rounded-xl px-4 py-3"
+          className="bg-well border-well-border flex-row items-center gap-3 rounded-xl border px-4 py-3"
           disabled={downloadingId !== undefined}
           onPress={() => void download(attachment)}
         >
-          <Paperclip color="#777777" size={18} />
+          <Paperclip color={mutedForeground} size={18} />
           <View className="min-w-0 flex-1">
             <Text className="text-foreground font-semibold" numberOfLines={1}>
               {attachment.name}
@@ -218,7 +220,7 @@ function MessageBody({
           />
         </Pressable>
       ))}
-    </View>
+    </PostalSurface>
   );
 }
 
@@ -235,10 +237,11 @@ function scrollToMessage(
 }
 
 function AttachmentDownloadIcon({ isDownloading }: { isDownloading: boolean }) {
+  const mutedForeground = useColor("muted-foreground");
   if (isDownloading) {
-    return <ActivityIndicator color="#777777" size="small" />;
+    return <ActivityIndicator color={mutedForeground} size="small" />;
   }
-  return <Download color="#777777" size={18} />;
+  return <Download color={mutedForeground} size={18} />;
 }
 
 function getDownloadError(error: unknown) {

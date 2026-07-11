@@ -5,6 +5,7 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "@rodge-mail/convex/api";
 
 import type { NotificationSetupState } from "./notification-setup";
+import { useColor } from "~/hooks/use-color";
 import { AccountNotificationPreferences } from "./account-notification-preferences";
 import {
   registerForNewMailNotifications,
@@ -13,6 +14,7 @@ import {
 import { isNotificationDeliveryEnabled } from "./notification-setup";
 
 export function NotificationPreferences() {
+  const primary = useColor("primary");
   const preferences = useQuery(api.notifications.queries.getPreferences, {});
   const setPreferences = useMutation(
     api.notifications.mutations.setPreferences,
@@ -27,7 +29,7 @@ export function NotificationPreferences() {
   if (!preferences) {
     return (
       <View className="items-center py-5">
-        <ActivityIndicator color="#d77a55" />
+        <ActivityIndicator color={primary} />
       </View>
     );
   }

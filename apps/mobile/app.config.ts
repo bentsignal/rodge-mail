@@ -53,7 +53,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       [
         "expo-notifications",
         {
-          color: "#20251f",
+          color: "#0f2a1c",
           defaultChannel: "new-mail",
         },
       ],
@@ -82,10 +82,10 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       [
         "expo-splash-screen",
         {
-          backgroundColor: "#f4f1ea",
+          backgroundColor: "#e9d0a0",
           image: "./assets/splash-icon.png",
           dark: {
-            backgroundColor: "#111513",
+            backgroundColor: "#0f2a1c",
             image: "./assets/splash-icon.png",
           },
         },

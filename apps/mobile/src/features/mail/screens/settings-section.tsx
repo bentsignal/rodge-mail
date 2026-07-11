@@ -1,5 +1,7 @@
 import { Text, View } from "react-native";
 
+import { PostalSurface } from "~/features/theme/postal-surface";
+
 export function SettingsSection({
   title,
   children,
@@ -12,9 +14,9 @@ export function SettingsSection({
       <Text className="text-muted-foreground px-2 text-xs font-semibold tracking-wider uppercase">
         {title}
       </Text>
-      <View className="bg-muted/60 border-border overflow-hidden rounded-2xl border">
+      <PostalSurface className="overflow-hidden rounded-2xl">
         {children}
-      </View>
+      </PostalSurface>
     </View>
   );
 }

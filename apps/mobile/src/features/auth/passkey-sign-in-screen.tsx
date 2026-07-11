@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 
+import { PostalSurface } from "~/features/theme/postal-surface";
 import { useColor } from "~/hooks/use-color";
 import roundedIcon from "../../../assets/rounded-icon.png";
 import {
@@ -33,7 +34,7 @@ export function PasskeySignInScreen() {
         contentContainerClassName="flex-grow justify-center px-6 py-12"
         keyboardShouldPersistTaps="handled"
       >
-        <View className="mx-auto w-full max-w-md gap-10">
+        <View className="mx-auto w-full max-w-md gap-7">
           <BrandHeader />
           <AuthPanel auth={auth} />
         </View>
@@ -157,24 +158,32 @@ async function signOutAfterFailedPasskey() {
 
 function BrandHeader() {
   return (
-    <View className="items-center gap-4">
+    <View className="items-center gap-3">
       <Image
         accessibilityLabel="Rodge Mail"
-        className="size-20 rounded-[22px]"
+        className="border-brass/60 size-24 rounded-[26px] border"
         source={roundedIcon}
       />
-      <Text className="text-foreground text-3xl font-bold">Rodge Mail</Text>
+      <View className="items-center gap-1">
+        <Text className="text-foreground text-3xl font-bold tracking-tight">
+          Rodge Mail
+        </Text>
+        <Text className="text-muted-foreground text-sm">
+          Your mail, gathered in one place.
+        </Text>
+      </View>
     </View>
   );
 }
 
 function AuthPanel({ auth }: { auth: ReturnType<typeof usePasskeyAuth> }) {
   return (
-    <View className="gap-5">
+    <PostalSurface className="gap-5 px-5 py-6">
+      <View className="bg-brass-soft/55 mx-auto h-1 w-16 rounded-full" />
       <AuthContent auth={auth} />
       <AuthNavigation auth={auth} />
       <AuthMessage message={auth.message} />
-    </View>
+    </PostalSurface>
   );
 }
 
@@ -217,9 +226,7 @@ function AuthContent({ auth }: { auth: ReturnType<typeof usePasskeyAuth> }) {
 }
 
 function AuthTitle({ children }: { children: string }) {
-  return (
-    <Text className="text-foreground text-lg font-semibold">{children}</Text>
-  );
+  return <Text className="text-foreground text-xl font-bold">{children}</Text>;
 }
 
 function AuthNavigation({ auth }: { auth: ReturnType<typeof usePasskeyAuth> }) {
@@ -257,7 +264,7 @@ function NavigationButton({
   return (
     <Pressable
       accessibilityRole="button"
-      className="items-center py-2"
+      className="items-center rounded-xl py-2"
       onPress={onPress}
     >
       <Text className="text-muted-foreground text-sm font-semibold">
@@ -277,7 +284,7 @@ function SignInButton({
   return (
     <Pressable
       accessibilityRole="button"
-      className="bg-primary h-14 flex-row items-center justify-center gap-3 rounded-2xl disabled:opacity-50"
+      className="bg-primary border-brass-soft h-14 flex-row items-center justify-center gap-3 rounded-2xl border disabled:opacity-50"
       disabled={isLoading}
       onPress={onPress}
     >

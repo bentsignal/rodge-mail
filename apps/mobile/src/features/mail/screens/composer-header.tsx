@@ -12,22 +12,22 @@ export function ComposerHeader({
   onCancel?: () => void;
   onSend: () => void;
 }) {
-  const foreground = useColor("foreground");
+  const primaryForeground = useColor("primary-foreground");
 
   return (
-    <View className="border-border flex-row items-center justify-between border-b px-4 py-3">
+    <View className="bg-card border-brass/30 flex-row items-center justify-between border-b px-4 py-3">
       <ComposerCloseButton onCancel={onCancel} />
       <Text className="text-foreground text-lg font-bold">New</Text>
       <Pressable
         accessibilityLabel="Send email"
         accessibilityRole="button"
         accessibilityState={{ disabled: !canSend }}
-        className="p-2"
+        className="bg-primary border-brass-soft rounded-full border p-2.5"
         disabled={!canSend}
         hitSlop={10}
         onPress={onSend}
       >
-        <Send color={foreground} opacity={canSend ? 1 : 0.3} size={21} />
+        <Send color={primaryForeground} opacity={canSend ? 1 : 0.3} size={19} />
       </Pressable>
     </View>
   );

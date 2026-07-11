@@ -12,6 +12,7 @@ import { Bell, Fingerprint, LogOut } from "lucide-react-native";
 
 import { api } from "@rodge-mail/convex/api";
 
+import { useColor } from "~/hooks/use-color";
 import roundedIcon from "../../../../assets/rounded-icon.png";
 import { authClient } from "../../auth/client";
 import {
@@ -30,14 +31,14 @@ export function MailSettingsScreen() {
   return (
     <ScrollView
       className="bg-background"
-      contentContainerClassName="gap-6 px-4 pb-16"
+      contentContainerClassName="gap-6 px-4 pb-20"
       contentInsetAdjustmentBehavior="automatic"
     >
       <View className="items-center gap-2 pt-3">
         <Image
           accessibilityLabel="Rodge Mail"
           source={roundedIcon}
-          className="size-20 rounded-[22px]"
+          className="border-brass/50 size-20 rounded-[22px] border"
         />
         <Text className="text-foreground text-xl font-bold">Rodge Mail</Text>
       </View>
@@ -48,10 +49,10 @@ export function MailSettingsScreen() {
         {accounts.map((account) => (
           <View
             key={account.id}
-            className="border-border flex-row items-center gap-3 border-b px-4 py-3 last:border-b-0"
+            className="border-well-border flex-row items-center gap-3 border-b px-4 py-3.5 last:border-b-0"
           >
             <View
-              className="size-10 items-center justify-center rounded-full"
+              className="border-brass/50 size-10 items-center justify-center rounded-full border"
               style={{ backgroundColor: account.accent }}
             >
               <Text className="font-bold text-white">{account.initials}</Text>
@@ -145,7 +146,8 @@ function DevelopmentTools() {
 }
 
 function DevelopmentIcon({ isLoading }: { isLoading: boolean }) {
-  if (isLoading) return <ActivityIndicator color="#d77a55" />;
+  const primary = useColor("primary");
+  if (isLoading) return <ActivityIndicator color={primary} />;
   return <Text className="text-primary font-mono text-xs font-bold">DEV</Text>;
 }
 
@@ -194,8 +196,9 @@ function NotificationPreviewButton() {
 }
 
 function NotificationPreviewIcon({ isLoading }: { isLoading: boolean }) {
-  if (isLoading) return <ActivityIndicator color="#d77a55" />;
-  return <Bell color="#d77a55" size={20} />;
+  const primary = useColor("primary");
+  if (isLoading) return <ActivityIndicator color={primary} />;
+  return <Bell color={primary} size={20} />;
 }
 
 function AddPasskeyButton() {
@@ -240,8 +243,9 @@ function AddPasskeyButton() {
 }
 
 function AddPasskeyIcon({ isLoading }: { isLoading: boolean }) {
-  if (isLoading) return <ActivityIndicator color="#d77a55" />;
-  return <Fingerprint color="#d77a55" size={20} />;
+  const primary = useColor("primary");
+  if (isLoading) return <ActivityIndicator color={primary} />;
+  return <Fingerprint color={primary} size={20} />;
 }
 
 function SecurityMessage({ message }: { message: string | undefined }) {
@@ -303,6 +307,7 @@ function SignOutButton() {
 }
 
 function SignOutIcon({ isLoading }: { isLoading: boolean }) {
-  if (isLoading) return <ActivityIndicator color="#d77a55" />;
-  return <LogOut color="#d77a55" size={20} />;
+  const stamp = useColor("stamp");
+  if (isLoading) return <ActivityIndicator color={stamp} />;
+  return <LogOut color={stamp} size={20} />;
 }

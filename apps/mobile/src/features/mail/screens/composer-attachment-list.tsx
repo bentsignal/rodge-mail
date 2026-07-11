@@ -2,6 +2,7 @@ import { Pressable, Text, View } from "react-native";
 import { Paperclip, X } from "lucide-react-native";
 
 import type { NativeComposerAttachment } from "./use-native-attachments";
+import { useColor } from "~/hooks/use-color";
 
 export function ComposerAttachmentList({
   attachments,
@@ -10,6 +11,7 @@ export function ComposerAttachmentList({
   attachments: NativeComposerAttachment[];
   onRemove: (attachment: NativeComposerAttachment) => void;
 }) {
+  const mutedForeground = useColor("muted-foreground");
   if (attachments.length === 0) return null;
 
   return (
@@ -17,9 +19,9 @@ export function ComposerAttachmentList({
       {attachments.map((attachment) => (
         <View
           key={attachment.id}
-          className="bg-muted flex-row items-center gap-2 rounded-xl px-3 py-2"
+          className="bg-well border-well-border flex-row items-center gap-2 rounded-xl border px-3 py-2"
         >
-          <Paperclip color="#777777" size={16} />
+          <Paperclip color={mutedForeground} size={16} />
           <Text className="text-foreground min-w-0 flex-1" numberOfLines={1}>
             {attachment.fileName}
             <Text className="text-muted-foreground text-xs">
@@ -33,7 +35,7 @@ export function ComposerAttachmentList({
             hitSlop={10}
             onPress={() => onRemove(attachment)}
           >
-            <X color="#777777" size={17} />
+            <X color={mutedForeground} size={17} />
           </Pressable>
         </View>
       ))}

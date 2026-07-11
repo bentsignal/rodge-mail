@@ -11,6 +11,9 @@ import {
 
 import { api } from "@rodge-mail/convex/api";
 
+import { PostalSurface } from "~/features/theme/postal-surface";
+import { useColor } from "~/hooks/use-color";
+
 type OutboxItem = FunctionReturnType<
   typeof api.outbox.queries.listRecent
 >[number];
@@ -24,11 +27,11 @@ export function MobileOutboxStatus() {
       <Text className="text-muted-foreground px-2 text-xs font-semibold tracking-wider uppercase">
         Delivery
       </Text>
-      <View className="bg-muted/60 border-border overflow-hidden rounded-2xl border">
+      <PostalSurface className="overflow-hidden rounded-2xl">
         {outboxes.map((outbox) => (
           <OutboxRow key={outbox._id} outbox={outbox} />
         ))}
-      </View>
+      </PostalSurface>
     </View>
   );
 }
@@ -114,17 +117,21 @@ function RetryButton({
 }
 
 function RetryIcon({ isRetrying }: { isRetrying: boolean }) {
-  if (isRetrying) return <ActivityIndicator color="#d77a55" size="small" />;
-  return <RotateCcw color="#d77a55" size={13} />;
+  const stamp = useColor("stamp");
+  if (isRetrying) return <ActivityIndicator color={stamp} size="small" />;
+  return <RotateCcw color={stamp} size={13} />;
 }
 
 function StatusIcon({ status }: { status: OutboxItem["status"] }) {
+  const mutedForeground = useColor("muted-foreground");
+  const primary = useColor("primary");
+  const stamp = useColor("stamp");
   if (status === "sending") {
-    return <ActivityIndicator color="#777777" />;
+    return <ActivityIndicator color={mutedForeground} />;
   }
-  if (status === "sent") return <CircleCheck color="#397367" size={20} />;
-  if (status === "failed") return <CircleAlert color="#c95d3f" size={20} />;
-  return <Clock3 color="#777777" size={20} />;
+  if (status === "sent") return <CircleCheck color={primary} size={20} />;
+  if (status === "failed") return <CircleAlert color={stamp} size={20} />;
+  return <Clock3 color={mutedForeground} size={20} />;
 }
 
 function OutboxError({
