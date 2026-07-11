@@ -212,6 +212,42 @@
   background-color: var(--background);
 }
 
+.desktop-drag-region {
+  display: none;
+}
+
+html[data-desktop-runtime="true"] .desktop-drag-region {
+  position: fixed;
+  z-index: 50;
+  top: 0;
+  left: 0;
+  display: block;
+  width: 244px;
+  height: 52px;
+  -webkit-app-region: drag;
+}
+
+html[data-desktop-runtime="true"] .mail-account-rail {
+  padding-top: 56px;
+}
+
+@media (min-width: 1280px) {
+  html[data-desktop-runtime="true"] .mail-account-rail {
+    padding-top: 16px;
+  }
+
+  html[data-desktop-runtime="true"] .mail-brand {
+    justify-content: flex-start;
+    gap: 8px;
+    padding-left: 72px;
+  }
+
+  html[data-desktop-runtime="true"] .mail-brand img {
+    width: 32px;
+    height: 32px;
+  }
+}
+
 .mail-atmosphere::before {
   position: absolute;
   inset: 0;

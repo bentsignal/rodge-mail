@@ -2,7 +2,7 @@
   "extends": "@rodge-mail/tsconfig/base.json",
   "compilerOptions": {
     "allowImportingTsExtensions": true,
-    "lib": ["ES2022"],
+    "lib": ["DOM", "ES2022"],
     "strictNullChecks": true,
     "types": ["node", "electron-vite/node"]
   },

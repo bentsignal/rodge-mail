@@ -7,6 +7,7 @@ import type { InboxMessage, MailAccountView } from "../types";
 import { QuickLink } from "~/components/quick-link";
 import { formatInboxDate, getInitials } from "../format";
 import { useLiveMail } from "../live-data";
+import { useMailStore } from "../store";
 
 export function ThreadRow({
   message,
@@ -23,11 +24,11 @@ export function ThreadRow({
     togglePinned,
   } = useLiveMail();
   const account = accounts.find((item) => item._id === message.accountId);
+  const accountFilter = useMailStore((store) => store.accountFilter);
   const isSelected = selectedThreadId === message.threadId;
   const senderName = getSenderName(message);
   const pinLabel = message.isPinned ? "Unpin message" : "Pin message";
   const preview = message.classification?.summary ?? message.snippet;
-
   return (
     <ContextMenu.Container>
       <article
@@ -43,10 +44,13 @@ export function ThreadRow({
         <SelectedMarker selected={isSelected} />
         <ContextMenu.Trigger asChild>
           <QuickLink
-            className="w-full px-4 py-4 pr-12 text-left sm:px-5"
+            className="w-full px-5 py-4 pr-14 text-left sm:px-6"
             onClick={() => selectMessage(message)}
             params={{ messageId: message._id }}
             preload="intent"
+            search={{
+              mailbox: accountFilter === "all" ? undefined : accountFilter,
+            }}
             to="/messages/$messageId"
           >
             <div className="flex items-start gap-3">
@@ -86,25 +90,46 @@ export function ThreadRow({
           </QuickLink>
         </ContextMenu.Trigger>
         <PinMessageButton message={message} togglePinned={togglePinned} />
-        <ContextMenu.Content className="mail-workspace text-foreground rounded-[10px] border border-[var(--mail-seam)] p-1.5 shadow-[var(--mail-shadow-ambient)]">
-          <ContextMenu.Item
-            className="data-[highlighted]:text-foreground rounded-[7px] data-[highlighted]:bg-[var(--mail-paper-soft)]"
-            onSelect={() => void togglePinned(message)}
-          >
-            <Pin className="size-3.5" />
-            {pinLabel}
-          </ContextMenu.Item>
-          <ContextMenu.Separator className="bg-[var(--mail-seam)]" />
-          <ContextMenu.Item
-            className="rounded-[7px] text-[var(--mail-highlight)] data-[highlighted]:bg-[var(--mail-paper-soft)] data-[highlighted]:text-[var(--mail-highlight)]"
-            onSelect={() => void removeFromRodge(message)}
-          >
-            <EyeOff className="size-3.5" />
-            Remove from Rodge
-          </ContextMenu.Item>
-        </ContextMenu.Content>
+        <ThreadRowMenu
+          message={message}
+          pinLabel={pinLabel}
+          removeFromRodge={removeFromRodge}
+          togglePinned={togglePinned}
+        />
       </article>
     </ContextMenu.Container>
+  );
+}
+
+function ThreadRowMenu({
+  message,
+  pinLabel,
+  removeFromRodge,
+  togglePinned,
+}: {
+  message: InboxMessage;
+  pinLabel: string;
+  removeFromRodge: (message: Pick<InboxMessage, "threadId">) => Promise<void>;
+  togglePinned: (message: InboxMessage) => Promise<void>;
+}) {
+  return (
+    <ContextMenu.Content className="mail-workspace text-foreground rounded-[10px] border border-[var(--mail-seam)] p-1.5 shadow-[var(--mail-shadow-ambient)]">
+      <ContextMenu.Item
+        className="data-[highlighted]:text-foreground rounded-[7px] data-[highlighted]:bg-[var(--mail-paper-soft)]"
+        onSelect={() => void togglePinned(message)}
+      >
+        <Pin className="size-3.5" />
+        {pinLabel}
+      </ContextMenu.Item>
+      <ContextMenu.Separator className="bg-[var(--mail-seam)]" />
+      <ContextMenu.Item
+        className="rounded-[7px] text-[var(--mail-highlight)] data-[highlighted]:bg-[var(--mail-paper-soft)] data-[highlighted]:text-[var(--mail-highlight)]"
+        onSelect={() => void removeFromRodge(message)}
+      >
+        <EyeOff className="size-3.5" />
+        Remove from Rodge
+      </ContextMenu.Item>
+    </ContextMenu.Content>
   );
 }
 

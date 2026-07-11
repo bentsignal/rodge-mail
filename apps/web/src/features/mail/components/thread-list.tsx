@@ -80,7 +80,7 @@ function VirtualizedThreadList({
         keyExtractor={getMessageKey}
         maintainVisibleContentPosition={true}
         onEndReached={loadOlderMessages}
-        onEndReachedThreshold={0.75}
+        onEndReachedThreshold={1.5}
         recycleItems={true}
         renderItem={renderThreadRow}
         role="feed"

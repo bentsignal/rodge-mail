@@ -136,12 +136,14 @@ function createIdempotencyKey() {
 }
 
 function useInternalStore({
+  initialAccountFilter,
   initialSelection,
 }: {
+  initialAccountFilter: MailAccountFilter;
   initialSelection?: ThreadSelection;
 }) {
   const [accountFilter, setAccountFilterState] =
-    useState<MailAccountFilter>("all");
+    useState<MailAccountFilter>(initialAccountFilter);
   const {
     debouncedValue: debouncedSearchQuery,
     setValue: setSearchQueryState,
@@ -159,8 +161,9 @@ function useInternalStore({
     setMobileReaderIsOpen(false);
   }
 
-  function setAccountFilter(accountFilter: MailAccountFilter) {
-    setAccountFilterState(accountFilter);
+  function setAccountFilter(nextAccountFilter: MailAccountFilter) {
+    if (accountFilter === nextAccountFilter) return;
+    setAccountFilterState(nextAccountFilter);
     resetSelection();
   }
 

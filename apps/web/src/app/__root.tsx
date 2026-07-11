@@ -145,6 +145,7 @@ function RootComponent() {
           "bg-background text-foreground min-h-screen font-sans antialiased",
         )}
       >
+        <div aria-hidden="true" className="desktop-drag-region" />
         <ServerTokenConvexProvider
           client={context.convex}
           initialToken={context.token}

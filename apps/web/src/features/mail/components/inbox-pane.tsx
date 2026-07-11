@@ -5,6 +5,7 @@ import { cn } from "@rodge-mail/std/cn";
 import type { MailAccountView } from "../types";
 import { useLiveMail } from "../live-data";
 import { useMailStore } from "../store";
+import { useMailboxNavigation } from "../use-mailbox-navigation";
 import { ThreadList } from "./thread-list";
 
 export function InboxPane() {
@@ -145,7 +146,7 @@ function ClearSearchButton({ query }: { query: string }) {
 
 function MobileAccountFilters() {
   const accountFilter = useMailStore((store) => store.accountFilter);
-  const setAccountFilter = useMailStore((store) => store.setAccountFilter);
+  const selectMailbox = useMailboxNavigation();
   const { accounts } = useLiveMail();
 
   return (
@@ -153,7 +154,7 @@ function MobileAccountFilters() {
       <MobileAccountChip
         active={accountFilter === "all"}
         label="Unified"
-        onClick={() => setAccountFilter("all")}
+        onClick={() => selectMailbox("all")}
       />
       {accounts.map((account) => (
         <MobileAccountChip
@@ -161,7 +162,7 @@ function MobileAccountFilters() {
           active={accountFilter === account._id}
           key={account._id}
           label={account.label}
-          onClick={() => setAccountFilter(account._id)}
+          onClick={() => selectMailbox(account._id)}
         />
       ))}
     </div>

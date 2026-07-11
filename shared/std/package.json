@@ -4,6 +4,7 @@
   "type": "module",
   "exports": {
     "./cn": "./src/cn.ts",
+    "./relative-time": "./src/relative-time.ts",
     "./use-debounced-input": "./src/use-debounced-input.ts",
     "./use-loading": "./src/use-loading.ts"
   },

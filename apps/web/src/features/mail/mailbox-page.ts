@@ -33,37 +33,19 @@ export function useMailboxPage({
   const semantic = useSemanticMailSearch({ accountId, searchTerm });
   const activePage = isSearching ? search : inbox;
   const scopeKey = getMailboxScopeKey(accountId, searchTerm);
-  const [settledPage, setSettledPage] = useState(() => ({
-    resultsKey: getResultsKey(initialInbox),
-    results: initialInbox,
-    scopeKey: getMailboxScopeKey(undefined, ""),
-  }));
   const useInitialInbox =
     !isSearching &&
     accountId === undefined &&
     activePage.status === "LoadingFirstPage";
-
-  const activeResultsKey = getResultsKey(activePage.results);
-  if (
-    shouldUpdateSettledPage({
-      activeResultsKey,
-      scopeKey,
-      settledPage,
-      status: activePage.status,
-    })
-  ) {
-    setSettledPage({
-      resultsKey: activeResultsKey,
-      results: activePage.results,
-      scopeKey,
-    });
-  }
-
+  const settledResults = useSettledMailboxPage({
+    activeResults: activePage.results,
+    initialInbox,
+    scopeKey,
+    status: activePage.status,
+  });
   const fallbackResults = useInitialInbox
     ? initialInbox
-    : settledPage.scopeKey === scopeKey
-      ? settledPage.results
-      : [];
+    : settledResults;
   const lexicalResults = getVisibleResults(
     activePage.status,
     activePage.results,
@@ -87,6 +69,46 @@ export function useMailboxPage({
       results.length,
     ),
   };
+}
+
+function useSettledMailboxPage({
+  activeResults,
+  initialInbox,
+  scopeKey,
+  status,
+}: {
+  activeResults: InboxMessage[];
+  initialInbox: InboxMessage[];
+  scopeKey: string;
+  status: string;
+}) {
+  const [cache, setCache] = useState(() => ({
+    observedResultsKey: getResultsKey(initialInbox),
+    observedScopeKey: getMailboxScopeKey(undefined, ""),
+    pages: new Map<string, InboxMessage[]>([
+      [getMailboxScopeKey(undefined, ""), initialInbox],
+    ]),
+  }));
+  const activeResultsKey = getResultsKey(activeResults);
+  const hasChanged =
+    cache.observedScopeKey !== scopeKey ||
+    cache.observedResultsKey !== activeResultsKey;
+
+  if (status !== "LoadingFirstPage" && hasChanged) {
+    const pages = new Map(cache.pages);
+    pages.set(scopeKey, activeResults);
+    setCache({
+      observedResultsKey: activeResultsKey,
+      observedScopeKey: scopeKey,
+      pages,
+    });
+  }
+
+  return cache.pages.get(scopeKey) ?? [];
+}
+
+function getResultsKey(messages: InboxMessage[]) {
+  return messages.map((message) => message._id).join(":");
 }
 
 function getSmartSearchStatus(
@@ -157,28 +179,6 @@ function useSemanticMailSearch({
         (ids.length > 0 && messages.data === undefined)),
     results: ids.length > 0 ? (messages.data ?? []) : [],
   };
-}
-
-function getResultsKey(messages: InboxMessage[]) {
-  return messages.map((message) => message._id).join(":");
-}
-
-function shouldUpdateSettledPage({
-  activeResultsKey,
-  scopeKey,
-  settledPage,
-  status,
-}: {
-  activeResultsKey: string;
-  scopeKey: string;
-  settledPage: { resultsKey: string; scopeKey: string };
-  status: string;
-}) {
-  return (
-    status !== "LoadingFirstPage" &&
-    (settledPage.scopeKey !== scopeKey ||
-      settledPage.resultsKey !== activeResultsKey)
-  );
 }
 
 function getMailboxScopeKey(

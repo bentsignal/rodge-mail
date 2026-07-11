@@ -15,6 +15,7 @@ import {
 } from "./embedded-web";
 import { desktopEnv } from "./env";
 import { secureSession, secureWindow } from "./security";
+import { getPlatformWindowOptions } from "./window-options";
 
 let mainWindow: BrowserWindow | undefined;
 let pendingDeepLink: string | undefined;
@@ -57,6 +58,7 @@ async function createMainWindow() {
   if (!webAppUrl) return;
 
   const window = new BrowserWindow({
+    ...getPlatformWindowOptions(),
     title: "Rodge Mail",
     width: 1280,
     height: 840,

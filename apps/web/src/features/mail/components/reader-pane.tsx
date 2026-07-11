@@ -68,7 +68,7 @@ function ReaderContent() {
       <ReaderToolbar
         closeMobileReader={() => {
           closeMobileReader();
-          void navigate({ to: "/" });
+          void navigate({ to: "/", search: (previous) => previous });
         }}
         removeFromRodge={removeFromRodge}
         replyToSelectedThread={replyToSelectedThread}

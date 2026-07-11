@@ -1,12 +1,4 @@
-const TIME_FORMATTER = new Intl.DateTimeFormat("en", {
-  hour: "numeric",
-  minute: "2-digit",
-});
-
-const DAY_FORMATTER = new Intl.DateTimeFormat("en", {
-  month: "short",
-  day: "numeric",
-});
+import { formatRelativeTime } from "@rodge-mail/std/relative-time";
 
 const FULL_DATE_FORMATTER = new Intl.DateTimeFormat("en", {
   weekday: "short",
@@ -16,12 +8,8 @@ const FULL_DATE_FORMATTER = new Intl.DateTimeFormat("en", {
   minute: "2-digit",
 });
 
-const DEMO_TODAY = "2026-07-09";
-
-export function formatInboxDate(isoDate: string) {
-  const date = new Date(isoDate);
-  if (isoDate.startsWith(DEMO_TODAY)) return TIME_FORMATTER.format(date);
-  return DAY_FORMATTER.format(date);
+export function formatInboxDate(isoDate: string, now = Date.now()) {
+  return formatRelativeTime(new Date(isoDate).getTime(), now);
 }
 
 export function formatFullDate(isoDate: string) {

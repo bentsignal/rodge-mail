@@ -15,6 +15,7 @@ import type { MailAccountView } from "../types";
 import { PasskeyManagementButton } from "~/features/auth/components/passkey-management-button";
 import { useLiveMail } from "../live-data";
 import { useMailStore } from "../store";
+import { useMailboxNavigation } from "../use-mailbox-navigation";
 import { AddAccountButton } from "./provider-connection-buttons";
 
 const ACCOUNT_ICONS = {
@@ -25,7 +26,7 @@ const ACCOUNT_ICONS = {
 
 export function AccountRail() {
   const accountFilter = useMailStore((store) => store.accountFilter);
-  const setAccountFilter = useMailStore((store) => store.setAccountFilter);
+  const selectMailbox = useMailboxNavigation();
   const openComposer = useMailStore((store) => store.openComposer);
   const {
     accounts,
@@ -36,7 +37,7 @@ export function AccountRail() {
   } = useLiveMail();
 
   return (
-    <aside className="mail-chassis relative z-10 hidden h-full w-[82px] shrink-0 flex-col px-2.5 py-4 md:flex xl:w-[244px] xl:px-4">
+    <aside className="mail-account-rail mail-chassis relative z-10 hidden h-full w-[82px] shrink-0 flex-col px-2.5 py-4 md:flex xl:w-[244px] xl:px-4">
       <Brand />
       <button
         aria-label="New message"
@@ -57,7 +58,7 @@ export function AccountRail() {
           count={unreadCounts.all}
           icon={Inbox}
           label="Unified inbox"
-          onClick={() => setAccountFilter("all")}
+          onClick={() => selectMailbox("all")}
         />
         <div className="mx-3 my-3 border-t border-white/10" />
         {accounts.map((account) => {
@@ -70,7 +71,7 @@ export function AccountRail() {
               icon={Icon}
               key={account._id}
               label={account.label}
-              onClick={() => setAccountFilter(account._id)}
+              onClick={() => selectMailbox(account._id)}
             />
           );
         })}
@@ -153,14 +154,14 @@ function SyncButtonText({ state }: { state: SyncButtonState }) {
 
 function Brand() {
   return (
-    <div className="flex items-center justify-center gap-3 xl:justify-start xl:px-2">
+    <div className="mail-brand flex items-center justify-center gap-3 xl:justify-start xl:px-2">
       <img
         alt="Rodge Mail"
         className="size-10 shrink-0 rounded-[11px] border border-[var(--mail-brass-deep)] shadow-[0_1px_0_rgba(255,255,255,0.22)_inset,0_5px_12px_rgba(0,0,0,0.24)]"
         src="/icon-192.png"
       />
       <div className="hidden min-w-0 xl:block">
-        <p className="font-serif text-[17px] leading-5 font-semibold tracking-[-0.02em] text-[var(--mail-chassis-foreground)]">
+        <p className="whitespace-nowrap font-serif text-[17px] leading-5 font-semibold tracking-[-0.02em] text-[var(--mail-chassis-foreground)]">
           Rodge Mail
         </p>
       </div>

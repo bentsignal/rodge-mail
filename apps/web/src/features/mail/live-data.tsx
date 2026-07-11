@@ -243,7 +243,7 @@ function useLiveMailActions(
     try {
       await removeThreadFromRodge({ threadId: message.threadId });
       clearSelection();
-      await navigate({ to: "/" });
+      await navigate({ to: "/", search: (previous) => previous });
       toast.success("Removed from Rodge. Your provider copy is unchanged.");
     } catch (error) {
       toast.error(getErrorMessage(error, "Could not remove the conversation."));
