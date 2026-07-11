@@ -1,5 +1,5 @@
 import { join } from "node:path";
-import { app, BrowserWindow, dialog, session } from "electron";
+import { app, BrowserWindow, dialog, nativeTheme, session } from "electron";
 
 import {
   APP_PROTOCOL,
@@ -60,7 +60,7 @@ async function createMainWindow() {
     minWidth: 860,
     minHeight: 600,
     show: false,
-    backgroundColor: "#111111",
+    backgroundColor: nativeTheme.shouldUseDarkColors ? "#20251f" : "#f3eee4",
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,

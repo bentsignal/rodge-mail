@@ -8,6 +8,7 @@ import * as SystemUI from "expo-system-ui";
 import { Roboto_500Medium } from "@expo-google-fonts/roboto/500Medium";
 import { useFonts } from "@expo-google-fonts/roboto/useFonts";
 
+import { loadMobileAppearance } from "~/features/theme/mobile-theme";
 import { useColor } from "~/hooks/use-color";
 
 configureReanimatedLogger({
@@ -18,22 +19,30 @@ configureReanimatedLogger({
 export function useInitApp() {
   const backgroundColor = useColor("background");
   const colorScheme = useColorScheme();
+  const [appearanceIsLoaded, setAppearanceIsLoaded] = useState(false);
+
+  // eslint-disable-next-line no-restricted-syntax -- Persisted appearance must be restored before the native splash is hidden.
+  useEffect(() => {
+    let isMounted = true;
+    void loadMobileAppearance()
+      .catch(() => undefined)
+      .finally(() => {
+        if (isMounted) setAppearanceIsLoaded(true);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const [backgroundColorsAreLoaded, setBackgroundColorsAreLoaded] =
     useState(false);
-  // eslint-disable-next-line no-restricted-syntax -- Native system background has to be initialized after color resolution.
+  // eslint-disable-next-line no-restricted-syntax -- Native system background has to follow the restored app appearance.
   useEffect(() => {
-    async function init() {
-      await SystemUI.setBackgroundColorAsync(backgroundColor);
-      setBackgroundColorsAreLoaded(true);
-    }
-    void init();
-  }, [backgroundColor, backgroundColorsAreLoaded, colorScheme]);
-
-  // eslint-disable-next-line no-restricted-syntax -- Native system background follows color-scheme changes.
-  useEffect(() => {
-    void SystemUI.setBackgroundColorAsync(backgroundColor);
-  }, [backgroundColor, colorScheme]);
+    if (!appearanceIsLoaded) return;
+    void SystemUI.setBackgroundColorAsync(backgroundColor)
+      .catch(() => undefined)
+      .finally(() => setBackgroundColorsAreLoaded(true));
+  }, [appearanceIsLoaded, backgroundColor, colorScheme]);
 
   const [fontsAreLoaded] = useFonts({
     Roboto_500Medium,

@@ -13,7 +13,6 @@ import { cn } from "@rodge-mail/std/cn";
 
 import type { MailAccountView } from "../types";
 import { PasskeyManagementButton } from "~/features/auth/components/passkey-management-button";
-import { SignOutLink } from "~/features/auth/components/sign-out-link";
 import { useLiveMail } from "../live-data";
 import { useMailStore } from "../store";
 import { AddAccountButton } from "./provider-connection-buttons";
@@ -84,7 +83,6 @@ export function AccountRail() {
       <div className="mt-auto space-y-1.5">
         <div className="border-border/80 mx-3 mb-3 border-t" />
         <PasskeyManagementButton />
-        <SignOutLink />
       </div>
     </aside>
   );

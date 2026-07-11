@@ -1,8 +1,8 @@
 # Rodge Mail
 
-Rodge Mail is a focused, AI-native email client for web, desktop, and mobile.
-It stores synchronized mail in Convex, connects Gmail, Microsoft 365, and
-iCloud accounts, and learns which messages Shawn actually wants to see.
+Rodge Mail is a unified email client for web, desktop, and mobile. It stores
+synchronized mail in Convex and connects Gmail, Microsoft 365, and iCloud
+accounts without requiring a separate mail database or worker.
 
 ## Product shape
 
@@ -11,15 +11,15 @@ iCloud accounts, and learns which messages Shawn actually wants to see.
 - Expo React Native mobile client with native iOS and Android controls
 - Convex mail store, provider sync, search, and background processing
 - Better Auth account protected by email and passkeys
-- Explainable Focused/Other classification and semantic search for important
-  mail
+- Semantic search across synchronized mail, backed by selective embeddings
 
-The product implementation includes the shared focused inbox, user-scoped
-passkey auth, Gmail and Microsoft Graph OAuth providers, the iCloud IMAP/SMTP
-connector, transactional sending, private attachments, and explainable AI
-classification and semantic search. Provider credentials and the public web
-origin are deployment-time concerns; no separate mail worker or database is
-required.
+The product implementation includes a unified and per-account inbox,
+user-scoped passkey auth, Gmail and Microsoft Graph OAuth providers, the iCloud
+IMAP/SMTP connector, transactional sending, private attachments, classification
+metadata, and semantic search. Classification does not currently split the
+product into Focused and Other views; the UI intentionally presents one feed
+while a future filtering model is evaluated. Development uses Portless HTTPS
+origins and a Convex development deployment.
 
 ## Development
 

@@ -32,15 +32,24 @@ export function useMobileNotifications(isAuthenticated: boolean) {
     api.notifications.queries.getPreferences,
     isAuthenticated ? {} : "skip",
   );
+  const accountPreferences = useQuery(
+    api.notifications.queries.listAccountPreferences,
+    isAuthenticated ? {} : "skip",
+  );
   const router = useRouter();
+  const registrationEnabled =
+    preferences?.newMailEnabled === true ||
+    accountPreferences?.some(
+      (preference) => preference.effective.newMailEnabled,
+    ) === true;
 
   // eslint-disable-next-line no-restricted-syntax -- Registration synchronizes native permission/token state with the signed-in owner.
   useEffect(() => {
-    if (!isAuthenticated || !preferences?.newMailEnabled) return;
+    if (!isAuthenticated || !registrationEnabled) return;
     void registerForNewMailNotifications(registerPushToken).catch(
       () => undefined,
     );
-  }, [isAuthenticated, preferences?.newMailEnabled, registerPushToken]);
+  }, [isAuthenticated, registerPushToken, registrationEnabled]);
 
   // eslint-disable-next-line no-restricted-syntax -- Notification response subscriptions bridge native lifecycle events into Expo Router.
   useEffect(() => {

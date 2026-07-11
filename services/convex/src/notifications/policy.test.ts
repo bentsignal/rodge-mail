@@ -45,4 +45,28 @@ describe("new-mail notification gating", () => {
       }),
     ).toBe(false);
   });
+
+  it("does not notify for manual or reconciliation syncs", () => {
+    for (const reason of ["manual", "reconcile"]) {
+      expect(
+        shouldNotifyForProviderMessage({
+          fullSync: false,
+          now,
+          reason,
+          receivedAt: now,
+        }),
+      ).toBe(false);
+    }
+  });
+
+  it("does not notify for implausibly future-dated mail", () => {
+    expect(
+      shouldNotifyForProviderMessage({
+        fullSync: false,
+        now,
+        reason: "incremental",
+        receivedAt: now + 6 * 60 * 1000,
+      }),
+    ).toBe(false);
+  });
 });

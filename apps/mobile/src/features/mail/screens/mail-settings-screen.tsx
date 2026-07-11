@@ -20,12 +20,13 @@ import {
   unregisterCurrentPushToken,
 } from "../../notifications/mobile-notifications";
 import { NotificationPreferences } from "../../notifications/notification-preferences";
+import { MobileAppearanceSettings } from "../../theme/mobile-appearance-settings";
 import { MobileOutboxStatus } from "../components/mobile-outbox-status";
 import { useMailStore } from "../store";
+import { SettingsSection } from "./settings-section";
 
 export function MailSettingsScreen() {
   const accounts = useMailStore((store) => store.accounts);
-
   return (
     <ScrollView
       className="bg-background"
@@ -40,6 +41,9 @@ export function MailSettingsScreen() {
         />
         <Text className="text-foreground text-xl font-bold">Rodge Mail</Text>
       </View>
+      <SettingsSection title="Appearance">
+        <MobileAppearanceSettings />
+      </SettingsSection>
       <SettingsSection title="Mail accounts">
         {accounts.map((account) => (
           <View
@@ -70,9 +74,9 @@ export function MailSettingsScreen() {
         <NotificationPreferences />
       </SettingsSection>
       <MobileOutboxStatus />
-      <SettingsSection title="Security">
-        <AddPasskeyButton />
+      <SettingsSection title="Account">
         <SignOutButton />
+        <AddPasskeyButton />
       </SettingsSection>
       <DevelopmentTools />
     </ScrollView>
@@ -213,7 +217,7 @@ function AddPasskeyButton() {
   }
 
   return (
-    <View className="border-border border-b">
+    <View className="border-border border-t">
       <Pressable
         accessibilityRole="button"
         className="flex-row items-center gap-3 px-4 py-4 disabled:opacity-50"
@@ -222,9 +226,11 @@ function AddPasskeyButton() {
       >
         <AddPasskeyIcon isLoading={isLoading} />
         <View className="flex-1 gap-0.5">
-          <Text className="text-foreground font-semibold">Add a passkey</Text>
+          <Text className="text-foreground font-semibold">
+            Add another passkey
+          </Text>
           <Text className="text-muted-foreground text-sm">
-            Save another passkey for your account.
+            For another device or password manager.
           </Text>
         </View>
       </Pressable>
@@ -299,23 +305,4 @@ function SignOutButton() {
 function SignOutIcon({ isLoading }: { isLoading: boolean }) {
   if (isLoading) return <ActivityIndicator color="#d77a55" />;
   return <LogOut color="#d77a55" size={20} />;
-}
-
-function SettingsSection({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <View className="gap-2">
-      <Text className="text-muted-foreground px-2 text-xs font-semibold tracking-wider uppercase">
-        {title}
-      </Text>
-      <View className="bg-muted/60 border-border overflow-hidden rounded-2xl border">
-        {children}
-      </View>
-    </View>
-  );
 }

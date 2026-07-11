@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 
+import { useColor } from "~/hooks/use-color";
 import roundedIcon from "../../../assets/rounded-icon.png";
 import {
   RegistrationDetailsForm,
@@ -276,20 +277,19 @@ function SignInButton({
   return (
     <Pressable
       accessibilityRole="button"
-      className="h-14 flex-row items-center justify-center gap-3 rounded-2xl bg-[#20251f] disabled:opacity-50"
+      className="bg-primary h-14 flex-row items-center justify-center gap-3 rounded-2xl disabled:opacity-50"
       disabled={isLoading}
       onPress={onPress}
     >
       <SignInIcon isLoading={isLoading} />
-      <Text className="font-semibold" style={{ color: "#f7f1e6" }}>
-        Sign in
-      </Text>
+      <Text className="text-primary-foreground font-semibold">Sign in</Text>
     </Pressable>
   );
 }
 
 function SignInIcon({ isLoading }: { isLoading: boolean }) {
-  if (isLoading) return <ActivityIndicator color="#f7f1e6" />;
+  const primaryForeground = useColor("primary-foreground");
+  if (isLoading) return <ActivityIndicator color={primaryForeground} />;
   return null;
 }
 
