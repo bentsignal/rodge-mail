@@ -6,6 +6,7 @@ import { v } from "convex/values";
 import type { Id } from "../../_generated/dataModel";
 import type { ActionCtx } from "../../_generated/server";
 import type { ICloudCredential } from "./credentialAccess";
+import type { ICloudMailboxCursor, ICloudSyncCursor } from "./window";
 import { internal } from "../../_generated/api";
 import { internalAction } from "../../_generated/server";
 import { vSyncReason } from "../../mail/validators";
@@ -23,9 +24,15 @@ import {
   normalizeMessage,
   toNormalizedFolder,
 } from "./normalize";
+import {
+  parseICloudSyncCursor,
+  planIncrementalMailboxSync,
+  planInitialMailboxSync,
+  recentWindowCutoff,
+  toUidSequence,
+} from "./window";
 
 const FETCH_BATCH_SIZE = 25;
-const MAX_MESSAGES_PER_MAILBOX_PER_RUN = 200;
 
 export const synchronize = internalAction({
   args: {
@@ -55,7 +62,7 @@ export const synchronize = internalAction({
         internal.sync.internal.listProviderRemoteMessageIds,
         { ownerId: args.ownerId, accountId: args.accountId },
       );
-      const mailboxCount = await synchronizeMailboxes({
+      const cursor = await synchronizeMailboxes({
         ctx,
         ownerId: args.ownerId,
         accountId: args.accountId,
@@ -63,14 +70,11 @@ export const synchronize = internalAction({
         credential,
         knownRemoteIds,
         reason: args.reason,
+        previousCursor: parseICloudSyncCursor(connection.account.syncCursor),
       });
       await ctx.runMutation(internal.sync.internal.finishRun, {
         syncRunId,
-        cursor: JSON.stringify({
-          version: 2,
-          completedAt: Date.now(),
-          mailboxCount,
-        }),
+        cursor: JSON.stringify(cursor),
       });
     } catch (error) {
       const message = safeErrorMessage(error);
@@ -95,21 +99,31 @@ async function synchronizeMailboxes(args: {
   accountAddress: string;
   credential: ICloudCredential;
   knownRemoteIds: string[];
+  previousCursor: ICloudSyncCursor | undefined;
   reason: "incremental" | "initial" | "manual" | "reconcile";
 }) {
   const client = createImapClient(args.credential);
   try {
     await client.connect();
     const mailboxes = (await client.list()).filter(isSelectableMailbox);
+    const nextCursor = {
+      version: 3,
+      completedAt: Date.now(),
+      mailboxes: { ...args.previousCursor?.mailboxes },
+    } satisfies ICloudSyncCursor;
     for (const mailbox of mailboxes) {
       await args.ctx.runMutation(internal.sync.internal.upsertProviderFolder, {
         ownerId: args.ownerId,
         accountId: args.accountId,
         ...toNormalizedFolder(mailbox),
       });
-      await synchronizeMailbox(client, mailbox, args);
+      nextCursor.mailboxes[mailbox.path] = await synchronizeMailbox(
+        client,
+        mailbox,
+        args,
+      );
     }
-    return mailboxes.length;
+    return nextCursor;
   } finally {
     await safeLogout(client);
   }
@@ -124,41 +138,48 @@ async function synchronizeMailbox(
     accountId: Id<"mailAccounts">;
     accountAddress: string;
     knownRemoteIds: string[];
+    previousCursor: ICloudSyncCursor | undefined;
     reason: "incremental" | "initial" | "manual" | "reconcile";
   },
 ) {
   const opened = await client.mailboxOpen(mailbox.path, { readOnly: true });
   const uidValidity = opened.uidValidity.toString();
-  const found = await client.search({ all: true }, { uid: true });
-  const currentUids = found === false ? [] : found;
   const known = args.knownRemoteIds.flatMap((remoteMessageId) => {
     const parsed = parseRemoteMessageId(remoteMessageId);
     return parsed?.mailbox === mailbox.path
       ? [{ ...parsed, remoteMessageId }]
       : [];
   });
-  const currentUidSet = new Set(currentUids);
   const importedUids = new Set(
     known
       .filter((item) => item.uidValidity === uidValidity)
       .map((item) => item.uid),
   );
-  const pendingUids = currentUids
-    .filter((uid) => !importedUids.has(uid))
-    .slice(-MAX_MESSAGES_PER_MAILBOX_PER_RUN);
-  for (const remoteMessageId of known
-    .filter(
-      (item) =>
-        item.uidValidity !== uidValidity || !currentUidSet.has(item.uid),
-    )
-    .map((item) => item.remoteMessageId)) {
+  const mailboxHighWaterUid = Math.max(0, opened.uidNext - 1);
+  const previous = args.previousCursor?.mailboxes[mailbox.path];
+  const plan =
+    previous?.uidValidity === uidValidity
+      ? await createIncrementalPlan({
+          client,
+          previous,
+          imported: known,
+          mailboxHighWaterUid,
+        })
+      : await createInitialPlan({
+          client,
+          uidValidity,
+          importedUids,
+          mailboxHighWaterUid,
+        });
+
+  for (const remoteMessageId of plan.deletedRemoteMessageIds) {
     await args.ctx.runMutation(internal.sync.internal.deleteProviderMessage, {
       ownerId: args.ownerId,
       accountId: args.accountId,
       remoteMessageId,
     });
   }
-  for (const uidBatch of chunk(pendingUids, FETCH_BATCH_SIZE)) {
+  for (const uidBatch of chunk(plan.pendingUids, FETCH_BATCH_SIZE)) {
     for await (const message of client.fetch(
       uidBatch,
       {
@@ -190,6 +211,53 @@ async function synchronizeMailbox(
       });
     }
   }
+  return plan.nextCursor;
+}
+
+async function createInitialPlan(args: {
+  client: ReturnType<typeof createImapClient>;
+  uidValidity: string;
+  importedUids: Set<number>;
+  mailboxHighWaterUid: number;
+}) {
+  const found = await args.client.search(
+    { since: recentWindowCutoff(Date.now()) },
+    { uid: true },
+  );
+  return planInitialMailboxSync({
+    recentUids: found === false ? [] : found,
+    importedUids: args.importedUids,
+    mailboxHighWaterUid: args.mailboxHighWaterUid,
+    uidValidity: args.uidValidity,
+  });
+}
+
+async function createIncrementalPlan(args: {
+  client: ReturnType<typeof createImapClient>;
+  previous: ICloudMailboxCursor;
+  imported: (NonNullable<ReturnType<typeof parseRemoteMessageId>> & {
+    remoteMessageId: string;
+  })[];
+  mailboxHighWaterUid: number;
+}) {
+  const trackedSequence = toUidSequence(args.previous.trackedUids);
+  const existingTracked = trackedSequence
+    ? await args.client.search({ uid: trackedSequence }, { uid: true })
+    : [];
+  const newUids =
+    args.mailboxHighWaterUid > args.previous.highWaterUid
+      ? await args.client.search(
+          { uid: `${args.previous.highWaterUid + 1}:*` },
+          { uid: true },
+        )
+      : [];
+  return planIncrementalMailboxSync({
+    cursor: args.previous,
+    existingTrackedUids: existingTracked === false ? [] : existingTracked,
+    imported: args.imported,
+    mailboxHighWaterUid: args.mailboxHighWaterUid,
+    newUids: newUids === false ? [] : newUids,
+  });
 }
 
 function chunk<T>(values: T[], size: number) {
