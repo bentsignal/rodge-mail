@@ -8,7 +8,7 @@ import {
   View,
 } from "react-native";
 import { useMutation } from "convex/react";
-import { Fingerprint, LogOut } from "lucide-react-native";
+import { Bell, Fingerprint, LogOut } from "lucide-react-native";
 
 import { api } from "@rodge-mail/convex/api";
 
@@ -16,6 +16,7 @@ import roundedIcon from "../../../../assets/rounded-icon.png";
 import { authClient } from "../../auth/client";
 import {
   registerForNewMailNotifications,
+  scheduleLocalNotificationPreview,
   unregisterCurrentPushToken,
 } from "../../notifications/mobile-notifications";
 import { NotificationPreferences } from "../../notifications/notification-preferences";
@@ -113,23 +114,26 @@ function DevelopmentTools() {
 
   return (
     <SettingsSection title="Development">
-      <Pressable
-        accessibilityRole="button"
-        className="flex-row items-center gap-3 px-4 py-4 disabled:opacity-50"
-        disabled={isLoading}
-        onPress={() => void seed()}
-      >
-        <DevelopmentIcon isLoading={isLoading} />
-        <View className="flex-1 gap-0.5">
-          <Text className="text-foreground font-semibold">
-            Load sample mailbox
-          </Text>
-          <Text className="text-muted-foreground text-sm">
-            Seed idempotent Convex fixtures for this mailbox.
-          </Text>
-          <SecurityMessage message={message} />
-        </View>
-      </Pressable>
+      <View className="border-border border-b">
+        <Pressable
+          accessibilityRole="button"
+          className="flex-row items-center gap-3 px-4 py-4 disabled:opacity-50"
+          disabled={isLoading}
+          onPress={() => void seed()}
+        >
+          <DevelopmentIcon isLoading={isLoading} />
+          <View className="flex-1 gap-0.5">
+            <Text className="text-foreground font-semibold">
+              Load sample mailbox
+            </Text>
+            <Text className="text-muted-foreground text-sm">
+              Seed idempotent Convex fixtures for this mailbox.
+            </Text>
+          </View>
+        </Pressable>
+        <SecurityMessage message={message} />
+      </View>
+      <NotificationPreviewButton />
     </SettingsSection>
   );
 }
@@ -137,6 +141,55 @@ function DevelopmentTools() {
 function DevelopmentIcon({ isLoading }: { isLoading: boolean }) {
   if (isLoading) return <ActivityIndicator color="#d77a55" />;
   return <Text className="text-primary font-mono text-xs font-bold">DEV</Text>;
+}
+
+function NotificationPreviewButton() {
+  const threadId = useMailStore((store) => store.threads.at(0)?.id);
+  const [isLoading, setIsLoading] = useState(false);
+  const [message, setMessage] = useState<string>();
+
+  async function preview() {
+    if (!threadId) {
+      setMessage("Load mail before previewing a notification.");
+      return;
+    }
+    setIsLoading(true);
+    setMessage(undefined);
+    try {
+      await scheduleLocalNotificationPreview(threadId, threadId);
+      setMessage("Notification posted. Tap it to open this thread.");
+    } catch {
+      setMessage("Could not post notification preview.");
+    }
+    setIsLoading(false);
+  }
+
+  return (
+    <View>
+      <Pressable
+        accessibilityRole="button"
+        className="flex-row items-center gap-3 px-4 py-4 disabled:opacity-50"
+        disabled={isLoading}
+        onPress={() => void preview()}
+      >
+        <NotificationPreviewIcon isLoading={isLoading} />
+        <View className="flex-1 gap-0.5">
+          <Text className="text-foreground font-semibold">
+            Preview notification
+          </Text>
+          <Text className="text-muted-foreground text-sm">
+            Post a local alert and test its thread link.
+          </Text>
+        </View>
+      </Pressable>
+      <SecurityMessage message={message} />
+    </View>
+  );
+}
+
+function NotificationPreviewIcon({ isLoading }: { isLoading: boolean }) {
+  if (isLoading) return <ActivityIndicator color="#d77a55" />;
+  return <Bell color="#d77a55" size={20} />;
 }
 
 function AddPasskeyButton() {

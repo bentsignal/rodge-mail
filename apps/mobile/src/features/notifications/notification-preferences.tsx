@@ -4,6 +4,7 @@ import { useMutation, useQuery } from "convex/react";
 
 import { api } from "@rodge-mail/convex/api";
 
+import { AccountNotificationPreferences } from "./account-notification-preferences";
 import { registerForNewMailNotifications } from "./mobile-notifications";
 
 export function NotificationPreferences() {
@@ -77,6 +78,7 @@ export function NotificationPreferences() {
         }
       />
       <PreferenceMessage message={message} />
+      <AccountNotificationPreferences />
     </>
   );
 }

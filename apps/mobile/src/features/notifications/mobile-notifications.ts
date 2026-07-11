@@ -6,7 +6,7 @@ import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 
 import { api } from "@rodge-mail/convex/api";
 
@@ -28,15 +28,19 @@ export function useMobileNotifications(isAuthenticated: boolean) {
   const registerPushToken = useMutation(
     api.notifications.mutations.registerPushToken,
   );
+  const preferences = useQuery(
+    api.notifications.queries.getPreferences,
+    isAuthenticated ? {} : "skip",
+  );
   const router = useRouter();
 
   // eslint-disable-next-line no-restricted-syntax -- Registration synchronizes native permission/token state with the signed-in owner.
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || !preferences?.newMailEnabled) return;
     void registerForNewMailNotifications(registerPushToken).catch(
       () => undefined,
     );
-  }, [isAuthenticated, registerPushToken]);
+  }, [isAuthenticated, preferences?.newMailEnabled, registerPushToken]);
 
   // eslint-disable-next-line no-restricted-syntax -- Notification response subscriptions bridge native lifecycle events into Expo Router.
   useEffect(() => {
@@ -111,6 +115,10 @@ export async function scheduleLocalNotificationPreview(
   threadId = "simulator-preview-thread",
   messageId = "simulator-preview-message",
 ) {
+  const permissionGranted = await prepareNotificationPermissions();
+  if (!permissionGranted) {
+    throw new Error("Notification permission is required for the preview.");
+  }
   return await Notifications.scheduleNotificationAsync({
     content: {
       title: "Rodge Mail",

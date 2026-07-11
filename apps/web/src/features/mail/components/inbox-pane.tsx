@@ -55,7 +55,7 @@ function InboxHeader() {
         </div>
         <button
           aria-label="New message"
-          className="flex size-10 items-center justify-center rounded-full bg-[#20251f] text-[#f8f1e6] shadow-md transition-colors hover:bg-[#30362f] md:hidden"
+          className="flex size-10 items-center justify-center rounded-full bg-[var(--mail-brand)] text-[var(--mail-brand-foreground)] shadow-md transition-colors hover:bg-[var(--mail-brand-hover)] md:hidden"
           onClick={openComposer}
           type="button"
         >
@@ -180,7 +180,7 @@ function SearchResultsLabel() {
 
 function MobileBrand() {
   return (
-    <span className="flex size-6 items-center justify-center rounded-lg bg-[#20251f] font-serif text-xs text-white italic md:hidden">
+    <span className="flex size-6 items-center justify-center rounded-lg bg-[var(--mail-brand)] font-serif text-xs text-[var(--mail-brand-foreground)] italic md:hidden">
       R
     </span>
   );
@@ -202,7 +202,7 @@ function MobileAccountChip({
       className={cn(
         "flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs transition",
         active
-          ? "border-[#2a3029] bg-[#2a3029] text-white"
+          ? "border-[var(--mail-brand)] bg-[var(--mail-brand)] text-[var(--mail-brand-foreground)]"
           : "border-border bg-background/50 text-muted-foreground",
       )}
       onClick={onClick}

@@ -25,7 +25,7 @@ export function ReaderPane() {
     <section
       aria-label="Message reader"
       className={cn(
-        "min-w-0 flex-1 flex-col bg-[#fbf8f1] dark:bg-[#242823]",
+        "min-w-0 flex-1 flex-col bg-[var(--mail-reader)]",
         mobileReaderIsOpen ? "flex" : "hidden lg:flex",
       )}
     >
@@ -119,7 +119,7 @@ function ReaderToolbar({
       <div className="mx-1 h-5 w-px bg-[#ded5c8] dark:bg-[#3f433d]" />
       <ReaderIconButton icon={MoreHorizontal} label="More actions" />
       <button
-        className="ml-auto flex h-9 items-center gap-2 rounded-full bg-[#20251f] px-4 text-xs font-semibold text-[#f8f1e6] transition hover:-translate-y-0.5 hover:bg-[#30362f]"
+        className="ml-auto flex h-9 items-center gap-2 rounded-full bg-[var(--mail-brand)] px-4 text-xs font-semibold text-[var(--mail-brand-foreground)] transition-colors hover:bg-[var(--mail-brand-hover)]"
         onClick={replyToSelectedThread}
         type="button"
       >

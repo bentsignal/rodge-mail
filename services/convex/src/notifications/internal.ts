@@ -4,6 +4,7 @@ import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { internalMutation, internalQuery } from "../_generated/server";
+import { resolveNotificationPreferences } from "./preferences";
 
 const SEND_NEW_MAIL = makeFunctionReference<
   "action",
@@ -39,22 +40,31 @@ export const getDeliveryInput = internalQuery({
   handler: async (ctx, args) => {
     const delivery = await ctx.db.get(args.deliveryId);
     if (delivery?.status !== "queued") return null;
-    const [message, preference, tokens] = await Promise.all([
-      ctx.db.get(delivery.messageId),
+    const message = await ctx.db.get(delivery.messageId);
+    if (message?.ownerId !== delivery.ownerId) return null;
+    const [globalPreference, accountPreference, tokens] = await Promise.all([
       ctx.db
         .query("notificationPreferences")
         .withIndex("by_owner", (q) => q.eq("ownerId", delivery.ownerId))
+        .unique(),
+      ctx.db
+        .query("accountNotificationPreferences")
+        .withIndex("by_owner_account", (q) =>
+          q.eq("ownerId", delivery.ownerId).eq("accountId", message.accountId),
+        )
         .unique(),
       ctx.db
         .query("mobilePushTokens")
         .withIndex("by_owner", (q) => q.eq("ownerId", delivery.ownerId))
         .collect(),
     ]);
-    if (message?.ownerId !== delivery.ownerId) return null;
     return {
       delivery,
       message,
-      preference,
+      preference: resolveNotificationPreferences(
+        globalPreference,
+        accountPreference,
+      ),
       tokens: tokens.filter((token) => token.enabled),
     };
   },

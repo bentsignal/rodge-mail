@@ -3,6 +3,7 @@ import { Fingerprint, Loader, Settings } from "lucide-react";
 
 import * as Dialog from "@rodge-mail/ui-web/dialog";
 
+import { AppearanceSettings } from "~/features/theme/components/theme-toggle";
 import { useAuthStore } from "../store";
 
 export function PasskeyManagementButton() {
@@ -28,8 +29,8 @@ export function PasskeyManagementButton() {
           <span className="hidden text-xs xl:inline">Account settings</span>
         </button>
       </Dialog.Trigger>
-      <Dialog.Content className="max-w-md rounded-[22px] border-[#cfc4b5] bg-[#fbf8f1] p-0 dark:border-[#4a4f48] dark:bg-[#252924]">
-        <div className="border-b border-[#ded5c8] p-6 dark:border-[#41453f]">
+      <Dialog.Content className="border-border bg-card max-w-lg rounded-[22px] p-0">
+        <div className="border-border border-b p-6">
           <Dialog.Title className="font-serif text-2xl tracking-[-0.03em]">
             Account settings
           </Dialog.Title>
@@ -38,6 +39,9 @@ export function PasskeyManagementButton() {
           </Dialog.Description>
         </div>
         <div className="p-6">
+          <AppearanceSettings />
+        </div>
+        <div className="border-border border-t p-6">
           <div className="mb-4 flex items-start gap-3">
             <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[#e7ded0] text-[#5d574f] dark:bg-[#353a34] dark:text-[#e5ddd1]">
               <Fingerprint className="size-4" />
@@ -50,7 +54,7 @@ export function PasskeyManagementButton() {
             </div>
           </div>
           <button
-            className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#20251f] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#30362f] disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[var(--mail-brand)] px-4 text-sm font-semibold text-[var(--mail-brand-foreground)] transition-colors hover:bg-[var(--mail-brand-hover)] disabled:cursor-not-allowed disabled:opacity-50"
             disabled={isLoading}
             onClick={() => void registerPasskey()}
             type="button"

@@ -22,12 +22,12 @@ export function ThreadRow({
 
   function handlePin(event: GestureResponderEvent) {
     event.stopPropagation();
-    togglePin(thread.id);
+    togglePin(thread.id, thread.isPinned);
   }
 
   function handleRead(event: GestureResponderEvent) {
     event.stopPropagation();
-    toggleRead(thread.id);
+    toggleRead(thread.id, thread.isRead);
   }
 
   return (

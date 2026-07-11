@@ -14,7 +14,6 @@ import { cn } from "@rodge-mail/std/cn";
 import type { MailAccountView } from "../types";
 import { PasskeyManagementButton } from "~/features/auth/components/passkey-management-button";
 import { SignOutLink } from "~/features/auth/components/sign-out-link";
-import { ThemeToggle } from "~/features/theme/components/theme-toggle";
 import { useLiveMail } from "../live-data";
 import { useMailStore } from "../store";
 import { AddAccountButton } from "./provider-connection-buttons";
@@ -42,7 +41,7 @@ export function AccountRail() {
       <Brand />
       <button
         aria-label="New message"
-        className="mt-8 flex h-11 items-center justify-center gap-2.5 rounded-xl bg-[#20251f] px-3 text-sm font-semibold text-[#f7f1e6] shadow-[0_8px_24px_rgba(32,37,31,0.14)] transition-colors hover:bg-[#2c332b] xl:justify-start xl:px-4"
+        className="mt-8 flex h-11 items-center justify-center gap-2.5 rounded-xl bg-[var(--mail-brand)] px-3 text-sm font-semibold text-[var(--mail-brand-foreground)] shadow-[0_8px_24px_rgba(32,37,31,0.14)] transition-colors hover:bg-[var(--mail-brand-hover)] xl:justify-start xl:px-4"
         onClick={openComposer}
         type="button"
       >
@@ -85,7 +84,6 @@ export function AccountRail() {
       <div className="mt-auto space-y-1.5">
         <div className="border-border/80 mx-3 mb-3 border-t" />
         <PasskeyManagementButton />
-        <ThemeToggle />
         <SignOutLink />
       </div>
     </aside>
@@ -155,9 +153,9 @@ function SyncButtonText({ state }: { state: SyncButtonState }) {
 function Brand() {
   return (
     <div className="flex items-center justify-center gap-3 xl:justify-start xl:px-2">
-      <div className="relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-[13px] bg-[#20251f] text-[#f7f1e6] shadow-sm">
+      <div className="relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-[13px] bg-[var(--mail-brand)] text-[var(--mail-brand-foreground)] shadow-sm">
         <span className="font-serif text-xl italic">R</span>
-        <span className="absolute right-1.5 bottom-1.5 size-1 rounded-full bg-[#d77a55]" />
+        <span className="absolute right-1.5 bottom-1.5 size-1 rounded-full bg-[var(--mail-highlight)]" />
       </div>
       <div className="hidden min-w-0 xl:block">
         <p className="font-serif text-[17px] leading-5 font-semibold tracking-[-0.02em]">
@@ -190,7 +188,7 @@ function AccountButton({
       className={cn(
         "group relative flex h-11 w-full items-center justify-center gap-3 rounded-xl px-3 text-sm transition-colors xl:justify-start",
         active
-          ? "bg-[#e8e0d2] text-[#20251f] shadow-[inset_0_0_0_1px_rgba(82,67,48,0.06)] dark:bg-[#343832] dark:text-[#f8f1e6]"
+          ? "text-foreground bg-[var(--mail-selected)] shadow-[inset_0_0_0_1px_rgba(82,67,48,0.06)]"
           : "text-[#6e665d] hover:bg-black/[0.035] hover:text-[#20251f] dark:text-[#aaa195] dark:hover:bg-white/[0.05] dark:hover:text-[#f8f1e6]",
       )}
       onClick={onClick}
@@ -230,7 +228,9 @@ function UnreadCount({
     <span
       className={cn(
         "ml-auto hidden min-w-5 rounded-full px-1.5 py-0.5 font-mono text-[9px] tabular-nums xl:block",
-        active ? "bg-[#20251f] text-white" : "bg-black/[0.055]",
+        active
+          ? "bg-[var(--mail-brand)] text-[var(--mail-brand-foreground)]"
+          : "bg-black/[0.055]",
       )}
     >
       {count}

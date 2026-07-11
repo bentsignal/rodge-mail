@@ -25,12 +25,16 @@ import { env } from "~/env";
 import { getAuth } from "~/features/auth/lib/auth.functions";
 import { AuthStore } from "~/features/auth/store";
 import { ThemeStore } from "~/features/theme/store";
-import { getTheme } from "~/features/theme/utils";
+import { getTheme, getThemePalette } from "~/features/theme/utils";
 
-const getThemeFromCookie = createServerFn({ method: "GET" }).handler(() => {
-  const themeCookie = getCookie("theme");
-  return getTheme(themeCookie);
-});
+const getAppearanceFromCookie = createServerFn({ method: "GET" }).handler(
+  () => {
+    return {
+      palette: getThemePalette(getCookie("palette")),
+      theme: getTheme(getCookie("theme")),
+    };
+  },
+);
 
 async function getAuthToken() {
   try {
@@ -65,7 +69,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     ],
   }),
   beforeLoad: async ({ context }) => {
-    const [token, theme] = await Promise.all([
+    const [token, appearance] = await Promise.all([
       context.queryClient.fetchQuery({
         queryKey: ["auth-token"],
         queryFn: getAuthToken,
@@ -73,8 +77,8 @@ export const Route = createRootRouteWithContext<RouterContext>()({
         gcTime: Infinity,
       }),
       context.queryClient.fetchQuery({
-        queryKey: ["theme"],
-        queryFn: async () => await getThemeFromCookie(),
+        queryKey: ["appearance"],
+        queryFn: async () => await getAppearanceFromCookie(),
         staleTime: Infinity,
         gcTime: Infinity,
       }),
@@ -90,7 +94,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     return {
       isAuthenticated: !!token,
       token,
-      theme,
+      ...appearance,
     };
   },
   component: RootComponent,
@@ -98,8 +102,9 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 
 function RootComponent() {
   const context = Route.useRouteContext({
-    select: ({ convex, queryClient, theme, token }) => ({
+    select: ({ convex, palette, queryClient, theme, token }) => ({
       convex,
+      palette,
       queryClient,
       theme,
       token,
@@ -107,7 +112,7 @@ function RootComponent() {
   });
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html data-palette={context.palette} lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
         {/* <ReactScan /> */}
@@ -125,6 +130,8 @@ function RootComponent() {
             <ThemeStore
               attribute="class"
               disableTransitionOnChange
+              enableSystem
+              initialPalette={context.palette}
               initialTheme={context.theme}
             >
               <AuthStore>

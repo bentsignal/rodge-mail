@@ -1,5 +1,6 @@
 import { ConvexError, v } from "convex/values";
 
+import { ensureOwnedAccount } from "../mail/helpers";
 import { authedMutation } from "../utils";
 import { isExpoPushToken } from "./payload";
 import { vPushPlatform } from "./validators";
@@ -69,6 +70,45 @@ export const setPreferences = authedMutation({
     }
     return await ctx.db.insert("notificationPreferences", {
       ownerId: ctx.ownerId,
+      ...values,
+      createdAt: now,
+    });
+  },
+});
+
+export const setAccountPreferences = authedMutation({
+  args: {
+    accountId: v.id("mailAccounts"),
+    newMailEnabled: v.union(v.boolean(), v.null()),
+    includePreview: v.union(v.boolean(), v.null()),
+  },
+  handler: async (ctx, args) => {
+    await ensureOwnedAccount(ctx, ctx.ownerId, args.accountId);
+    const existing = await ctx.db
+      .query("accountNotificationPreferences")
+      .withIndex("by_owner_account", (q) =>
+        q.eq("ownerId", ctx.ownerId).eq("accountId", args.accountId),
+      )
+      .unique();
+
+    if (args.newMailEnabled === null && args.includePreview === null) {
+      if (existing) await ctx.db.delete(existing._id);
+      return null;
+    }
+
+    const now = Date.now();
+    const values = {
+      newMailEnabled: args.newMailEnabled ?? undefined,
+      includePreview: args.includePreview ?? undefined,
+      updatedAt: now,
+    };
+    if (existing) {
+      await ctx.db.patch(existing._id, values);
+      return existing._id;
+    }
+    return await ctx.db.insert("accountNotificationPreferences", {
+      ownerId: ctx.ownerId,
+      accountId: args.accountId,
       ...values,
       createdAt: now,
     });

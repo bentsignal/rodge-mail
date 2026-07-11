@@ -34,10 +34,10 @@ export function ThreadRow({
         aria-posinset={position}
         aria-setsize={-1}
         className={cn(
-          "group relative border-b border-[#e2dacd] transition-colors dark:border-[#373b35]",
+          "group border-border relative border-b transition-colors",
           isSelected
-            ? "bg-[#f0e9dc] dark:bg-[#30342e]"
-            : "hover:bg-[#faf7f0] dark:hover:bg-white/[0.025]",
+            ? "bg-[var(--mail-selected)]"
+            : "hover:bg-[var(--mail-row-hover)]",
         )}
       >
         <SelectedMarker selected={isSelected} />
@@ -58,7 +58,7 @@ export function ThreadRow({
                       "min-w-0 flex-1 truncate text-[13px]",
                       message.isRead
                         ? "font-medium"
-                        : "font-bold text-[#1f241f]",
+                        : "text-foreground font-bold",
                     )}
                   >
                     {senderName}
@@ -118,7 +118,7 @@ function ThreadMetadata({ message }: { message: InboxMessage }) {
 
 function UnreadDot({ isRead }: { isRead: boolean }) {
   if (isRead) return null;
-  return <span className="size-1.5 rounded-full bg-[#c76749]" />;
+  return <span className="size-1.5 rounded-full bg-[var(--mail-highlight)]" />;
 }
 
 function AttachmentMarker({ hasAttachments }: { hasAttachments: boolean }) {
@@ -139,7 +139,7 @@ function PinMessageButton({
       className={cn(
         "absolute right-3 bottom-3 flex size-7 items-center justify-center rounded-full transition",
         message.isPinned
-          ? "text-[#b95d41]"
+          ? "text-[var(--mail-highlight)]"
           : "text-[#a99d90] opacity-0 group-hover:opacity-100 focus:opacity-100",
       )}
       onClick={() => void togglePinned(message)}
@@ -159,7 +159,7 @@ function getSenderName(message: InboxMessage) {
 function SelectedMarker({ selected }: { selected: boolean }) {
   if (!selected) return null;
   return (
-    <span className="absolute inset-y-3 left-0 w-[3px] rounded-r bg-[#c76749]" />
+    <span className="absolute inset-y-3 left-0 w-[3px] rounded-r bg-[var(--mail-highlight)]" />
   );
 }
 
@@ -171,7 +171,7 @@ function SenderAvatar({
   name: string;
 }) {
   return (
-    <div className="relative flex size-9 shrink-0 items-center justify-center rounded-full border border-black/[0.06] bg-[#e7ded0] font-mono text-[10px] font-semibold text-[#625a50] dark:bg-[#3c413a] dark:text-[#e0d7cb]">
+    <div className="relative flex size-9 shrink-0 items-center justify-center rounded-full border border-black/[0.06] bg-[var(--mail-avatar)] font-mono text-[10px] font-semibold text-[var(--mail-avatar-foreground)]">
       {getInitials(name)}
       <span
         className="ring-card absolute right-0 bottom-0 size-2.5 rounded-full ring-2"

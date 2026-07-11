@@ -28,11 +28,10 @@ function useInternalStore() {
   const threads = toMailThreads(messages);
   const accounts = accountRows?.map(toMailAccount) ?? [];
 
-  function togglePin(threadId: string) {
-    const thread = threads.find((item) => item.id === threadId);
+  function togglePin(threadId: string, isPinned: boolean) {
     void setThreadPinned({
       threadId: toConvexId<"threads">(threadId),
-      isPinned: !thread?.isPinned,
+      isPinned: !isPinned,
     });
   }
 
@@ -43,11 +42,10 @@ function useInternalStore() {
     });
   }
 
-  function toggleRead(threadId: string) {
-    const thread = threads.find((item) => item.id === threadId);
+  function toggleRead(threadId: string, isRead: boolean) {
     void setThreadRead({
       threadId: toConvexId<"threads">(threadId),
-      isRead: !thread?.isRead,
+      isRead: !isRead,
     });
   }
 

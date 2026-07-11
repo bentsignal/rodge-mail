@@ -25,13 +25,18 @@ export function AccountFilter({
       {accounts.map((account) => (
         <AccountFilterButton
           key={account.id}
-          label={account.label}
+          label={getAccountLabel(account)}
           selected={value === account.id}
           onPress={() => onChange(account.id)}
         />
       ))}
     </ScrollView>
   );
+}
+
+function getAccountLabel(account: MailAccount) {
+  if (account.label === account.address) return account.address;
+  return `${account.label} · ${account.address}`;
 }
 
 function AccountFilterButton({
