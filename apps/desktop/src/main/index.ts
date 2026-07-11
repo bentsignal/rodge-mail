@@ -29,6 +29,7 @@ function findDeepLink(argv: string[]) {
 
 function showStartupError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error);
+  console.error("Rodge Mail startup error", error);
   dialog.showErrorBox("Rodge Mail could not start", message);
 }
 

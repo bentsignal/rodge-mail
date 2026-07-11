@@ -63,6 +63,13 @@ not depend on Electron's local Touch ID credential store.
 - `pnpm dist:win` creates the Windows x64 NSIS installer, including when run on
   macOS.
 
+For a local build on a registered Mac, use `dist:mac:development-profile`.
+The plain `dist:mac` output is the release-signing path and still requires
+notarization before macOS will treat it as a distributable application. The
+Windows cross-package is suitable for transfer and local testing, but Windows
+will warn about the unknown publisher until a Windows signing certificate is
+configured.
+
 Quit the development shell before opening a packaged build, and quit the
 packaged build before returning to `pnpm dev:desktop`; both intentionally share
 the app's single-instance identity.
