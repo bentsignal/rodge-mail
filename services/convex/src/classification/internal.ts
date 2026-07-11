@@ -20,6 +20,8 @@ import {
 import { isImportantMessage } from "./importance";
 import {
   assertProbability,
+  canCompleteClassification,
+  canRecordClassificationFailure,
   classificationRetryDelay,
   isClassificationRunnable,
 } from "./jobHelpers";
@@ -113,13 +115,14 @@ export const beginAttempt = internalMutation({
       return { ready: false };
     }
 
+    const attempt = (classification.attempt ?? 0) + 1;
     await ctx.db.patch(classification._id, {
       status: "running",
-      attempt: (classification.attempt ?? 0) + 1,
+      attempt,
       nextAttemptAt: undefined,
       updatedAt: Date.now(),
     });
-    return { ready: true };
+    return { ready: true, attempt };
   },
 });
 
@@ -146,8 +149,13 @@ export const complete = internalMutation({
       ctx.db.get(args.messageId),
       findClassification(ctx, args.messageId),
     ]);
-    if (!message || classification?.jobKey !== args.jobKey) return false;
-    if (classification.source === "manual") return false;
+    if (
+      !message ||
+      !classification ||
+      !canCompleteClassification(classification, args.jobKey)
+    ) {
+      return false;
+    }
 
     const now = Date.now();
     await ctx.db.patch(classification._id, {
@@ -186,8 +194,12 @@ export const recordFailure = internalMutation({
   },
   handler: async (ctx, args) => {
     const classification = await findClassification(ctx, args.messageId);
-    if (!classification || classification.jobKey !== args.jobKey) return false;
-    if (classification.source === "manual") return false;
+    if (
+      !classification ||
+      !canRecordClassificationFailure(classification, args.jobKey)
+    ) {
+      return false;
+    }
 
     const attempt = classification.attempt ?? 1;
     const terminal = attempt >= MAX_JOB_ATTEMPTS;
@@ -253,6 +265,7 @@ export async function queueClassificationForMessage(
     signals: undefined,
     model: undefined,
     error: undefined,
+    recoveryAttemptedAt: undefined,
     classifiedAt: undefined,
     updatedAt: now,
   };

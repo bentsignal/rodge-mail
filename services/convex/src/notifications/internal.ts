@@ -4,6 +4,7 @@ import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { internalMutation, internalQuery } from "../_generated/server";
+import { isNotificationDeliveryFresh } from "./policy";
 import { resolveNotificationPreferences } from "./preferences";
 
 const SEND_NEW_MAIL = makeFunctionReference<
@@ -49,7 +50,15 @@ export async function resolveNewMailNotification(
   if (!delivery || delivery.ownerId !== args.ownerId) return false;
   if (delivery.status !== "queued") return false;
   const now = Date.now();
-  if (!args.important) {
+  const message = await ctx.db.get(args.messageId);
+  const fresh =
+    message?.ownerId === args.ownerId &&
+    isNotificationDeliveryFresh({
+      deliveryCreatedAt: delivery.createdAt,
+      messageReceivedAt: message.receivedAt,
+      now,
+    });
+  if (!args.important || !fresh) {
     await ctx.db.patch(delivery._id, {
       status: "skipped",
       updatedAt: now,
@@ -104,6 +113,22 @@ export const claimDelivery = internalMutation({
   handler: async (ctx, args) => {
     const delivery = await ctx.db.get(args.deliveryId);
     if (delivery?.status !== "ready") return false;
+    const message = await ctx.db.get(delivery.messageId);
+    if (
+      !message ||
+      message.ownerId !== delivery.ownerId ||
+      !isNotificationDeliveryFresh({
+        deliveryCreatedAt: delivery.createdAt,
+        messageReceivedAt: message.receivedAt,
+        now: Date.now(),
+      })
+    ) {
+      await ctx.db.patch(delivery._id, {
+        status: "skipped",
+        updatedAt: Date.now(),
+      });
+      return false;
+    }
     await ctx.db.patch(delivery._id, {
       status: "sending",
       updatedAt: Date.now(),

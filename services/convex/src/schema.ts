@@ -82,10 +82,12 @@ export default defineSchema(
     messageEmbeddingJobs: defineTable(vMessageEmbeddingJob)
       .index("by_message", ["messageId"])
       .index("by_status", ["status"])
-      .index("by_owner_status", ["ownerId", "status"]),
+      .index("by_owner_status", ["ownerId", "status"])
+      .index("by_owner_reason", ["ownerId", "reason"]),
     messageEmbeddings: defineTable(vMessageEmbedding)
       .index("by_message", ["messageId"])
       .index("by_owner", ["ownerId"])
+      .index("by_owner_reason", ["ownerId", "reason"])
       .vectorIndex("search_vector", {
         vectorField: "vector",
         dimensions: 512,

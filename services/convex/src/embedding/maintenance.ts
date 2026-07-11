@@ -2,11 +2,22 @@ import { makeFunctionReference } from "convex/server";
 import { v } from "convex/values";
 
 import type { Id } from "../_generated/dataModel";
+import type { MutationCtx } from "../_generated/server";
 import { internalMutation } from "../_generated/server";
+import {
+  CLASSIFICATION_OUTPUT_SCHEMA_VERSION,
+  CLASSIFICATION_PROMPT_VERSION,
+} from "../classification/constants";
+import {
+  LEGACY_EMBEDDING_REASONS,
+  legacyEmbeddingCleanupPlan,
+} from "./cleanup";
+import { reconcileEmbeddingSelection } from "./internal";
 import { isStaleEmbeddingJob } from "./stale";
 import {
   deleteEmbeddingRecords,
   embeddingSelectionPlan,
+  findEmbeddingJob,
   findMessageEmbedding,
 } from "./storage";
 
@@ -26,6 +37,105 @@ const vUnfinishedStatus = v.union(
   v.literal("running"),
   v.literal("failed"),
 );
+
+export const cleanupLegacyEmbeddings = internalMutation({
+  args: {
+    ownerId: v.string(),
+    apply: v.boolean(),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = Math.max(1, Math.min(25, Math.floor(args.limit ?? 25)));
+    const candidateIds = await findLegacyCandidateIds(ctx, args.ownerId, limit);
+    let deleted = 0;
+    let reconciled = 0;
+    for (const messageId of candidateIds) {
+      const result = await cleanLegacyCandidate(ctx, messageId, args.apply);
+      deleted += Number(result === "delete");
+      reconciled += Number(result === "reconcile");
+    }
+
+    return {
+      apply: args.apply,
+      candidates: candidateIds.size,
+      deleted,
+      reconciled,
+    };
+  },
+});
+
+async function findLegacyCandidateIds(
+  ctx: MutationCtx,
+  ownerId: string,
+  limit: number,
+) {
+  const candidateIds = new Set<Id<"messages">>();
+  for (const reason of LEGACY_EMBEDDING_REASONS) {
+    const [embeddings, jobs] = await Promise.all([
+      ctx.db
+        .query("messageEmbeddings")
+        .withIndex("by_owner_reason", (q) =>
+          q.eq("ownerId", ownerId).eq("reason", reason),
+        )
+        .take(limit),
+      ctx.db
+        .query("messageEmbeddingJobs")
+        .withIndex("by_owner_reason", (q) =>
+          q.eq("ownerId", ownerId).eq("reason", reason),
+        )
+        .take(limit),
+    ]);
+    addCandidateIds(candidateIds, [...embeddings, ...jobs], limit);
+    if (candidateIds.size >= limit) break;
+  }
+  return candidateIds;
+}
+
+function addCandidateIds(
+  candidateIds: Set<Id<"messages">>,
+  records: { messageId: Id<"messages"> }[],
+  limit: number,
+) {
+  for (const record of records) {
+    if (candidateIds.size >= limit) return;
+    candidateIds.add(record.messageId);
+  }
+}
+
+async function cleanLegacyCandidate(
+  ctx: MutationCtx,
+  messageId: Id<"messages">,
+  apply: boolean,
+) {
+  const [message, classification, embedding, job] = await Promise.all([
+    ctx.db.get(messageId),
+    ctx.db
+      .query("messageClassifications")
+      .withIndex("by_message", (q) => q.eq("messageId", messageId))
+      .first(),
+    findMessageEmbedding(ctx, messageId),
+    findEmbeddingJob(ctx, messageId),
+  ]);
+  const protectedReason = [embedding?.reason, job?.reason].some(
+    (reason) => reason === "pinned" || reason === "selected",
+  );
+  const currentClassification =
+    classification?.status === "classified" &&
+    classification.promptVersion === CLASSIFICATION_PROMPT_VERSION &&
+    classification.outputSchemaVersion === CLASSIFICATION_OUTPUT_SCHEMA_VERSION;
+  const plan = legacyEmbeddingCleanupPlan({
+    currentClassification,
+    messageExists: Boolean(message),
+    protectedReason,
+  });
+  if (!apply) return plan;
+  if (plan === "reconcile") {
+    await reconcileEmbeddingSelection(ctx, messageId);
+    return plan;
+  }
+  await deleteEmbeddingRecords(ctx, messageId);
+  return plan;
+}
 
 export const clearUnfinishedInboxJobs = internalMutation({
   args: {

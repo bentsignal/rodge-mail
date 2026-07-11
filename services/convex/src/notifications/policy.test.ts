@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { shouldNotifyForProviderMessage } from "./policy";
+import {
+  isNotificationDeliveryFresh,
+  shouldNotifyForProviderMessage,
+} from "./policy";
 
 const now = Date.parse("2026-07-10T12:00:00.000Z");
 
@@ -66,6 +69,45 @@ describe("new-mail notification gating", () => {
         now,
         reason: "incremental",
         receivedAt: now + 6 * 60 * 1000,
+      }),
+    ).toBe(false);
+  });
+});
+
+describe("classification notification delivery freshness", () => {
+  it("allows a fresh delivery for a fresh message", () => {
+    expect(
+      isNotificationDeliveryFresh({
+        deliveryCreatedAt: now - 30_000,
+        messageReceivedAt: now - 60_000,
+        now,
+      }),
+    ).toBe(true);
+  });
+
+  it("rejects delayed historical deliveries and messages", () => {
+    expect(
+      isNotificationDeliveryFresh({
+        deliveryCreatedAt: now - 25 * 60 * 60 * 1000,
+        messageReceivedAt: now,
+        now,
+      }),
+    ).toBe(false);
+    expect(
+      isNotificationDeliveryFresh({
+        deliveryCreatedAt: now,
+        messageReceivedAt: now - 25 * 60 * 60 * 1000,
+        now,
+      }),
+    ).toBe(false);
+  });
+
+  it("rejects implausibly future-dated deliveries", () => {
+    expect(
+      isNotificationDeliveryFresh({
+        deliveryCreatedAt: now + 6 * 60 * 1000,
+        messageReceivedAt: now,
+        now,
       }),
     ).toBe(false);
   });

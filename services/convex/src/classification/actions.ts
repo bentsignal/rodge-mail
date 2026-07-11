@@ -4,6 +4,7 @@ import type { Id } from "../_generated/dataModel";
 import type { ActionCtx } from "../_generated/server";
 import { internal } from "../_generated/api";
 import { internalAction } from "../_generated/server";
+import { classificationRequestKey } from "./jobHelpers";
 import { normalizeMail } from "./normalize";
 import {
   classifyWithModel,
@@ -17,7 +18,7 @@ export const runClassification = internalAction({
   handler: async (ctx, args) => {
     const input = await ctx.runQuery(
       internal.classification.internal.getJobInput,
-      args,
+      { messageId: args.messageId, jobKey: args.jobKey },
     );
     if (!input) return null;
     const mail = normalizeMail(input.message, input.content);
@@ -27,7 +28,7 @@ export const runClassification = internalAction({
       internal.classification.internal.beginAttempt,
       args,
     );
-    if (!attempt.ready) return null;
+    if (!attempt.ready || attempt.attempt === undefined) return null;
 
     if (!isAiConfigured()) {
       await completeWithFallback({
@@ -44,7 +45,11 @@ export const runClassification = internalAction({
       const result = await classifyWithModel({
         mail,
         signals,
-        jobKey: args.jobKey,
+        jobKey: classificationRequestKey(
+          args.jobKey,
+          attempt.attempt,
+          Date.now(),
+        ),
       });
       await ctx.runMutation(internal.classification.internal.complete, {
         ...args,
@@ -69,6 +74,31 @@ export const runClassification = internalAction({
         });
       }
     }
+    return null;
+  },
+});
+
+export const finalizeWithFallback = internalAction({
+  args: {
+    messageId: v.id("messages"),
+    jobKey: v.string(),
+    error: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const input = await ctx.runQuery(
+      internal.classification.internal.getJobInput,
+      { messageId: args.messageId, jobKey: args.jobKey },
+    );
+    if (!input) return null;
+    const mail = normalizeMail(input.message, input.content);
+    const signals = deriveSignals(mail);
+    await completeWithFallback({
+      ctx,
+      args,
+      fallback: deterministicClassification(mail, signals),
+      signals,
+      error: args.error,
+    });
     return null;
   },
 });

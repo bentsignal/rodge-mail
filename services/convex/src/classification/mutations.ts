@@ -52,6 +52,7 @@ export const setManualOverride = authedMutation({
       nextAttemptAt: undefined,
       model: undefined,
       error: undefined,
+      recoveryAttemptedAt: undefined,
       classifiedAt: now,
       updatedAt: now,
     };

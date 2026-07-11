@@ -9,6 +9,14 @@ export function classificationRetryDelay(attempt: number) {
   return 120_000;
 }
 
+export function classificationRequestKey(
+  jobKey: string,
+  attempt: number,
+  startedAt: number,
+) {
+  return `${jobKey}:attempt-${attempt}:${startedAt}`;
+}
+
 export function assertProbability(value: number, field: string) {
   if (!Number.isFinite(value) || value < 0 || value > 1) {
     throw new ConvexError(`${field} must be between 0 and 1`);
@@ -31,5 +39,33 @@ export function isClassificationRunnable(
   return (
     classification.nextAttemptAt === undefined ||
     classification.nextAttemptAt <= Date.now()
+  );
+}
+
+export function canCompleteClassification(
+  classification: Pick<
+    Doc<"messageClassifications">,
+    "jobKey" | "source" | "status"
+  >,
+  jobKey: string,
+) {
+  return (
+    classification.jobKey === jobKey &&
+    classification.source !== "manual" &&
+    (classification.status === "running" || classification.status === "failed")
+  );
+}
+
+export function canRecordClassificationFailure(
+  classification: Pick<
+    Doc<"messageClassifications">,
+    "jobKey" | "source" | "status"
+  >,
+  jobKey: string,
+) {
+  return (
+    classification.jobKey === jobKey &&
+    classification.source !== "manual" &&
+    classification.status === "running"
   );
 }
