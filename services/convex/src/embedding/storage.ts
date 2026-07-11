@@ -1,6 +1,7 @@
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import type { EmbeddingReason } from "../classification/constants";
+import { isImportantMessage } from "../classification/importance";
 
 type ReadCtx = Pick<MutationCtx, "db"> | Pick<QueryCtx, "db">;
 
@@ -57,18 +58,18 @@ export function embeddingSelectionPlan(args: {
   clearSelected: boolean;
   inInbox: boolean;
   isPinned: boolean;
-  bucket: string | undefined;
+  importance: number | undefined;
   jobReason: EmbeddingReason | undefined;
   embeddingReason: EmbeddingReason | undefined;
 }) {
   const preserveSelected =
     !args.clearSelected &&
     hasSelectedReason(args.jobReason, args.embeddingReason);
-  const reason = desiredReason(args.inInbox, args.isPinned, args.bucket);
+  const reason = desiredReason(args.inInbox, args.isPinned, args.importance);
   return {
     preserveSelected,
     reason,
-    deleteReason: reasonToDelete(args, reason),
+    deleteReason: preserveSelected ? undefined : reasonToDelete(args, reason),
   } satisfies EmbeddingSelectionPlan;
 }
 
@@ -83,7 +84,7 @@ function reasonToDelete(
   if (args.clearSelected) return "selected";
   const hasPinned =
     args.jobReason === "pinned" || args.embeddingReason === "pinned";
-  if (desired === "focused" && hasPinned) return "pinned";
+  if (desired === "important" && hasPinned) return "pinned";
   if (desired) return undefined;
   return args.jobReason ?? args.embeddingReason;
 }
@@ -91,12 +92,13 @@ function reasonToDelete(
 export function desiredReason(
   inInbox: boolean,
   isPinned: boolean,
-  bucket: string | undefined,
+  importance: number | undefined,
 ) {
   if (!inInbox) return null;
   if (isPinned) return "pinned" satisfies EmbeddingReason;
-  if (bucket === "focused") return "focused" satisfies EmbeddingReason;
-  return "inbox" satisfies EmbeddingReason;
+  if (isImportantMessage(importance))
+    return "important" satisfies EmbeddingReason;
+  return null;
 }
 
 export function preferredReason(
@@ -122,7 +124,7 @@ function shouldDelete(
 function priority(reason: EmbeddingReason) {
   if (reason === "selected") return 3;
   if (reason === "pinned") return 2;
-  if (reason === "focused") return 1;
+  if (reason === "important" || reason === "focused") return 1;
   return 0;
 }
 

@@ -3,26 +3,19 @@ import { ConvexError, v } from "convex/values";
 
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
-import type { EmbeddingReason } from "../classification/constants";
 import { internalMutation, internalQuery } from "../_generated/server";
 import {
   EMBEDDING_DIMENSIONS,
   MAX_JOB_ATTEMPTS,
 } from "../classification/constants";
-import {
-  embeddingText,
-  normalizeMail,
-  stableHash,
-} from "../classification/normalize";
-import { configuredEmbeddingModel } from "../classification/openai";
 import { rateLimiter } from "../limiter";
+import { queueEmbeddingForMessage } from "./queue";
 import { isEmbeddingInputStale, isEmbeddingJobRunnable } from "./stale";
 import {
   deleteEmbeddingRecords,
   embeddingSelectionPlan,
   findEmbeddingJob,
   findMessageEmbedding,
-  preferredReason,
 } from "./storage";
 import { vEmbeddingReason } from "./validators";
 
@@ -165,67 +158,6 @@ export const recordFailure = internalMutation({
   },
 });
 
-export async function queueEmbeddingForMessage(
-  ctx: MutationCtx,
-  args: {
-    ownerId: string;
-    messageId: Id<"messages">;
-    reason: EmbeddingReason;
-  },
-) {
-  const [message, content, job, existing] = await Promise.all([
-    ctx.db.get(args.messageId),
-    ctx.db
-      .query("messageContents")
-      .withIndex("by_message", (q) => q.eq("messageId", args.messageId))
-      .first(),
-    findEmbeddingJob(ctx, args.messageId),
-    findMessageEmbedding(ctx, args.messageId),
-  ]);
-  if (!message || message.ownerId !== args.ownerId) {
-    throw new ConvexError("Message not found");
-  }
-  const text = embeddingText(normalizeMail(message, content));
-  const contentHash = stableHash(text);
-  const model = configuredEmbeddingModel();
-  const jobKey = `embedding-v1:${message._id}:${contentHash}:${model}`;
-  const reason = preferredReason(args.reason, existing?.reason, job?.reason);
-
-  if (
-    await reuseEmbedding(ctx, { existing, job, contentHash, model, reason })
-  ) {
-    return { queued: false };
-  }
-  if (await reuseJob(ctx, { job, jobKey, reason })) return { queued: false };
-
-  const now = Date.now();
-  const values = {
-    ownerId: args.ownerId,
-    accountId: message.accountId,
-    messageId: message._id,
-    status: "pending" as const,
-    reason,
-    jobKey,
-    contentHash,
-    attempt: 0,
-    nextAttemptAt: undefined,
-    model,
-    dimensions: EMBEDDING_DIMENSIONS,
-    error: undefined,
-    updatedAt: now,
-  };
-  if (job) {
-    await ctx.db.patch(job._id, values);
-  } else {
-    await ctx.db.insert("messageEmbeddingJobs", { ...values, createdAt: now });
-  }
-  await ctx.scheduler.runAfter(0, RUN_EMBEDDING, {
-    messageId: message._id,
-    jobKey,
-  });
-  return { queued: true };
-}
-
 export async function reconcileEmbeddingSelection(
   ctx: MutationCtx,
   messageId: Id<"messages">,
@@ -245,7 +177,7 @@ export async function reconcileEmbeddingSelection(
     clearSelected,
     inInbox: message.inInbox,
     isPinned: message.isPinned,
-    bucket: classification?.bucket,
+    importance: classification?.importance,
     jobReason: job?.reason,
     embeddingReason: embedding?.reason,
   });
@@ -269,48 +201,11 @@ export async function reconcileEmbeddingSelection(
   }
 }
 
-async function reuseEmbedding(
-  ctx: MutationCtx,
-  args: {
-    existing: Awaited<ReturnType<typeof findMessageEmbedding>>;
-    job: Awaited<ReturnType<typeof findEmbeddingJob>>;
-    contentHash: string;
-    model: string;
-    reason: EmbeddingReason;
-  },
-) {
-  const { existing, job, contentHash, model, reason } = args;
-  if (existing?.contentHash !== contentHash || existing.model !== model)
-    return false;
-  if (existing.reason !== reason) {
-    await ctx.db.patch(existing._id, { reason, updatedAt: Date.now() });
-  }
-  if (job && job.reason !== reason) {
-    await ctx.db.patch(job._id, { reason, updatedAt: Date.now() });
-  }
-  return true;
-}
-
-async function reuseJob(
-  ctx: MutationCtx,
-  args: {
-    job: Awaited<ReturnType<typeof findEmbeddingJob>>;
-    jobKey: string;
-    reason: EmbeddingReason;
-  },
-) {
-  const { job, jobKey, reason } = args;
-  if (job?.jobKey !== jobKey) return false;
-  if (job.status !== "pending" && job.status !== "running") return false;
-  if (job.reason !== reason) {
-    await ctx.db.patch(job._id, { reason, updatedAt: Date.now() });
-  }
-  return true;
-}
-
 export async function removeFocusedEmbedding(
   ctx: MutationCtx,
   messageId: Id<"messages">,
 ) {
   await deleteEmbeddingRecords(ctx, messageId, "focused");
 }
+
+export { queueEmbeddingForMessage };

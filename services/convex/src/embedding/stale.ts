@@ -7,6 +7,20 @@ import {
   stableHash,
 } from "../classification/normalize";
 
+export const EMBEDDING_JOB_STALE_AFTER_MS = 10 * 60 * 1000;
+
+interface EmbeddingJobState {
+  status: "embedded" | "failed" | "pending" | "running";
+  updatedAt: number;
+}
+
+export function isStaleEmbeddingJob(job: EmbeddingJobState, now: number) {
+  return (
+    (job.status === "pending" || job.status === "running") &&
+    job.updatedAt <= now - EMBEDDING_JOB_STALE_AFTER_MS
+  );
+}
+
 export async function isEmbeddingInputStale(
   ctx: MutationCtx,
   job: Doc<"messageEmbeddingJobs">,

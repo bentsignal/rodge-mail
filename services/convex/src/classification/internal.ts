@@ -12,11 +12,13 @@ import {
   vClassificationSource,
   vFocusBucket,
 } from "../mail/validators";
+import { resolveNewMailNotification } from "../notifications/internal";
 import {
   CLASSIFICATION_OUTPUT_SCHEMA_VERSION,
   CLASSIFICATION_PROMPT_VERSION,
   MAX_JOB_ATTEMPTS,
 } from "./constants";
+import { isImportantMessage } from "./importance";
 import {
   assertProbability,
   classificationRetryDelay,
@@ -178,6 +180,11 @@ export const complete = internalMutation({
     ]);
 
     await reconcileEmbeddingSelection(ctx, message._id);
+    await resolveNewMailNotification(ctx, {
+      important: isImportantMessage(args.importance),
+      messageId: message._id,
+      ownerId: message.ownerId,
+    });
     return true;
   },
 });

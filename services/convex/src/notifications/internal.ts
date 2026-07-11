@@ -31,15 +31,44 @@ export async function queueNewMailNotification(
     createdAt: now,
     updatedAt: now,
   });
-  await ctx.scheduler.runAfter(0, SEND_NEW_MAIL, { deliveryId });
   return { deliveryId, queued: true };
+}
+
+export async function resolveNewMailNotification(
+  ctx: MutationCtx,
+  args: {
+    important: boolean;
+    messageId: Id<"messages">;
+    ownerId: string;
+  },
+) {
+  const delivery = await ctx.db
+    .query("notificationDeliveries")
+    .withIndex("by_message", (q) => q.eq("messageId", args.messageId))
+    .unique();
+  if (!delivery || delivery.ownerId !== args.ownerId) return false;
+  if (delivery.status !== "queued") return false;
+  const now = Date.now();
+  if (!args.important) {
+    await ctx.db.patch(delivery._id, {
+      status: "skipped",
+      updatedAt: now,
+    });
+    return true;
+  }
+  await ctx.db.patch(delivery._id, {
+    status: "ready",
+    updatedAt: now,
+  });
+  await ctx.scheduler.runAfter(0, SEND_NEW_MAIL, { deliveryId: delivery._id });
+  return true;
 }
 
 export const getDeliveryInput = internalQuery({
   args: { deliveryId: v.id("notificationDeliveries") },
   handler: async (ctx, args) => {
     const delivery = await ctx.db.get(args.deliveryId);
-    if (delivery?.status !== "queued") return null;
+    if (delivery?.status !== "ready") return null;
     const message = await ctx.db.get(delivery.messageId);
     if (message?.ownerId !== delivery.ownerId) return null;
     const [globalPreference, accountPreference, tokens] = await Promise.all([
@@ -74,7 +103,7 @@ export const claimDelivery = internalMutation({
   args: { deliveryId: v.id("notificationDeliveries") },
   handler: async (ctx, args) => {
     const delivery = await ctx.db.get(args.deliveryId);
-    if (delivery?.status !== "queued") return false;
+    if (delivery?.status !== "ready") return false;
     await ctx.db.patch(delivery._id, {
       status: "sending",
       updatedAt: Date.now(),

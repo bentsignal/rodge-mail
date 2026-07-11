@@ -180,9 +180,15 @@ function InboxThreadList({
         />
       }
       ListEmptyComponent={
-        <EmptyInbox isLoading={emptyIsLoading} searchTerm={searchTerm} />
+        <EmptyInbox
+          isLoading={emptyIsLoading}
+          primary={primary}
+          searchTerm={searchTerm}
+        />
       }
-      ListFooterComponent={<InboxFooter isLoading={footerIsLoading} />}
+      ListFooterComponent={
+        <InboxFooter isLoading={footerIsLoading} primary={primary} />
+      }
     />
   );
 }
@@ -212,15 +218,17 @@ function InboxHeader({
 
 function EmptyInbox({
   isLoading,
+  primary,
   searchTerm,
 }: {
   isLoading: boolean;
+  primary: string;
   searchTerm?: string;
 }) {
   if (isLoading) {
     return (
       <View className="items-center py-24">
-        <ActivityIndicator color="#d77a55" size="large" />
+        <ActivityIndicator color={primary} size="large" />
       </View>
     );
   }
@@ -248,11 +256,17 @@ function EmptyInbox({
   );
 }
 
-function InboxFooter({ isLoading }: { isLoading: boolean }) {
+function InboxFooter({
+  isLoading,
+  primary,
+}: {
+  isLoading: boolean;
+  primary: string;
+}) {
   if (!isLoading) return null;
   return (
     <View className="items-center py-6">
-      <ActivityIndicator color="#d77a55" />
+      <ActivityIndicator color={primary} />
     </View>
   );
 }

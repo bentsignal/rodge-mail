@@ -113,6 +113,7 @@ export default defineSchema(
       .index("by_storage", ["storageId"]),
     mobilePushTokens: defineTable(vMobilePushToken)
       .index("by_owner", ["ownerId"])
+      .index("by_owner_device", ["ownerId", "deviceId"])
       .index("by_token", ["token"]),
     notificationPreferences: defineTable(vNotificationPreference).index(
       "by_owner",

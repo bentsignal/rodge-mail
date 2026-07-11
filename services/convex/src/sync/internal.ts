@@ -11,10 +11,9 @@ import {
   internalMutation,
   internalQuery,
 } from "../_generated/server";
-import {
-  queueEmbeddingForMessage,
-  reconcileEmbeddingSelection,
-} from "../embedding/internal";
+import { CLASSIFICATION_PROMPT_VERSION } from "../classification/constants";
+import { queueClassificationForMessage } from "../classification/internal";
+import { reconcileEmbeddingSelection } from "../embedding/internal";
 import { createMessageSearchText } from "../mail/search";
 import { getThreadInboxState } from "../mail/threadState";
 import {
@@ -1142,14 +1141,14 @@ export const upsertProviderMessage = internalMutation({
       now,
     );
     if (inInbox) {
-      await queueEmbeddingForMessage(ctx, {
+      await queueClassificationForMessage(ctx, {
         ownerId: args.ownerId,
         messageId,
-        reason: "inbox",
+        promptVersion: CLASSIFICATION_PROMPT_VERSION,
+        replaceManual: false,
       });
-    } else {
-      await reconcileEmbeddingSelection(ctx, messageId);
     }
+    await reconcileEmbeddingSelection(ctx, messageId);
     await recalculateThread(ctx, thread._id);
     if (
       args.notifyNewMail &&

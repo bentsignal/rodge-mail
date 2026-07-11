@@ -9,11 +9,13 @@ import {
   getClassificationForMessage,
 } from "../mail/helpers";
 import { vClassificationCategory, vFocusBucket } from "../mail/validators";
+import { resolveNewMailNotification } from "../notifications/internal";
 import { authedMutation } from "../utils";
 import {
   CLASSIFICATION_OUTPUT_SCHEMA_VERSION,
   CLASSIFICATION_PROMPT_VERSION,
 } from "./constants";
+import { isImportantMessage } from "./importance";
 import { queueClassificationForMessage } from "./internal";
 
 export const setManualOverride = authedMutation({
@@ -66,6 +68,11 @@ export const setManualOverride = authedMutation({
       updatedAt: now,
     });
     await reconcileEmbeddingSelection(ctx, message._id);
+    await resolveNewMailNotification(ctx, {
+      important: isImportantMessage(values.importance),
+      messageId: message._id,
+      ownerId: ctx.ownerId,
+    });
   },
 });
 

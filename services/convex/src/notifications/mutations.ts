@@ -15,10 +15,18 @@ export const registerPushToken = authedMutation({
     if (!isExpoPushToken(args.token) || args.deviceId.length > 200) {
       throw new ConvexError("Invalid Expo push token registration");
     }
-    const existing = await ctx.db
-      .query("mobilePushTokens")
-      .withIndex("by_token", (q) => q.eq("token", args.token))
-      .unique();
+    const [existing, existingDevice] = await Promise.all([
+      ctx.db
+        .query("mobilePushTokens")
+        .withIndex("by_token", (q) => q.eq("token", args.token))
+        .unique(),
+      ctx.db
+        .query("mobilePushTokens")
+        .withIndex("by_owner_device", (q) =>
+          q.eq("ownerId", ctx.ownerId).eq("deviceId", args.deviceId),
+        )
+        .unique(),
+    ]);
     const now = Date.now();
     const values = {
       ownerId: ctx.ownerId,
@@ -28,8 +36,15 @@ export const registerPushToken = authedMutation({
       updatedAt: now,
     };
     if (existing) {
+      if (existingDevice && existingDevice._id !== existing._id) {
+        await ctx.db.delete(existingDevice._id);
+      }
       await ctx.db.patch(existing._id, values);
       return existing._id;
+    }
+    if (existingDevice) {
+      await ctx.db.patch(existingDevice._id, { token: args.token, ...values });
+      return existingDevice._id;
     }
     return await ctx.db.insert("mobilePushTokens", {
       token: args.token,

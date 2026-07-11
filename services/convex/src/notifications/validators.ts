@@ -31,6 +31,7 @@ export const vAccountNotificationPreference = v.object({
 
 export const vNotificationDeliveryStatus = v.union(
   v.literal("queued"),
+  v.literal("ready"),
   v.literal("sending"),
   v.literal("accepted"),
   v.literal("sent"),

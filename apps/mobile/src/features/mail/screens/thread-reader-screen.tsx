@@ -1,4 +1,5 @@
-import { useState } from "react";
+import type { LayoutChangeEvent } from "react-native";
+import { useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -23,7 +24,10 @@ import { toMailThreadDetail } from "../lib/convex-mail";
 import { formatMessageTime } from "../lib/mail-format";
 
 export function ThreadReaderScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, messageId } = useLocalSearchParams<{
+    id: string;
+    messageId?: string | string[];
+  }>();
   const threadId = id ? toConvexId<"threads">(id) : undefined;
   const queryArgs = threadId ? { threadId } : "skip";
   const thread = useQuery(api.mail.queries.getThread, queryArgs);
@@ -33,6 +37,7 @@ export function ThreadReaderScreen() {
   return (
     <ThreadReader
       accountAddress={thread.account.address}
+      targetMessageId={firstParam(messageId)}
       thread={toMailThreadDetail(thread)}
     />
   );
@@ -40,15 +45,18 @@ export function ThreadReaderScreen() {
 
 function ThreadReader({
   accountAddress,
+  targetMessageId,
   thread,
 }: {
   accountAddress: string;
+  targetMessageId?: string;
   thread: MailThread;
 }) {
   const router = useRouter();
   const setThreadPinned = useMutation(api.mail.mutations.setThreadPinned);
   const background = useColor("background");
   const foreground = useColor("foreground");
+  const scrollViewRef = useRef<ScrollView>(null);
 
   function reply() {
     const latestMessage = thread.messages.at(-1);
@@ -98,12 +106,21 @@ function ThreadReader({
       />
       <View className="bg-background flex-1">
         <ScrollView
+          ref={scrollViewRef}
           contentContainerClassName="gap-6 px-5 pt-4 pb-28"
           contentInsetAdjustmentBehavior="automatic"
         >
           <ThreadHeader thread={thread} />
           {thread.messages.map((message) => (
-            <MessageBody key={message.id} message={message} />
+            <MessageBody
+              key={message.id}
+              message={message}
+              onLayout={
+                message.id === targetMessageId
+                  ? (event) => scrollToMessage(scrollViewRef.current, event)
+                  : undefined
+              }
+            />
           ))}
         </ScrollView>
         <Pressable
@@ -148,7 +165,13 @@ function ThreadHeader({ thread }: { thread: MailThread }) {
   );
 }
 
-function MessageBody({ message }: { message: MailMessage }) {
+function MessageBody({
+  message,
+  onLayout,
+}: {
+  message: MailMessage;
+  onLayout?: (event: LayoutChangeEvent) => void;
+}) {
   const downloadAttachment = useAction(api.attachments.actions.download);
   const [downloadingId, setDownloadingId] = useState<string>();
 
@@ -167,7 +190,7 @@ function MessageBody({ message }: { message: MailMessage }) {
   }
 
   return (
-    <View className="gap-4">
+    <View className="gap-4" onLayout={onLayout}>
       <Text className="text-muted-foreground text-xs">
         To: {message.to.map((recipient) => recipient.address).join(", ")}
       </Text>
@@ -197,6 +220,18 @@ function MessageBody({ message }: { message: MailMessage }) {
       ))}
     </View>
   );
+}
+
+function firstParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function scrollToMessage(
+  scrollView: ScrollView | null,
+  event: LayoutChangeEvent,
+) {
+  const y = Math.max(0, event.nativeEvent.layout.y - 16);
+  requestAnimationFrame(() => scrollView?.scrollTo({ animated: false, y }));
 }
 
 function AttachmentDownloadIcon({ isDownloading }: { isDownloading: boolean }) {

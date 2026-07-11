@@ -46,20 +46,23 @@ export function useMobileNotifications(isAuthenticated: boolean) {
   // eslint-disable-next-line no-restricted-syntax -- Registration synchronizes native permission/token state with the signed-in owner.
   useEffect(() => {
     if (!isAuthenticated || !registrationEnabled) return;
-    void registerForNewMailNotifications(registerPushToken).catch(
-      () => undefined,
-    );
+    void registerForNewMailNotifications(registerPushToken, {
+      requestPermission: false,
+    }).catch(() => undefined);
   }, [isAuthenticated, registerPushToken, registrationEnabled]);
 
   // eslint-disable-next-line no-restricted-syntax -- Notification response subscriptions bridge native lifecycle events into Expo Router.
   useEffect(() => {
     if (!isAuthenticated) return;
     function openResponse(response: Notifications.NotificationResponse) {
-      const threadId = getNotificationThreadId(
+      const target = getNotificationTarget(
         response.notification.request.content.data,
       );
-      if (!threadId) return;
-      router.push({ pathname: threadRoute, params: { id: threadId } });
+      if (!target) return;
+      router.push({
+        pathname: threadRoute,
+        params: { id: target.threadId, messageId: target.messageId },
+      });
     }
     const subscription =
       Notifications.addNotificationResponseReceivedListener(openResponse);
@@ -78,8 +81,11 @@ export async function registerForNewMailNotifications(
     platform: "android" | "ios";
     token: string;
   }) => Promise<unknown>,
+  options: { requestPermission?: boolean } = {},
 ) {
-  const permissionGranted = await prepareNotificationPermissions();
+  const permissionGranted = await prepareNotificationPermissions(
+    options.requestPermission ?? true,
+  );
   if (!permissionGranted) {
     return { kind: "denied" as const };
   }
@@ -107,7 +113,7 @@ export async function unregisterCurrentPushToken(
   await SecureStore.deleteItemAsync(pushTokenKey);
 }
 
-async function prepareNotificationPermissions() {
+async function prepareNotificationPermissions(requestPermission = true) {
   if (Platform.OS === "android") {
     await Notifications.setNotificationChannelAsync("new-mail", {
       name: "New mail",
@@ -116,6 +122,7 @@ async function prepareNotificationPermissions() {
   }
   const current = await Notifications.getPermissionsAsync();
   if (current.status === Notifications.PermissionStatus.GRANTED) return true;
+  if (!requestPermission) return false;
   const requested = await Notifications.requestPermissionsAsync();
   return requested.status === Notifications.PermissionStatus.GRANTED;
 }
@@ -139,11 +146,17 @@ export async function scheduleLocalNotificationPreview(
   });
 }
 
-function getNotificationThreadId(data: Record<string, unknown> | undefined) {
-  if (data?.route !== threadRoute || typeof data.threadId !== "string") {
+export function getNotificationTarget(
+  data: Record<string, unknown> | undefined,
+) {
+  if (
+    data?.route !== threadRoute ||
+    typeof data.messageId !== "string" ||
+    typeof data.threadId !== "string"
+  ) {
     return undefined;
   }
-  return data.threadId;
+  return { messageId: data.messageId, threadId: data.threadId };
 }
 
 async function getInstallationId() {

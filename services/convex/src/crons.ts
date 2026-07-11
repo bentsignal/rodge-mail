@@ -18,4 +18,11 @@ crons.interval(
   {},
 );
 
+crons.interval(
+  "recover abandoned embedding jobs",
+  { minutes: 5 },
+  internal.embedding.maintenance.recoverStaleJobs,
+  { limit: 50 },
+);
+
 export default crons;
