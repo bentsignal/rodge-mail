@@ -5,10 +5,12 @@ import * as Dialog from "@rodge-mail/ui-web/dialog";
 
 import { AppearanceSettings } from "~/features/theme/components/theme-toggle";
 import { useAuthStore } from "../store";
+import { AgentAccessSettings } from "./agent-access-settings";
 import { SignOutLink } from "./sign-out-link";
 
 export function PasskeyManagementButton() {
   const [isOpen, setIsOpen] = useState(false);
+  const [settingsSession, setSettingsSession] = useState(0);
   const addPasskey = useAuthStore((store) => store.addAuthenticatedPasskey);
   const isLoading = useAuthStore((store) => store.isLoading);
 
@@ -18,8 +20,13 @@ export function PasskeyManagementButton() {
     setIsOpen(false);
   }
 
+  function changeOpen(nextOpen: boolean) {
+    setIsOpen(nextOpen);
+    if (!nextOpen) setSettingsSession((session) => session + 1);
+  }
+
   return (
-    <Dialog.Container onOpenChange={setIsOpen} open={isOpen}>
+    <Dialog.Container onOpenChange={changeOpen} open={isOpen}>
       <Dialog.Trigger asChild>
         <button
           aria-label="Account settings"
@@ -30,7 +37,7 @@ export function PasskeyManagementButton() {
           <span className="hidden text-xs xl:inline">Account settings</span>
         </button>
       </Dialog.Trigger>
-      <Dialog.Content className="border-border bg-card max-w-lg rounded-[22px] p-0">
+      <Dialog.Content className="border-border bg-card max-h-[calc(100vh-2rem)] max-w-2xl gap-0 overflow-y-auto rounded-[22px] p-0">
         <div className="border-border border-b p-6">
           <Dialog.Title className="font-serif text-2xl tracking-[-0.03em]">
             Settings
@@ -41,6 +48,9 @@ export function PasskeyManagementButton() {
         </div>
         <div className="p-6">
           <AppearanceSettings />
+        </div>
+        <div className="border-border border-t p-6">
+          <AgentAccessSettings key={settingsSession} />
         </div>
         <div className="border-border border-t p-6">
           <div className="flex items-center gap-3">
