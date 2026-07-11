@@ -62,15 +62,19 @@ authentication instead uses authenticators available to the system browser.
 
 ## Packaging
 
-- `pnpm build:web` creates the bundled TanStack Start runtime against the Convex development deployment.
-- `pnpm build` compiles main and preload bundles.
-- `pnpm package` creates an unpacked application for local verification.
-- `pnpm dist` creates distributable installers.
-- `pnpm dist:mac` creates Apple-silicon DMG and ZIP artifacts.
-- `pnpm package:mac:development-profile` and
-  `pnpm dist:mac:development-profile` opt into the local Apple development
-  provisioning profile for Touch ID passkey testing.
-- `pnpm dist:win` creates the Windows x64 NSIS installer, including when run on
+Run these package scripts from the repository root with
+`pnpm --filter @rodge-mail/desktop <script>`:
+
+- `build:web` creates the bundled TanStack Start runtime against the Convex
+  development deployment.
+- `build` compiles main and preload bundles.
+- `package` creates an unpacked application for local verification.
+- `dist` creates the configured installers for the current host.
+- `dist:mac` creates Apple-silicon DMG and ZIP artifacts.
+- `package:mac:development-profile` and `dist:mac:development-profile` opt into
+  the local Apple development provisioning profile for Touch ID passkey
+  testing.
+- `dist:win` creates the Windows x64 NSIS installer, including when run on
   macOS.
 
 For a local build on a registered Mac, use `dist:mac:development-profile`.
@@ -79,6 +83,17 @@ notarization before macOS will treat it as a distributable application. The
 Windows cross-package is suitable for transfer and local testing, but Windows
 will warn about the unknown publisher until a Windows signing certificate is
 configured.
+
+The current personal-use artifacts land in `apps/desktop/release`:
+
+- `Rodge Mail-<version>-mac-arm64.dmg` and `.zip` contain the Apple
+  Development-signed app for the registered Mac.
+- `Rodge Mail-<version>-win-x64.exe` is the transferable Windows installer.
+
+The Apple Development build is intentionally local: it is code-signed and can
+use the registered provisioning profile, but it is not notarized for arbitrary
+Macs. Verify its sealed app before opening it with
+`codesign --verify --deep --strict --verbose=2 "apps/desktop/release/mac-arm64/Rodge Mail.app"`.
 
 Quit the development shell before opening a packaged build, and quit the
 packaged build before returning to `pnpm dev:desktop`; both intentionally share
@@ -104,7 +119,8 @@ signing identities from its standard environment variables:
 - macOS notarization: App Store Connect API credentials (`APPLE_API_KEY`, `APPLE_API_KEY_ID`, and `APPLE_API_ISSUER`) or the supported Apple ID credentials for the CI environment.
 - Windows signing: `WIN_CSC_LINK` and `WIN_CSC_KEY_PASSWORD`.
 
-Add production icons under an Electron Builder resource directory before
-release. CI should build and sign macOS artifacts on macOS and Windows artifacts
-on Windows. The current configuration intentionally contains no private keys,
-credentials, or auto-update publisher.
+The checked-in macOS, Windows, and Linux icons are generated from the locked
+Mail Slot master with `node scripts/generate-brand-assets.mjs`; do not replace
+them independently. CI should build and sign macOS artifacts on macOS and
+Windows artifacts on Windows. The current configuration intentionally contains
+no private keys, credentials, or auto-update publisher.
