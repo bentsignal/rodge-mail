@@ -8,6 +8,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { File, Paths } from "expo-file-system";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import * as Sharing from "expo-sharing";
@@ -60,7 +61,21 @@ function ThreadReader({
   const foreground = useColor("foreground");
   const primaryForeground = useColor("primary-foreground");
   const scrollViewRef = useRef<ScrollView>(null);
-
+  const insets = useSafeAreaInsets();
+  const [pinOverride, setPinOverride] = useState<boolean>();
+  const isPinned = pinOverride ?? thread.isPinned;
+  async function togglePin() {
+    const nextIsPinned = !isPinned;
+    setPinOverride(nextIsPinned);
+    try {
+      await setThreadPinned({
+        threadId: toConvexId<"threads">(thread.id),
+        isPinned: nextIsPinned,
+      });
+    } catch {
+      setPinOverride(undefined);
+    }
+  }
   function reply() {
     const latestMessage = thread.messages.at(-1);
     if (!latestMessage) return;
@@ -78,39 +93,24 @@ function ThreadReader({
       },
     });
   }
-
   return (
     <>
       <Stack.Screen
         options={{
           title: thread.sender.name,
           headerRight: () => (
-            <Pressable
-              accessibilityLabel={
-                thread.isPinned ? "Unpin thread" : "Pin thread"
-              }
-              accessibilityRole="button"
-              hitSlop={12}
-              onPress={() =>
-                void setThreadPinned({
-                  threadId: toConvexId<"threads">(thread.id),
-                  isPinned: !thread.isPinned,
-                })
-              }
-            >
-              <Pin
-                color={foreground}
-                fill={thread.isPinned ? foreground : "transparent"}
-                size={19}
-              />
-            </Pressable>
+            <ThreadPinButton
+              color={foreground}
+              isPinned={isPinned}
+              onPress={() => void togglePin()}
+            />
           ),
         }}
       />
       <View className="bg-background flex-1">
         <ScrollView
           ref={scrollViewRef}
-          contentContainerClassName="gap-4 px-4 pt-4 pb-28"
+          contentContainerClassName="gap-4 px-4 pt-4 pb-40"
           contentInsetAdjustmentBehavior="automatic"
         >
           <ThreadHeader thread={thread} />
@@ -131,12 +131,34 @@ function ThreadReader({
           accessibilityRole="button"
           className="bg-primary border-brass-soft absolute right-5 bottom-5 flex-row items-center gap-2 rounded-full border px-5 py-3"
           onPress={reply}
+          style={{ bottom: insets.bottom + 62 }}
         >
           <Reply color={primaryForeground} size={17} />
           <Text className="text-primary-foreground font-semibold">Reply</Text>
         </Pressable>
       </View>
     </>
+  );
+}
+
+function ThreadPinButton({
+  color,
+  isPinned,
+  onPress,
+}: {
+  color: string;
+  isPinned: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityLabel={isPinned ? "Unpin thread" : "Pin thread"}
+      accessibilityRole="button"
+      hitSlop={12}
+      onPress={onPress}
+    >
+      <Pin color={color} fill={isPinned ? color : "transparent"} size={19} />
+    </Pressable>
   );
 }
 

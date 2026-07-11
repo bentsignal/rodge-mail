@@ -9,9 +9,6 @@ export function InboxSyncStatus({
   accounts: MobileMailAccount[];
   error: string | undefined;
 }) {
-  const syncingCount = accounts.filter(
-    (account) => account.status === "syncing",
-  ).length;
   const attentionCount = accounts.filter(accountNeedsAttention).length;
 
   if (error) {
@@ -26,17 +23,7 @@ export function InboxSyncStatus({
       </Text>
     );
   }
-  if (syncingCount === 0) return null;
-  return (
-    <Text className="text-muted-foreground px-4 text-sm">
-      {getSyncingLabel(syncingCount)}
-    </Text>
-  );
-}
-
-function getSyncingLabel(count: number) {
-  if (count === 1) return "Syncing account…";
-  return `Syncing ${count} accounts…`;
+  return null;
 }
 
 function getAttentionLabel(count: number) {

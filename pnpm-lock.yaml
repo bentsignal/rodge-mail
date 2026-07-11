@@ -175,6 +175,9 @@ importers:
       prettier:
         specifier: 'catalog:'
         version: 3.6.2
+      sharp:
+        specifier: 0.34.4
+        version: 0.34.4
       typescript:
         specifier: 'catalog:'
         version: 6.0.3

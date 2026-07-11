@@ -1,8 +1,7 @@
 import { useState } from "react";
 import {
   Alert,
-  KeyboardAvoidingView,
-  Platform,
+  Keyboard,
   Pressable,
   ScrollView,
   Text,
@@ -85,13 +84,11 @@ export function ComposerScreen({
       className="bg-background flex-1"
       edges={variant === "tab" ? ["top"] : []}
     >
-      <KeyboardAvoidingView
-        className="flex-1"
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
+      <View className="flex-1">
         <ComposerHeader
           canSend={canSend}
           onCancel={variant === "modal" ? router.back : undefined}
+          onDismissKeyboard={variant === "tab" ? Keyboard.dismiss : undefined}
           onSend={() => void send()}
         />
         <ComposerBody
@@ -104,8 +101,9 @@ export function ComposerScreen({
           onRemoveAttachment={(attachment) => void removeAttachment(attachment)}
           recipientErrors={recipientErrors}
           selectedAccountId={selectedAccount?.id}
+          autoFocusBody={variant === "modal"}
         />
-      </KeyboardAvoidingView>
+      </View>
     </SafeAreaView>
   );
 }
@@ -130,6 +128,7 @@ function ComposerBody({
   recipientErrors,
   onSenderChange,
   selectedAccountId,
+  autoFocusBody,
 }: {
   accounts: MobileMailAccount[];
   draft: ComposerDraft<NativeComposerAttachment>;
@@ -139,12 +138,15 @@ function ComposerBody({
   recipientErrors: Partial<RecipientFields<string>>;
   onSenderChange: (accountId: string) => void;
   selectedAccountId: string | undefined;
+  autoFocusBody: boolean;
 }) {
   const mutedForeground = useColor("muted-foreground");
 
   return (
     <ScrollView
       contentContainerClassName="gap-4 px-4 py-4 pb-10"
+      automaticallyAdjustKeyboardInsets
+      keyboardDismissMode="interactive"
       keyboardShouldPersistTaps="handled"
     >
       <PostalSurface className="overflow-hidden rounded-2xl px-4">
@@ -186,7 +188,7 @@ function ComposerBody({
       <PostalSurface className="rounded-2xl p-4">
         <TextInput
           accessibilityLabel="Message body"
-          autoFocus
+          autoFocus={autoFocusBody}
           className="text-foreground min-h-72 text-base leading-6"
           defaultValue={draft.body}
           multiline

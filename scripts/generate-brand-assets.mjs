@@ -7,11 +7,14 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
+import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const requireFromMobile = createRequire(join(root, "apps/mobile/package.json"));
+const sharp = requireFromMobile("sharp");
 const source = join(
   root,
   "docs/branding/selected-mail-slot/rodge-mail-mail-slot-source.png",
@@ -28,6 +31,28 @@ function run(command, args) {
 function resize(input, output, size) {
   mkdirSync(dirname(output), { recursive: true });
   run("sips", ["-z", String(size), String(size), input, "--out", output]);
+}
+
+async function createMobileAssets(input, assetsDirectory) {
+  const metadata = await sharp(input).metadata();
+  const sourceSize = Math.min(metadata.width ?? 0, metadata.height ?? 0);
+  const cropSize = Math.round(sourceSize * 0.9);
+  const offset = Math.round((sourceSize - cropSize) / 2);
+  const icon = await sharp(input)
+    .extract({ height: cropSize, left: offset, top: offset, width: cropSize })
+    .resize(1024, 1024)
+    .png()
+    .toBuffer();
+  const roundedMask = Buffer.from(
+    '<svg width="1024" height="1024"><rect width="1024" height="1024" rx="190" fill="white"/></svg>',
+  );
+
+  await sharp(icon).png().toFile(join(assetsDirectory, "rounded-icon.png"));
+  await sharp(icon)
+    .ensureAlpha()
+    .composite([{ blend: "dest-in", input: roundedMask }])
+    .png()
+    .toFile(join(assetsDirectory, "splash-icon.png"));
 }
 
 function createIco(entries, output) {
@@ -68,8 +93,7 @@ try {
 
   const mobileAssets = join(root, "apps/mobile/assets");
   copyFileSync(source, join(mobileAssets, "rodge-mail-icon-source.png"));
-  copyFileSync(productionIcon, join(mobileAssets, "rounded-icon.png"));
-  copyFileSync(productionIcon, join(mobileAssets, "splash-icon.png"));
+  await createMobileAssets(source, mobileAssets);
 
   const desktopResources = join(root, "apps/desktop/resources");
   copyFileSync(productionIcon, join(desktopResources, "icon.png"));

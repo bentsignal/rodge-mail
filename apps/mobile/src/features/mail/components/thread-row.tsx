@@ -1,4 +1,5 @@
 import { Pressable, Text, View } from "react-native";
+import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeable";
 import { Mail, MailOpen, Pin } from "lucide-react-native";
 
 import type { MailThread } from "@rodge-mail/features/mail";
@@ -17,13 +18,82 @@ export function ThreadRow({
   const togglePin = useMailStore((store) => store.togglePin);
   const toggleRead = useMailStore((store) => store.toggleRead);
   const shadowColor = useColor("shadow-color");
+  const primaryForeground = useColor("primary-foreground");
 
+  function pin() {
+    void togglePin(thread.id, thread.isPinned);
+  }
+
+  function toggleThreadRead() {
+    void toggleRead(thread.id, thread.isRead);
+  }
+
+  return (
+    <ReanimatedSwipeable
+      containerStyle={{ marginBottom: 8, marginHorizontal: 12 }}
+      enableTrackpadTwoFingerGesture
+      friction={1.4}
+      leftThreshold={48}
+      overshootLeft={false}
+      overshootRight={false}
+      renderLeftActions={(_progress, _translation, swipeable) => (
+        <SwipeAction
+          label={thread.isPinned ? "Unpin" : "Pin"}
+          onPress={() => {
+            swipeable.close();
+            pin();
+          }}
+        >
+          <Pin
+            color={primaryForeground}
+            fill={thread.isPinned ? primaryForeground : "transparent"}
+            size={19}
+          />
+        </SwipeAction>
+      )}
+      renderRightActions={(_progress, _translation, swipeable) => (
+        <SwipeAction
+          label={thread.isRead ? "Unread" : "Read"}
+          onPress={() => {
+            swipeable.close();
+            toggleThreadRead();
+          }}
+        >
+          <ReadIcon isRead={thread.isRead} color={primaryForeground} />
+        </SwipeAction>
+      )}
+      rightThreshold={48}
+    >
+      <ThreadSummary
+        onOpen={onOpen}
+        onPin={pin}
+        onRead={toggleThreadRead}
+        shadowColor={shadowColor}
+        thread={thread}
+      />
+    </ReanimatedSwipeable>
+  );
+}
+
+function ThreadSummary({
+  onOpen,
+  onPin,
+  onRead,
+  shadowColor,
+  thread,
+}: {
+  onOpen: () => void;
+  onPin: () => void;
+  onRead: () => void;
+  shadowColor: string;
+  thread: MailThread;
+}) {
   return (
     <Pressable
       accessibilityHint="Opens this email thread"
       accessibilityLabel={`${thread.sender.name}, ${thread.subject}`}
       accessibilityRole="button"
-      className="bg-card border-brass/25 mx-3 mb-2 flex-row gap-3 rounded-2xl border px-4 py-3.5"
+      className="bg-card border-brass/25 flex-row gap-3 rounded-2xl border px-4 py-3.5"
       onPress={onOpen}
       style={{
         elevation: 1,
@@ -75,11 +145,31 @@ export function ThreadRow({
           {thread.preview}
         </Text>
       </View>
-      <ThreadActions
-        thread={thread}
-        onPin={() => togglePin(thread.id, thread.isPinned)}
-        onRead={() => toggleRead(thread.id, thread.isRead)}
-      />
+      <ThreadActions thread={thread} onPin={onPin} onRead={onRead} />
+    </Pressable>
+  );
+}
+
+function SwipeAction({
+  children,
+  label,
+  onPress,
+}: {
+  children: React.ReactNode;
+  label: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityLabel={label}
+      accessibilityRole="button"
+      className="bg-primary w-24 items-center justify-center gap-1 rounded-2xl"
+      onPress={onPress}
+    >
+      {children}
+      <Text className="text-primary-foreground text-xs font-semibold">
+        {label}
+      </Text>
     </Pressable>
   );
 }

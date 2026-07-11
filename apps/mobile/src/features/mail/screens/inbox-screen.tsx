@@ -1,14 +1,9 @@
 import type { ListRenderItemInfo } from "react-native";
 import { useState } from "react";
-import {
-  ActivityIndicator,
-  FlatList,
-  RefreshControl,
-  Text,
-  View,
-} from "react-native";
+import { FlatList, Pressable, RefreshControl, Text, View } from "react-native";
 import { Stack, useRouter } from "expo-router";
 import { usePaginatedQuery } from "convex/react";
+import { Mail } from "lucide-react-native";
 
 import type { MailAccountFilter, MailThread } from "@rodge-mail/features/mail";
 import { api } from "@rodge-mail/convex/api";
@@ -22,7 +17,12 @@ import { useSemanticMailSearch } from "../hooks/use-semantic-mail-search";
 import { toConvexId } from "../lib/convex-id";
 import { toMailThreads } from "../lib/convex-mail";
 import { useMailStore } from "../store";
-import { getEmptyIsLoading, getFooterIsLoading } from "./inbox-list-state";
+import { EmptyInbox, InboxFooter } from "./inbox-list-feedback";
+import {
+  getEmptyIsLoading,
+  getFooterIsLoading,
+  getVisibleInboxThreads,
+} from "./inbox-list-state";
 import { InboxSyncStatus } from "./inbox-sync-status";
 import { useInboxRefresh } from "./use-inbox-refresh";
 
@@ -39,10 +39,9 @@ export function InboxScreen() {
   const isLoading = useMailStore((store) => store.isLoading);
   const isLoadingMore = useMailStore((store) => store.isLoadingMore);
   const [searchTerm, setSearchTerm] = useState("");
+  const [showUnreadOnly, setShowUnreadOnly] = useState(false);
   const debouncedSearchTerm = useDebouncedValue(searchTerm.trim(), 250);
-  const card = useColor("card");
-  const foreground = useColor("foreground");
-  const primary = useColor("primary");
+  const { card, foreground, primary } = useInboxColors();
   const { isRefreshing, refresh, refreshError } = useInboxRefresh(accounts);
   const selectedAccountId = getSelectedAccountId(accountFilter);
   const search = usePaginatedQuery(
@@ -56,7 +55,12 @@ export function InboxScreen() {
     lexicalResults: search.results,
     searchTerm: debouncedSearchTerm,
   });
-  const results = isSearching ? toMailThreads(semanticSearch.results) : threads;
+  const results = getVisibleInboxThreads({
+    inboxThreads: threads,
+    isSearching,
+    searchThreads: toMailThreads(semanticSearch.results),
+    showUnreadOnly,
+  });
   const emptyIsLoading = getEmptyIsLoading({
     debouncedSearchTerm,
     isLoading,
@@ -72,7 +76,6 @@ export function InboxScreen() {
     searchIsLoading: semanticSearch.isLoading,
     searchStatus: search.status,
   });
-
   function openThread(threadId: string) {
     markRead(threadId);
     router.push({
@@ -80,16 +83,13 @@ export function InboxScreen() {
       params: { id: threadId },
     });
   }
-
   function renderThread({ item }: ListRenderItemInfo<MailThread>) {
     return <ThreadRow thread={item} onOpen={() => openThread(item.id)} />;
   }
-
   function loadNextPage() {
     if (!isSearching) loadMore();
     else if (search.status === "CanLoadMore") search.loadMore(30);
   }
-
   return (
     <View className="bg-background flex-1">
       <Stack.Screen
@@ -100,10 +100,10 @@ export function InboxScreen() {
             headerIconColor: foreground,
             onCancelButtonPress: () => setSearchTerm(""),
             onChangeText: (event) => setSearchTerm(event.nativeEvent.text),
-            placeholder: "Sender, subject, or message",
+            placeholder: "Search mail",
             placement: "stacked",
             textColor: foreground,
-            tintColor: primary,
+            tintColor: foreground,
           },
         }}
       />
@@ -118,12 +118,22 @@ export function InboxScreen() {
         refreshError={refreshError}
         renderThread={renderThread}
         searchTerm={isSearching ? searchTerm.trim() : undefined}
+        showUnreadOnly={showUnreadOnly}
         onAccountChange={setAccountFilter}
         onEndReached={loadNextPage}
         onRefresh={() => void refresh()}
+        onToggleUnread={() => setShowUnreadOnly((current) => !current)}
       />
     </View>
   );
+}
+
+function useInboxColors() {
+  return {
+    card: useColor("card"),
+    foreground: useColor("foreground"),
+    primary: useColor("primary"),
+  };
 }
 
 function InboxThreadList({
@@ -140,6 +150,8 @@ function InboxThreadList({
   refreshError,
   renderThread,
   searchTerm,
+  showUnreadOnly,
+  onToggleUnread,
 }: {
   accountFilter: MailAccountFilter;
   accounts: MobileMailAccount[];
@@ -154,6 +166,8 @@ function InboxThreadList({
   refreshError: string | undefined;
   renderThread: (info: ListRenderItemInfo<MailThread>) => React.ReactElement;
   searchTerm: string | undefined;
+  showUnreadOnly: boolean;
+  onToggleUnread: () => void;
 }) {
   return (
     <FlatList
@@ -178,6 +192,8 @@ function InboxThreadList({
           accounts={accounts}
           onAccountChange={onAccountChange}
           refreshError={refreshError}
+          showUnreadOnly={showUnreadOnly}
+          onToggleUnread={onToggleUnread}
         />
       }
       ListEmptyComponent={
@@ -185,6 +201,7 @@ function InboxThreadList({
           isLoading={emptyIsLoading}
           primary={primary}
           searchTerm={searchTerm}
+          showUnreadOnly={showUnreadOnly}
         />
       }
       ListFooterComponent={
@@ -199,75 +216,57 @@ function InboxHeader({
   accounts,
   onAccountChange,
   refreshError,
+  showUnreadOnly,
+  onToggleUnread,
 }: {
   accountFilter: MailAccountFilter;
   accounts: MobileMailAccount[];
   onAccountChange: (value: MailAccountFilter) => void;
   refreshError: string | undefined;
+  showUnreadOnly: boolean;
+  onToggleUnread: () => void;
 }) {
+  const foreground = useColor("foreground");
+  const primaryForeground = useColor("primary-foreground");
+
   return (
-    <View className="gap-2 pt-3 pb-3">
+    <View className="gap-3 pt-4 pb-3">
+      <View className="flex-row items-center justify-between px-4">
+        <Text className="text-foreground text-3xl font-bold">Inbox</Text>
+        <Pressable
+          accessibilityLabel={
+            showUnreadOnly ? "Show all messages" : "Show unread messages only"
+          }
+          accessibilityRole="button"
+          accessibilityState={{ selected: showUnreadOnly }}
+          className={
+            showUnreadOnly
+              ? "bg-primary border-brass-soft flex-row items-center gap-2 rounded-full border px-3 py-2"
+              : "bg-paper border-well-border flex-row items-center gap-2 rounded-full border px-3 py-2"
+          }
+          onPress={onToggleUnread}
+        >
+          <Mail
+            color={showUnreadOnly ? primaryForeground : foreground}
+            size={16}
+          />
+          <Text
+            className={
+              showUnreadOnly
+                ? "text-primary-foreground text-sm font-semibold"
+                : "text-foreground text-sm font-semibold"
+            }
+          >
+            Unread
+          </Text>
+        </Pressable>
+      </View>
       <AccountFilter
         accounts={accounts}
         value={accountFilter}
         onChange={onAccountChange}
       />
       <InboxSyncStatus accounts={accounts} error={refreshError} />
-    </View>
-  );
-}
-
-function EmptyInbox({
-  isLoading,
-  primary,
-  searchTerm,
-}: {
-  isLoading: boolean;
-  primary: string;
-  searchTerm?: string;
-}) {
-  if (isLoading) {
-    return (
-      <View className="items-center py-24">
-        <ActivityIndicator color={primary} size="large" />
-      </View>
-    );
-  }
-  if (searchTerm) {
-    return (
-      <View className="items-center px-8 py-24">
-        <Text className="text-foreground text-lg font-bold">
-          No matching mail
-        </Text>
-        <Text className="text-muted-foreground mt-2 text-center leading-5">
-          Nothing matched “{searchTerm}”. Try a sender or a shorter subject.
-        </Text>
-      </View>
-    );
-  }
-  return (
-    <View className="items-center px-8 py-24">
-      <Text className="text-foreground text-lg font-bold">
-        You are caught up
-      </Text>
-      <Text className="text-muted-foreground mt-2 text-center leading-5">
-        New mail will appear here in the order it arrives.
-      </Text>
-    </View>
-  );
-}
-
-function InboxFooter({
-  isLoading,
-  primary,
-}: {
-  isLoading: boolean;
-  primary: string;
-}) {
-  if (!isLoading) return null;
-  return (
-    <View className="items-center py-6">
-      <ActivityIndicator color={primary} />
     </View>
   );
 }

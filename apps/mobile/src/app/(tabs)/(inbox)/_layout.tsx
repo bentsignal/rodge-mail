@@ -20,7 +20,7 @@ export default function InboxLayout() {
     >
       <Stack.Screen
         name="index"
-        options={{ headerLargeTitle: true, title: "Inbox" }}
+        options={{ headerLargeTitle: false, headerTitle: "" }}
       />
       <Stack.Screen name="thread/[id]" options={{ title: "Message" }} />
     </Stack>

@@ -1,3 +1,19 @@
+export function getVisibleInboxThreads<T extends { isRead: boolean }>({
+  inboxThreads,
+  isSearching,
+  searchThreads,
+  showUnreadOnly,
+}: {
+  inboxThreads: T[];
+  isSearching: boolean;
+  searchThreads: T[];
+  showUnreadOnly: boolean;
+}) {
+  const threads = isSearching ? searchThreads : inboxThreads;
+  if (!showUnreadOnly) return threads;
+  return threads.filter((thread) => !thread.isRead);
+}
+
 export function getEmptyIsLoading({
   debouncedSearchTerm,
   isLoading,
