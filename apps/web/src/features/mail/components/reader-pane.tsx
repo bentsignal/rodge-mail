@@ -5,7 +5,6 @@ import {
   CheckCheck,
   EyeOff,
   MailOpen,
-  MoreHorizontal,
   Pin,
   Reply,
 } from "lucide-react";
@@ -102,24 +101,22 @@ function ReaderToolbar({
   toggleRead: (message: ThreadMessageDetail) => Promise<void>;
 }) {
   return (
-    <header className="border-border/70 flex h-[68px] shrink-0 items-center gap-1 border-b px-3 sm:px-5">
+    <header className="mail-paper-soft flex h-[68px] shrink-0 items-center gap-1 border-b border-[var(--mail-seam)] px-3 shadow-[0_2px_7px_rgba(56,41,17,0.09)] sm:px-5 dark:shadow-[0_2px_8px_rgba(0,0,0,0.26)]">
       <ReaderIconButton
         className="lg:hidden"
         icon={ArrowLeft}
         label="Back to inbox"
         onClick={closeMobileReader}
       />
-      <div className="mx-1 h-5 w-px bg-[#ded5c8] lg:hidden dark:bg-[#3f433d]" />
+      <div className="mx-1 h-5 w-px bg-[var(--mail-seam)] lg:hidden" />
       <PinReaderAction message={selectedMessage} togglePinned={togglePinned} />
       <ReadReaderAction message={selectedMessage} toggleRead={toggleRead} />
       <RemoveReaderAction
         message={selectedMessage}
         removeFromRodge={removeFromRodge}
       />
-      <div className="mx-1 h-5 w-px bg-[#ded5c8] dark:bg-[#3f433d]" />
-      <ReaderIconButton icon={MoreHorizontal} label="More actions" />
       <button
-        className="ml-auto flex h-9 items-center gap-2 rounded-full bg-[var(--mail-brand)] px-4 text-xs font-semibold text-[var(--mail-brand-foreground)] transition-colors hover:bg-[var(--mail-brand-hover)]"
+        className="mail-brass-button ml-auto flex h-9 items-center gap-2 rounded-[9px] px-4 text-xs font-bold transition-colors"
         onClick={replyToSelectedThread}
         type="button"
       >
@@ -196,14 +193,14 @@ function ReaderArticle({
         <h1 className="max-w-3xl font-serif text-[34px] leading-[1.08] font-semibold tracking-[-0.04em] text-balance sm:text-[42px]">
           {selectedThread.subject}
         </h1>
-        <div className="mt-8 h-px bg-linear-to-r from-[#d8cec0] via-[#d8cec0] to-transparent dark:from-[#464a43] dark:via-[#464a43]" />
+        <div className="mt-8 h-px bg-[var(--mail-seam)]" />
 
         {selectedThread.messages.map((message) => (
           <ReaderMessage key={message._id} message={message} />
         ))}
 
         <button
-          className="mt-9 flex h-10 items-center gap-2 rounded-full border border-[#cfc4b5] px-4 text-sm font-semibold text-[#4e4a43] transition hover:border-[#20251f] hover:bg-[#20251f] hover:text-white dark:border-[#4b5049] dark:text-[#dbd3c7]"
+          className="mail-raised text-foreground mt-9 flex h-10 items-center gap-2 rounded-[9px] border px-4 text-sm font-semibold transition hover:border-[var(--mail-brass)]"
           onClick={replyToSelectedThread}
           type="button"
         >
@@ -232,8 +229,8 @@ function ReaderIconButton({
     <button
       aria-label={label}
       className={cn(
-        "flex size-9 items-center justify-center rounded-full text-[#776e64] transition hover:bg-black/[0.045] hover:text-[#20251f] disabled:cursor-not-allowed disabled:opacity-40 dark:text-[#a99f94] dark:hover:bg-white/[0.06] dark:hover:text-white",
-        active && "text-[#b95d41]",
+        "mail-icon-button flex size-9 items-center justify-center rounded-[9px] transition disabled:cursor-not-allowed disabled:opacity-40",
+        active && "text-[var(--mail-highlight)]",
         className,
       )}
       disabled={!onClick}
@@ -251,14 +248,14 @@ function ReaderSkeleton() {
     <div aria-label="Loading thread" className="animate-pulse">
       <div className="border-border/70 h-[68px] border-b" />
       <div className="mx-auto max-w-[780px] space-y-5 px-9 pt-12">
-        <div className="h-2.5 w-32 rounded-full bg-[#e1d8cb] dark:bg-[#3a3f39]" />
-        <div className="h-10 w-4/5 rounded-xl bg-[#e5dccf] dark:bg-[#363b35]" />
-        <div className="mt-9 h-px bg-[#ddd3c5] dark:bg-[#40443e]" />
+        <div className="h-2.5 w-32 rounded-full bg-[var(--mail-paper-deep)]" />
+        <div className="h-10 w-4/5 rounded-xl bg-[var(--mail-paper-soft)] shadow-[var(--mail-shadow-inset)]" />
+        <div className="mt-9 h-px bg-[var(--mail-seam)]" />
         <div className="mt-8 flex gap-3">
-          <div className="size-10 rounded-full bg-[#e4dbcc] dark:bg-[#3c413a]" />
+          <div className="size-10 rounded-[11px] bg-[var(--mail-avatar)] shadow-[var(--mail-shadow-raised)]" />
           <div className="flex-1 space-y-2">
-            <div className="h-3 w-36 rounded-full bg-[#e1d8cb] dark:bg-[#3a3f39]" />
-            <div className="h-2.5 w-64 rounded-full bg-[#e9e1d5] dark:bg-[#343832]" />
+            <div className="h-3 w-36 rounded-full bg-[var(--mail-paper-deep)]" />
+            <div className="h-2.5 w-64 rounded-full bg-[var(--mail-paper-soft)]" />
           </div>
         </div>
       </div>
@@ -268,16 +265,15 @@ function ReaderSkeleton() {
 
 function EmptyReader() {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center px-8 text-center text-[#887d71]">
-      <span className="mb-5 flex size-14 items-center justify-center rounded-full border border-dashed border-[#bfb3a4]">
+    <div className="mail-label flex flex-1 flex-col items-center justify-center px-8 text-center">
+      <span className="mail-inset mb-5 flex size-14 items-center justify-center rounded-[13px] border">
         <MailOpen className="size-5" strokeWidth={1.5} />
       </span>
-      <p className="font-serif text-xl font-semibold text-[#343832] dark:text-[#ded7cc]">
-        Choose a letter
+      <p className="text-foreground font-serif text-xl font-semibold">
+        Select a message
       </p>
       <p className="mt-1.5 max-w-xs text-sm leading-6">
-        Your selected message will open here, without taking you away from the
-        inbox.
+        The message will open here.
       </p>
     </div>
   );

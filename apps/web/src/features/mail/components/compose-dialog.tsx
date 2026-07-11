@@ -35,7 +35,7 @@ export function ComposeDialog() {
       open={composerIsOpen}
     >
       <Dialog.Content
-        className="top-auto! right-0! bottom-0! left-0! flex h-[calc(100dvh-1rem)] max-w-none! translate-x-0! translate-y-0! flex-col gap-0 overflow-hidden rounded-t-[24px] border-[#cfc4b5] bg-[#fbf8f1] p-0 shadow-[0_-20px_80px_rgba(42,34,25,0.20)] sm:right-5! sm:bottom-5! sm:left-auto! sm:h-[min(720px,calc(100dvh-2.5rem))] sm:w-[min(720px,calc(100vw-2.5rem))] sm:rounded-[24px] dark:border-[#4a4f48] dark:bg-[#252924]"
+        className="mail-workspace top-auto! right-0! bottom-0! left-0! flex h-[calc(100dvh-1rem)] max-w-none! translate-x-0! translate-y-0! flex-col gap-0 overflow-hidden rounded-t-[20px] border p-0 sm:right-5! sm:bottom-5! sm:left-auto! sm:h-[min(720px,calc(100dvh-2.5rem))] sm:w-[min(720px,calc(100vw-2.5rem))] sm:rounded-[18px]"
         showCloseButton={false}
       >
         <ComposeContent />
@@ -81,7 +81,7 @@ function ComposeContent() {
         />
         <Textarea
           aria-label="Message body"
-          className="min-h-[310px] border-0 px-0 py-6 font-serif text-[18px] leading-8 shadow-none placeholder:text-[#aaa095] focus-visible:ring-0"
+          className="min-h-[310px] border-0 bg-transparent px-0 py-6 font-serif text-[18px] leading-8 shadow-none placeholder:text-[var(--mail-ink-soft)] focus-visible:ring-0"
           onChange={(event) => updateDraft("body", event.target.value)}
           placeholder="Write simply…"
           value={draft.body}
@@ -98,7 +98,7 @@ function ComposeHeader() {
   const closeComposer = useMailStore((store) => store.closeComposer);
 
   return (
-    <header className="flex h-16 shrink-0 items-center border-b border-[#ded5c8] px-5 dark:border-[#41453f]">
+    <header className="mail-chassis flex h-16 shrink-0 items-center border-b px-5">
       <div>
         <Dialog.Title className="font-serif text-xl font-semibold tracking-[-0.02em]">
           New message
@@ -109,7 +109,7 @@ function ComposeHeader() {
       </div>
       <button
         aria-label="Close new message"
-        className="ml-auto flex size-9 items-center justify-center rounded-full text-[#84796d] hover:bg-black/[0.05] hover:text-[#20251f] dark:hover:bg-white/[0.06] dark:hover:text-white"
+        className="ml-auto flex size-9 items-center justify-center rounded-[9px] border border-white/10 text-[var(--mail-chassis-foreground)]/70 transition hover:bg-white/10 hover:text-[var(--mail-chassis-foreground)]"
         onClick={closeComposer}
         type="button"
       >
@@ -183,7 +183,7 @@ function ComposeFooter() {
   }
 
   return (
-    <footer className="flex shrink-0 items-center gap-2 border-t border-[#ded5c8] px-5 py-3.5 sm:px-7 dark:border-[#41453f]">
+    <footer className="mail-paper-soft flex shrink-0 items-center gap-2 border-t border-[var(--mail-seam)] px-5 py-3.5 shadow-[0_-2px_7px_rgba(55,40,19,0.07)] sm:px-7">
       <input
         className="sr-only"
         id={attachmentInputId}
@@ -197,18 +197,18 @@ function ComposeFooter() {
         type="file"
       />
       <label
-        className="flex size-9 cursor-pointer items-center justify-center rounded-full text-[#756c63] transition hover:bg-black/[0.05] hover:text-[#20251f] dark:hover:bg-white/[0.06] dark:hover:text-white"
+        className="mail-icon-button flex size-9 cursor-pointer items-center justify-center rounded-[9px] transition"
         htmlFor={attachmentInputId}
         title="Attach files"
       >
         <Paperclip className="size-4" />
         <span className="sr-only">Attach files</span>
       </label>
-      <span className="font-mono text-[8px] tracking-[0.12em] text-[#968a7d] uppercase">
+      <span className="mail-label font-mono text-[8px] tracking-[0.12em] uppercase">
         {getUploadSummary(draft.attachments)}
       </span>
       <button
-        className="ml-auto flex h-10 items-center gap-2 rounded-full bg-[#c76749] px-4 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(169,77,52,0.20)] transition hover:-translate-y-0.5 hover:bg-[#b85a3f] disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-40"
+        className="mail-brass-button ml-auto flex h-10 items-center gap-2 rounded-[9px] px-4 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-40"
         disabled={!canSend || !attachmentsAreReady || isSending}
         onClick={() => void send()}
         type="button"
@@ -286,13 +286,13 @@ function ComposeField({
   value: string;
 }) {
   return (
-    <label className="flex min-h-12 items-center gap-4 border-b border-[#e2dacd] dark:border-[#3f433d]">
-      <span className="w-12 shrink-0 font-mono text-[9px] tracking-[0.14em] text-[#887c70] uppercase">
+    <label className="flex min-h-12 items-center gap-4 border-b border-[var(--mail-seam)]">
+      <span className="mail-label w-12 shrink-0 font-mono text-[9px] tracking-[0.14em] uppercase">
         {label}
       </span>
       <input
         autoFocus={autoFocus}
-        className="h-12 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[#aaa095]"
+        className="h-12 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[var(--mail-ink-soft)]"
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         value={value}

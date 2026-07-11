@@ -90,16 +90,14 @@ function AuthPage({
 }) {
   return (
     <main className="mail-atmosphere bg-background flex min-h-dvh items-center justify-center px-5 py-10">
-      <section className="border-border/80 bg-card/88 w-full max-w-sm rounded-[24px] border p-8 text-center shadow-[0_28px_90px_rgba(48,38,24,0.14)] backdrop-blur-xl">
+      <section className="mail-workspace w-full max-w-sm rounded-[18px] border p-8 text-center">
         <p className="font-serif text-xl font-semibold tracking-[-0.03em]">
           Rodge Mail
         </p>
         <h1 className="mt-8 font-serif text-2xl font-semibold tracking-[-0.03em]">
           {title}
         </h1>
-        <p className="mt-3 text-sm leading-6 text-[#81776c] dark:text-[#aaa095]">
-          {detail}
-        </p>
+        <p className="mail-label mt-3 text-sm leading-6">{detail}</p>
         <DesktopAuthAction action={action} />
       </section>
     </main>
@@ -114,7 +112,7 @@ function DesktopAuthAction({
   if (!action) return null;
   return (
     <button
-      className="mt-6 flex h-12 w-full items-center justify-center rounded-xl bg-[#20251f] px-5 text-sm font-semibold text-[#f8f1e6]"
+      className="mail-brass-button mt-6 flex h-12 w-full items-center justify-center rounded-[10px] px-5 text-sm font-bold"
       onClick={() => void action.onClick()}
       type="button"
     >

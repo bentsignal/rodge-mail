@@ -30,19 +30,19 @@ export function DraftAttachments() {
     <div className="flex flex-wrap gap-2 pb-5">
       {attachments.map((attachment) => (
         <span
-          className="flex items-center gap-2 rounded-full border border-[#d4c9bb] bg-white/60 py-1.5 pr-1.5 pl-3 text-xs dark:border-[#484d46] dark:bg-white/[0.035]"
+          className="mail-raised flex items-center gap-2 rounded-[9px] border py-1.5 pr-1.5 pl-3 text-xs"
           key={attachment.id}
         >
           <AttachmentStatusIcon status={attachment.status} />
           <span className="max-w-56 truncate">
             {attachment.fileName}
-            <span className="ml-1 text-[#8f8173]">
+            <span className="mail-label ml-1">
               · {getAttachmentStatus(attachment)}
             </span>
           </span>
           <button
             aria-label={`Remove ${attachment.fileName}`}
-            className="flex size-5 items-center justify-center rounded-full hover:bg-black/[0.06]"
+            className="mail-icon-button flex size-5 items-center justify-center rounded-md"
             disabled={attachment.status === "uploading"}
             onClick={() => remove(attachment)}
             type="button"
@@ -61,12 +61,14 @@ function AttachmentStatusIcon({
   status: WebComposerAttachment["status"];
 }) {
   if (status === "uploading") {
-    return <LoaderCircle className="size-3 animate-spin text-[#8f8173]" />;
+    return (
+      <LoaderCircle className="size-3 animate-spin text-[var(--mail-ink-soft)]" />
+    );
   }
   if (status === "error") {
     return <AlertCircle className="size-3 text-red-600" />;
   }
-  return <Paperclip className="size-3 text-[#8f8173]" />;
+  return <Paperclip className="size-3 text-[var(--mail-ink-soft)]" />;
 }
 
 function getAttachmentStatus(attachment: WebComposerAttachment) {

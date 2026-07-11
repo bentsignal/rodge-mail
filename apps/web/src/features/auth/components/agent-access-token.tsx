@@ -23,7 +23,7 @@ export function IssuedToken({
   }
 
   return (
-    <div className="border-border bg-background rounded-2xl border p-4 shadow-sm">
+    <div className="mail-raised rounded-[13px] border p-4">
       <div className="flex items-start gap-3">
         <span className="bg-destructive/10 text-destructive flex size-9 shrink-0 items-center justify-center rounded-xl">
           <ShieldAlert className="size-4" />
@@ -37,12 +37,12 @@ export function IssuedToken({
           </p>
         </div>
       </div>
-      <code className="border-border bg-muted mt-4 block max-h-24 overflow-auto rounded-xl border p-3 font-mono text-[11px] leading-5 break-all select-all">
+      <code className="mail-inset mt-4 block max-h-24 overflow-auto rounded-[10px] border p-3 font-mono text-[11px] leading-5 break-all select-all">
         {issuedToken.token}
       </code>
       <div className="mt-3 flex justify-end gap-2">
         <button
-          className="border-border bg-background hover:bg-muted flex h-9 items-center justify-center gap-2 rounded-xl border px-3 text-xs font-semibold"
+          className="mail-raised flex h-9 items-center justify-center gap-2 rounded-[9px] border px-3 text-xs font-semibold hover:border-[var(--mail-brass)]"
           onClick={() => void copyToken()}
           type="button"
         >
@@ -50,7 +50,7 @@ export function IssuedToken({
           <CopyStateLabel wasCopied={wasCopied} />
         </button>
         <button
-          className="bg-foreground text-background h-9 rounded-xl px-3 text-xs font-semibold"
+          className="mail-brass-button h-9 rounded-[9px] px-3 text-xs font-bold"
           onClick={onDone}
           type="button"
         >

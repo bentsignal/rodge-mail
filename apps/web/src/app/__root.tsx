@@ -1,7 +1,6 @@
 import type { ConvexReactClient } from "convex/react";
 // eslint-disable-next-line no-restricted-imports -- Convex requires a stable auth hook and token callback across renders.
 import { useCallback, useMemo, useRef, useState } from "react";
-import { TanStackDevtools } from "@tanstack/react-devtools";
 import { QueryClientProvider } from "@tanstack/react-query";
 import {
   createRootRouteWithContext,
@@ -9,7 +8,6 @@ import {
   Outlet,
   Scripts,
 } from "@tanstack/react-router";
-import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { createServerFn } from "@tanstack/react-start";
 import { getCookie } from "@tanstack/react-start/server";
 import { ConvexProviderWithAuth } from "convex/react";
@@ -78,12 +76,12 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       },
       {
         name: "theme-color",
-        content: "#f3eee4",
+        content: "#d9d1bb",
         media: "(prefers-color-scheme: light)",
       },
       {
         name: "theme-color",
-        content: "#20251f",
+        content: "#09150f",
         media: "(prefers-color-scheme: dark)",
       },
     ],
@@ -132,7 +130,12 @@ function RootComponent() {
   });
 
   return (
-    <html data-palette={context.palette} lang="en" suppressHydrationWarning>
+    <html
+      className={context.theme === "system" ? undefined : context.theme}
+      data-palette={context.palette}
+      lang="en"
+      suppressHydrationWarning
+    >
       <head>
         <HeadContent />
         {/* <ReactScan /> */}
@@ -156,18 +159,6 @@ function RootComponent() {
             >
               <AuthStore>
                 <Outlet />
-                <TanStackDevtools
-                  config={{
-                    position: "bottom-right",
-                    inspectHotkey: ["Control", "Shift", "I"],
-                  }}
-                  plugins={[
-                    {
-                      name: "react-router",
-                      render: <TanStackRouterDevtoolsPanel />,
-                    },
-                  ]}
-                />
               </AuthStore>
               <Toaster />
             </ThemeStore>

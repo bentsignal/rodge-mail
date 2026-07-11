@@ -14,7 +14,7 @@ export function InboxPane() {
     <section
       aria-label="Inbox"
       className={cn(
-        "border-border/70 min-w-0 flex-1 flex-col border-r lg:max-w-[430px] lg:min-w-[360px] lg:flex-none xl:max-w-[460px]",
+        "min-w-0 flex-1 flex-col border-r border-[var(--mail-seam)] bg-[var(--mail-paper-soft)] lg:max-w-[430px] lg:min-w-[360px] lg:flex-none xl:max-w-[460px]",
         mobileReaderIsOpen ? "hidden lg:flex" : "flex",
       )}
     >
@@ -34,12 +34,12 @@ function InboxHeader() {
       : accounts.find((account) => account._id === accountFilter);
 
   return (
-    <header className="border-border/70 bg-card/80 shrink-0 border-b px-4 pt-4 pb-3.5 sm:px-5 sm:pt-5">
+    <header className="mail-paper shrink-0 border-b border-[var(--mail-seam)] px-4 pt-4 pb-3.5 shadow-[0_2px_6px_rgba(55,40,19,0.08)] sm:px-5 sm:pt-5 dark:shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
       <div className="mb-4 flex items-end justify-between gap-4">
         <div className="min-w-0">
           <div className="flex items-center gap-2.5">
             <MobileBrand />
-            <p className="font-mono text-[9px] tracking-[0.18em] text-[#8c8174] uppercase">
+            <p className="mail-label font-mono text-[9px] tracking-[0.18em] uppercase">
               {getMailboxContextLabel(currentAccount)}
             </p>
           </div>
@@ -55,7 +55,7 @@ function InboxHeader() {
         </div>
         <button
           aria-label="New message"
-          className="flex size-10 items-center justify-center rounded-full bg-[var(--mail-brand)] text-[var(--mail-brand-foreground)] shadow-md transition-colors hover:bg-[var(--mail-brand-hover)] md:hidden"
+          className="mail-brass-button flex size-10 items-center justify-center rounded-[10px] transition-colors md:hidden"
           onClick={openComposer}
           type="button"
         >
@@ -79,7 +79,7 @@ function InboxCount({
   return (
     <span
       aria-label={isLoading ? "Loading messages" : `${count} messages shown`}
-      className="mb-0.5 flex items-baseline gap-1 rounded-full bg-[#e9e1d5] px-2 py-1 font-mono text-[#8e8174] dark:bg-white/[0.05] dark:text-[#aaa095]"
+      className="mail-raised mb-0.5 flex items-baseline gap-1 rounded-[7px] border px-2 py-1 font-mono text-[var(--mail-ink-soft)]"
     >
       <span className="text-[10px] font-semibold tabular-nums">
         <InboxCountValue count={count} isLoading={isLoading} />
@@ -113,12 +113,12 @@ function SearchInput() {
 
   return (
     <div className="relative">
-      <Search className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#8e8377]" />
+      <Search className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[var(--mail-ink-soft)]" />
       <input
         aria-label="Search mail"
-        className="border-border/70 bg-background/70 h-10 w-full rounded-xl border pr-10 pl-10 text-sm transition outline-none placeholder:text-[#9b9288] focus:border-[#ba6b4f]/55 focus:ring-3 focus:ring-[#ba6b4f]/10"
+        className="mail-field h-10 w-full rounded-[10px] border pr-10 pl-10 text-sm transition outline-none"
         onChange={(event) => setSearchQuery(event.target.value)}
-        placeholder="Search people, subjects, or messages"
+        placeholder="Search mail"
         type="search"
         value={searchQuery}
       />
@@ -134,7 +134,7 @@ function ClearSearchButton({ query }: { query: string }) {
   return (
     <button
       aria-label="Clear search"
-      className="absolute top-1/2 right-2.5 flex size-7 -translate-y-1/2 items-center justify-center rounded-full text-[#8e8377] hover:bg-black/[0.05]"
+      className="mail-icon-button absolute top-1/2 right-2.5 flex size-7 -translate-y-1/2 items-center justify-center rounded-full"
       onClick={() => setSearchQuery("")}
       type="button"
     >
@@ -172,7 +172,7 @@ function SearchResultsLabel() {
   const searchQuery = useMailStore((store) => store.searchQuery);
   if (!searchQuery) return null;
   return (
-    <p className="mt-3 font-mono text-[9px] tracking-[0.12em] text-[#8e8377] uppercase">
+    <p className="mail-label mt-3 font-mono text-[9px] tracking-[0.12em] uppercase">
       Search results
     </p>
   );
@@ -180,9 +180,11 @@ function SearchResultsLabel() {
 
 function MobileBrand() {
   return (
-    <span className="flex size-6 items-center justify-center rounded-lg bg-[var(--mail-brand)] font-serif text-xs text-[var(--mail-brand-foreground)] italic md:hidden">
-      R
-    </span>
+    <img
+      alt="Rodge Mail"
+      className="size-6 rounded-[7px] border border-[var(--mail-brass-deep)] shadow-[var(--mail-shadow-raised)] md:hidden"
+      src="/icon-192.png"
+    />
   );
 }
 
@@ -202,8 +204,8 @@ function MobileAccountChip({
       className={cn(
         "flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs transition",
         active
-          ? "border-[var(--mail-brand)] bg-[var(--mail-brand)] text-[var(--mail-brand-foreground)]"
-          : "border-border bg-background/50 text-muted-foreground",
+          ? "border-[var(--mail-brass-deep)] bg-[var(--mail-brass)] text-[#21190a] shadow-[var(--mail-shadow-raised)]"
+          : "border-[var(--mail-seam)] bg-[var(--mail-paper)] text-[var(--mail-ink-soft)] shadow-[var(--mail-shadow-inset)]",
       )}
       onClick={onClick}
       type="button"

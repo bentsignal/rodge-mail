@@ -33,15 +33,15 @@ export function ICloudConnectionDialog({
 
   return (
     <Dialog.Container onOpenChange={onOpenChange} open={open}>
-      <Dialog.Content className="max-w-md rounded-[22px] border-[#cfc4b5] bg-[#fbf8f1] p-0 dark:border-[#4a4f48] dark:bg-[#252924]">
-        <div className="border-b border-[#ded5c8] p-6 dark:border-[#41453f]">
-          <span className="flex size-10 items-center justify-center rounded-xl bg-[#e7ded0] text-[#5d574f] dark:bg-[#353a34] dark:text-[#e5ddd1]">
+      <Dialog.Content className="mail-dialog mail-workspace max-w-md overflow-hidden rounded-[18px] border p-0">
+        <div className="mail-chassis border-b p-6">
+          <span className="mail-brass-button flex size-10 items-center justify-center rounded-[9px]">
             <Cloud className="size-4" />
           </span>
           <Dialog.Title className="mt-4 font-serif text-2xl tracking-[-0.03em]">
             Connect iCloud Mail
           </Dialog.Title>
-          <Dialog.Description className="mt-2 text-xs leading-5 text-[#81766a] dark:text-[#aaa095]">
+          <Dialog.Description className="mt-2 text-xs leading-5 text-[var(--mail-chassis-foreground)]/70">
             Use an Apple app-specific password. Rodge Mail verifies it directly
             with Apple, encrypts it in Convex, and never stores your primary
             Apple Account password.
@@ -71,13 +71,13 @@ export function ICloudConnectionDialog({
             value={password}
           />
           <button
-            className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#20251f] px-4 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-[#30362f] disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50"
+            className="mail-brass-button flex h-11 w-full items-center justify-center gap-2 rounded-[9px] px-4 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-50"
             disabled={isConnecting || !address.trim() || !password.trim()}
             type="submit"
           >
             <ConnectButtonContent isConnecting={isConnecting} />
           </button>
-          <p className="text-[10px] leading-4 text-[#8d8276]">
+          <p className="mail-label text-[10px] leading-4">
             Create the password at account.apple.com. Changing your primary
             Apple Account password revokes existing app-specific passwords.
           </p>
@@ -114,12 +114,12 @@ function ConnectionField({
 }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block font-mono text-[8px] tracking-[0.16em] text-[#81766a] uppercase">
+      <span className="mail-label mb-1.5 block font-mono text-[8px] tracking-[0.16em] uppercase">
         {label}
       </span>
       <input
         autoComplete={autoComplete}
-        className="border-border bg-background/65 h-11 w-full rounded-xl border px-3.5 text-sm outline-none focus:border-[#ba6b4f]/60 focus:ring-3 focus:ring-[#ba6b4f]/10"
+        className="mail-field h-11 w-full rounded-[10px] border px-3.5 text-sm outline-none"
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         spellCheck={false}

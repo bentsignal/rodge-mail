@@ -63,7 +63,7 @@ async function createMainWindow() {
     minWidth: 860,
     minHeight: 600,
     show: false,
-    backgroundColor: nativeTheme.shouldUseDarkColors ? "#20251f" : "#f3eee4",
+    backgroundColor: nativeTheme.shouldUseDarkColors ? "#0f2a1c" : "#e9dfca",
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,

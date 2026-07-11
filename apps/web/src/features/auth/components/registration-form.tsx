@@ -110,7 +110,7 @@ function RegistrationCodeStep({
   return (
     <div>
       <StepHeading step="2 of 2" title="Check your email" />
-      <p className="mt-2 text-sm leading-6 text-[#81776c] dark:text-[#aaa095]">
+      <p className="mail-label mt-2 text-sm leading-6">
         Enter the code sent to {email}. Your device will then ask you to finish
         setting up your sign-in.
       </p>
@@ -142,7 +142,7 @@ function RegistrationCodeStep({
 function StepHeading({ step, title }: { step: string; title: string }) {
   return (
     <div>
-      <p className="font-mono text-[8px] tracking-[0.16em] text-[#897d6f] uppercase">
+      <p className="mail-label font-mono text-[8px] tracking-[0.16em] uppercase">
         {step}
       </p>
       <h2 className="mt-2 font-serif text-2xl font-semibold tracking-[-0.03em]">
@@ -169,12 +169,12 @@ function RegistrationField({
 }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-xs font-medium text-[#6f675e] dark:text-[#bbb1a5]">
+      <span className="mail-label mb-1.5 block text-xs font-medium">
         {label}
       </span>
       <input
         autoComplete={autoComplete}
-        className="border-border bg-background/65 h-11 w-full rounded-xl border px-3.5 text-sm transition outline-none focus:border-[#ba6b4f]/60 focus:ring-3 focus:ring-[#ba6b4f]/10"
+        className="mail-field h-11 w-full rounded-[10px] border px-3.5 text-sm transition outline-none"
         inputMode={inputMode}
         onChange={(event) => onChange(event.target.value)}
         required
@@ -197,7 +197,7 @@ function PrimaryButton({
 }) {
   return (
     <button
-      className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#20251f] px-5 text-sm font-semibold text-[#f8f1e6] transition hover:bg-[#30362f] disabled:cursor-not-allowed disabled:opacity-55"
+      className="mail-brass-button flex h-12 w-full items-center justify-center gap-2 rounded-[10px] px-5 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-55"
       disabled={disabled}
       type="submit"
     >
@@ -221,7 +221,7 @@ function BackButton({
 }) {
   return (
     <button
-      className="mt-5 w-full text-center text-xs font-medium text-[#81776c] transition hover:text-[#343832] dark:text-[#aaa095] dark:hover:text-white"
+      className="mail-label hover:text-foreground mt-5 w-full text-center text-xs font-medium transition"
       onClick={onClick}
       type="button"
     >

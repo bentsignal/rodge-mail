@@ -34,9 +34,9 @@ export function ThreadRow({
         aria-posinset={position}
         aria-setsize={-1}
         className={cn(
-          "group border-border relative border-b transition-colors",
+          "group relative border-b border-[var(--mail-seam)] bg-[var(--mail-paper-soft)] transition-colors",
           isSelected
-            ? "bg-[var(--mail-selected)]"
+            ? "z-[1] bg-[var(--mail-selected)] shadow-[0_1px_0_rgba(255,255,255,0.48)_inset,0_3px_8px_rgba(57,43,20,0.10)] dark:shadow-[0_1px_0_rgba(255,239,184,0.06)_inset,0_3px_10px_rgba(0,0,0,0.24)]"
             : "hover:bg-[var(--mail-row-hover)]",
         )}
       >
@@ -63,7 +63,7 @@ export function ThreadRow({
                   >
                     {senderName}
                   </p>
-                  <time className="shrink-0 font-mono text-[9px] text-[#978b7e] tabular-nums">
+                  <time className="mail-label shrink-0 font-mono text-[9px] tabular-nums">
                     {formatInboxDate(
                       new Date(message.receivedAt).toISOString(),
                     )}
@@ -72,14 +72,12 @@ export function ThreadRow({
                 <p
                   className={cn(
                     "mt-1 truncate font-serif text-[16px] leading-5 tracking-[-0.01em]",
-                    message.isRead
-                      ? "text-[#514b44] dark:text-[#cec6ba]"
-                      : "font-semibold",
+                    message.isRead ? "text-foreground/80" : "font-semibold",
                   )}
                 >
                   {message.subject}
                 </p>
-                <p className="mt-1 line-clamp-2 text-[12px] leading-[1.55] text-[#81766a] dark:text-[#aaa095]">
+                <p className="mail-label mt-1 line-clamp-2 text-[12px] leading-[1.55]">
                   {preview}
                 </p>
                 <ThreadMetadata message={message} />
@@ -88,14 +86,17 @@ export function ThreadRow({
           </QuickLink>
         </ContextMenu.Trigger>
         <PinMessageButton message={message} togglePinned={togglePinned} />
-        <ContextMenu.Content>
-          <ContextMenu.Item onSelect={() => void togglePinned(message)}>
+        <ContextMenu.Content className="mail-workspace text-foreground rounded-[10px] border border-[var(--mail-seam)] p-1.5 shadow-[var(--mail-shadow-ambient)]">
+          <ContextMenu.Item
+            className="data-[highlighted]:text-foreground rounded-[7px] data-[highlighted]:bg-[var(--mail-paper-soft)]"
+            onSelect={() => void togglePinned(message)}
+          >
             <Pin className="size-3.5" />
             {pinLabel}
           </ContextMenu.Item>
-          <ContextMenu.Separator />
+          <ContextMenu.Separator className="bg-[var(--mail-seam)]" />
           <ContextMenu.Item
-            className="text-[#ad533a] dark:text-[#e58b6d]"
+            className="rounded-[7px] text-[var(--mail-highlight)] data-[highlighted]:bg-[var(--mail-paper-soft)] data-[highlighted]:text-[var(--mail-highlight)]"
             onSelect={() => void removeFromRodge(message)}
           >
             <EyeOff className="size-3.5" />
@@ -123,7 +124,7 @@ function UnreadDot({ isRead }: { isRead: boolean }) {
 
 function AttachmentMarker({ hasAttachments }: { hasAttachments: boolean }) {
   if (!hasAttachments) return null;
-  return <Paperclip className="size-3 text-[#998c7e]" />;
+  return <Paperclip className="size-3 text-[var(--mail-ink-soft)]" />;
 }
 
 function PinMessageButton({
@@ -140,7 +141,7 @@ function PinMessageButton({
         "absolute right-3 bottom-3 flex size-7 items-center justify-center rounded-full transition",
         message.isPinned
           ? "text-[var(--mail-highlight)]"
-          : "text-[#a99d90] opacity-0 group-hover:opacity-100 focus:opacity-100",
+          : "text-[var(--mail-ink-soft)] opacity-0 group-hover:opacity-100 focus:opacity-100",
       )}
       onClick={() => void togglePinned(message)}
       type="button"
@@ -171,12 +172,19 @@ function SenderAvatar({
   name: string;
 }) {
   return (
-    <div className="relative flex size-9 shrink-0 items-center justify-center rounded-full border border-black/[0.06] bg-[var(--mail-avatar)] font-mono text-[10px] font-semibold text-[var(--mail-avatar-foreground)]">
+    <div className="relative flex size-9 shrink-0 items-center justify-center rounded-[11px] border border-[var(--mail-seam)] bg-[var(--mail-avatar)] font-mono text-[10px] font-semibold text-[var(--mail-avatar-foreground)] shadow-[var(--mail-shadow-raised)]">
       {getInitials(name)}
-      <span
-        className="ring-card absolute right-0 bottom-0 size-2.5 rounded-full ring-2"
-        style={{ backgroundColor: account?.accent }}
-      />
+      <AccountDot accent={account?.accent} />
     </div>
+  );
+}
+
+function AccountDot({ accent }: { accent: string | undefined }) {
+  if (!accent) return null;
+  return (
+    <span
+      className="absolute right-0 bottom-0 size-2.5 rounded-full ring-2 ring-[var(--mail-paper-soft)]"
+      style={{ backgroundColor: accent }}
+    />
   );
 }

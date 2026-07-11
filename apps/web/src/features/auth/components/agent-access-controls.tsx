@@ -16,10 +16,10 @@ export function ChoiceCard({
   return (
     <label
       className={cn(
-        "focus-within:ring-ring/40 flex cursor-pointer gap-2.5 rounded-xl border p-3 transition-colors focus-within:ring-[3px]",
+        "focus-within:ring-ring/40 flex cursor-pointer gap-2.5 rounded-[10px] border p-3 transition-colors focus-within:ring-[3px]",
         checked
-          ? "border-foreground/25 bg-background"
-          : "border-border bg-background/35",
+          ? "mail-raised border-[var(--mail-brass)]"
+          : "border-[var(--mail-seam)] bg-[var(--mail-paper)] shadow-[var(--mail-shadow-inset)]",
       )}
     >
       <input
@@ -42,11 +42,11 @@ export function ChoiceCard({
 function ChoiceMark({ checked }: { checked: boolean }) {
   if (!checked) {
     return (
-      <span className="border-input bg-background mt-0.5 size-4 shrink-0 rounded border" />
+      <span className="mail-inset mt-0.5 size-4 shrink-0 rounded border" />
     );
   }
   return (
-    <span className="bg-foreground text-background border-foreground mt-0.5 flex size-4 shrink-0 items-center justify-center rounded border">
+    <span className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded border border-[var(--mail-brass-deep)] bg-[var(--mail-brass)] text-[#21190a] shadow-[var(--mail-shadow-raised)]">
       <Check className="size-2.5" strokeWidth={3} />
     </span>
   );
@@ -65,9 +65,9 @@ export function SegmentButton({
     <button
       aria-pressed={active}
       className={cn(
-        "h-9 rounded-lg text-xs font-semibold transition-colors",
+        "h-9 rounded-[8px] text-xs font-semibold transition-colors",
         active
-          ? "bg-card text-foreground shadow-sm"
+          ? "mail-raised text-foreground border"
           : "text-muted-foreground hover:text-foreground",
       )}
       onClick={onClick}

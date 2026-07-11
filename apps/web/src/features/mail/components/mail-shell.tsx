@@ -32,10 +32,10 @@ export function MailShell({
 
 function MailWorkspace() {
   return (
-    <main className="mail-atmosphere bg-background text-foreground relative flex h-dvh min-h-[640px] overflow-hidden">
+    <main className="mail-atmosphere bg-background text-foreground relative flex h-dvh min-h-0 overflow-hidden">
       <AccountRail />
-      <div className="relative z-10 flex min-w-0 flex-1 p-0 md:p-2.5 md:pl-0">
-        <div className="border-border/70 bg-card/92 flex min-w-0 flex-1 overflow-hidden border shadow-[0_24px_80px_rgba(48,38,24,0.10)] backdrop-blur-xl md:rounded-[22px]">
+      <div className="relative z-10 flex min-w-0 flex-1 p-0 md:p-3 md:pl-0">
+        <div className="mail-workspace flex min-w-0 flex-1 overflow-hidden border md:rounded-[18px]">
           <InboxPane />
           <ReaderPane />
         </div>

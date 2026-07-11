@@ -7,12 +7,12 @@ import { QuickLink } from "~/components/quick-link";
 
 export function Error(_props: ErrorComponentProps) {
   return (
-    <div className="flex h-screen flex-col items-center justify-center gap-2">
-      <h1 className="text-2xl font-bold">Sorry about that</h1>
+    <div className="mail-atmosphere flex h-screen flex-col items-center justify-center gap-2 px-6 text-center">
+      <h1 className="font-serif text-3xl font-semibold">Sorry about that</h1>
       <p className="text-muted-foreground">
         Something went wrong while loading this page.
       </p>
-      <Button asChild className="mt-1">
+      <Button asChild className="mail-brass-button mt-3 rounded-[9px]">
         <QuickLink to="/">
           <House className="size-4" />
           Back to home

@@ -61,10 +61,7 @@ export function CredentialForm({
   }
 
   return (
-    <form
-      className="border-border bg-background/55 rounded-2xl border p-4"
-      onSubmit={submit}
-    >
+    <form className="mail-inset rounded-[13px] border p-4" onSubmit={submit}>
       <NameField label={label} onChange={setLabel} />
       <ScopeFields scopes={scopes} toggleScope={toggleScope} />
       <AccountFields
@@ -96,7 +93,7 @@ function NameField({
       <span className="text-xs font-semibold">Name</span>
       <input
         autoComplete="off"
-        className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/40 mt-2 h-10 w-full rounded-xl border px-3 text-sm outline-none focus-visible:ring-[3px]"
+        className="mail-field mt-2 h-10 w-full rounded-[9px] border px-3 text-sm outline-none"
         maxLength={80}
         onChange={(event) => onChange(event.target.value)}
         placeholder="Codex on this Mac"
@@ -147,7 +144,7 @@ function AccountFields({
   return (
     <fieldset className="mt-5">
       <legend className="text-xs font-semibold">Mailbox access</legend>
-      <div className="bg-muted mt-2 grid grid-cols-2 rounded-xl p-1">
+      <div className="mail-inset mt-2 grid grid-cols-2 rounded-[10px] border p-1">
         <SegmentButton
           active={accessMode === "all"}
           label="All accounts"
@@ -220,7 +217,7 @@ function FormFooter({
         <span className="text-xs font-semibold">Expires after</span>
         <span className="mt-2 flex items-center gap-2">
           <input
-            className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/40 h-10 w-20 rounded-xl border px-3 text-sm tabular-nums outline-none focus-visible:ring-[3px]"
+            className="mail-field h-10 w-20 rounded-[9px] border px-3 text-sm tabular-nums outline-none"
             max={90}
             min={1}
             onChange={(event) => setExpiresInDays(Number(event.target.value))}
@@ -231,7 +228,7 @@ function FormFooter({
         </span>
       </label>
       <button
-        className="bg-primary text-primary-foreground hover:bg-primary/90 flex h-10 items-center justify-center gap-2 rounded-xl px-4 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+        className="mail-brass-button flex h-10 items-center justify-center gap-2 rounded-[9px] px-4 text-xs font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-50"
         disabled={!canCreate || isCreating}
         type="submit"
       >

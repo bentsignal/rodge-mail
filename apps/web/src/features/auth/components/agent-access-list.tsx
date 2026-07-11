@@ -45,7 +45,7 @@ function CredentialLoading() {
 
 function CredentialEmpty() {
   return (
-    <div className="border-border bg-muted/40 mt-3 rounded-xl border border-dashed px-4 py-5 text-center">
+    <div className="mail-inset mt-3 rounded-[10px] border border-dashed px-4 py-5 text-center">
       <KeyRound className="text-muted-foreground mx-auto size-4" />
       <p className="text-muted-foreground mt-2 text-xs">
         No agent credentials yet.
@@ -69,8 +69,8 @@ function CredentialRow({
   const [openedAt] = useState(Date.now);
   const status = getCredentialStatus(credential, openedAt);
   return (
-    <article className="border-border bg-background/45 flex items-start gap-3 rounded-xl border p-3">
-      <span className="bg-muted text-muted-foreground flex size-8 shrink-0 items-center justify-center rounded-lg">
+    <article className="mail-raised flex items-start gap-3 rounded-[10px] border p-3">
+      <span className="mail-inset text-muted-foreground flex size-8 shrink-0 items-center justify-center rounded-[8px] border">
         <KeyRound className="size-3.5" />
       </span>
       <div className="min-w-0 flex-1">

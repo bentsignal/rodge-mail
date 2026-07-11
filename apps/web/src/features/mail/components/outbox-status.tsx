@@ -38,7 +38,7 @@ export function OutboxStatus() {
       <button
         aria-expanded={isOpen}
         aria-controls="outbox-status-panel"
-        className="border-border bg-popover text-popover-foreground ml-auto flex h-10 items-center gap-2 rounded-full border px-3.5 text-xs font-semibold shadow-[0_12px_36px_rgba(35,29,23,0.16)]"
+        className="mail-brass-button ml-auto flex h-10 items-center gap-2 rounded-[10px] px-3.5 text-xs font-bold"
         onClick={() => setIsOpen((current) => !current)}
         type="button"
       >
@@ -61,12 +61,12 @@ function OutboxPanel({
   if (!isOpen) return null;
   return (
     <div
-      className="border-border bg-popover text-popover-foreground absolute right-0 bottom-12 max-h-[min(520px,calc(100dvh-6rem))] w-full overflow-hidden rounded-2xl border shadow-[0_20px_60px_rgba(35,29,23,0.22)]"
+      className="mail-workspace text-popover-foreground absolute right-0 bottom-12 max-h-[min(520px,calc(100dvh-6rem))] w-full overflow-hidden rounded-[14px] border"
       id="outbox-status-panel"
     >
-      <div className="border-border border-b px-4 py-3">
+      <div className="mail-chassis border-b px-4 py-3">
         <h2 className="font-serif text-lg font-semibold">Delivery status</h2>
-        <p className="text-muted-foreground mt-0.5 text-[10px]">
+        <p className="mt-0.5 text-[10px] text-[var(--mail-chassis-foreground)]/70">
           Live delivery state from queue to provider.
         </p>
       </div>

@@ -69,7 +69,7 @@ export function AgentAccessSettings() {
           onDone={() => setIssuedToken(undefined)}
         />
       </div>
-      <div className="border-border mt-6 border-t pt-5">
+      <div className="mt-6 border-t border-[var(--mail-seam)] pt-5">
         <div className="flex items-baseline justify-between gap-3">
           <h3 className="text-xs font-semibold">Issued credentials</h3>
           <span className="text-muted-foreground font-mono text-[9px] tracking-[0.08em] uppercase">
@@ -90,7 +90,7 @@ export function AgentAccessSettings() {
 function AgentAccessHeading() {
   return (
     <div className="flex items-start gap-3">
-      <span className="bg-muted text-muted-foreground flex size-9 shrink-0 items-center justify-center rounded-xl">
+      <span className="mail-raised text-muted-foreground flex size-9 shrink-0 items-center justify-center rounded-[9px] border">
         <Bot className="size-4" />
       </span>
       <div>
