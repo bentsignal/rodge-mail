@@ -8,13 +8,14 @@
     "clean": "git clean -xdf .cache .turbo dist node_modules",
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "lint": "eslint --flag unstable_native_nodejs_ts_config",
-    "start": "node --experimental-strip-types src/index.ts",
+    "start": "tsx src/index.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.29.0",
     "@rodge-mail/agent-contract": "workspace:*",
+    "tsx": "^4.21.0",
     "zod": "catalog:"
   },
   "devDependencies": {
