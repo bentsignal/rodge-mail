@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2400" height="1800" viewBox="0 0 2400 1800">
+  <rect width="2400" height="1800" fill="#0b0d12" />
+  <text x="120" y="130" fill="#f5f2ea" font-family="Helvetica Neue, Helvetica, sans-serif" font-size="68" font-weight="700">RODGE MAIL — FIVE NEW MARKS</text>
+  <text x="120" y="190" fill="#8e94a3" font-family="Helvetica Neue, Helvetica, sans-serif" font-size="28">Five unrelated identity systems · concept round 02 · no production assets replaced</text>
+
+  <g transform="translate(120 270)">
+    <rect width="680" height="660" rx="42" fill="#151821" stroke="#292d39" stroke-width="2" />
+    <image x="40" y="40" width="600" height="500" preserveAspectRatio="xMidYMid slice" href="01-switchboard.png" />
+    <text x="42" y="592" fill="#f5f2ea" font-family="Helvetica Neue, Helvetica, sans-serif" font-size="34" font-weight="700">01  SWITCHBOARD</text>
+    <text x="42" y="631" fill="#8e94a3" font-family="Helvetica Neue, Helvetica, sans-serif" font-size="22">operations · routing · unified accounts</text>
+  </g>
+
+  <g transform="translate(860 270)">
+    <rect width="680" height="660" rx="42" fill="#151821" stroke="#292d39" stroke-width="2" />
+    <image x="40" y="40" width="600" height="500" preserveAspectRatio="xMidYMid slice" href="02-between-lines.png" />
+    <text x="42" y="592" fill="#f5f2ea" font-family="Helvetica Neue, Helvetica, sans-serif" font-size="34" font-weight="700">02  BETWEEN LINES</text>
+    <text x="42" y="631" fill="#8e94a3" font-family="Helvetica Neue, Helvetica, sans-serif" font-size="22">human · literary · held attention</text>
+  </g>
+
+  <g transform="translate(1600 270)">
+    <rect width="680" height="660" rx="42" fill="#151821" stroke="#292d39" stroke-width="2" />
+    <image x="40" y="40" width="600" height="500" preserveAspectRatio="xMidYMid slice" href="03-live-signal.png" />
+    <text x="42" y="592" fill="#f5f2ea" font-family="Helvetica Neue, Helvetica, sans-serif" font-size="34" font-weight="700">03  LIVE SIGNAL</text>
+    <text x="42" y="631" fill="#8e94a3" font-family="Helvetica Neue, Helvetica, sans-serif" font-size="22">technical · dark-first · immediate</text>
+  </g>
+
+  <g transform="translate(490 1010)">
+    <rect width="680" height="660" rx="42" fill="#151821" stroke="#292d39" stroke-width="2" />
+    <image x="40" y="40" width="600" height="500" preserveAspectRatio="xMidYMid slice" href="04-twin-orbit.png" />
+    <text x="42" y="592" fill="#f5f2ea" font-family="Helvetica Neue, Helvetica, sans-serif" font-size="34" font-weight="700">04  TWIN ORBIT</text>
+    <text x="42" y="631" fill="#8e94a3" font-family="Helvetica Neue, Helvetica, sans-serif" font-size="22">spatial · tactile · multiple identities</text>
+  </g>
+
+  <g transform="translate(1230 1010)">
+    <rect width="680" height="660" rx="42" fill="#151821" stroke="#292d39" stroke-width="2" />
+    <image x="40" y="40" width="600" height="500" preserveAspectRatio="xMidYMid slice" href="05-night-firefly.png" />
+    <text x="42" y="592" fill="#f5f2ea" font-family="Helvetica Neue, Helvetica, sans-serif" font-size="34" font-weight="700">05  NIGHT FIREFLY</text>
+    <text x="42" y="631" fill="#8e94a3" font-family="Helvetica Neue, Helvetica, sans-serif" font-size="22">mascot · personal · find what matters</text>
+  </g>
+</svg>
