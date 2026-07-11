@@ -546,6 +546,9 @@ importers:
       '@convex-dev/rate-limiter':
         specifier: ^0.3.2
         version: 0.3.2(convex@1.39.1(bufferutil@4.0.8)(react@19.2.3))(react@19.2.3)
+      '@rodge-mail/agent-contract':
+        specifier: workspace:*
+        version: link:../../shared/agent-contract
       '@rodge-mail/config':
         specifier: workspace:*
         version: link:../../shared/config

@@ -45,6 +45,7 @@
     "@better-auth/utils": "0.4.0",
     "@convex-dev/better-auth": "catalog:",
     "@convex-dev/rate-limiter": "^0.3.2",
+    "@rodge-mail/agent-contract": "workspace:*",
     "@rodge-mail/config": "workspace:*",
     "@rodge-mail/features": "workspace:*",
     "better-auth": "catalog:",

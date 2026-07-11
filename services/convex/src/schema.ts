@@ -1,5 +1,6 @@
 import { defineSchema, defineTable } from "convex/server";
 
+import { vAgentAuditEvent, vAgentCredential } from "./agent/validators";
 import {
   vMessageEmbedding,
   vMessageEmbeddingJob,
@@ -28,6 +29,15 @@ import {
 
 export default defineSchema(
   {
+    agentCredentials: defineTable(vAgentCredential)
+      .index("by_token_hash", ["tokenHash"])
+      .index("by_owner", ["ownerId"])
+      .index("by_owner_revoked_expires", ["ownerId", "revokedAt", "expiresAt"])
+      .index("by_expires", ["expiresAt"]),
+    agentAuditEvents: defineTable(vAgentAuditEvent)
+      .index("by_created", ["createdAt"])
+      .index("by_owner_created", ["ownerId", "createdAt"])
+      .index("by_credential_created", ["credentialId", "createdAt"]),
     mailAccounts: defineTable(vMailAccount)
       .index("by_owner", ["ownerId"])
       .index("by_owner_address", ["ownerId", "address"])

@@ -5,7 +5,7 @@ import {
   mailProviderSchema,
   timestampSchema,
   untrustedContentMarkerSchema,
-} from "./common.ts";
+} from "./common";
 
 export const mailAccountStatusSchema = z.enum([
   "connected",
