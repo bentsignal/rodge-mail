@@ -1,0 +1,551 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Rodge Mail — Rebrand Lab</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="lab-shell">
+      <header class="lab-header">
+        <div>
+          <p class="lab-kicker">Rodge Mail / rebrand lab</p>
+          <h1>Four different ways to live in your inbox.</h1>
+        </div>
+        <div class="lab-controls" aria-label="Prototype controls">
+          <div class="segmented" id="direction-control">
+            <button class="is-active" data-direction="dispatch">
+              Dispatch
+            </button>
+            <button data-direction="correspondence">Correspondence</button>
+            <button data-direction="frequency">Frequency</button>
+            <button data-direction="orbit">Orbit</button>
+          </div>
+          <div class="segmented compact">
+            <button class="is-active" data-mode="light">Light</button>
+            <button data-mode="dark">Dark</button>
+          </div>
+          <div class="segmented compact">
+            <button class="is-active" data-viewport="desktop">Desktop</button>
+            <button data-viewport="mobile">Mobile</button>
+          </div>
+        </div>
+      </header>
+
+      <main>
+        <section class="concept-notes" aria-live="polite">
+          <div>
+            <p class="concept-number" id="concept-number">Direction 01</p>
+            <h2 id="concept-title">Dispatch</h2>
+            <p id="concept-thesis">
+              Mail as an operations desk: fast, legible, compact, and made for
+              keyboard flow.
+            </p>
+          </div>
+          <dl id="concept-facts">
+            <div>
+              <dt>Navigation</dt>
+              <dd>Account dock + command rail</dd>
+            </div>
+            <div>
+              <dt>Density</dt>
+              <dd>Compact, scannable rows</dd>
+            </div>
+            <div>
+              <dt>Mobile</dt>
+              <dd>Queue first, actions at thumb reach</dd>
+            </div>
+          </dl>
+        </section>
+
+        <div class="stage" data-viewport="desktop">
+          <article
+            class="prototype dispatch is-visible"
+            data-concept="dispatch"
+            data-mode="light"
+          >
+            <header class="dispatch-topbar">
+              <div class="dispatch-wordmark"><span>R</span><b>RODGE</b></div>
+              <button class="dispatch-command">
+                ⌘ K <span>Find anything</span>
+              </button>
+              <div class="dispatch-status">
+                <i></i> All accounts current <b>09:42</b>
+              </div>
+            </header>
+            <div class="dispatch-layout">
+              <nav class="dispatch-dock">
+                <button class="active" aria-label="Inbox">IN <b>12</b></button>
+                <button aria-label="Pinned">PN <b>4</b></button>
+                <button aria-label="Sent">ST</button>
+                <span></span>
+                <button aria-label="Personal">
+                  <i class="dot coral"></i>PS
+                </button>
+                <button aria-label="Work"><i class="dot blue"></i>WK</button>
+                <button aria-label="iCloud"><i class="dot lime"></i>IC</button>
+                <button class="new" aria-label="New message">＋</button>
+              </nav>
+              <section class="dispatch-queue">
+                <div class="dispatch-sectionhead">
+                  <div>
+                    <small>UNIFIED / TODAY</small>
+                    <h3>Incoming</h3>
+                  </div>
+                  <div class="dispatch-count">
+                    12 unread<br /><span>231 total</span>
+                  </div>
+                </div>
+                <div class="dispatch-filter">
+                  <b>ALL</b><span>PEOPLE</span><span>ORDERS</span
+                  ><span>UPDATES</span>
+                </div>
+                <div class="dispatch-thread urgent">
+                  <time>09:36</time>
+                  <div>
+                    <b>Maya Chen</b
+                    ><strong>Can you review the final launch plan?</strong>
+                    <p>I folded in your notes and marked the two decisions…</p>
+                  </div>
+                  <em>PS</em>
+                </div>
+                <div class="dispatch-thread selected">
+                  <time>08:14</time>
+                  <div>
+                    <b>Linear</b
+                    ><strong>Your Rodge issue export is ready</strong>
+                    <p>The export you requested has finished processing.</p>
+                  </div>
+                  <em>WK</em>
+                </div>
+                <div class="dispatch-thread">
+                  <time>07:52</time>
+                  <div>
+                    <b>Amtrak</b
+                    ><strong>Train 172: platform information</strong>
+                    <p>Your train departs from Track 7 at 10:03 AM.</p>
+                  </div>
+                  <em>PS</em>
+                </div>
+                <div class="dispatch-thread">
+                  <time>YEST</time>
+                  <div>
+                    <b>Simon Briggs</b><strong>Re: dinner next Thursday</strong>
+                    <p>That works. Want me to book the place in Greenpoint?</p>
+                  </div>
+                  <em>IC</em>
+                </div>
+                <div class="dispatch-thread muted-row">
+                  <time>YEST</time>
+                  <div>
+                    <b>Arc'teryx</b><strong>Summer field notes</strong>
+                    <p>New trail systems for long weekends.</p>
+                  </div>
+                  <em>PS</em>
+                </div>
+              </section>
+              <section class="dispatch-reader">
+                <div class="dispatch-reader-tools">
+                  <button>Archive</button><button>Pin</button
+                  ><button>•••</button><span></span><button>Reply ↗</button>
+                </div>
+                <div class="dispatch-paper">
+                  <p class="eyebrow">LINEAR · TO SHAWN · 08:14</p>
+                  <h2>Your Rodge issue export is ready</h2>
+                  <div class="sender">
+                    <span>LI</span>
+                    <div>
+                      <b>Linear</b><small>notifications@linear.app</small>
+                    </div>
+                  </div>
+                  <p>
+                    Your workspace export finished successfully. The archive
+                    will be available for the next seven days.
+                  </p>
+                  <div class="file-ticket">
+                    <span>ZIP</span>
+                    <div>
+                      <b>rodge-export-0711.zip</b
+                      ><small>48.2 MB · expires July 18</small>
+                    </div>
+                    <button>Save</button>
+                  </div>
+                  <p class="signature">— The Linear team</p>
+                </div>
+              </section>
+            </div>
+          </article>
+
+          <article
+            class="prototype correspondence"
+            data-concept="correspondence"
+            data-mode="light"
+          >
+            <header class="correspondence-header">
+              <a class="correspondence-mark">Rodge<span>mail</span></a>
+              <nav>
+                <button class="active">Letters</button><button>People</button
+                ><button>Archive</button>
+              </nav>
+              <button class="correspondence-write">
+                Write a letter <i>↗</i>
+              </button>
+            </header>
+            <div class="correspondence-layout">
+              <aside class="correspondence-index">
+                <p class="folio">SATURDAY, JULY 11</p>
+                <h2>Good morning,<br />Shawn.</h2>
+                <div class="correspondence-summary">
+                  <b>12</b><span>letters<br />awaiting</span>
+                </div>
+                <nav>
+                  <button class="active">Everything <span>231</span></button>
+                  <button>Personal <span>08</span></button>
+                  <button>Bent Signal <span>03</span></button>
+                  <button>iCloud <span>01</span></button>
+                </nav>
+                <p class="correspondence-foot">
+                  Last gathered 2 minutes ago<br /><button>
+                    Gather new mail
+                  </button>
+                </p>
+              </aside>
+              <section class="correspondence-list">
+                <div class="correspondence-listhead">
+                  <span>THE DAY'S CORRESPONDENCE</span
+                  ><button>Search the archive</button>
+                </div>
+                <article class="correspondence-letter selected">
+                  <time>9:36</time>
+                  <div>
+                    <p>Maya Chen <i>Personal</i></p>
+                    <h3>Can you review the final launch plan?</h3>
+                    <span
+                      >I folded in your notes and marked the two decisions that
+                      still need your call.</span
+                    >
+                  </div>
+                  <b>01</b>
+                </article>
+                <article class="correspondence-letter">
+                  <time>8:14</time>
+                  <div>
+                    <p>Linear <i>Work</i></p>
+                    <h3>Your Rodge issue export is ready</h3>
+                    <span
+                      >The archive will remain available for seven days.</span
+                    >
+                  </div>
+                  <b>02</b>
+                </article>
+                <article class="correspondence-letter">
+                  <time>7:52</time>
+                  <div>
+                    <p>Amtrak <i>Personal</i></p>
+                    <h3>Train 172: platform information</h3>
+                    <span>Your train departs from Track 7 at 10:03 AM.</span>
+                  </div>
+                  <b>03</b>
+                </article>
+                <article class="correspondence-letter">
+                  <time>Yesterday</time>
+                  <div>
+                    <p>Simon Briggs <i>iCloud</i></p>
+                    <h3>Re: dinner next Thursday</h3>
+                    <span
+                      >That works. Want me to book the place in
+                      Greenpoint?</span
+                    >
+                  </div>
+                  <b>04</b>
+                </article>
+              </section>
+              <section class="correspondence-reader">
+                <div class="correspondence-page">
+                  <p class="folio">LETTER NO. 01 · RECEIVED 9:36 AM</p>
+                  <h1>Can you review the final launch plan?</h1>
+                  <div class="correspondence-byline">
+                    <div class="portrait">MC</div>
+                    <p>
+                      <b>Maya Chen</b><br /><span
+                        >maya@northstar.studio · to Shawn</span
+                      >
+                    </p>
+                    <button>•••</button>
+                  </div>
+                  <p>Hey Shawn,</p>
+                  <p>
+                    I folded in your notes and marked the two decisions that
+                    still need your call. The rest is ready for Friday.
+                  </p>
+                  <blockquote>
+                    My vote: keep the launch narrow, but make the invitation
+                    feel personal.
+                  </blockquote>
+                  <p>
+                    If you can review before 3, I can have the final version
+                    back to everyone today.
+                  </p>
+                  <p>Maya</p>
+                  <div class="correspondence-reply">
+                    <span>Write back to Maya…</span><button>Reply</button>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </article>
+
+          <article
+            class="prototype frequency"
+            data-concept="frequency"
+            data-mode="light"
+          >
+            <header class="frequency-header">
+              <div class="frequency-brand">
+                <i></i><b>RODGE</b><small>COMMUNICATIONS</small>
+              </div>
+              <div class="frequency-wave">
+                <span></span><span></span><span></span><span></span><span></span
+                ><span></span><span></span><span></span>
+                <p>LIVE · 3 CHANNELS</p>
+              </div>
+              <button class="frequency-new">NEW TRANSMISSION <b>↗</b></button>
+            </header>
+            <div class="frequency-layout">
+              <nav class="frequency-nav">
+                <p>CHANNELS</p>
+                <button class="active">
+                  <i class="lime"></i>ALL SIGNALS <b>12</b>
+                </button>
+                <button><i class="coral"></i>PERSONAL <b>8</b></button>
+                <button><i class="blue"></i>BENT SIGNAL <b>3</b></button>
+                <button><i class="violet"></i>ICLOUD <b>1</b></button>
+                <p>FILTER</p>
+                <button>↯ PRIORITY</button><button>☆ PINNED</button
+                ><button>⌁ ATTACHMENTS</button>
+                <div class="frequency-clock">
+                  <b>09:42</b><span>NEW YORK / EDT</span>
+                </div>
+              </nav>
+              <section class="frequency-feed">
+                <div class="frequency-feedhead">
+                  <div>
+                    <small>INCOMING</small>
+                    <h2>Signal stream</h2>
+                  </div>
+                  <button>⌕ FILTER SIGNALS</button>
+                </div>
+                <article class="frequency-signal hot">
+                  <div class="signal-time"><b>09:36</b><span>NOW</span></div>
+                  <div>
+                    <p>MAYA CHEN <i>PRIORITY 92</i></p>
+                    <h3>Can you review the final launch plan?</h3>
+                    <span
+                      >I folded in your notes and marked the two
+                      decisions…</span
+                    >
+                  </div>
+                  <b class="signal-arrow">↗</b>
+                </article>
+                <article class="frequency-signal selected">
+                  <div class="signal-time"><b>08:14</b><span>88M</span></div>
+                  <div>
+                    <p>LINEAR <i>AUTOMATION</i></p>
+                    <h3>Your Rodge issue export is ready</h3>
+                    <span
+                      >The export you requested has finished processing.</span
+                    >
+                  </div>
+                  <b class="signal-arrow">↗</b>
+                </article>
+                <article class="frequency-signal">
+                  <div class="signal-time"><b>07:52</b><span>110M</span></div>
+                  <div>
+                    <p>AMTRAK <i>TRAVEL</i></p>
+                    <h3>Train 172: platform information</h3>
+                    <span>Your train departs from Track 7.</span>
+                  </div>
+                  <b class="signal-arrow">↗</b>
+                </article>
+                <article class="frequency-signal quiet">
+                  <div class="signal-time"><b>YEST</b><span>17H</span></div>
+                  <div>
+                    <p>SIMON BRIGGS <i>PERSONAL</i></p>
+                    <h3>Re: dinner next Thursday</h3>
+                    <span>That works. Want me to book the place?</span>
+                  </div>
+                  <b class="signal-arrow">↗</b>
+                </article>
+              </section>
+              <section class="frequency-reader">
+                <div class="frequency-readerhead">
+                  <span>TRANSMISSION / 08:14:22</span>
+                  <div>
+                    <button>ARCHIVE</button><button>PIN</button
+                    ><button>•••</button>
+                  </div>
+                </div>
+                <div class="frequency-message">
+                  <p class="signal-tag">AUTOMATION · WORK CHANNEL</p>
+                  <h1>Your Rodge issue<br />export is ready<span>_</span></h1>
+                  <div class="frequency-sender">
+                    <b>LINEAR</b
+                    ><span>notifications@linear.app<br />SHAWN ← LINEAR</span>
+                  </div>
+                  <p>
+                    Your workspace export finished successfully. The archive
+                    will be available for the next seven days.
+                  </p>
+                  <div class="frequency-file">
+                    <i>↧</i>
+                    <div>
+                      <b>RODGE-EXPORT-0711.ZIP</b
+                      ><span>48.2 MB / EXPIRES JUL 18</span>
+                    </div>
+                    <button>DOWNLOAD</button>
+                  </div>
+                  <button class="frequency-reply">
+                    REPLY ON THIS FREQUENCY <b>↗</b>
+                  </button>
+                </div>
+              </section>
+            </div>
+          </article>
+
+          <article
+            class="prototype orbit"
+            data-concept="orbit"
+            data-mode="light"
+          >
+            <header class="orbit-header">
+              <div class="orbit-brand">
+                <span><i></i></span><b>rodge</b>
+              </div>
+              <div class="orbit-search">
+                ⌕ <span>Search mail naturally…</span><kbd>⌘ K</kbd>
+              </div>
+              <div class="orbit-profile">S</div>
+            </header>
+            <div class="orbit-layout">
+              <section class="orbit-sidebar">
+                <button class="orbit-new"><span>＋</span> New message</button>
+                <p>YOUR ORBIT</p>
+                <div class="orbit-accounts">
+                  <button class="active">
+                    <i class="all-ring"></i
+                    ><span>Everything<small>231 messages</small></span
+                    ><b>12</b>
+                  </button>
+                  <button>
+                    <i class="coral"></i
+                    ><span>Personal<small>Gmail</small></span
+                    ><b>8</b>
+                  </button>
+                  <button>
+                    <i class="blue"></i
+                    ><span>Bent Signal<small>Microsoft 365</small></span
+                    ><b>3</b>
+                  </button>
+                  <button>
+                    <i class="violet"></i><span>Me<small>iCloud</small></span
+                    ><b>1</b>
+                  </button>
+                </div>
+                <div class="orbit-bottom">
+                  <button>◎ Accounts</button><button>◐ Appearance</button>
+                </div>
+              </section>
+              <section class="orbit-feed">
+                <div class="orbit-feedhead">
+                  <div>
+                    <p>SATURDAY · JUL 11</p>
+                    <h1>Everything</h1>
+                  </div>
+                  <span><b>12</b> new</span>
+                </div>
+                <div class="orbit-pills">
+                  <button class="active">All mail</button><button>People</button
+                  ><button>Purchases</button><button>Travel</button>
+                </div>
+                <article class="orbit-card hero">
+                  <div class="orbit-avatar coral">MC</div>
+                  <div>
+                    <p><b>Maya Chen</b><time>9:36</time></p>
+                    <h3>Can you review the final launch plan?</h3>
+                    <span
+                      >I folded in your notes and marked the two decisions that
+                      still need your call.</span
+                    >
+                    <footer><i>Personal</i><b>Needs reply</b></footer>
+                  </div>
+                  <button>⋯</button>
+                </article>
+                <article class="orbit-card selected">
+                  <div class="orbit-avatar blue">LI</div>
+                  <div>
+                    <p><b>Linear</b><time>8:14</time></p>
+                    <h3>Your Rodge issue export is ready</h3>
+                    <span
+                      >The archive will remain available for the next seven
+                      days.</span
+                    >
+                    <footer><i>Work</i><b>Attachment</b></footer>
+                  </div>
+                  <button>⋯</button>
+                </article>
+                <article class="orbit-card">
+                  <div class="orbit-avatar lime">AT</div>
+                  <div>
+                    <p><b>Amtrak</b><time>7:52</time></p>
+                    <h3>Train 172: platform information</h3>
+                    <span>Your train departs from Track 7 at 10:03 AM.</span>
+                    <footer><i>Personal</i><b>Travel</b></footer>
+                  </div>
+                  <button>⋯</button>
+                </article>
+              </section>
+              <section class="orbit-reader">
+                <div class="orbit-readerbar">
+                  <button>←</button><span></span><button>Archive</button
+                  ><button>Pin</button><button>•••</button>
+                </div>
+                <div class="orbit-message">
+                  <div class="orbit-messageicon blue">LI</div>
+                  <p>LINEAR · WORK</p>
+                  <h1>Your Rodge issue export is ready</h1>
+                  <div class="orbit-from">
+                    <b>Linear</b><span>to Shawn · 8:14 AM</span>
+                  </div>
+                  <p>
+                    Your workspace export finished successfully. The archive
+                    will be available for the next seven days.
+                  </p>
+                  <div class="orbit-attachment">
+                    <span>ZIP</span>
+                    <div>
+                      <b>rodge-export-0711.zip</b><small>48.2 MB</small>
+                    </div>
+                    <button>Save</button>
+                  </div>
+                  <button class="orbit-reply">
+                    Reply to Linear <span>↗</span>
+                  </button>
+                </div>
+              </section>
+              <nav class="orbit-mobile-nav">
+                <button class="active">●<span>Inbox</span></button
+                ><button>⌕<span>Search</span></button
+                ><button class="compose">＋</button
+                ><button>◎<span>Accounts</span></button
+                ><button>◐<span>Settings</span></button>
+              </nav>
+            </div>
+          </article>
+        </div>
+      </main>
+    </div>
+    <script src="app.js"></script>
+  </body>
+</html>
