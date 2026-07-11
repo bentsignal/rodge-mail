@@ -100,6 +100,7 @@ import type * as providers_icloud_internal from "../providers/icloud/internal.js
 import type * as providers_icloud_normalize from "../providers/icloud/normalize.js";
 import type * as providers_icloud_outbox from "../providers/icloud/outbox.js";
 import type * as providers_icloud_sync from "../providers/icloud/sync.js";
+import type * as providers_icloud_window from "../providers/icloud/window.js";
 import type * as providers_microsoft_api from "../providers/microsoft/api.js";
 import type * as providers_microsoft_http from "../providers/microsoft/http.js";
 import type * as providers_microsoft_oauth from "../providers/microsoft/oauth.js";
@@ -211,6 +212,7 @@ declare const fullApi: ApiFromModules<{
   "providers/icloud/normalize": typeof providers_icloud_normalize;
   "providers/icloud/outbox": typeof providers_icloud_outbox;
   "providers/icloud/sync": typeof providers_icloud_sync;
+  "providers/icloud/window": typeof providers_icloud_window;
   "providers/microsoft/api": typeof providers_microsoft_api;
   "providers/microsoft/http": typeof providers_microsoft_http;
   "providers/microsoft/oauth": typeof providers_microsoft_oauth;
