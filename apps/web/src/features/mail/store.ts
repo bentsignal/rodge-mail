@@ -6,6 +6,9 @@ import type {
   ComposerAttachment,
   ComposerDraft,
 } from "@rodge-mail/features/mail";
+import { useDebouncedInput } from "@rodge-mail/std/use-debounced-input";
+
+const SEARCH_DEBOUNCE_MS = 350;
 
 export type MailAccountFilter = "all" | Id<"mailAccounts">;
 
@@ -139,7 +142,12 @@ function useInternalStore({
 }) {
   const [accountFilter, setAccountFilterState] =
     useState<MailAccountFilter>("all");
-  const [searchQuery, setSearchQuery] = useState("");
+  const {
+    debouncedValue: debouncedSearchQuery,
+    setValue: setSearchQueryState,
+    setValueImmediately: setSearchQueryImmediately,
+    value: searchQuery,
+  } = useDebouncedInput({ initialValue: "", timeInMs: SEARCH_DEBOUNCE_MS });
   const [selection, setSelection] = useState(initialSelection);
   const [mobileReaderIsOpen, setMobileReaderIsOpen] = useState(
     initialSelection !== undefined,
@@ -167,6 +175,8 @@ function useInternalStore({
     clearSelection: resetSelection,
     closeMobileReader: () => setMobileReaderIsOpen(false),
     mobileReaderIsOpen,
+    debouncedSearchQuery:
+      searchQuery.trim().length === 0 ? "" : debouncedSearchQuery.trim(),
     searchQuery,
     selectThread,
     selectedMessageId: selection?.messageId,
@@ -175,7 +185,11 @@ function useInternalStore({
     setInitialSelection: (nextSelection: ThreadSelection) =>
       setSelection((current) => current ?? nextSelection),
     setSearchQuery: (query: string) => {
-      setSearchQuery(query);
+      if (query.trim().length === 0) {
+        setSearchQueryImmediately(query);
+      } else {
+        setSearchQueryState(query);
+      }
       resetSelection();
     },
   };

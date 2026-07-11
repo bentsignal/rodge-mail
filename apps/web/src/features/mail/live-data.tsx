@@ -1,10 +1,4 @@
-import {
-  createContext,
-  use,
-  useDeferredValue,
-  useEffect,
-  useState,
-} from "react";
+import { createContext, use, useEffect, useState } from "react";
 // eslint-disable-next-line no-restricted-imports -- Mail has intentional loading states and a selection-dependent thread query.
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
@@ -93,16 +87,18 @@ export function useLiveMail() {
 
 function useLiveMailValue(initialInbox: InboxMessage[]) {
   const accountFilter = useMailStore((store) => store.accountFilter);
+  const debouncedSearchQuery = useMailStore(
+    (store) => store.debouncedSearchQuery,
+  );
   const searchQuery = useMailStore((store) => store.searchQuery);
   const selectedMessageId = useMailStore((store) => store.selectedMessageId);
   const selectedThreadId = useMailStore((store) => store.selectedThreadId);
   const setInitialSelection = useMailStore(
     (store) => store.setInitialSelection,
   );
-  const deferredSearchQuery = useDeferredValue(searchQuery.trim());
   const queryState = useLiveMailQueries({
     accountFilter,
-    deferredSearchQuery,
+    debouncedSearchQuery,
     searchQuery,
     selectedMessageId,
     selectedThreadId,
@@ -131,14 +127,14 @@ function useLiveMailValue(initialInbox: InboxMessage[]) {
 
 function useLiveMailQueries({
   accountFilter,
-  deferredSearchQuery,
+  debouncedSearchQuery,
   searchQuery,
   selectedMessageId,
   selectedThreadId,
   initialInbox,
 }: {
   accountFilter: MailAccountFilter;
-  deferredSearchQuery: string;
+  debouncedSearchQuery: string;
   searchQuery: string;
   selectedMessageId: InboxMessage["_id"] | undefined;
   selectedThreadId: InboxMessage["threadId"] | undefined;
@@ -149,7 +145,7 @@ function useLiveMailQueries({
   const activePage = useMailboxPage({
     accountId,
     initialInbox,
-    searchTerm: deferredSearchQuery,
+    searchTerm: debouncedSearchQuery,
   });
   const inboxMessages = sortInboxMessages(activePage.results);
   const effectiveThreadId = selectedThreadId ?? inboxMessages[0]?.threadId;
@@ -164,14 +160,14 @@ function useLiveMailQueries({
     inboxMessages,
     isLoadingAccounts: accountQuery.isPending,
     isLoadingInbox: getIsLoadingInbox({
-      deferredSearchQuery,
+      debouncedSearchQuery,
       hasVisibleMessages: inboxMessages.length > 0,
       pageStatus: activePage.status,
       searchQuery,
     }),
     isLoadingMore: activePage.status === "LoadingMore",
     isSearchingInbox: getIsSearchingInbox({
-      deferredSearchQuery,
+      debouncedSearchQuery,
       pageStatus: activePage.status,
       searchQuery,
     }),

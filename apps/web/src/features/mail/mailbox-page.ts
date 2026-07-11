@@ -32,9 +32,11 @@ export function useMailboxPage({
   );
   const semantic = useSemanticMailSearch({ accountId, searchTerm });
   const activePage = isSearching ? search : inbox;
+  const scopeKey = getMailboxScopeKey(accountId, searchTerm);
   const [settledPage, setSettledPage] = useState(() => ({
-    key: getResultsKey(initialInbox),
+    resultsKey: getResultsKey(initialInbox),
     results: initialInbox,
+    scopeKey: getMailboxScopeKey(undefined, ""),
   }));
   const useInitialInbox =
     !isSearching &&
@@ -43,13 +45,25 @@ export function useMailboxPage({
 
   const activeResultsKey = getResultsKey(activePage.results);
   if (
-    activePage.status !== "LoadingFirstPage" &&
-    activeResultsKey !== settledPage.key
+    shouldUpdateSettledPage({
+      activeResultsKey,
+      scopeKey,
+      settledPage,
+      status: activePage.status,
+    })
   ) {
-    setSettledPage({ key: activeResultsKey, results: activePage.results });
+    setSettledPage({
+      resultsKey: activeResultsKey,
+      results: activePage.results,
+      scopeKey,
+    });
   }
 
-  const fallbackResults = useInitialInbox ? initialInbox : settledPage.results;
+  const fallbackResults = useInitialInbox
+    ? initialInbox
+    : settledPage.scopeKey === scopeKey
+      ? settledPage.results
+      : [];
   const lexicalResults = getVisibleResults(
     activePage.status,
     activePage.results,
@@ -104,33 +118,31 @@ function useSemanticMailSearch({
   const runSemanticSearch = useAction(api.embedding.search.semanticSearch);
   const [result, setResult] = useState<{
     ids: InboxMessage["_id"][];
-    term: string;
-  }>({ ids: [], term: "" });
+    scopeKey: string;
+  }>({ ids: [], scopeKey: "" });
+  const scopeKey = getMailboxScopeKey(accountId, searchTerm);
 
   // eslint-disable-next-line no-restricted-syntax -- Semantic search is an asynchronous supplement to the live lexical query.
   useEffect(() => {
     if (searchTerm.length < 2) return;
     let active = true;
-    const timeout = window.setTimeout(() => {
-      void runSemanticSearch({ accountId, searchTerm, limit: 30 })
-        .then((matches) => {
-          if (!active) return;
-          setResult({
-            ids: matches.map((match) => match.messageId),
-            term: searchTerm,
-          });
-        })
-        .catch(() => {
-          if (active) setResult({ ids: [], term: searchTerm });
+    void runSemanticSearch({ accountId, searchTerm, limit: 30 })
+      .then((matches) => {
+        if (!active) return;
+        setResult({
+          ids: matches.map((match) => match.messageId),
+          scopeKey,
         });
-    }, 350);
+      })
+      .catch(() => {
+        if (active) setResult({ ids: [], scopeKey });
+      });
     return () => {
       active = false;
-      window.clearTimeout(timeout);
     };
-  }, [accountId, runSemanticSearch, searchTerm]);
+  }, [accountId, runSemanticSearch, scopeKey, searchTerm]);
 
-  const ids = result.term === searchTerm ? result.ids : [];
+  const ids = result.scopeKey === scopeKey ? result.ids : [];
   const messages = useQuery({
     ...convexQuery(
       api.mail.queries.getMessagesByIds,
@@ -141,9 +153,9 @@ function useSemanticMailSearch({
   return {
     isLoading:
       searchTerm.length >= 2 &&
-      (result.term !== searchTerm ||
+      (result.scopeKey !== scopeKey ||
         (ids.length > 0 && messages.data === undefined)),
-    results: messages.data ?? [],
+    results: ids.length > 0 ? (messages.data ?? []) : [],
   };
 }
 
@@ -151,36 +163,61 @@ function getResultsKey(messages: InboxMessage[]) {
   return messages.map((message) => message._id).join(":");
 }
 
+function shouldUpdateSettledPage({
+  activeResultsKey,
+  scopeKey,
+  settledPage,
+  status,
+}: {
+  activeResultsKey: string;
+  scopeKey: string;
+  settledPage: { resultsKey: string; scopeKey: string };
+  status: string;
+}) {
+  return (
+    status !== "LoadingFirstPage" &&
+    (settledPage.scopeKey !== scopeKey ||
+      settledPage.resultsKey !== activeResultsKey)
+  );
+}
+
+function getMailboxScopeKey(
+  accountId: InboxMessage["accountId"] | undefined,
+  searchTerm: string,
+) {
+  return `${accountId ?? "all"}:${searchTerm}`;
+}
+
 export function getIsLoadingInbox({
-  deferredSearchQuery,
+  debouncedSearchQuery,
   hasVisibleMessages,
   pageStatus,
   searchQuery,
 }: {
-  deferredSearchQuery: string;
+  debouncedSearchQuery: string;
   hasVisibleMessages: boolean;
   pageStatus: string;
   searchQuery: string;
 }) {
   return (
     searchQuery.trim().length === 0 &&
-    deferredSearchQuery.length === 0 &&
+    debouncedSearchQuery.length === 0 &&
     pageStatus === "LoadingFirstPage" &&
     !hasVisibleMessages
   );
 }
 
 export function getIsSearchingInbox({
-  deferredSearchQuery,
+  debouncedSearchQuery,
   pageStatus,
   searchQuery,
 }: {
-  deferredSearchQuery: string;
+  debouncedSearchQuery: string;
   pageStatus: string;
   searchQuery: string;
 }) {
   return (
-    searchQuery.trim() !== deferredSearchQuery ||
-    (deferredSearchQuery.length > 0 && pageStatus === "LoadingFirstPage")
+    searchQuery.trim() !== debouncedSearchQuery ||
+    (debouncedSearchQuery.length > 0 && pageStatus === "LoadingFirstPage")
   );
 }

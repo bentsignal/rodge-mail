@@ -4,6 +4,7 @@
   "type": "module",
   "exports": {
     "./cn": "./src/cn.ts",
+    "./use-debounced-input": "./src/use-debounced-input.ts",
     "./use-loading": "./src/use-loading.ts"
   },
   "license": "MIT",
@@ -11,6 +12,7 @@
     "clean": "git clean -xdf .cache .turbo dist node_modules",
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "lint": "eslint --flag unstable_native_nodejs_ts_config",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
@@ -23,9 +25,12 @@
     "@rodge-mail/tsconfig": "workspace:*",
     "@types/node": "catalog:",
     "@types/react": "catalog:react19",
+    "@types/react-test-renderer": "^19.1.0",
     "eslint": "catalog:",
     "prettier": "catalog:",
-    "typescript": "catalog:"
+    "react-test-renderer": "19.2.3",
+    "typescript": "catalog:",
+    "vitest": "^4.0.17"
   },
   "peerDependencies": {
     "react": "catalog:react19"
