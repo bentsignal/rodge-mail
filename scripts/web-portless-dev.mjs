@@ -1,4 +1,7 @@
 import { spawn, spawnSync } from "node:child_process";
+import { delimiter, dirname } from "node:path";
+
+import { findSupportedNodeBinary } from "./node-runtime.mjs";
 
 const port = process.env.PORT;
 if (!port) throw new Error("Portless did not provide the web app port");
@@ -9,7 +12,7 @@ const ownsPasskeyAlias = portlessHostname === "www.rodge-mail.local";
 if (ownsPasskeyAlias) {
   const alias = spawnSync(
     "pnpm",
-    ["exec", "portless", "alias", "rodge-mail", port, "--force"],
+    ["exec", "portless", "alias", "rodge-mail", port],
     { stdio: "ignore" },
   );
   if (alias.status !== 0) {
@@ -17,8 +20,24 @@ if (ownsPasskeyAlias) {
   }
 }
 
+const viteNode = findSupportedNodeBinary();
+const viteNodeDirectory = dirname(viteNode);
+const viteEnvironment = {
+  ...process.env,
+  PATH: [viteNodeDirectory, process.env.PATH].filter(Boolean).join(delimiter),
+};
+
+if (viteNode !== process.execPath) {
+  const version = spawnSync(viteNode, ["-p", "process.versions.node"], {
+    encoding: "utf8",
+  }).stdout.trim();
+  console.log(
+    `Using Node ${version} for the TanStack Start development server.`,
+  );
+}
+
 const vite = spawn("pnpm", ["exec", "vite", "dev"], {
-  env: process.env,
+  env: viteEnvironment,
   stdio: "inherit",
 });
 
