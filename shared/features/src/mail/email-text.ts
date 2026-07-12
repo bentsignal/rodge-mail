@@ -34,7 +34,8 @@ const VISIBLE_ENTITIES = new Map([
   ["trade", "™"],
 ]);
 
-const LINK_PATTERN = /(?:https?:\/\/|mailto:)[^\s<>"']+/giu;
+const LINK_PATTERN =
+  /(?:https?:\/\/|mailto:|www\.)[^\s<>"']+|[\w.!#$%&'*+/=?^`{|}~-]+@[\w](?:[\w-]{0,61}[\w])?(?:\.[\w](?:[\w-]{0,61}[\w])?)+/giu;
 const BULLET_PATTERN = /^\s*[-*•]\s+(.+)$/u;
 const NUMBERED_PATTERN = /^\s*(\d+)[.)]\s+(.+)$/u;
 const QUOTE_PATTERN = /^\s*>\s?(.*)$/u;
@@ -223,23 +224,44 @@ function pushText(tokens: EmailTextInline[], value: string) {
 }
 
 function trimLinkPunctuation(value: string) {
-  const match = /[.,;:!?\])}]+$/u.exec(value);
-  if (!match) return { href: value, trailing: "" };
+  let href = value;
+  let trailing = "";
+
+  while (/[.,;:!?]$/u.test(href)) {
+    trailing = `${href.at(-1)}${trailing}`;
+    href = href.slice(0, -1);
+  }
+
+  while (hasUnmatchedClosingDelimiter(href)) {
+    trailing = `${href.at(-1)}${trailing}`;
+    href = href.slice(0, -1);
+  }
+
   return {
-    href: value.slice(0, -match[0].length),
-    trailing: match[0],
+    href,
+    trailing,
   };
 }
 
 function toSafeLink(href: string) {
   if (/%(?:0a|0d)/iu.test(href)) return undefined;
+  if (isPlainEmailAddress(href)) {
+    return {
+      display: href,
+      href: `mailto:${href}`,
+      type: "link",
+    } satisfies EmailTextInline;
+  }
   try {
-    const url = new URL(href);
+    const normalizedHref = href.toLowerCase().startsWith("www.")
+      ? `https://${href}`
+      : href;
+    const url = new URL(normalizedHref);
     if (url.protocol === "http:" || url.protocol === "https:") {
       if (!url.hostname) return undefined;
       return {
         display: url.hostname.replace(/^www\./iu, ""),
-        href,
+        href: normalizedHref,
         type: "link",
       } satisfies EmailTextInline;
     }
@@ -254,6 +276,29 @@ function toSafeLink(href: string) {
   } catch {
     return undefined;
   }
+}
+
+function hasUnmatchedClosingDelimiter(value: string) {
+  const delimiter = value.at(-1);
+  if (delimiter !== ")" && delimiter !== "]" && delimiter !== "}") {
+    return false;
+  }
+  const opening = delimiter === ")" ? "(" : delimiter === "]" ? "[" : "{";
+  return countCharacter(value, delimiter) > countCharacter(value, opening);
+}
+
+function countCharacter(value: string, character: string) {
+  let count = 0;
+  for (const candidate of value) {
+    if (candidate === character) count += 1;
+  }
+  return count;
+}
+
+function isPlainEmailAddress(value: string) {
+  return /^[\w.!#$%&'*+/=?^`{|}~-]+@[\w](?:[\w-]{0,61}[\w])?(?:\.[\w](?:[\w-]{0,61}[\w])?)+$/iu.test(
+    value,
+  );
 }
 
 function decodeMailtoAddress(value: string) {

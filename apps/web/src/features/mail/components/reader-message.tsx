@@ -7,6 +7,7 @@ import type {
   EmailTextInline,
 } from "@rodge-mail/features/mail";
 import { api } from "@rodge-mail/convex/api";
+import { normalizeAttachmentFileName } from "@rodge-mail/convex/attachments/constants";
 import { parseEmailText } from "@rodge-mail/features/mail";
 import { toast } from "@rodge-mail/ui-web/toast";
 
@@ -171,32 +172,54 @@ function MessageAttachments({
       </p>
       <div className="grid gap-2 sm:grid-cols-2">
         {attachments.map((attachment) => (
-          <button
-            className="mail-raised group flex items-center gap-3 rounded-[11px] border p-3 text-left transition hover:border-[var(--mail-brass)]"
-            key={attachment._id}
+          <AttachmentButton
+            attachment={attachment}
             disabled={downloadingId !== undefined}
-            onClick={() => void download(attachment)}
-            title="Download attachment"
-            type="button"
-          >
-            <span className="mail-inset flex size-10 shrink-0 items-center justify-center rounded-[9px] border text-[var(--mail-brass-deep)] dark:text-[var(--mail-brass-bright)]">
-              <FileText className="size-4" />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-xs font-semibold">
-                {attachment.fileName}
-              </span>
-              <span className="mail-label mt-0.5 block font-mono text-[8px] tracking-[0.08em] uppercase">
-                {attachment.contentType} · {formatFileSize(attachment.size)}
-              </span>
-            </span>
-            <Download
-              className={`group-hover:text-foreground size-4 text-[var(--mail-ink-soft)] transition ${downloadingId === attachment._id ? "animate-bounce" : ""}`}
-            />
-          </button>
+            isDownloading={downloadingId === attachment._id}
+            key={attachment._id}
+            onDownload={() => void download(attachment)}
+          />
         ))}
       </div>
     </div>
+  );
+}
+
+function AttachmentButton({
+  attachment,
+  disabled,
+  isDownloading,
+  onDownload,
+}: {
+  attachment: ThreadMessageDetail["attachments"][number];
+  disabled: boolean;
+  isDownloading: boolean;
+  onDownload: () => void;
+}) {
+  const fileName =
+    normalizeAttachmentFileName(attachment.fileName) || "attachment";
+  return (
+    <button
+      aria-label={`Download ${fileName}`}
+      className="mail-raised group flex items-center gap-3 rounded-[11px] border p-3 text-left transition hover:border-[var(--mail-brass)]"
+      disabled={disabled}
+      onClick={onDownload}
+      title={`Download ${fileName}`}
+      type="button"
+    >
+      <span className="mail-inset flex size-10 shrink-0 items-center justify-center rounded-[9px] border text-[var(--mail-brass-deep)] dark:text-[var(--mail-brass-bright)]">
+        <FileText className="size-4" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-xs font-semibold">{fileName}</span>
+        <span className="mail-label mt-0.5 block font-mono text-[8px] tracking-[0.08em] uppercase">
+          {attachment.contentType} · {formatFileSize(attachment.size)}
+        </span>
+      </span>
+      <Download
+        className={`group-hover:text-foreground size-4 text-[var(--mail-ink-soft)] transition ${isDownloading ? "animate-bounce" : ""}`}
+      />
+    </button>
   );
 }
 

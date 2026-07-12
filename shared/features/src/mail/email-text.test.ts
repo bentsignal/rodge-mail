@@ -105,7 +105,65 @@ describe("safe email text content", () => {
       },
     ]);
   });
+});
 
+describe("common address linkification", () => {
+  it("linkifies common bare web and email addresses", () => {
+    expect(
+      parseEmailText(
+        "Open www.example.com/inbox or contact hello+mail@example.co.uk.",
+      ),
+    ).toEqual([
+      {
+        content: [
+          { type: "text", value: "Open " },
+          {
+            display: "example.com",
+            href: "https://www.example.com/inbox",
+            type: "link",
+          },
+          { type: "text", value: " or contact " },
+          {
+            display: "hello+mail@example.co.uk",
+            href: "mailto:hello+mail@example.co.uk",
+            type: "link",
+          },
+          { type: "text", value: "." },
+        ],
+        type: "paragraph",
+      },
+    ]);
+  });
+
+  it("preserves balanced URL delimiters while trimming prose punctuation", () => {
+    expect(
+      parseEmailText(
+        "See https://example.com/wiki/Function_(mathematics), then (https://example.com/docs).",
+      ),
+    ).toEqual([
+      {
+        content: [
+          { type: "text", value: "See " },
+          {
+            display: "example.com",
+            href: "https://example.com/wiki/Function_(mathematics)",
+            type: "link",
+          },
+          { type: "text", value: ", then (" },
+          {
+            display: "example.com",
+            href: "https://example.com/docs",
+            type: "link",
+          },
+          { type: "text", value: ")." },
+        ],
+        type: "paragraph",
+      },
+    ]);
+  });
+});
+
+describe("unsafe email text content", () => {
   it("leaves unsupported and header-injection schemes inert", () => {
     expect(
       parseEmailText(

@@ -60,31 +60,38 @@ export function ThreadMessageBody({
         To: {message.to.map((recipient) => recipient.address).join(", ")}
       </Text>
       <MobileEmailBody messageId={message.id} source={message.body} />
-      {message.attachments.map((attachment) => (
-        <Pressable
-          key={attachment.id}
-          accessibilityLabel={`${attachment.name}, ${attachment.size}`}
-          accessibilityRole="button"
-          className="bg-well border-well-border flex-row items-center gap-3 rounded-xl border px-4 py-3"
-          disabled={downloadingId !== undefined}
-          onPress={() => void download(attachment)}
-        >
-          <Paperclip color={mutedForeground} size={18} />
-          <View className="min-w-0 flex-1">
-            <Text className="text-foreground font-semibold" numberOfLines={1}>
-              {attachment.name}
-            </Text>
-            <Text className="text-muted-foreground text-xs">
-              {attachment.size}
-            </Text>
-          </View>
-          <AttachmentDownloadIcon
-            isDownloading={downloadingId === attachment.id}
-          />
-        </Pressable>
-      ))}
+      {message.attachments.map((attachment) => {
+        const fileName = getAttachmentFileName(attachment.name);
+        return (
+          <Pressable
+            key={attachment.id}
+            accessibilityLabel={`${fileName}, ${attachment.size}`}
+            accessibilityRole="button"
+            className="bg-well border-well-border flex-row items-center gap-3 rounded-xl border px-4 py-3"
+            disabled={downloadingId !== undefined}
+            onPress={() => void download(attachment)}
+          >
+            <Paperclip color={mutedForeground} size={18} />
+            <View className="min-w-0 flex-1">
+              <Text className="text-foreground font-semibold" numberOfLines={1}>
+                {fileName}
+              </Text>
+              <Text className="text-muted-foreground text-xs">
+                {attachment.size}
+              </Text>
+            </View>
+            <AttachmentDownloadIcon
+              isDownloading={downloadingId === attachment.id}
+            />
+          </Pressable>
+        );
+      })}
     </PostalSurface>
   );
+}
+
+function getAttachmentFileName(fileName: string) {
+  return normalizeAttachmentFileName(fileName) || "attachment";
 }
 
 function AttachmentDownloadIcon({ isDownloading }: { isDownloading: boolean }) {

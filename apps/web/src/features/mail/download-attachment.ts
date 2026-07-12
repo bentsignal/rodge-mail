@@ -1,3 +1,5 @@
+import { normalizeAttachmentFileName } from "@rodge-mail/convex/attachments/constants";
+
 export async function downloadAttachmentFile({
   fileName,
   url,
@@ -11,7 +13,7 @@ export async function downloadAttachmentFile({
   }
   const objectUrl = URL.createObjectURL(await response.blob());
   const link = document.createElement("a");
-  link.download = fileName;
+  link.download = normalizeAttachmentFileName(fileName) || "attachment";
   link.href = objectUrl;
   link.rel = "noopener";
   link.hidden = true;
