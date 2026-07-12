@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Warm Paper Assets — Imagegen v2</title>
+    <style>
+      :root {
+        color: #241d15;
+        background: #d8d0c1;
+        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+      }
+
+      * { box-sizing: border-box; }
+      body { margin: 0; padding: 40px; }
+      main { max-width: 1240px; margin: 0 auto; }
+      h1, h2 { font-family: Georgia, serif; font-weight: 500; }
+      h1 { margin: 0; font-size: 38px; }
+      h2 { margin: 42px 0 16px; font-size: 25px; }
+      p { max-width: 760px; color: #5f5549; line-height: 1.6; }
+      .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+      .corner-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      article { overflow: hidden; border: 1px solid rgba(56, 44, 29, .16); border-radius: 16px; background: #f7f2e7; box-shadow: 0 10px 30px rgba(54, 42, 24, .1); }
+      .preview { position: relative; height: 310px; background-size: cover; }
+      .preview::before { content: "Inbox\A\A A quiet surface should disappear behind text.\A Material is felt, not announced."; white-space: pre; position: absolute; inset: 38px; font: 17px/1.65 Georgia, serif; color: #29221b; }
+      .paper-a { background-image: url("final/paper-texture-a.png"); }
+      .paper-b { background-image: url("final/paper-texture-b.png"); }
+      .paper-c { background-image: url("final/paper-texture-c.png"); }
+      .alpha { height: 380px; padding: 20px; background-color: #ede7dc; background-image: linear-gradient(45deg, #ded5c8 25%, transparent 25%), linear-gradient(-45deg, #ded5c8 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ded5c8 75%), linear-gradient(-45deg, transparent 75%, #ded5c8 75%); background-size: 28px 28px; background-position: 0 0, 0 14px, 14px -14px, -14px 0; }
+      .alpha img { width: 100%; height: 100%; object-fit: contain; }
+      .meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border-top: 1px solid rgba(56, 44, 29, .12); }
+      .meta strong { font-size: 14px; }
+      .meta span { color: #786b5d; font-size: 12px; }
+      .pick { border-color: #927026; box-shadow: 0 0 0 2px #c7a857, 0 12px 36px rgba(54, 42, 24, .14); }
+      .badge { padding: 4px 8px; border-radius: 999px; background: #244d3b; color: #fff7e6 !important; font-weight: 700; letter-spacing: .04em; }
+      .dark-note { margin-top: 20px; padding: 18px 20px; border-radius: 14px; background: #1f211d; color: #ddd3c2; }
+
+      @media (max-width: 780px) {
+        body { padding: 24px; }
+        .grid, .corner-grid { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Warm Paper asset candidates</h1>
+      <p>Production-oriented raster treatments derived from concept 05. The selected paper is deliberately quiet; the selected corner is an optional light-mode accent rather than a repeated decoration.</p>
+
+      <h2>Paper surface</h2>
+      <section class="grid">
+        <article><div class="preview paper-a"></div><div class="meta"><strong>Texture A</strong><span>fine tooth</span></div></article>
+        <article><div class="preview paper-b"></div><div class="meta"><strong>Texture B</strong><span>warmer laid stock</span></div></article>
+        <article class="pick"><div class="preview paper-c"></div><div class="meta"><strong>Texture C</strong><span class="badge">selected</span></div></article>
+      </section>
+
+      <h2>Folded corner + stamp</h2>
+      <section class="grid corner-grid">
+        <article class="pick"><div class="alpha"><img src="final/folded-corner-a.png" alt="Folded corner candidate A" /></div><div class="meta"><strong>Corner A</strong><span class="badge">selected</span></div></article>
+        <article><div class="alpha"><img src="final/folded-corner-b.png" alt="Folded corner candidate B" /></div><div class="meta"><strong>Corner B</strong><span>quiet but flat</span></div></article>
+        <article><div class="alpha"><img src="final/folded-corner-c.png" alt="Folded corner candidate C" /></div><div class="meta"><strong>Corner C</strong><span>best curl, too much sheet</span></div></article>
+        <article><div class="alpha"><img src="final/folded-corner-d.png" alt="Folded corner candidate D" /></div><div class="meta"><strong>Corner D</strong><span>stronger depth</span></div></article>
+      </section>
+
+      <p class="dark-note"><strong>Dark mode recommendation:</strong> omit the paper-corner ornament. A light curl pasted onto charcoal undermines the restrained material system; a recolored version loses the physical-paper logic.</p>
+    </main>
+  </body>
+</html>
