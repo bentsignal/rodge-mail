@@ -29,12 +29,12 @@ export function PasskeyManagementButton() {
     <Dialog.Container onOpenChange={changeOpen} open={isOpen}>
       <Dialog.Trigger asChild>
         <button
-          aria-label="Account settings"
+          aria-label="Settings"
           className="flex h-11 w-full items-center justify-center gap-2.5 rounded-lg border border-transparent px-3 text-[var(--mail-chassis-foreground)]/72 transition-colors hover:border-white/10 hover:bg-white/[0.07] hover:text-[var(--mail-chassis-foreground)] xl:justify-start"
           type="button"
         >
           <Settings className="size-4" />
-          <span className="hidden text-xs xl:inline">Account settings</span>
+          <span className="hidden text-xs xl:inline">Settings</span>
         </button>
       </Dialog.Trigger>
       <Dialog.Content className="mail-dialog mail-workspace max-h-[calc(100vh-2rem)] max-w-2xl gap-0 overflow-hidden overflow-y-auto rounded-[18px] border p-0">

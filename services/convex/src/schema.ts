@@ -51,6 +51,7 @@ export default defineSchema(
       .index("by_account_remote", ["accountId", "remoteFolderId"]),
     threads: defineTable(vThread)
       .index("by_owner_latest", ["ownerId", "latestMessageAt"])
+      .index("by_owner_unread", ["ownerId", "unreadCount"])
       .index("by_account_latest", ["accountId", "latestMessageAt"])
       .index("by_account_remote", ["accountId", "remoteThreadId"]),
     messages: defineTable(vMessage)
@@ -77,7 +78,7 @@ export default defineSchema(
       ])
       .searchIndex("search_headers", {
         searchField: "searchText",
-        filterFields: ["ownerId", "accountId", "inInbox"],
+        filterFields: ["ownerId", "accountId", "inInbox", "isRead"],
       }),
     messageContents: defineTable(vMessageContent).index("by_message", [
       "messageId",

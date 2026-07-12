@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { ActivityIndicator, Text, useColorScheme, View } from "react-native";
+import { ActivityIndicator, Text, View } from "react-native";
 import { Host, Switch } from "@expo/ui";
 import { useMutation, useQuery } from "convex/react";
 
 import { api } from "@rodge-mail/convex/api";
 
 import type { NotificationSetupState } from "./notification-setup";
+import { useResolvedMobileColorScheme } from "~/features/theme/mobile-theme";
 import { useColor } from "~/hooks/use-color";
 import { AccountNotificationPreferences } from "./account-notification-preferences";
 import {
@@ -138,17 +139,13 @@ function NotificationToggle({
   onChange: (value: boolean) => void;
   value: boolean;
 }) {
-  const colorScheme = useColorScheme();
+  const colorScheme = useResolvedMobileColorScheme();
   const primary = useColor("primary");
 
   return (
     <View className="border-border gap-1 border-b px-4 py-3 last:border-b-0">
       <Host
-        colorScheme={
-          colorScheme === "dark" || colorScheme === "light"
-            ? colorScheme
-            : undefined
-        }
+        colorScheme={colorScheme}
         matchContents={{ vertical: true }}
         seedColor={primary}
         style={{ width: "100%" }}

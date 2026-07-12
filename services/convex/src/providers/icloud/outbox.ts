@@ -84,7 +84,10 @@ export const setRead = internalAction({
     try {
       const parsed = parseRemoteMessageId(args.remoteMessageId);
       if (!parsed) throw new Error("iCloud message identifier is invalid");
-      const connection = await getConnection(ctx, args);
+      const connection = await getConnection(
+        ctx,
+        getICloudConnectionArgs(args),
+      );
       const client = createImapClient(connection.credential);
       try {
         await client.connect();
@@ -100,7 +103,7 @@ export const setRead = internalAction({
         await ctx.scheduler.runAfter(
           2 ** attempt * 1_000,
           internal.providers.icloud.outbox.setRead,
-          { ...args, attempt: attempt + 1 },
+          getICloudReadRetryArgs(args, attempt + 1),
         );
         return;
       }
@@ -108,6 +111,36 @@ export const setRead = internalAction({
     }
   },
 });
+
+interface ICloudReadUpdateArgs {
+  ownerId: string;
+  accountId: Id<"mailAccounts">;
+  remoteMessageId: string;
+  isRead: boolean;
+  attempt?: number;
+}
+
+export function getICloudConnectionArgs(
+  args: Pick<ICloudReadUpdateArgs, "ownerId" | "accountId">,
+) {
+  return {
+    ownerId: args.ownerId,
+    accountId: args.accountId,
+  };
+}
+
+export function getICloudReadRetryArgs(
+  args: ICloudReadUpdateArgs,
+  attempt: number,
+) {
+  return {
+    ownerId: args.ownerId,
+    accountId: args.accountId,
+    remoteMessageId: args.remoteMessageId,
+    isRead: args.isRead,
+    attempt,
+  };
+}
 
 async function getConnection(
   ctx: ActionCtx,

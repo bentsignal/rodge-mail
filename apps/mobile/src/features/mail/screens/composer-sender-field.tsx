@@ -1,6 +1,10 @@
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
+import { Host, Picker } from "@expo/ui";
 
 import type { MobileMailAccount } from "../lib/convex-mail";
+import { useResolvedMobileColorScheme } from "~/features/theme/mobile-theme";
+import { useColor } from "~/hooks/use-color";
+import { getComposerAccountLabel } from "./composer-presentation";
 
 export function ComposerSenderField({
   accounts,
@@ -13,82 +17,85 @@ export function ComposerSenderField({
   onOpenSettings: () => void;
   selectedAccountId: string | undefined;
 }) {
-  if (accounts.length === 0) {
-    return (
-      <View className="border-border flex-row items-center gap-3 border-b py-2">
-        <Text className="text-muted-foreground w-16 text-base">From</Text>
-        <View className="min-w-0 flex-1 gap-1 py-1">
-          <Text className="text-foreground text-sm font-medium">
-            Connect an account to send mail.
-          </Text>
-          <Pressable
-            accessibilityLabel="Open Settings to connect a sending account"
-            accessibilityRole="button"
-            className="min-h-8 justify-center self-start"
-            hitSlop={8}
-            onPress={onOpenSettings}
-          >
-            <Text className="text-primary text-sm font-semibold">
-              Open Settings
-            </Text>
-          </Pressable>
-        </View>
-      </View>
-    );
+  const firstAccount = accounts[0];
+
+  if (!firstAccount) {
+    return <MissingSender onOpenSettings={onOpenSettings} />;
   }
+
   return (
-    <View className="border-border flex-row items-center gap-3 border-b py-2">
-      <Text className="text-muted-foreground w-16 text-base">From</Text>
-      <ScrollView
-        horizontal
-        contentContainerClassName="gap-2 py-1"
-        keyboardShouldPersistTaps="handled"
-        showsHorizontalScrollIndicator={false}
+    <SenderPicker
+      accounts={accounts}
+      selectedAccountId={selectedAccountId ?? firstAccount.id}
+      onChange={onChange}
+    />
+  );
+}
+
+function SenderPicker({
+  accounts,
+  onChange,
+  selectedAccountId,
+}: {
+  accounts: MobileMailAccount[];
+  onChange: (accountId: string) => void;
+  selectedAccountId: string;
+}) {
+  const colorScheme = useResolvedMobileColorScheme();
+  const primary = useColor("primary");
+
+  return (
+    <View className="border-border min-h-14 flex-row items-center gap-3 border-b py-1">
+      <Text className="text-muted-foreground w-14 text-sm font-medium">
+        From
+      </Text>
+      <Host
+        colorScheme={colorScheme}
+        matchContents={{ vertical: true }}
+        seedColor={primary}
+        style={{ flex: 1 }}
       >
-        {accounts.map((account) => (
-          <SenderButton
-            key={account.id}
-            account={account}
-            onPress={() => onChange(account.id)}
-            selected={account.id === selectedAccountId}
-          />
-        ))}
-      </ScrollView>
+        <Picker
+          appearance="menu"
+          selectedValue={selectedAccountId}
+          testID="composer-sender-picker"
+          onValueChange={onChange}
+        >
+          {accounts.map((account) => (
+            <Picker.Item
+              key={account.id}
+              label={getComposerAccountLabel(account)}
+              value={account.id}
+            />
+          ))}
+        </Picker>
+      </Host>
     </View>
   );
 }
 
-function SenderButton({
-  account,
-  onPress,
-  selected,
-}: {
-  account: MobileMailAccount;
-  onPress: () => void;
-  selected: boolean;
-}) {
+function MissingSender({ onOpenSettings }: { onOpenSettings: () => void }) {
   return (
-    <Pressable
-      accessibilityLabel={`Send from ${account.address}`}
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
-      className={
-        selected
-          ? "bg-forest border-forest-raised min-h-11 justify-center rounded-lg border px-3 py-2"
-          : "bg-well border-well-border min-h-11 justify-center rounded-lg border px-3 py-2"
-      }
-      onPress={onPress}
-    >
-      <Text
-        className={
-          selected
-            ? "text-accent-foreground text-sm font-semibold"
-            : "text-foreground text-sm font-semibold"
-        }
-        numberOfLines={1}
-      >
-        {account.address}
+    <View className="border-border min-h-16 flex-row items-center gap-3 border-b py-2">
+      <Text className="text-muted-foreground w-14 text-sm font-medium">
+        From
       </Text>
-    </Pressable>
+      <View className="min-w-0 flex-1 gap-1">
+        <Text className="text-foreground text-sm font-medium">
+          Connect an account to send mail.
+        </Text>
+        <Pressable
+          accessibilityLabel="Open Settings to connect a sending account"
+          accessibilityRole="button"
+          className="min-h-8 justify-center self-start"
+          hitSlop={8}
+          onPress={onOpenSettings}
+        >
+          <Text className="text-primary text-sm font-semibold">
+            Open Settings
+          </Text>
+        </Pressable>
+      </View>
+    </View>
   );
 }

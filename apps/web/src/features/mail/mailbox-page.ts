@@ -12,43 +12,61 @@ import {
 
 import type { InboxMessage } from "./types";
 import { MAIL_PAGE_SIZE } from "./constants";
+import {
+  getMailboxTransitionPending,
+  useStableMailboxResults,
+} from "./mailbox-page-transition";
 
 export { getIsLoadingInbox, getIsSearchingInbox } from "./mailbox-page-state";
 
 export function useMailboxPage({
   accountId,
+  initialAccountId,
   initialInbox,
+  initialUnreadOnly,
   searchTerm,
+  unreadOnly,
 }: {
   accountId: InboxMessage["accountId"] | undefined;
+  initialAccountId: InboxMessage["accountId"] | undefined;
   initialInbox: InboxMessage[];
+  initialUnreadOnly: boolean;
   searchTerm: string;
+  unreadOnly: boolean;
 }) {
   const isSearching = searchTerm.length > 0;
   const inbox = usePaginatedQuery(
     api.mail.queries.listInbox,
-    isSearching ? "skip" : { accountId },
+    isSearching ? "skip" : { accountId, unreadOnly },
     { initialNumItems: MAIL_PAGE_SIZE },
   );
   const search = usePaginatedQuery(
     api.mail.queries.searchHeaders,
-    isSearching ? { accountId, searchTerm } : "skip",
+    isSearching ? { accountId, searchTerm, unreadOnly } : "skip",
     { initialNumItems: MAIL_PAGE_SIZE },
   );
-  const semantic = useSemanticMailSearch({ accountId, searchTerm });
+  const semantic = useSemanticMailSearch({
+    accountId,
+    searchTerm,
+    unreadOnly,
+  });
   const activePage = isSearching ? search : inbox;
-  const scopeKey = getMailboxScopeKey(accountId, searchTerm);
+  const scopeKey = getMailboxScopeKey(accountId, searchTerm, unreadOnly);
   const useInitialInbox =
     !isSearching &&
-    accountId === undefined &&
+    accountId === initialAccountId &&
+    unreadOnly === initialUnreadOnly &&
     activePage.status === "LoadingFirstPage";
   const cachedPage = useSettledMailboxPage({
     accountId,
     activeResults: activePage.results,
     initialInbox,
+    initialAccountId,
+    initialUnreadOnly,
     isSearching,
     scopeKey,
     status: activePage.status,
+    unreadOnly,
   });
   const fallbackResults = useInitialInbox ? initialInbox : cachedPage.items;
   const lexicalResults = getVisibleResults(
@@ -56,23 +74,37 @@ export function useMailboxPage({
     activePage.results,
     fallbackResults,
   );
-  const results = isSearching
+  const candidateResults = isSearching
     ? mergeSearchResults(
         lexicalResults,
         semantic.results,
         (message) => message._id,
       )
     : lexicalResults;
+  const isPending = getMailboxTransitionPending(
+    activePage.status,
+    isSearching,
+    semantic.isLoading,
+  );
+  const stablePage = useStableMailboxResults({
+    accountId,
+    candidateResults,
+    fallbackIsCached: useInitialInbox || cachedPage.isCached,
+    initialAccountId,
+    initialInbox,
+    initialUnreadOnly,
+    isPending,
+    unreadOnly,
+  });
   return {
     ...activePage,
-    hasCachedPage: useInitialInbox || cachedPage.isCached,
+    hasCachedPage: stablePage.hasStablePage,
     isSemanticSearching: semantic.isLoading,
-    results,
+    results: stablePage.results,
     status: getSmartSearchStatus(
       activePage.status,
       isSearching,
       semantic.isLoading,
-      results.length,
     ),
   };
 }
@@ -81,21 +113,30 @@ function useSettledMailboxPage({
   accountId,
   activeResults,
   initialInbox,
+  initialAccountId,
+  initialUnreadOnly,
   isSearching,
   scopeKey,
   status,
+  unreadOnly,
 }: {
   accountId: InboxMessage["accountId"] | undefined;
   activeResults: InboxMessage[];
   initialInbox: InboxMessage[];
+  initialAccountId: InboxMessage["accountId"] | undefined;
+  initialUnreadOnly: boolean;
   isSearching: boolean;
   scopeKey: string;
   status: string;
+  unreadOnly: boolean;
 }) {
   const [cache, setCache] = useState(
     () =>
       new Map<string, InboxMessage[]>([
-        [getMailboxScopeKey(undefined, ""), initialInbox],
+        [
+          getMailboxScopeKey(initialAccountId, "", initialUnreadOnly),
+          initialInbox,
+        ],
       ]),
   );
 
@@ -115,7 +156,9 @@ function useSettledMailboxPage({
     accountId,
     cache,
     key: scopeKey,
-    unifiedKey: isSearching ? undefined : getMailboxScopeKey(undefined, ""),
+    unifiedKey: isSearching
+      ? undefined
+      : getMailboxScopeKey(undefined, "", unreadOnly),
   });
 }
 
@@ -123,11 +166,8 @@ function getSmartSearchStatus(
   status: string,
   isSearching: boolean,
   semanticIsLoading: boolean,
-  resultCount: number,
 ) {
-  return isSearching && semanticIsLoading && resultCount === 0
-    ? "LoadingFirstPage"
-    : status;
+  return isSearching && semanticIsLoading ? "LoadingFirstPage" : status;
 }
 
 function getVisibleResults(
@@ -141,16 +181,18 @@ function getVisibleResults(
 function useSemanticMailSearch({
   accountId,
   searchTerm,
+  unreadOnly,
 }: {
   accountId: InboxMessage["accountId"] | undefined;
   searchTerm: string;
+  unreadOnly: boolean;
 }) {
   const runSemanticSearch = useAction(api.embedding.search.semanticSearch);
   const [result, setResult] = useState<{
     ids: InboxMessage["_id"][];
     scopeKey: string;
   }>({ ids: [], scopeKey: "" });
-  const scopeKey = getMailboxScopeKey(accountId, searchTerm);
+  const scopeKey = getMailboxScopeKey(accountId, searchTerm, unreadOnly);
 
   // eslint-disable-next-line no-restricted-syntax -- Semantic search is an asynchronous supplement to the live lexical query.
   useEffect(() => {
@@ -176,7 +218,7 @@ function useSemanticMailSearch({
   const messages = useQuery({
     ...convexQuery(
       api.mail.queries.getMessagesByIds,
-      ids.length > 0 ? { messageIds: ids } : "skip",
+      ids.length > 0 ? { messageIds: ids, unreadOnly } : "skip",
     ),
     select: (data) => data,
   });
@@ -189,9 +231,10 @@ function useSemanticMailSearch({
   };
 }
 
-function getMailboxScopeKey(
-  accountId: InboxMessage["accountId"] | undefined,
+export function getMailboxScopeKey(
+  accountId: string | undefined,
   searchTerm: string,
+  unreadOnly: boolean,
 ) {
-  return `${accountId ?? "all"}:${searchTerm}`;
+  return `${accountId ?? "all"}:${unreadOnly ? "unread" : "all"}:${searchTerm}`;
 }

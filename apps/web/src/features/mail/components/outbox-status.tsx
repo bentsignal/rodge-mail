@@ -176,12 +176,14 @@ function OutboxError({
 
 function OutboxSummary({ outboxes }: { outboxes: OutboxItem[] }) {
   const label = getSummaryLabel(outboxes);
+  if (!label) return null;
+
   const hasFailure = outboxes.some((outbox) => outbox.status === "failed");
   return (
     <span
       aria-live="polite"
       className={cn(
-        "bg-muted rounded-full px-2 py-0.5 font-mono text-[8px] tracking-[0.08em] uppercase",
+        "bg-muted text-muted-foreground rounded-full px-2 py-0.5 font-mono text-[8px] tracking-[0.08em] uppercase",
         hasFailure && "bg-destructive/10 text-destructive",
       )}
     >
@@ -234,7 +236,7 @@ function getSummaryLabel(outboxes: OutboxItem[]) {
     (outbox) => outbox.status === "pending",
   ).length;
   if (pending > 0) return `${pending} queued`;
-  return "Sent";
+  return null;
 }
 
 function getStatusLabel(status: OutboxItem["status"]) {

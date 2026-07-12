@@ -138,9 +138,11 @@ function createIdempotencyKey() {
 function useInternalStore({
   initialAccountFilter,
   initialSelection,
+  initialUnreadOnly,
 }: {
   initialAccountFilter: MailAccountFilter;
   initialSelection?: ThreadSelection;
+  initialUnreadOnly: boolean;
 }) {
   const [accountFilter, setAccountFilterState] =
     useState<MailAccountFilter>(initialAccountFilter);
@@ -154,6 +156,7 @@ function useInternalStore({
   const [mobileReaderIsOpen, setMobileReaderIsOpen] = useState(
     initialSelection !== undefined,
   );
+  const [unreadOnly, setUnreadOnlyState] = useState(initialUnreadOnly);
   const composer = useComposerState();
 
   function resetSelection() {
@@ -195,6 +198,11 @@ function useInternalStore({
       }
       resetSelection();
     },
+    setUnreadOnly: (nextUnreadOnly: boolean) => {
+      if (unreadOnly === nextUnreadOnly) return;
+      setUnreadOnlyState(nextUnreadOnly);
+    },
+    unreadOnly,
   };
 }
 

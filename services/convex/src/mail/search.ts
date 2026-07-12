@@ -295,3 +295,11 @@ function removeControlCharacters(value: string) {
     })
     .join("");
 }
+
+export function emptyMessagePage() {
+  return {
+    page: [],
+    isDone: true,
+    continueCursor: "",
+  };
+}

@@ -130,7 +130,7 @@ function AuthActions({
         onClick={recoverAccount}
         type="button"
       >
-        Can’t use your passkey?
+        Sign in with email
       </button>
     </div>
   );

@@ -7,6 +7,10 @@ import type { MailThread } from "@rodge-mail/features/mail";
 import { useColor } from "~/hooks/use-color";
 import { formatMessageTime } from "../lib/mail-format";
 import { useMailStore } from "../store";
+import {
+  getSenderInitials,
+  getThreadRowAccessibilityLabel,
+} from "./thread-row-presentation";
 
 export function ThreadRow({
   thread,
@@ -30,6 +34,7 @@ export function ThreadRow({
 
   return (
     <ReanimatedSwipeable
+      key={thread.id}
       containerStyle={{ marginBottom: -1, marginHorizontal: 14 }}
       enableTrackpadTwoFingerGesture
       friction={1.6}
@@ -88,9 +93,9 @@ function ThreadSummary({
   return (
     <Pressable
       accessibilityHint="Opens this email thread"
-      accessibilityLabel={`${thread.sender.name}, ${thread.subject}`}
+      accessibilityLabel={getThreadRowAccessibilityLabel(thread)}
       accessibilityRole="button"
-      className="border-paper-border min-h-[94px] flex-row gap-3 rounded-xl border bg-transparent px-4 py-3"
+      className={`${thread.isRead ? "bg-paper" : "bg-paper-deep"} border-paper-border min-h-[94px] flex-row gap-3 rounded-xl border px-4 py-3`}
       onPress={onOpen}
       style={({ pressed }) => ({
         elevation: pressed ? 0 : 1,
@@ -101,17 +106,11 @@ function ThreadSummary({
         transform: [{ translateY: pressed ? 1 : 0 }],
       })}
     >
-      <View className="bg-paper-deep border-paper-border relative size-10 items-center justify-center rounded-lg border">
+      <UnreadRail isRead={thread.isRead} />
+      <View className="bg-paper-deep border-paper-border size-10 items-center justify-center rounded-lg border">
         <Text className="text-foreground text-xs font-semibold">
           {getSenderInitials(thread.sender.name)}
         </Text>
-        <View
-          className={
-            thread.isRead
-              ? "bg-muted absolute -right-1 -bottom-1 size-2.5 rounded-full"
-              : "bg-brass absolute -right-1 -bottom-1 size-2.5 rounded-full"
-          }
-        />
       </View>
       <View className="min-w-0 flex-1 gap-1">
         <View className="flex-row items-center gap-2">
@@ -148,6 +147,16 @@ function ThreadSummary({
       </View>
       <ThreadPinAction thread={thread} onPin={onPin} />
     </Pressable>
+  );
+}
+
+function UnreadRail({ isRead }: { isRead: boolean }) {
+  return (
+    <View
+      accessibilityElementsHidden
+      className={`h-16 w-1 rounded-full ${isRead ? "bg-transparent" : "bg-brass"}`}
+      importantForAccessibility="no-hide-descendants"
+    />
   );
 }
 
@@ -203,15 +212,6 @@ function ThreadPinAction({
       />
     </Pressable>
   );
-}
-
-function getSenderInitials(sender: string) {
-  return sender
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part.slice(0, 1).toUpperCase())
-    .join("");
 }
 
 function ReadIcon({ isRead, color }: { isRead: boolean; color: string }) {

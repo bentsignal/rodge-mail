@@ -22,7 +22,6 @@ import {
 } from "../../notifications/mobile-notifications";
 import { NotificationPreferences } from "../../notifications/notification-preferences";
 import { MobileAppearanceSettings } from "../../theme/mobile-appearance-settings";
-import { MobileOutboxStatus } from "../components/mobile-outbox-status";
 import { useMailStore } from "../store";
 import { AccountConnections } from "./account-connections";
 import { SettingsSection } from "./settings-section";
@@ -78,7 +77,6 @@ export function MailSettingsScreen() {
       <SettingsSection title="Notifications">
         <NotificationPreferences />
       </SettingsSection>
-      <MobileOutboxStatus />
       <SettingsSection title="Account">
         <SignOutButton />
         <AddPasskeyButton />

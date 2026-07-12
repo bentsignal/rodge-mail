@@ -16,6 +16,7 @@ import { PasskeyManagementButton } from "~/features/auth/components/passkey-mana
 import { useLiveMail } from "../live-data";
 import { useMailStore } from "../store";
 import { useMailboxNavigation } from "../use-mailbox-navigation";
+import { getAccountButtonLabel } from "./account-rail-presentation";
 import { AddAccountButton } from "./provider-connection-buttons";
 
 const ACCOUNT_ICONS = {
@@ -189,7 +190,7 @@ function AccountButton({
 }) {
   return (
     <button
-      aria-label={label}
+      aria-label={getAccountButtonLabel(label, count)}
       aria-current={active ? "page" : undefined}
       className={cn(
         "group relative flex h-11 w-full items-center justify-center gap-3 rounded-lg px-3 text-sm transition-colors xl:justify-start",
@@ -232,8 +233,9 @@ function UnreadCount({
 
   return (
     <span
+      aria-hidden="true"
       className={cn(
-        "ml-auto hidden min-w-5 rounded-full px-1.5 py-0.5 font-mono text-[9px] tabular-nums xl:block",
+        "absolute top-1.5 right-1.5 flex min-w-4 items-center justify-center rounded-full px-1 py-0.5 font-mono text-[8px] tabular-nums xl:static xl:ml-auto xl:min-w-5 xl:px-1.5 xl:text-[9px]",
         active
           ? "bg-[var(--mail-brass)] text-[#251c0e]"
           : "bg-white/10 text-[var(--mail-chassis-foreground)]",

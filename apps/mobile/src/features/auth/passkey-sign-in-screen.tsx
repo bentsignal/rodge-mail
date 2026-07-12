@@ -1,5 +1,4 @@
 import {
-  ActivityIndicator,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -10,13 +9,13 @@ import {
 } from "react-native";
 
 import { PostalSurface } from "~/features/theme/postal-surface";
-import { useColor } from "~/hooks/use-color";
 import roundedIcon from "../../../assets/rounded-icon.png";
 import {
   RecoveryEmailForm,
   RegistrationDetailsForm,
   VerificationCodeForm,
 } from "./account-registration-form";
+import { NativeAuthButton } from "./native-auth-button";
 import { usePasskeyAuth } from "./use-passkey-auth";
 
 export function PasskeySignInScreen() {
@@ -28,10 +27,10 @@ export function PasskeySignInScreen() {
       className="bg-background flex-1"
     >
       <ScrollView
-        contentContainerClassName="flex-grow justify-center px-6 py-12"
+        contentContainerClassName="flex-grow justify-center px-6 py-10"
         keyboardShouldPersistTaps="handled"
       >
-        <View className="mx-auto w-full max-w-md gap-7">
+        <View className="mx-auto w-full max-w-sm gap-8">
           <BrandHeader />
           <AuthPanel auth={auth} />
         </View>
@@ -45,25 +44,23 @@ function BrandHeader() {
     <View className="items-center gap-3">
       <Image
         accessibilityLabel="Rodge Mail"
-        className="border-brass/60 size-24 rounded-[26px] border"
+        className="border-brass/60 size-20 rounded-[22px] border"
         source={roundedIcon}
       />
-      <View className="items-center gap-1">
-        <Text className="text-foreground text-3xl font-bold tracking-tight">
-          Rodge Mail
-        </Text>
-        <Text className="text-muted-foreground text-sm">
-          Your mail, gathered in one place.
-        </Text>
-      </View>
+      <Text className="text-foreground text-[28px] font-bold tracking-tight">
+        Rodge Mail
+      </Text>
     </View>
   );
 }
 
 function AuthPanel({ auth }: { auth: ReturnType<typeof usePasskeyAuth> }) {
+  if (auth.view === "sign-in") {
+    return <SignInActions auth={auth} />;
+  }
+
   return (
-    <PostalSurface className="gap-5 px-5 py-6">
-      <View className="bg-brass-soft/55 mx-auto h-1 w-16 rounded-full" />
+    <PostalSurface className="gap-5 px-5 py-5">
       <AuthContent auth={auth} />
       <AuthNavigation auth={auth} />
       <AuthMessage message={auth.message} />
@@ -104,7 +101,7 @@ function AuthContent({ auth }: { auth: ReturnType<typeof usePasskeyAuth> }) {
   if (auth.view === "recover") {
     return (
       <>
-        <AuthTitle>Restore your sign-in</AuthTitle>
+        <AuthTitle>Sign in with email</AuthTitle>
         <RecoveryEmailForm
           email={auth.email}
           isLoading={auth.operation === "request-code"}
@@ -123,17 +120,12 @@ function AuthContent({ auth }: { auth: ReturnType<typeof usePasskeyAuth> }) {
           email={auth.email}
           isLoading={auth.operation === "verify"}
           onCodeChange={auth.setCode}
-          onSubmit={() => void auth.recoverPasskey()}
+          onSubmit={() => void auth.signInWithRecoveryCode()}
         />
       </>
     );
   }
-  return (
-    <SignInButton
-      isLoading={auth.operation === "sign-in"}
-      onPress={() => void auth.signIn()}
-    />
-  );
+  return null;
 }
 
 function AuthTitle({ children }: { children: string }) {
@@ -167,16 +159,33 @@ function AuthNavigation({ auth }: { auth: ReturnType<typeof usePasskeyAuth> }) {
       />
     );
   }
+  return null;
+}
+
+function SignInActions({ auth }: { auth: ReturnType<typeof usePasskeyAuth> }) {
+  const isLoading = auth.operation === "sign-in";
+
   return (
-    <View className="gap-1">
-      <NavigationButton
-        label="Create an account"
+    <View className="gap-3">
+      <NativeAuthButton
+        disabled={isLoading}
+        label="Sign in"
+        onPress={() => void auth.signIn()}
+        variant="filled"
+      />
+      <NativeAuthButton
+        disabled={isLoading}
+        label="Create account"
         onPress={() => auth.show("details")}
+        variant="outlined"
       />
-      <NavigationButton
-        label="Can’t use your passkey?"
+      <NativeAuthButton
+        disabled={isLoading}
+        label="Sign in with email"
         onPress={() => auth.show("recover")}
+        variant="text"
       />
+      <AuthMessage message={auth.message} />
     </View>
   );
 }
@@ -199,32 +208,6 @@ function NavigationButton({
       </Text>
     </Pressable>
   );
-}
-
-function SignInButton({
-  isLoading,
-  onPress,
-}: {
-  isLoading: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      className="bg-primary border-brass-soft h-14 flex-row items-center justify-center gap-3 rounded-2xl border disabled:opacity-50"
-      disabled={isLoading}
-      onPress={onPress}
-    >
-      <SignInIcon isLoading={isLoading} />
-      <Text className="text-primary-foreground font-semibold">Sign in</Text>
-    </Pressable>
-  );
-}
-
-function SignInIcon({ isLoading }: { isLoading: boolean }) {
-  const primaryForeground = useColor("primary-foreground");
-  if (isLoading) return <ActivityIndicator color={primaryForeground} />;
-  return null;
 }
 
 function AuthMessage({ message }: { message: string | undefined }) {

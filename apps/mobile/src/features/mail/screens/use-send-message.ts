@@ -20,6 +20,7 @@ import {
   draftCanSend,
   getComposerErrorMessage,
 } from "./composer-helpers";
+import { getEnqueueConfirmation } from "./composer-presentation";
 import { getDraftAttachmentIds } from "./use-native-attachments";
 
 type Draft = ComposerDraft<NativeComposerAttachment>;
@@ -173,13 +174,8 @@ function showEnqueueConfirmation(status: "pending" | "sending" | "sent") {
   void Haptics.notificationAsync(
     Haptics.NotificationFeedbackType.Success,
   ).catch(() => undefined);
-  const title =
-    status === "sent"
-      ? "Message already delivered"
-      : status === "sending"
-        ? "Delivery already in progress"
-        : "Message queued";
-  Alert.alert(title, "Track its live delivery status in Settings.");
+  const confirmation = getEnqueueConfirmation(status);
+  Alert.alert(confirmation.title, confirmation.message);
 }
 
 function hasRecipientErrors(result: ReturnType<typeof parseRecipientFields>) {

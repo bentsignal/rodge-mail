@@ -119,7 +119,7 @@ export function RecoveryEmailForm({
   return (
     <View className="gap-3">
       <Text className="text-muted-foreground text-sm leading-5">
-        We’ll email a short code before this device creates a new passkey.
+        We’ll email a short code so you can sign in on this device.
       </Text>
       <TextInput
         accessibilityLabel="Email address"
@@ -137,7 +137,7 @@ export function RecoveryEmailForm({
       <ActionButton
         disabled={isLoading || !email.trim()}
         isLoading={isLoading}
-        label="Send recovery code"
+        label="Send sign-in code"
         onPress={onSubmit}
       />
     </View>

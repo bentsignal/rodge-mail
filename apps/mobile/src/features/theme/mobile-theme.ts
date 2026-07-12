@@ -1,8 +1,16 @@
+import { useSyncExternalStore } from "react";
+import { Appearance } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import { Uniwind } from "uniwind";
 
+import type { MobileThemeMode } from "./mobile-appearance";
+import {
+  getMobileThemeUpdateOrder,
+  resolveMobileColorScheme,
+} from "./mobile-appearance";
+
 export type MobilePalette = "postal";
-export type MobileThemeMode = "dark" | "light" | "system";
+export type { MobileThemeMode } from "./mobile-appearance";
 
 const PALETTE_KEY = "rodge-mail.palette";
 const MODE_KEY = "rodge-mail.theme-mode";
@@ -62,12 +70,44 @@ const PALETTES = {
   },
 } satisfies Record<MobilePalette, Record<"dark" | "light", ThemeVariables>>;
 
-const currentAppearance = mobileAppearance("postal", "system");
+let currentAppearance = mobileAppearance("postal", "system");
+const appearanceListeners = new Set<() => void>();
+const systemAppearanceListeners = new Set<() => void>();
+let currentSystemColorScheme =
+  getConcreteColorScheme(Appearance.getColorScheme()) ?? "light";
 let modePersistence = Promise.resolve();
 let palettePersistence = Promise.resolve();
 
+Appearance.addChangeListener(({ colorScheme }) => {
+  if (currentAppearance.mode !== "system") return;
+  const nextColorScheme = getConcreteColorScheme(colorScheme);
+  if (!nextColorScheme) return;
+  if (nextColorScheme === currentSystemColorScheme) return;
+  currentSystemColorScheme = nextColorScheme;
+  applyResolvedSystemAppearance(nextColorScheme);
+  for (const listener of systemAppearanceListeners) listener();
+});
+
 export function getMobileAppearance() {
   return { ...currentAppearance };
+}
+
+export function useMobileAppearance() {
+  return useSyncExternalStore(
+    subscribeToMobileAppearance,
+    getMobileAppearanceSnapshot,
+    getMobileAppearanceSnapshot,
+  );
+}
+
+export function useResolvedMobileColorScheme() {
+  const { mode } = useMobileAppearance();
+  const systemColorScheme = useSyncExternalStore(
+    subscribeToSystemAppearance,
+    getSystemAppearanceSnapshot,
+    getSystemAppearanceSnapshot,
+  );
+  return resolveMobileColorScheme(mode, systemColorScheme);
 }
 
 export async function loadMobileAppearance() {
@@ -79,34 +119,89 @@ export async function loadMobileAppearance() {
     paletteResult.status === "fulfilled" ? paletteResult.value : null;
   const storedMode =
     modeResult.status === "fulfilled" ? modeResult.value : null;
-  currentAppearance.palette = isPalette(storedPalette)
-    ? storedPalette
-    : "postal";
-  currentAppearance.mode = isMode(storedMode) ? storedMode : "system";
+  currentAppearance = mobileAppearance(
+    isPalette(storedPalette) ? storedPalette : "postal",
+    isMode(storedMode) ? storedMode : "system",
+  );
   applyMobileAppearance();
+  notifyAppearanceListeners();
 }
 
 export async function setMobilePalette(palette: MobilePalette) {
-  currentAppearance.palette = palette;
+  currentAppearance = { ...currentAppearance, palette };
   applyMobileAppearance();
+  notifyAppearanceListeners();
   palettePersistence = persistAfter(palettePersistence, PALETTE_KEY, palette);
   await palettePersistence;
 }
 
 export async function setMobileThemeMode(mode: MobileThemeMode) {
-  currentAppearance.mode = mode;
-  Uniwind.setTheme(mode);
+  currentAppearance = { ...currentAppearance, mode };
+  applyMobileAppearance();
+  notifyAppearanceListeners();
   modePersistence = persistAfter(modePersistence, MODE_KEY, mode);
   await modePersistence;
 }
 
 function applyMobileAppearance() {
-  Uniwind.updateCSSVariables(
-    "light",
-    PALETTES[currentAppearance.palette].light,
+  const resolvedColorScheme = resolveMobileColorScheme(
+    currentAppearance.mode,
+    currentSystemColorScheme,
   );
-  Uniwind.updateCSSVariables("dark", PALETTES[currentAppearance.palette].dark);
-  Uniwind.setTheme(currentAppearance.mode);
+  if (currentAppearance.mode === "system") {
+    applyResolvedSystemAppearance(resolvedColorScheme);
+    return;
+  }
+  Uniwind.setTheme(resolvedColorScheme);
+  applyMobilePaletteVariables(resolvedColorScheme);
+}
+
+function applyResolvedSystemAppearance(colorScheme: "dark" | "light") {
+  Uniwind.setTheme(colorScheme);
+  Appearance.setColorScheme("unspecified");
+  applyMobilePaletteVariables(colorScheme);
+}
+
+function applyMobilePaletteVariables(activeScheme: "dark" | "light") {
+  const [inactiveScheme, resolvedActiveScheme] = getMobileThemeUpdateOrder(
+    activeScheme,
+    activeScheme,
+  );
+  Uniwind.updateCSSVariables(
+    inactiveScheme,
+    PALETTES[currentAppearance.palette][inactiveScheme],
+  );
+  Uniwind.updateCSSVariables(
+    resolvedActiveScheme,
+    PALETTES[currentAppearance.palette][resolvedActiveScheme],
+  );
+}
+
+function getMobileAppearanceSnapshot() {
+  return currentAppearance;
+}
+
+function subscribeToMobileAppearance(listener: () => void) {
+  appearanceListeners.add(listener);
+  return () => appearanceListeners.delete(listener);
+}
+
+function getSystemAppearanceSnapshot() {
+  return currentSystemColorScheme;
+}
+
+function subscribeToSystemAppearance(listener: () => void) {
+  systemAppearanceListeners.add(listener);
+  return () => systemAppearanceListeners.delete(listener);
+}
+
+function notifyAppearanceListeners() {
+  for (const listener of appearanceListeners) listener();
+}
+
+function getConcreteColorScheme(colorScheme: string | null | undefined) {
+  if (colorScheme === "dark" || colorScheme === "light") return colorScheme;
+  return undefined;
 }
 
 interface ThemeInput {

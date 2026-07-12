@@ -13,6 +13,7 @@ import {
   readPendingDesktopAuth,
   usesDesktopBrowserAuth,
 } from "./lib/desktop-handoff";
+import { completeEmailCodeSignIn } from "./lib/email-code-sign-in";
 import { getSafeAppRedirect } from "./lib/safe-redirect";
 
 interface RegistrationCodeRequest {
@@ -22,6 +23,7 @@ interface RegistrationCodeRequest {
 interface RecoveryVerification {
   code: string;
   email: string;
+  redirectUri?: string;
 }
 
 interface RegistrationVerification {
@@ -167,7 +169,7 @@ function createRecoveryActions(
     return run({
       fn: () => sendRecoveryCode(email),
       onError: (error) => {
-        toast.error(getErrorMessage(error, "Could not send the code"));
+        toast.error(getErrorMessage(error, "Could not send the sign-in code"));
       },
     });
   }
@@ -177,9 +179,9 @@ function createRecoveryActions(
     const code = details.code.trim();
     if (isAuthenticated || !email || !code) return Promise.resolve(false);
     return run({
-      fn: () => completeRecovery(email, code),
+      fn: () => completeRecovery(email, code, details.redirectUri),
       onError: (error) => {
-        toast.error(getErrorMessage(error, "Could not recover your account"));
+        toast.error(getErrorMessage(error, "Could not sign in with email"));
       },
     });
   }
@@ -268,27 +270,20 @@ async function sendRecoveryCode(email: string) {
   return true;
 }
 
-async function completeRecovery(email: string, code: string) {
-  const verification = await authClient.$fetch<{ recoveryToken: string }>(
-    "/passkey-recovery/verify",
-    { body: { code, email }, method: "POST" },
+async function completeRecovery(
+  email: string,
+  code: string,
+  redirectUri: string | undefined,
+) {
+  const redirect = await completeEmailCodeSignIn(
+    () =>
+      authClient.$fetch<{ success: boolean }>("/passkey-recovery/verify", {
+        body: { code, email },
+        method: "POST",
+      }),
+    redirectUri,
   );
-  if (verification.error) {
-    throw new Error(
-      verification.error.message ?? "The recovery code is invalid or expired",
-    );
-  }
-  if (!verification.data.recoveryToken) {
-    throw new Error("The recovery code is invalid or expired");
-  }
-
-  const passkey = await authClient.passkey.addPasskey({
-    context: verification.data.recoveryToken,
-  });
-  if (passkey.error) {
-    throw new Error(passkey.error.message ?? "Could not create a passkey");
-  }
-  toast.success("Passkey restored. Sign in to continue.");
+  window.location.replace(redirect);
   return true;
 }
 

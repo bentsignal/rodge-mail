@@ -7,11 +7,13 @@ import {
 } from "@tanstack/react-router";
 import { convexQuery } from "@convex-dev/react-query";
 
+import type { Id } from "@rodge-mail/convex/model";
 import { api } from "@rodge-mail/convex/api";
 
 import type { MailAccountFilter, ThreadSelection } from "~/features/mail/store";
 import { MailShell } from "~/features/mail/components/mail-shell";
 import { MAIL_PAGE_SIZE } from "~/features/mail/constants";
+import { normalizeMailRouteSearch } from "~/features/mail/mail-route-search";
 import { useMailStore } from "~/features/mail/store";
 
 export const Route = createFileRoute("/_authed")({
@@ -25,24 +27,28 @@ export const Route = createFileRoute("/_authed")({
     }
     return { isAuthenticated: true };
   },
-  loader: async ({ context }) => {
-    const [, initialInbox] = await Promise.all([
+  loaderDeps: ({ search }) => ({
+    accountId: toAccountId(search.mailbox),
+    unreadOnly: search.unread === true,
+  }),
+  loader: async ({ context, deps }) => {
+    const [, , initialInbox] = await Promise.all([
       context.queryClient.ensureQueryData(
         convexQuery(api.accounts.queries.list, {}),
       ),
+      context.queryClient.ensureQueryData(
+        convexQuery(api.mail.queries.getUnreadCounts, {}),
+      ),
       context.convexHttpClient.query(api.mail.queries.listInbox, {
+        accountId: deps.accountId,
         paginationOpts: { cursor: null, numItems: MAIL_PAGE_SIZE },
+        unreadOnly: deps.unreadOnly,
       }),
     ]);
     return { initialInbox: initialInbox.page };
   },
   staleTime: 30_000,
-  validateSearch: (search: Record<string, unknown>): { mailbox?: string } => {
-    if (typeof search.mailbox === "string") {
-      return { mailbox: search.mailbox };
-    }
-    return {};
-  },
+  validateSearch: normalizeMailRouteSearch,
 });
 
 function MailLayout() {
@@ -50,6 +56,9 @@ function MailLayout() {
     select: (data) => data.initialInbox,
   });
   const mailbox = Route.useSearch({ select: (search) => search.mailbox });
+  const unreadOnly = Route.useSearch({
+    select: (search) => search.unread === true,
+  });
   const initialAccountFilter = toAccountFilter(mailbox);
   const initialSelection = useRouterState({
     select: (state) => {
@@ -67,8 +76,12 @@ function MailLayout() {
       initialAccountFilter={initialAccountFilter}
       initialInbox={initialInbox}
       initialSelection={initialSelection}
+      initialUnreadOnly={unreadOnly}
     >
-      <MailboxRouteSync accountFilter={initialAccountFilter} />
+      <MailboxRouteSync
+        accountFilter={initialAccountFilter}
+        unreadOnly={unreadOnly}
+      />
       <Outlet />
     </MailShell>
   );
@@ -76,16 +89,26 @@ function MailLayout() {
 
 function MailboxRouteSync({
   accountFilter,
+  unreadOnly,
 }: {
   accountFilter: MailAccountFilter;
+  unreadOnly: boolean;
 }) {
   const setAccountFilter = useMailStore((store) => store.setAccountFilter);
+  const setUnreadOnly = useMailStore((store) => store.setUnreadOnly);
 
   useLayoutEffect(
     () => setAccountFilter(accountFilter),
     [accountFilter, setAccountFilter],
   );
+  useLayoutEffect(() => setUnreadOnly(unreadOnly), [setUnreadOnly, unreadOnly]);
   return null;
+}
+
+function toAccountId(mailbox: string | undefined) {
+  if (!mailbox) return undefined;
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- Convex validates the route-derived ID at the query boundary.
+  return mailbox as Id<"mailAccounts">;
 }
 
 function toAccountFilter(mailbox: string | undefined) {

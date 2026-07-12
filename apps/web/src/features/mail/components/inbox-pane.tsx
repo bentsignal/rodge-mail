@@ -1,8 +1,10 @@
-import { PenLine, Search, X } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
+import { MailOpen, PenLine, Search, X } from "lucide-react";
 
 import { cn } from "@rodge-mail/std/cn";
 
 import { useLiveMail } from "../live-data";
+import { withUnreadSearch } from "../mail-route-search";
 import { useMailStore } from "../store";
 import { useMailboxNavigation } from "../use-mailbox-navigation";
 import { ThreadList } from "./thread-list";
@@ -43,19 +45,54 @@ function InboxHeader() {
             />
           </div>
         </div>
-        <button
-          aria-label="New message"
-          className="mail-brass-button flex size-10 items-center justify-center rounded-[10px] transition-colors md:hidden"
-          onClick={openComposer}
-          type="button"
-        >
-          <PenLine className="size-4" />
-        </button>
+        <div className="flex items-center gap-2">
+          <UnreadFilterButton />
+          <button
+            aria-label="New message"
+            className="mail-brass-button flex size-10 items-center justify-center rounded-[10px] transition-colors md:hidden"
+            onClick={openComposer}
+            type="button"
+          >
+            <PenLine className="size-4" />
+          </button>
+        </div>
       </div>
       <SearchInput />
       <MobileAccountFilters />
       <SearchResultsLabel />
     </header>
+  );
+}
+
+function UnreadFilterButton() {
+  const navigate = useNavigate();
+  const setUnreadOnly = useMailStore((store) => store.setUnreadOnly);
+  const unreadOnly = useMailStore((store) => store.unreadOnly);
+
+  function toggleUnread() {
+    const nextUnreadOnly = !unreadOnly;
+    setUnreadOnly(nextUnreadOnly);
+    void navigate({
+      to: "/",
+      search: (previous) => withUnreadSearch(previous, nextUnreadOnly),
+    });
+  }
+
+  return (
+    <button
+      aria-pressed={unreadOnly}
+      className={cn(
+        "flex h-9 items-center gap-2 rounded-[9px] border px-3 font-mono text-[10px] font-semibold tracking-[0.04em] transition-[background-color,border-color,color,box-shadow] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--mail-brass-deep)]",
+        unreadOnly
+          ? "border-[var(--mail-brass-deep)] bg-[var(--mail-brass)] text-[#21190a] shadow-[var(--mail-shadow-raised)]"
+          : "mail-raised hover:text-foreground border-[var(--mail-seam)] text-[var(--mail-ink-soft)]",
+      )}
+      onClick={toggleUnread}
+      type="button"
+    >
+      <MailOpen aria-hidden="true" className="size-3.5" strokeWidth={1.8} />
+      Unread
+    </button>
   );
 }
 
@@ -87,7 +124,7 @@ function InboxCountValue({
   return count;
 }
 
-function SearchInput() {
+export function SearchInput() {
   const searchQuery = useMailStore((store) => store.searchQuery);
   const setSearchQuery = useMailStore((store) => store.setSearchQuery);
 
@@ -96,10 +133,13 @@ function SearchInput() {
       <Search className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[var(--mail-ink-soft)]" />
       <input
         aria-label="Search mail"
+        autoComplete="off"
         className="mail-field h-11 w-full rounded-lg border pr-11 pl-10 text-sm transition outline-none"
+        inputMode="search"
         onChange={(event) => setSearchQuery(event.target.value)}
         placeholder="Search mail"
-        type="search"
+        role="searchbox"
+        type="text"
         value={searchQuery}
       />
       <ClearSearchButton query={searchQuery} />
@@ -107,7 +147,7 @@ function SearchInput() {
   );
 }
 
-function ClearSearchButton({ query }: { query: string }) {
+export function ClearSearchButton({ query }: { query: string }) {
   const setSearchQuery = useMailStore((store) => store.setSearchQuery);
   if (!query) return null;
 

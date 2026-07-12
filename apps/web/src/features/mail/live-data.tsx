@@ -9,6 +9,7 @@ import { api } from "@rodge-mail/convex/api";
 import { getReplyAddress } from "@rodge-mail/features/mail";
 import { toast } from "@rodge-mail/ui-web/toast";
 
+import type { LiveMailContextValue } from "./live-data-types";
 import type { MailAccountFilter } from "./store";
 import type {
   InboxMessage,
@@ -18,11 +19,12 @@ import type {
 } from "./types";
 import { env } from "~/env";
 import { MAIL_PAGE_SIZE } from "./constants";
+import { useAccountsQuery, useUnreadCountQuery } from "./live-data-query-hooks";
 import {
   getErrorMessage,
-  getLoadedUnreadCounts,
   sortInboxMessages,
   toAccountView,
+  toUnreadCountRecord,
 } from "./live-data-utils";
 import {
   getIsLoadingInbox,
@@ -30,33 +32,9 @@ import {
   useMailboxPage,
 } from "./mailbox-page";
 import { useMailStore } from "./store";
+import { optimisticallySetThreadRead } from "./unread-optimistic";
 import { useSyncAll } from "./use-sync-all";
-
-interface LiveMailContextValue {
-  accounts: MailAccountView[];
-  canLoadMore: boolean;
-  canSeedDemo: boolean;
-  inboxMessages: InboxMessage[];
-  isLoadingAccounts: boolean;
-  isLoadingInbox: boolean;
-  isLoadingMore: boolean;
-  isSearchingInbox: boolean;
-  isLoadingThread: boolean;
-  isSeedingDemo: boolean;
-  isSyncingAccounts: boolean;
-  loadMore: () => void;
-  markMessageRead: (message: InboxMessage) => void;
-  removeFromRodge: (message: Pick<InboxMessage, "threadId">) => Promise<void>;
-  replyToSelectedThread: () => void;
-  seedDemoMail: () => Promise<void>;
-  syncAllAccounts: () => Promise<void>;
-  selectedMessageId: InboxMessage["_id"] | undefined;
-  selectedThreadId: InboxMessage["threadId"] | undefined;
-  selectedThread: MailThreadDetail | undefined;
-  togglePinned: (message: InboxMessage) => Promise<void>;
-  toggleRead: (message: InboxMessage) => Promise<void>;
-  unreadCounts: Record<string, number>;
-}
+import { useUnreadSelectionSync } from "./use-unread-selection-sync";
 
 const LiveMailContext = createContext<LiveMailContextValue | undefined>(
   undefined,
@@ -64,12 +42,20 @@ const LiveMailContext = createContext<LiveMailContextValue | undefined>(
 
 export function LiveMailProvider({
   children,
+  initialAccountFilter,
   initialInbox,
+  initialUnreadOnly,
 }: {
   children: React.ReactNode;
+  initialAccountFilter: MailAccountFilter;
   initialInbox: InboxMessage[];
+  initialUnreadOnly: boolean;
 }) {
-  const value = useLiveMailValue(initialInbox);
+  const value = useLiveMailValue({
+    initialAccountFilter,
+    initialInbox,
+    initialUnreadOnly,
+  });
   return (
     <LiveMailContext.Provider value={value}>
       {children}
@@ -85,7 +71,15 @@ export function useLiveMail() {
   return context;
 }
 
-function useLiveMailValue(initialInbox: InboxMessage[]) {
+function useLiveMailValue({
+  initialAccountFilter,
+  initialInbox,
+  initialUnreadOnly,
+}: {
+  initialAccountFilter: MailAccountFilter;
+  initialInbox: InboxMessage[];
+  initialUnreadOnly: boolean;
+}) {
   const accountFilter = useMailStore((store) => store.accountFilter);
   const debouncedSearchQuery = useMailStore(
     (store) => store.debouncedSearchQuery,
@@ -93,6 +87,7 @@ function useLiveMailValue(initialInbox: InboxMessage[]) {
   const searchQuery = useMailStore((store) => store.searchQuery);
   const selectedMessageId = useMailStore((store) => store.selectedMessageId);
   const selectedThreadId = useMailStore((store) => store.selectedThreadId);
+  const unreadOnly = useMailStore((store) => store.unreadOnly);
   const setInitialSelection = useMailStore(
     (store) => store.setInitialSelection,
   );
@@ -103,6 +98,9 @@ function useLiveMailValue(initialInbox: InboxMessage[]) {
     selectedMessageId,
     selectedThreadId,
     initialInbox,
+    initialAccountFilter,
+    initialUnreadOnly,
+    unreadOnly,
   });
   const firstMessage = queryState.inboxMessages[0];
   // eslint-disable-next-line no-restricted-syntax -- The live query's first result initializes stable local selection once per view.
@@ -113,6 +111,14 @@ function useLiveMailValue(initialInbox: InboxMessage[]) {
       threadId: firstMessage.threadId,
     });
   }, [firstMessage, setInitialSelection]);
+  useUnreadSelectionSync({
+    inboxMessages: queryState.inboxMessages,
+    isLoadingInbox: queryState.isLoadingInbox,
+    isLoadingThread: queryState.isLoadingThread,
+    selectedThread: queryState.selectedThread,
+    selectedThreadId,
+    unreadOnly,
+  });
   const actions = useLiveMailActions(
     queryState.accounts,
     queryState.selectedThread,
@@ -121,7 +127,6 @@ function useLiveMailValue(initialInbox: InboxMessage[]) {
   return {
     ...actions,
     ...queryState,
-    unreadCounts: getLoadedUnreadCounts(queryState.inboxMessages),
   } satisfies LiveMailContextValue;
 }
 
@@ -132,6 +137,9 @@ function useLiveMailQueries({
   selectedMessageId,
   selectedThreadId,
   initialInbox,
+  initialAccountFilter,
+  initialUnreadOnly,
+  unreadOnly,
 }: {
   accountFilter: MailAccountFilter;
   debouncedSearchQuery: string;
@@ -139,19 +147,28 @@ function useLiveMailQueries({
   selectedMessageId: InboxMessage["_id"] | undefined;
   selectedThreadId: InboxMessage["threadId"] | undefined;
   initialInbox: InboxMessage[];
+  initialAccountFilter: MailAccountFilter;
+  initialUnreadOnly: boolean;
+  unreadOnly: boolean;
 }) {
   const accountId = accountFilter === "all" ? undefined : accountFilter;
   const accountQuery = useAccountsQuery();
+  const unreadCountQuery = useUnreadCountQuery();
   const activePage = useMailboxPage({
     accountId,
+    initialAccountId:
+      initialAccountFilter === "all" ? undefined : initialAccountFilter,
     initialInbox,
+    initialUnreadOnly,
     searchTerm: debouncedSearchQuery,
+    unreadOnly,
   });
   const inboxMessages = sortInboxMessages(activePage.results);
   const effectiveThreadId = selectedThreadId ?? inboxMessages[0]?.threadId;
   const threadQuery = useThreadQuery(effectiveThreadId);
   throwQueryError(accountQuery.error);
   throwQueryError(threadQuery.error);
+  throwQueryError(unreadCountQuery.error);
 
   return {
     accounts: (accountQuery.data ?? []).map(toAccountView),
@@ -176,18 +193,14 @@ function useLiveMailQueries({
     selectedMessageId: selectedMessageId ?? inboxMessages[0]?._id,
     selectedThreadId: effectiveThreadId,
     selectedThread: threadQuery.data,
+    unreadCounts: unreadCountQuery.data
+      ? toUnreadCountRecord(unreadCountQuery.data)
+      : {},
   };
 }
 
 function canSeedDemoMail(accounts: MailAccountDocument[] | undefined) {
   return env.VITE_NODE_ENV === "development" && accounts?.length === 0;
-}
-
-function useAccountsQuery() {
-  return useQuery({
-    ...convexQuery(api.accounts.queries.list, {}),
-    select: (accounts) => accounts,
-  });
 }
 
 function useThreadQuery(threadId: InboxMessage["threadId"] | undefined) {
@@ -208,7 +221,9 @@ function useLiveMailActions(
   const clearSelection = useMailStore((store) => store.clearSelection);
   const openReply = useMailStore((store) => store.openReply);
   const setThreadPinned = useMutation(api.mail.mutations.setThreadPinned);
-  const setThreadRead = useMutation(api.mail.mutations.setThreadRead);
+  const setThreadRead = useMutation(
+    api.mail.mutations.setThreadRead,
+  ).withOptimisticUpdate(optimisticallySetThreadRead);
   const removeThreadFromRodge = useMutation(
     api.mail.mutations.removeThreadFromRodge,
   );

@@ -1,6 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
 
 import type { MailAccountFilter } from "./store";
+import { withMailboxSearch } from "./mail-route-search";
 import { useMailStore } from "./store";
 
 export function useMailboxNavigation() {
@@ -11,9 +12,7 @@ export function useMailboxNavigation() {
     setAccountFilter(accountFilter);
     void navigate({
       to: "/",
-      search: {
-        mailbox: accountFilter === "all" ? undefined : accountFilter,
-      },
+      search: (previous) => withMailboxSearch(previous, accountFilter),
     });
   };
 }

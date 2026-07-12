@@ -54,7 +54,7 @@ describe("sendRegistrationEmail", () => {
     ).rejects.toThrow("Resend rejected the verification email (403)");
   });
 
-  it("labels recovery codes and explains unsolicited requests", async () => {
+  it("labels sign-in codes and explains unsolicited requests", async () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValue(new Response(null, { status: 202 }));
@@ -73,8 +73,8 @@ describe("sendRegistrationEmail", () => {
         body: JSON.stringify({
           from: "Rodge Mail <auth@example.com>",
           to: ["person@example.com"],
-          subject: "Recover your Rodge Mail account",
-          text: "Your Rodge Mail recovery code is 654321. It expires in 5 minutes. If you did not request this, you can ignore this email.",
+          subject: "Your Rodge Mail sign-in code",
+          text: "Your Rodge Mail sign-in code is 654321. It expires in 5 minutes. If you did not request this, you can ignore this email.",
         }),
       }),
     );

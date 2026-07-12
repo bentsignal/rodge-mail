@@ -10,6 +10,7 @@ import { ThreadRow } from "./thread-row";
 
 export function ThreadList() {
   const searchQuery = useMailStore((store) => store.searchQuery);
+  const unreadOnly = useMailStore((store) => store.unreadOnly);
   const {
     canLoadMore,
     canSeedDemo,
@@ -35,6 +36,7 @@ export function ThreadList() {
         isSearch={searchQuery.trim().length > 0}
         isSeedingDemo={isSeedingDemo}
         seedDemoMail={seedDemoMail}
+        unreadOnly={unreadOnly}
       />
     );
   }
@@ -72,28 +74,56 @@ function VirtualizedThreadList({
 
   return (
     <div className="min-h-0 flex-1" ref={containerRef}>
-      <LegendList
-        aria-busy={isLoadingMore || isSearching}
-        aria-label="Messages"
-        className="mail-scrollbar"
-        data={messages}
-        keyExtractor={getMessageKey}
-        maintainVisibleContentPosition={true}
-        onEndReached={loadOlderMessages}
-        onEndReachedThreshold={1.5}
-        recycleItems={true}
-        renderItem={renderThreadRow}
-        role="feed"
-        style={{ height: containerHeight }}
-        ListFooterComponent={
-          <ThreadListFooter
-            canLoadMore={canLoadMore}
-            isLoadingMore={isLoadingMore}
-            isSearching={isSearching}
-          />
-        }
+      <MeasuredThreadList
+        canLoadMore={canLoadMore}
+        containerHeight={containerHeight}
+        isLoadingMore={isLoadingMore}
+        isSearching={isSearching}
+        loadOlderMessages={loadOlderMessages}
+        messages={messages}
       />
     </div>
+  );
+}
+
+function MeasuredThreadList({
+  canLoadMore,
+  containerHeight,
+  isLoadingMore,
+  isSearching,
+  loadOlderMessages,
+  messages,
+}: {
+  canLoadMore: boolean;
+  containerHeight: number;
+  isLoadingMore: boolean;
+  isSearching: boolean;
+  loadOlderMessages: () => void;
+  messages: InboxMessage[];
+}) {
+  if (containerHeight <= 0) return null;
+  return (
+    <LegendList
+      aria-busy={isLoadingMore || isSearching}
+      aria-label="Messages"
+      className="mail-scrollbar"
+      data={messages}
+      keyExtractor={getMessageKey}
+      maintainVisibleContentPosition={true}
+      onEndReached={loadOlderMessages}
+      onEndReachedThreshold={1.5}
+      recycleItems={true}
+      renderItem={renderThreadRow}
+      role="feed"
+      style={{ height: containerHeight }}
+      ListFooterComponent={
+        <ThreadListFooter
+          canLoadMore={canLoadMore}
+          isLoadingMore={isLoadingMore}
+          isSearching={isSearching}
+        />
+      }
+    />
   );
 }
 
@@ -146,11 +176,13 @@ function EmptyThreadList({
   isSearch,
   isSeedingDemo,
   seedDemoMail,
+  unreadOnly,
 }: {
   canSeedDemo: boolean;
   isSearch: boolean;
   isSeedingDemo: boolean;
   seedDemoMail: () => Promise<void>;
+  unreadOnly: boolean;
 }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-8 text-center">
@@ -159,7 +191,7 @@ function EmptyThreadList({
       </span>
       <p className="font-serif text-lg font-semibold">No messages</p>
       <p className="mail-label mt-1 max-w-xs text-sm leading-6">
-        {getEmptyDescription(isSearch, canSeedDemo)}
+        {getEmptyDescription(isSearch, canSeedDemo, unreadOnly)}
       </p>
       <DevelopmentSeedButton
         canSeedDemo={canSeedDemo}
@@ -203,8 +235,13 @@ function SeedButtonLabel({ isSeeding }: { isSeeding: boolean }) {
   return "Load development mail";
 }
 
-function getEmptyDescription(isSearch: boolean, canSeedDemo: boolean) {
+function getEmptyDescription(
+  isSearch: boolean,
+  canSeedDemo: boolean,
+  unreadOnly: boolean,
+) {
   if (isSearch) return "Try a sender, subject, or phrase from the message.";
+  if (unreadOnly) return "Everything in this mailbox has been read.";
   if (canSeedDemo) {
     return "This development mailbox is empty. Add the safe demo set to exercise the live Convex path.";
   }

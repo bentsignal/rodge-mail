@@ -73,6 +73,8 @@ import type * as mail_replies from "../mail/replies.js";
 import type * as mail_search from "../mail/search.js";
 import type * as mail_threadState from "../mail/threadState.js";
 import type * as mail_types from "../mail/types.js";
+import type * as mail_unread from "../mail/unread.js";
+import type * as mail_unreadCounts from "../mail/unreadCounts.js";
 import type * as mail_validators from "../mail/validators.js";
 import type * as notifications_actions from "../notifications/actions.js";
 import type * as notifications_delivery from "../notifications/delivery.js";
@@ -189,6 +191,8 @@ declare const fullApi: ApiFromModules<{
   "mail/search": typeof mail_search;
   "mail/threadState": typeof mail_threadState;
   "mail/types": typeof mail_types;
+  "mail/unread": typeof mail_unread;
+  "mail/unreadCounts": typeof mail_unreadCounts;
   "mail/validators": typeof mail_validators;
   "notifications/actions": typeof notifications_actions;
   "notifications/delivery": typeof notifications_delivery;

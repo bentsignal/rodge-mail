@@ -12,12 +12,29 @@ import {
   toMessageListItem,
   toThreadListItem,
 } from "./helpers";
-import { matchesMailSearch, parseMailSearch } from "./search";
+import { emptyMessagePage, matchesMailSearch, parseMailSearch } from "./search";
+import { matchesUnreadScope } from "./unread";
+import { getUnreadCountSummary } from "./unreadCounts";
+
+export const getUnreadCounts = authedQuery({
+  args: {},
+  handler: async (ctx) => {
+    const threads = await ctx.db
+      .query("threads")
+      .withIndex("by_owner_unread", (q) =>
+        q.eq("ownerId", ctx.ownerId).gt("unreadCount", 0),
+      )
+      .filter((q) => q.neq(q.field("inInbox"), false))
+      .collect();
+    return getUnreadCountSummary(threads);
+  },
+});
 
 export const listInbox = authedQuery({
   args: {
     accountId: v.optional(v.id("mailAccounts")),
     paginationOpts: paginationOptsValidator,
+    unreadOnly: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const { accountId, paginationOpts } = args;
@@ -29,7 +46,14 @@ export const listInbox = authedQuery({
           .query("threads")
           .withIndex("by_account_latest", (q) => q.eq("accountId", accountId))
           .order("desc")
-          .filter((q) => q.neq(q.field("inInbox"), false))
+          .filter((q) =>
+            args.unreadOnly
+              ? q.and(
+                  q.neq(q.field("inInbox"), false),
+                  q.gt(q.field("unreadCount"), 0),
+                )
+              : q.neq(q.field("inInbox"), false),
+          )
           .paginate(paginationOpts),
       );
     }
@@ -40,7 +64,14 @@ export const listInbox = authedQuery({
         .query("threads")
         .withIndex("by_owner_latest", (q) => q.eq("ownerId", ctx.ownerId))
         .order("desc")
-        .filter((q) => q.neq(q.field("inInbox"), false))
+        .filter((q) =>
+          args.unreadOnly
+            ? q.and(
+                q.neq(q.field("inInbox"), false),
+                q.gt(q.field("unreadCount"), 0),
+              )
+            : q.neq(q.field("inInbox"), false),
+        )
         .paginate(paginationOpts),
     );
   },
@@ -98,7 +129,10 @@ export const getMessage = authedQuery({
 });
 
 export const getMessagesByIds = authedQuery({
-  args: { messageIds: v.array(v.id("messages")) },
+  args: {
+    messageIds: v.array(v.id("messages")),
+    unreadOnly: v.optional(v.boolean()),
+  },
   handler: async (ctx, args) => {
     const messageIds = args.messageIds.slice(0, 50);
     const messages = await Promise.all(
@@ -108,7 +142,9 @@ export const getMessagesByIds = authedQuery({
       messages
         .filter(
           (message): message is Doc<"messages"> =>
-            message?.ownerId === ctx.ownerId && message.inInbox,
+            message?.ownerId === ctx.ownerId &&
+            message.inInbox &&
+            matchesUnreadScope(args.unreadOnly, message),
         )
         .map(async (message) => await toMessageListItem(ctx, message)),
     );
@@ -145,6 +181,7 @@ export const searchHeaders = authedQuery({
     accountId: v.optional(v.id("mailAccounts")),
     searchTerm: v.string(),
     paginationOpts: paginationOptsValidator,
+    unreadOnly: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     if (args.accountId) {
@@ -168,7 +205,10 @@ export const searchHeaders = authedQuery({
               .search("searchText", searchPlan.lexicalQuery)
               .eq("ownerId", ctx.ownerId)
               .eq("inInbox", true);
-            return accountId ? byOwner.eq("accountId", accountId) : byOwner;
+            const byAccount = accountId
+              ? byOwner.eq("accountId", accountId)
+              : byOwner;
+            return args.unreadOnly ? byAccount.eq("isRead", false) : byAccount;
           })
           .paginate(args.paginationOpts)
       : accountId
@@ -193,6 +233,11 @@ export const searchHeaders = authedQuery({
               return range;
             })
             .order("desc")
+            .filter((q) =>
+              args.unreadOnly
+                ? q.eq(q.field("isRead"), false)
+                : q.eq(q.field("inInbox"), true),
+            )
             .paginate(args.paginationOpts)
         : await ctx.db
             .query("messages")
@@ -215,6 +260,11 @@ export const searchHeaders = authedQuery({
               return range;
             })
             .order("desc")
+            .filter((q) =>
+              args.unreadOnly
+                ? q.eq(q.field("isRead"), false)
+                : q.eq(q.field("inInbox"), true),
+            )
             .paginate(args.paginationOpts);
 
     const filtered = {
@@ -257,13 +307,5 @@ async function enrichThreadPage<T extends { page: Doc<"threads">[] }>(
       (item): item is NonNullable<typeof item> =>
         item !== null && (!pinnedOnly || item.isPinned),
     ),
-  };
-}
-
-function emptyMessagePage() {
-  return {
-    page: [],
-    isDone: true,
-    continueCursor: "",
   };
 }

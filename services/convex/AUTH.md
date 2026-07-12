@@ -30,14 +30,12 @@ users who already have a passkey. Users with no passkeys can request another
 registration code to resume interrupted onboarding. Passkey sign-in remains
 usernameless and selects the account from the credential.
 
-The separate **Can’t use your passkey?** flow is the deliberate recovery path.
-It sends a five-minute, three-attempt code only for an existing account, without
-revealing whether an address exists. A valid code verifies ownership of that
-address and becomes a single-use, hashed five-minute recovery grant that may
-register exactly one new passkey for that existing user. It does not create an
-authenticated session; after saving the replacement passkey, the user signs in
-normally with that passkey. Both recovery endpoints are rate limited to three
-requests per minute.
+The separate **Sign in with email** flow sends a five-minute, three-attempt code
+only for an existing account, without revealing whether an address exists. A
+valid code verifies ownership of that address, atomically consumes the hashed
+code, and creates a normal authenticated session. It neither replaces nor adds
+a passkey. Users can add another passkey later from Settings. Both email sign-in
+endpoints are rate limited to three requests per minute.
 
 Desktop browser authentication uses a five-minute, PKCE-bound handoff stored in
 Better Auth's verification table. The system-browser URL contains a random

@@ -8,6 +8,7 @@ import { QuickLink } from "~/components/quick-link";
 import { formatInboxDate, getInitials } from "../format";
 import { useLiveMail } from "../live-data";
 import { useMailStore } from "../store";
+import { getUnreadThreadRowClass } from "../thread-row-presentation";
 
 export function ThreadRow({
   message,
@@ -25,6 +26,7 @@ export function ThreadRow({
   } = useLiveMail();
   const account = accounts.find((item) => item._id === message.accountId);
   const accountFilter = useMailStore((store) => store.accountFilter);
+  const unreadOnly = useMailStore((store) => store.unreadOnly);
   const isSelected = selectedThreadId === message.threadId;
   const senderName = getSenderName(message);
   const pinLabel = message.isPinned ? "Unpin message" : "Pin message";
@@ -36,6 +38,7 @@ export function ThreadRow({
         aria-setsize={-1}
         className={cn(
           "mail-thread-row group relative overflow-hidden border-b border-[var(--mail-seam)] bg-[var(--mail-paper)] transition-[background-color,border-color,box-shadow] duration-150",
+          getUnreadThreadRowClass(message.isRead, isSelected),
           isSelected
             ? "z-[1] border-y border-[var(--mail-border-strong)] bg-[var(--mail-selected)] shadow-[var(--warm-shadow-raised)]"
             : "hover:bg-[var(--mail-row-hover)]",
@@ -50,6 +53,7 @@ export function ThreadRow({
             preload="intent"
             search={{
               mailbox: accountFilter === "all" ? undefined : accountFilter,
+              unread: unreadOnly ? true : undefined,
             }}
             to="/messages/$messageId"
           >
@@ -135,8 +139,8 @@ function ThreadRowMenu({
 
 function ThreadMetadata({ message }: { message: InboxMessage }) {
   return (
-    <div className="mt-1.5 flex h-3 items-center gap-2">
-      <UnreadDot isRead={message.isRead} />
+    <div className="mt-1.5 flex min-h-4 items-center gap-2">
+      <UnreadMarker isRead={message.isRead} />
       <PinnedMarker isPinned={message.isPinned} />
       <AttachmentMarker hasAttachments={message.hasAttachments} />
     </div>
@@ -153,9 +157,16 @@ function PinnedMarker({ isPinned }: { isPinned: boolean }) {
   );
 }
 
-function UnreadDot({ isRead }: { isRead: boolean }) {
+function UnreadMarker({ isRead }: { isRead: boolean }) {
   if (isRead) return null;
-  return <span className="size-1.5 rounded-full bg-[var(--mail-highlight)]" />;
+  return (
+    <span
+      aria-label="Unread message"
+      className="flex h-4 items-center rounded-[4px] border border-[var(--mail-brass-deep)] bg-[color-mix(in_oklab,var(--mail-brass)_14%,transparent)] px-1.5 font-mono text-[8px] font-bold tracking-[0.08em] text-[var(--mail-brass-deep)] uppercase"
+    >
+      <span aria-hidden="true">Unread</span>
+    </span>
+  );
 }
 
 function AttachmentMarker({ hasAttachments }: { hasAttachments: boolean }) {

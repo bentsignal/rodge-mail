@@ -15,7 +15,7 @@ export function ComposerAttachmentList({
   if (attachments.length === 0) return null;
 
   return (
-    <View className="mb-4 gap-2">
+    <View className="border-border mt-4 gap-2 border-t pt-4">
       {attachments.map((attachment) => (
         <View
           key={attachment.id}

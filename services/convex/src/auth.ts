@@ -4,7 +4,6 @@ import { expo } from "@better-auth/expo";
 import { passkey } from "@better-auth/passkey";
 import { createClient } from "@convex-dev/better-auth";
 import { convex, crossDomain } from "@convex-dev/better-auth/plugins";
-import { APIError, getSessionFromCtx } from "better-auth/api";
 import { betterAuth } from "better-auth/minimal";
 import { emailOTP } from "better-auth/plugins";
 
@@ -14,11 +13,7 @@ import { primaryAuthConfig } from "./auth.config";
 import authSchema from "./betterAuth/schema";
 import { env } from "./convex.env";
 import { desktopAuth } from "./desktopAuth";
-import {
-  consumePasskeyRecoveryGrant,
-  passkeyRecovery,
-  resolvePasskeyRecoveryUser,
-} from "./passkeyRecovery";
+import { passkeyRecovery } from "./passkeyRecovery";
 import { sendRegistrationEmail } from "./registrationEmail";
 import { urls } from "./urls";
 
@@ -119,65 +114,12 @@ export function createAuthOptions(ctx: GenericCtx<DataModel>) {
           residentKey: "required",
           userVerification: "required",
         },
-        registration: {
-          requireSession: false,
-          resolveUser: async ({ context, ctx: authCtx }) => {
-            const recovery = await resolvePasskeyRecoveryUser(
-              authCtx.context.internalAdapter,
-              context,
-            );
-            if (!recovery) throw invalidPasskeyRecoveryError();
-            const user = await authCtx.context.internalAdapter.findUserById(
-              recovery.userId,
-            );
-            if (!user?.emailVerified) throw invalidPasskeyRecoveryError();
-            return {
-              displayName: user.name,
-              id: user.id,
-              name: user.email,
-            };
-          },
-          afterVerification: async ({ context, ctx: authCtx, user }) => {
-            if (context) {
-              const recovery = await consumePasskeyRecoveryGrant(
-                authCtx.context.internalAdapter,
-                context,
-              );
-              if (!recovery || recovery.userId !== user.id) {
-                throw invalidPasskeyRecoveryError();
-              }
-              return { userId: user.id };
-            }
-
-            const session = await getSessionFromCtx(authCtx);
-            const freshAge = authCtx.context.sessionConfig.freshAge;
-            const sessionAge = session
-              ? Date.now() - new Date(session.session.createdAt).getTime()
-              : Number.POSITIVE_INFINITY;
-            if (
-              !session ||
-              session.user.id !== user.id ||
-              (freshAge !== 0 && sessionAge >= freshAge * 1000)
-            ) {
-              throw new APIError("UNAUTHORIZED", {
-                message: "Sign in again before adding a passkey",
-              });
-            }
-            return { userId: user.id };
-          },
-        },
       }),
       expo(),
       crossDomain({ siteUrl: urls.web }),
       convex({ authConfig: primaryAuthConfig }),
     ],
   } satisfies BetterAuthOptions;
-}
-
-function invalidPasskeyRecoveryError() {
-  return new APIError("BAD_REQUEST", {
-    message: "The recovery request is invalid or expired",
-  });
 }
 
 export function createAuth(ctx: GenericCtx<DataModel>) {

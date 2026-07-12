@@ -1,12 +1,5 @@
 import { useState } from "react";
-import {
-  Alert,
-  Keyboard,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { Alert, ScrollView, TextInput, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
 import type { ComposerDraft, RecipientFields } from "@rodge-mail/features/mail";
@@ -22,6 +15,7 @@ import { useColor } from "~/hooks/use-color";
 import { useMailStore } from "../store";
 import { ComposerAttachButton } from "./composer-attach-button";
 import { ComposerAttachmentList } from "./composer-attachment-list";
+import { ComposerField, ComposerSectionLabel } from "./composer-field";
 import {
   canSendFromAccount,
   createComposerDraft,
@@ -87,7 +81,6 @@ export function ComposerScreen({
         canSend={canSend}
         variant={variant}
         onCancel={router.back}
-        onDismissKeyboard={Keyboard.dismiss}
         onSend={() => void send()}
       />
       <ComposerBody
@@ -150,8 +143,8 @@ function ComposerBody({
     >
       <ScrollView
         className="flex-1"
-        contentContainerClassName="gap-3 px-4 py-3"
-        contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
+        contentContainerClassName="gap-4 px-4 pt-3"
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 32 }}
         automaticallyAdjustKeyboardInsets
         contentInsetAdjustmentBehavior="automatic"
         keyboardDismissMode="interactive"
@@ -196,43 +189,41 @@ function ComposerFieldsSurface({
   selectedAccountId: string | undefined;
 }) {
   return (
-    <PostalSurface className="overflow-hidden rounded-xl px-4">
-      <ComposerSenderField
-        accounts={accounts}
-        onChange={onSenderChange}
-        onOpenSettings={onOpenSettings}
-        selectedAccountId={selectedAccountId}
-      />
-      <ComposerField
-        autoCapitalize="none"
-        defaultValue={draft.to}
-        keyboardType="email-address"
-        label="To"
-        error={recipientErrors.to}
-        onChangeText={(value) => onChange("to", value)}
-      />
-      <ComposerField
-        autoCapitalize="none"
-        defaultValue={draft.cc}
-        keyboardType="email-address"
-        label="CC"
-        error={recipientErrors.cc}
-        onChangeText={(value) => onChange("cc", value)}
-      />
-      <ComposerField
-        autoCapitalize="none"
-        defaultValue={draft.bcc}
-        keyboardType="email-address"
-        label="BCC"
-        error={recipientErrors.bcc}
-        onChangeText={(value) => onChange("bcc", value)}
-      />
-      <ComposerField
-        defaultValue={draft.subject}
-        label="Subject"
-        onChangeText={(value) => onChange("subject", value)}
-      />
-    </PostalSurface>
+    <View className="gap-2">
+      <ComposerSectionLabel>Recipients</ComposerSectionLabel>
+      <PostalSurface className="overflow-hidden rounded-xl px-4">
+        <ComposerSenderField
+          accounts={accounts}
+          onChange={onSenderChange}
+          onOpenSettings={onOpenSettings}
+          selectedAccountId={selectedAccountId}
+        />
+        <ComposerField
+          autoCapitalize="none"
+          defaultValue={draft.to}
+          keyboardType="email-address"
+          label="To"
+          error={recipientErrors.to}
+          onChangeText={(value) => onChange("to", value)}
+        />
+        <ComposerField
+          autoCapitalize="none"
+          defaultValue={draft.cc}
+          keyboardType="email-address"
+          label="CC"
+          error={recipientErrors.cc}
+          onChangeText={(value) => onChange("cc", value)}
+        />
+        <ComposerField
+          autoCapitalize="none"
+          defaultValue={draft.bcc}
+          keyboardType="email-address"
+          label="BCC"
+          error={recipientErrors.bcc}
+          onChangeText={(value) => onChange("bcc", value)}
+        />
+      </PostalSurface>
+    </View>
   );
 }
 
@@ -251,60 +242,34 @@ function ComposerMessageSurface({
   const mutedForeground = useColor("muted-foreground");
   const primary = useColor("primary");
   return (
-    <PostalSurface className="min-h-40 flex-1 rounded-xl p-4">
-      <TextInput
-        accessibilityLabel="Message body"
-        autoFocus={autoFocus}
-        className="text-foreground min-h-36 flex-1 text-base leading-6"
-        defaultValue={draft.body}
-        multiline
-        placeholder="Write a message"
-        placeholderTextColor={mutedForeground}
-        selectionColor={primary}
-        style={{ color: foreground }}
-        textAlignVertical="top"
-        onChangeText={(value) => onChange("body", value)}
-      />
-      <ComposerAttachmentList
-        attachments={draft.attachments}
-        onRemove={onRemoveAttachment}
-      />
-    </PostalSurface>
-  );
-}
-
-function ComposerField({
-  error,
-  label,
-  style,
-  ...props
-}: {
-  error?: string;
-  label: string;
-} & React.ComponentProps<typeof TextInput>) {
-  const foreground = useColor("foreground");
-  const mutedForeground = useColor("muted-foreground");
-  const primary = useColor("primary");
-
-  return (
-    <View className="border-border border-b py-2">
-      <View className="flex-row items-center gap-3">
-        <Text className="text-muted-foreground w-16 text-base">{label}</Text>
-        <TextInput
-          accessibilityLabel={label}
-          className="text-foreground min-h-10 min-w-0 flex-1 text-base"
-          placeholderTextColor={mutedForeground}
-          selectionColor={primary}
-          style={[{ color: foreground }, style]}
-          {...props}
+    <View className="min-h-80 flex-1 gap-2">
+      <ComposerSectionLabel>Message</ComposerSectionLabel>
+      <PostalSurface className="min-h-72 flex-1 overflow-hidden rounded-xl px-4">
+        <ComposerField
+          defaultValue={draft.subject}
+          label="Subject"
+          onChangeText={(value) => onChange("subject", value)}
         />
-      </View>
-      <ComposerFieldError error={error} />
+        <View className="min-h-56 flex-1 py-4">
+          <TextInput
+            accessibilityLabel="Message body"
+            autoFocus={autoFocus}
+            className="text-foreground min-h-48 flex-1 text-base leading-6"
+            defaultValue={draft.body}
+            multiline
+            placeholder="Write your message…"
+            placeholderTextColor={mutedForeground}
+            selectionColor={primary}
+            style={{ color: foreground }}
+            textAlignVertical="top"
+            onChangeText={(value) => onChange("body", value)}
+          />
+          <ComposerAttachmentList
+            attachments={draft.attachments}
+            onRemove={onRemoveAttachment}
+          />
+        </View>
+      </PostalSurface>
     </View>
   );
-}
-
-function ComposerFieldError({ error }: { error: string | undefined }) {
-  if (!error) return null;
-  return <Text className="text-destructive ml-19 pb-1 text-xs">{error}</Text>;
 }

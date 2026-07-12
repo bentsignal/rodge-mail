@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearch } from "@tanstack/react-router";
 
 import { useAuthStore } from "../store";
 import {
@@ -56,9 +57,9 @@ function RecoveryEmailStep({
 
   return (
     <div>
-      <StepHeading step="Account recovery" title="Restore your sign-in" />
+      <StepHeading step="Email sign-in" title="Sign in with email" />
       <p className="mail-label mt-2 text-sm leading-6">
-        We’ll email a short code before this device creates a new passkey.
+        We’ll email a short code so you can sign in on this device.
       </p>
       <form
         className="mt-6 space-y-4"
@@ -77,7 +78,7 @@ function RecoveryEmailStep({
         <PrimaryButton
           disabled={isLoading || !email.trim()}
           isLoading={isLoading}
-          label="Send recovery code"
+          label="Send sign-in code"
         />
       </form>
       <BackButton label="Back to sign in" onClick={onCancel} />
@@ -97,18 +98,21 @@ function RecoveryCodeStep({
   const [code, setCode] = useState("");
   const finishRecovery = useAuthStore((store) => store.finishRecovery);
   const isLoading = useAuthStore((store) => store.isLoading);
+  const redirectUri = useSearch({
+    from: "/login",
+    select: (search) => search.redirect_uri,
+  });
 
   async function handleSubmit() {
-    const wasRecovered = await finishRecovery({ code, email });
+    const wasRecovered = await finishRecovery({ code, email, redirectUri });
     if (wasRecovered) onComplete();
   }
 
   return (
     <div>
-      <StepHeading step="Account recovery" title="Check your email" />
+      <StepHeading step="Email sign-in" title="Check your email" />
       <p className="mail-label mt-2 text-sm leading-6">
-        Enter the six-digit code sent to {email}. Your device will then save a
-        new passkey.
+        Enter the six-digit code sent to {email}.
       </p>
       <form
         className="mt-6 space-y-4"
@@ -127,7 +131,7 @@ function RecoveryCodeStep({
         <PrimaryButton
           disabled={isLoading || code.trim().length !== 6}
           isLoading={isLoading}
-          label="Create a new passkey"
+          label="Verify and continue"
         />
       </form>
       <BackButton label="Use a different email" onClick={onBack} />

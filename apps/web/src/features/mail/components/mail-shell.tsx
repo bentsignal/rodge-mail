@@ -14,19 +14,26 @@ export function MailShell({
   initialInbox,
   initialAccountFilter,
   initialSelection,
+  initialUnreadOnly,
 }: {
   children?: React.ReactNode;
   initialInbox: InboxMessage[];
   initialAccountFilter: MailAccountFilter;
   initialSelection?: ThreadSelection;
+  initialUnreadOnly: boolean;
 }) {
   return (
     <MailStore
       initialAccountFilter={initialAccountFilter}
       initialSelection={initialSelection}
+      initialUnreadOnly={initialUnreadOnly}
     >
       <MailDataErrorBoundary>
-        <LiveMailProvider initialInbox={initialInbox}>
+        <LiveMailProvider
+          initialAccountFilter={initialAccountFilter}
+          initialInbox={initialInbox}
+          initialUnreadOnly={initialUnreadOnly}
+        >
           {children}
           <MailWorkspace />
         </LiveMailProvider>

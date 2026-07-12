@@ -1,8 +1,7 @@
-import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
 import type { MobileThemeMode } from "./mobile-theme";
-import { getMobileAppearance, setMobileThemeMode } from "./mobile-theme";
+import { setMobileThemeMode, useMobileAppearance } from "./mobile-theme";
 
 const MOBILE_MODES = [
   { label: "System", mode: "system" },
@@ -11,10 +10,9 @@ const MOBILE_MODES = [
 ] as const satisfies readonly { label: string; mode: MobileThemeMode }[];
 
 export function MobileAppearanceSettings() {
-  const [appearance, setAppearance] = useState(getMobileAppearance);
+  const appearance = useMobileAppearance();
 
   function selectMode(mode: MobileThemeMode) {
-    setAppearance((current) => ({ ...current, mode }));
     void setMobileThemeMode(mode).catch(() => undefined);
   }
 

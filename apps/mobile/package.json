@@ -23,6 +23,7 @@
     "@expo-google-fonts/roboto": "^0.4.2",
     "@expo/metro-runtime": "~56.0.16",
     "@expo/ui": "~56.0.21",
+    "@legendapp/list": "catalog:",
     "@rodge-mail/config": "workspace:*",
     "@rodge-mail/convex": "workspace:*",
     "@rodge-mail/features": "workspace:*",

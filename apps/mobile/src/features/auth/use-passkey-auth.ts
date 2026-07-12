@@ -2,6 +2,7 @@ import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
 
 import { authClient } from "./client";
+import { completeRecoverySignIn } from "./passkey-recovery-client";
 
 type AuthOperation = "request-code" | "sign-in" | "verify";
 type AuthView = "details" | "recover" | "recover-code" | "sign-in" | "verify";
@@ -67,7 +68,6 @@ export function usePasskeyAuth() {
     message,
     name,
     operation,
-    recoverPasskey: recovery.recoverPasskey,
     requestCode: registration.requestCode,
     requestRecoveryCode: recovery.requestRecoveryCode,
     setCode,
@@ -75,6 +75,7 @@ export function usePasskeyAuth() {
     setName,
     show,
     signIn,
+    signInWithRecoveryCode: recovery.signInWithRecoveryCode,
     verifyAndCreatePasskey: registration.verifyAndCreatePasskey,
     view,
   };
@@ -155,7 +156,7 @@ function createRecoveryActions(state: AuthActionState) {
       state.setOperation(undefined);
       if (result.error) {
         state.setMessage(
-          result.error.message ?? "Could not send a recovery code",
+          result.error.message ?? "Could not send a sign-in code",
         );
         return;
       }
@@ -165,44 +166,33 @@ function createRecoveryActions(state: AuthActionState) {
     }
   }
 
-  async function recoverPasskey() {
+  async function signInWithRecoveryCode() {
     const otp = state.code.trim();
     if (otp.length !== 6) return;
     state.setOperation("verify");
     state.setMessage(undefined);
     try {
-      const verification = await authClient.$fetch<{
-        recoveryToken: string;
-      }>("/passkey-recovery/verify", {
-        body: { code: otp, email: state.email },
-        method: "POST",
-      });
-      if (verification.error) {
-        state.setOperation(undefined);
-        state.setMessage(
-          verification.error.message ??
-            "The recovery code is invalid or expired",
-        );
-        return;
-      }
-      const passkey = await authClient.passkey.addPasskey({
-        authenticatorAttachment: "platform",
-        context: verification.data.recoveryToken,
+      const result = await completeRecoverySignIn({
+        code: otp,
+        email: state.email,
+        verify: async ({ code, email }) =>
+          await authClient.$fetch<{ success: boolean }>(
+            "/passkey-recovery/verify",
+            { body: { code, email }, method: "POST" },
+          ),
       });
       state.setOperation(undefined);
-      if (passkey.error) {
-        state.setMessage(passkey.error.message ?? "Could not create a passkey");
+      if (!result.success) {
+        state.setMessage(result.message);
         return;
       }
       state.setCode("");
-      state.setView("sign-in");
-      state.setMessage("Passkey restored. Sign in to continue.");
     } catch (error) {
       finishActionWithError(state, error);
     }
   }
 
-  return { recoverPasskey, requestRecoveryCode };
+  return { requestRecoveryCode, signInWithRecoveryCode };
 }
 
 function finishActionWithError(state: AuthActionState, error: unknown) {

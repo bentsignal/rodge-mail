@@ -1,6 +1,10 @@
-import { Pressable, ScrollView, Text } from "react-native";
+import { View } from "react-native";
+import { Host, Picker } from "@expo/ui";
 
 import type { MailAccount, MailAccountFilter } from "@rodge-mail/features/mail";
+
+import { useResolvedMobileColorScheme } from "~/features/theme/mobile-theme";
+import { useColor } from "~/hooks/use-color";
 
 export function AccountFilter({
   value,
@@ -11,64 +15,38 @@ export function AccountFilter({
   value: MailAccountFilter;
   onChange: (value: MailAccountFilter) => void;
 }) {
+  const colorScheme = useResolvedMobileColorScheme();
+  const primary = useColor("primary");
+
   return (
-    <ScrollView
-      className="min-w-0 flex-1"
-      horizontal
-      contentContainerClassName="gap-2 pl-4"
-      showsHorizontalScrollIndicator={false}
-    >
-      <AccountFilterButton
-        label="All inboxes"
-        selected={value === "all"}
-        onPress={() => onChange("all")}
-      />
-      {accounts.map((account) => (
-        <AccountFilterButton
-          key={account.id}
-          label={getAccountLabel(account)}
-          selected={value === account.id}
-          onPress={() => onChange(account.id)}
-        />
-      ))}
-    </ScrollView>
+    <View className="min-w-0 flex-1">
+      <Host
+        colorScheme={colorScheme}
+        matchContents={{ vertical: true }}
+        seedColor={primary}
+        style={{ width: "100%" }}
+      >
+        <Picker
+          appearance="menu"
+          selectedValue={value}
+          testID="mailbox-picker"
+          onValueChange={onChange}
+        >
+          <Picker.Item label="All inboxes" value="all" />
+          {accounts.map((account) => (
+            <Picker.Item
+              key={account.id}
+              label={getAccountLabel(account)}
+              value={account.id}
+            />
+          ))}
+        </Picker>
+      </Host>
+    </View>
   );
 }
 
 function getAccountLabel(account: MailAccount) {
   if (account.label === account.address) return account.address;
   return `${account.label} · ${account.address}`;
-}
-
-function AccountFilterButton({
-  label,
-  selected,
-  onPress,
-}: {
-  label: string;
-  selected: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
-      className={
-        selected
-          ? "bg-forest border-forest-raised min-h-11 justify-center rounded-lg border px-4 py-2"
-          : "bg-paper border-paper-border min-h-11 justify-center rounded-lg border px-4 py-2"
-      }
-      onPress={onPress}
-    >
-      <Text
-        className={
-          selected
-            ? "text-accent-foreground text-sm font-semibold"
-            : "text-foreground text-sm font-semibold"
-        }
-      >
-        {label}
-      </Text>
-    </Pressable>
-  );
 }

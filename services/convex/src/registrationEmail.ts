@@ -49,12 +49,12 @@ export async function sendRecoveryEmail({
     body: JSON.stringify({
       from,
       to: [to],
-      subject: "Recover your Rodge Mail account",
-      text: `Your Rodge Mail recovery code is ${otp}. It expires in 5 minutes. If you did not request this, you can ignore this email.`,
+      subject: "Your Rodge Mail sign-in code",
+      text: `Your Rodge Mail sign-in code is ${otp}. It expires in 5 minutes. If you did not request this, you can ignore this email.`,
     }),
   });
 
   if (!response.ok) {
-    throw new Error(`Resend rejected the recovery email (${response.status})`);
+    throw new Error(`Resend rejected the sign-in email (${response.status})`);
   }
 }

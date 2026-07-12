@@ -28,14 +28,11 @@ export function sortInboxMessages(messages: InboxMessage[]) {
   return dedupeThreadRows(sortedMessages);
 }
 
-export function getLoadedUnreadCounts(messages: InboxMessage[]) {
-  const counts = new Map<string, number>([["all", 0]]);
-  for (const message of messages) {
-    if (message.isRead) continue;
-    counts.set("all", (counts.get("all") ?? 0) + 1);
-    counts.set(message.accountId, (counts.get(message.accountId) ?? 0) + 1);
-  }
-  return Object.fromEntries(counts);
+export function toUnreadCountRecord(summary: {
+  all: number;
+  byAccount: Record<string, number>;
+}) {
+  return { all: summary.all, ...summary.byAccount };
 }
 
 export function getErrorMessage(error: unknown, fallback: string) {

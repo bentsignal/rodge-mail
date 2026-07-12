@@ -1,14 +1,16 @@
-import type { ListRenderItemInfo } from "react-native";
+import type { LegendListRenderItemProps } from "@legendapp/list/react-native";
 import { useState } from "react";
-import { FlatList, Pressable, RefreshControl, Text, View } from "react-native";
+import { RefreshControl, View } from "react-native";
 import { Stack, useRouter } from "expo-router";
+import { Host, Switch } from "@expo/ui";
+import { LegendList } from "@legendapp/list/react-native";
 import { usePaginatedQuery } from "convex/react";
-import { Mail } from "lucide-react-native";
 
 import type { MailAccountFilter, MailThread } from "@rodge-mail/features/mail";
 import { api } from "@rodge-mail/convex/api";
 
 import type { MobileMailAccount } from "../lib/convex-mail";
+import { useResolvedMobileColorScheme } from "~/features/theme/mobile-theme";
 import { useColor } from "~/hooks/use-color";
 import { useDebouncedValue } from "~/hooks/use-debounced-value";
 import { AccountFilter } from "../components/account-filter";
@@ -41,7 +43,7 @@ export function InboxScreen() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showUnreadOnly, setShowUnreadOnly] = useState(false);
   const debouncedSearchTerm = useDebouncedValue(searchTerm.trim(), 250);
-  const { card, foreground, primary } = useInboxColors();
+  const { background, foreground, primary } = useInboxColors();
   const { isRefreshing, refresh, refreshError } = useInboxRefresh(accounts);
   const selectedAccountId = getSelectedAccountId(accountFilter);
   const search = usePaginatedQuery(
@@ -83,7 +85,7 @@ export function InboxScreen() {
       params: { id: threadId },
     });
   }
-  function renderThread({ item }: ListRenderItemInfo<MailThread>) {
+  function renderThread({ item }: LegendListRenderItemProps<MailThread>) {
     return <ThreadRow thread={item} onOpen={() => openThread(item.id)} />;
   }
   function loadNextPage() {
@@ -95,7 +97,7 @@ export function InboxScreen() {
       <Stack.Screen
         options={{
           headerSearchBarOptions: {
-            barTintColor: card,
+            barTintColor: background,
             hideWhenScrolling: false,
             headerIconColor: foreground,
             onCancelButtonPress: () => setSearchTerm(""),
@@ -103,7 +105,7 @@ export function InboxScreen() {
             placeholder: "Search mail",
             placement: "stacked",
             textColor: foreground,
-            tintColor: foreground,
+            tintColor: primary,
           },
         }}
       />
@@ -122,7 +124,7 @@ export function InboxScreen() {
         onAccountChange={setAccountFilter}
         onEndReached={loadNextPage}
         onRefresh={() => void refresh()}
-        onToggleUnread={() => setShowUnreadOnly((current) => !current)}
+        onUnreadChange={setShowUnreadOnly}
       />
     </>
   );
@@ -130,7 +132,7 @@ export function InboxScreen() {
 
 function useInboxColors() {
   return {
-    card: useColor("card"),
+    background: useColor("background"),
     foreground: useColor("foreground"),
     primary: useColor("primary"),
   };
@@ -151,7 +153,7 @@ function InboxThreadList({
   renderThread,
   searchTerm,
   showUnreadOnly,
-  onToggleUnread,
+  onUnreadChange,
 }: {
   accountFilter: MailAccountFilter;
   accounts: MobileMailAccount[];
@@ -164,20 +166,27 @@ function InboxThreadList({
   onRefresh: () => void;
   primary: string;
   refreshError: string | undefined;
-  renderThread: (info: ListRenderItemInfo<MailThread>) => React.ReactElement;
+  renderThread: (
+    info: LegendListRenderItemProps<MailThread>,
+  ) => React.ReactElement;
   searchTerm: string | undefined;
   showUnreadOnly: boolean;
-  onToggleUnread: () => void;
+  onUnreadChange: (value: boolean) => void;
 }) {
+  const paper = useColor("paper");
+
   return (
-    <FlatList
-      className="bg-paper flex-1"
+    <LegendList
+      contentContainerStyle={{ paddingBottom: 24 }}
       data={data}
+      estimatedItemSize={109}
       keyExtractor={threadKey}
+      maintainVisibleContentPosition={true}
+      recycleItems={true}
       renderItem={renderThread}
       contentInsetAdjustmentBehavior="automatic"
       keyboardDismissMode="on-drag"
-      contentContainerClassName="pb-6"
+      style={{ backgroundColor: paper, flex: 1 }}
       refreshControl={
         <RefreshControl
           refreshing={isRefreshing}
@@ -194,7 +203,7 @@ function InboxThreadList({
           onAccountChange={onAccountChange}
           refreshError={refreshError}
           showUnreadOnly={showUnreadOnly}
-          onToggleUnread={onToggleUnread}
+          onUnreadChange={onUnreadChange}
         />
       }
       ListEmptyComponent={
@@ -218,53 +227,39 @@ function InboxHeader({
   onAccountChange,
   refreshError,
   showUnreadOnly,
-  onToggleUnread,
+  onUnreadChange,
 }: {
   accountFilter: MailAccountFilter;
   accounts: MobileMailAccount[];
   onAccountChange: (value: MailAccountFilter) => void;
   refreshError: string | undefined;
   showUnreadOnly: boolean;
-  onToggleUnread: () => void;
+  onUnreadChange: (value: boolean) => void;
 }) {
-  const foreground = useColor("foreground");
-  const primaryForeground = useColor("primary-foreground");
+  const colorScheme = useResolvedMobileColorScheme();
+  const primary = useColor("primary");
 
   return (
-    <View className="bg-paper border-paper-border border-b py-2">
-      <View className="flex-row items-center gap-2 pr-4">
+    <View className="bg-paper border-paper-border border-b px-4 py-2">
+      <View className="min-h-11 flex-row items-center gap-4">
         <AccountFilter
           accounts={accounts}
           value={accountFilter}
           onChange={onAccountChange}
         />
-        <Pressable
-          accessibilityLabel={
-            showUnreadOnly ? "Show all messages" : "Show unread messages only"
-          }
-          accessibilityRole="button"
-          accessibilityState={{ selected: showUnreadOnly }}
-          className={
-            showUnreadOnly
-              ? "bg-primary border-brass-soft min-h-11 flex-row items-center gap-2 rounded-lg border px-3 py-2"
-              : "bg-paper-deep border-paper-border min-h-11 flex-row items-center gap-2 rounded-lg border px-3 py-2"
-          }
-          onPress={onToggleUnread}
+        <Host
+          colorScheme={colorScheme}
+          matchContents={{ vertical: true }}
+          seedColor={primary}
+          style={{ width: 132 }}
         >
-          <Mail
-            color={showUnreadOnly ? primaryForeground : foreground}
-            size={16}
+          <Switch
+            label="Unread"
+            testID="unread-only-switch"
+            value={showUnreadOnly}
+            onValueChange={onUnreadChange}
           />
-          <Text
-            className={
-              showUnreadOnly
-                ? "text-primary-foreground text-sm font-semibold"
-                : "text-foreground text-sm font-semibold"
-            }
-          >
-            Unread
-          </Text>
-        </Pressable>
+        </Host>
       </View>
       <InboxSyncStatus accounts={accounts} error={refreshError} />
     </View>
