@@ -14,7 +14,7 @@ export function InboxPane() {
     <section
       aria-label="Inbox"
       className={cn(
-        "min-w-0 flex-1 flex-col border-r border-[var(--mail-seam)] bg-[var(--mail-paper-soft)] lg:w-[360px] lg:min-w-[340px] lg:flex-none xl:w-[385px] xl:min-w-[385px]",
+        "mail-inbox-pane min-w-0 flex-1 flex-col border-r border-[var(--mail-seam)] lg:w-[400px] lg:min-w-[380px] lg:flex-none xl:w-[420px] xl:min-w-[420px]",
         mobileReaderIsOpen ? "hidden lg:flex" : "flex",
       )}
     >

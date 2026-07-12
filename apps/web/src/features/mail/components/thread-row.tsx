@@ -35,7 +35,7 @@ export function ThreadRow({
         aria-posinset={position}
         aria-setsize={-1}
         className={cn(
-          "group relative w-full overflow-hidden border-b border-[var(--mail-seam)] bg-[var(--mail-paper)] transition-[background-color,border-color,box-shadow] duration-150",
+          "mail-thread-row group relative overflow-hidden border-b border-[var(--mail-seam)] bg-[var(--mail-paper)] transition-[background-color,border-color,box-shadow] duration-150",
           isSelected
             ? "z-[1] border-y border-[var(--mail-border-strong)] bg-[var(--mail-selected)] shadow-[var(--warm-shadow-raised)]"
             : "hover:bg-[var(--mail-row-hover)]",
@@ -44,7 +44,7 @@ export function ThreadRow({
         <SelectedMarker selected={isSelected} />
         <ContextMenu.Trigger asChild>
           <QuickLink
-            className="block w-full px-5 py-3 text-left"
+            className="block w-full px-4 py-3.5 text-left"
             onClick={() => selectMessage(message)}
             params={{ messageId: message._id }}
             preload="intent"
@@ -53,7 +53,7 @@ export function ThreadRow({
             }}
             to="/messages/$messageId"
           >
-            <div className="flex items-start gap-2">
+            <div className="flex items-start gap-2.5">
               <SenderAvatar account={account} name={senderName} />
               <div className="min-w-0 flex-1">
                 <div className="flex items-baseline gap-2">
