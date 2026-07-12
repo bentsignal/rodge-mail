@@ -345,6 +345,28 @@ html[data-desktop-runtime="true"] .mail-app-frame {
     1px 0 0 rgb(255 255 255 / 55%) inset;
 }
 
+html[data-desktop-runtime="true"]:not(.dark) .mail-reader-pane {
+  background-image: url("/warm-paper/reader-paper.webp");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+}
+
+html[data-desktop-runtime="true"]:not(.dark) .mail-reader-pane::after {
+  position: absolute;
+  z-index: 2;
+  right: 0;
+  bottom: 0;
+  width: 76px;
+  aspect-ratio: 232 / 256;
+  pointer-events: none;
+  content: "";
+  background-image: url("/warm-paper/reader-corner.webp");
+  background-repeat: no-repeat;
+  background-position: right bottom;
+  background-size: contain;
+}
+
 .dark .mail-reader-pane {
   box-shadow:
     -2px 0 8px rgb(0 0 0 / 24%),
