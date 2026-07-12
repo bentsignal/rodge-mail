@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  getTrackedReadStateChanges,
   ICLOUD_SYNC_LOOKBACK_MS,
   parseICloudSyncCursor,
   planIncrementalMailboxSync,
@@ -122,6 +123,39 @@ describe("iCloud recent sync window progression", () => {
     });
     expect(plan.deletedRemoteMessageIds).toEqual(["remote-201"]);
     expect(plan.nextCursor.trackedUids).toEqual([200, 202]);
+  });
+
+  it("reconciles external read changes only for tracked current messages", () => {
+    const changes = getTrackedReadStateChanges({
+      cursor: {
+        uidValidity: "42",
+        highWaterUid: 250,
+        trackedUids: [200, 201, 202],
+      },
+      imported: [
+        { ...imported(199), isRead: false },
+        { ...imported(200), isRead: false },
+        { ...imported(201), isRead: true },
+        { ...imported(202), isRead: true },
+        {
+          ...imported(201),
+          uidValidity: "41",
+          remoteMessageId: "old-gen",
+          isRead: true,
+        },
+      ],
+      observed: [
+        { uid: 199, isRead: true },
+        { uid: 200, isRead: true },
+        { uid: 201, isRead: true },
+        { uid: 202, isRead: false },
+      ],
+    });
+
+    expect(changes).toEqual([
+      { remoteMessageId: "remote-200", isRead: true },
+      { remoteMessageId: "remote-202", isRead: false },
+    ]);
   });
 });
 

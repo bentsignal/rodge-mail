@@ -6,6 +6,11 @@ type ParsedRemoteMessageId = NonNullable<
   ReturnType<typeof parseRemoteMessageId>
 >;
 
+interface ImportedMessageState extends ParsedRemoteMessageId {
+  remoteMessageId: string;
+  isRead: boolean;
+}
+
 export const ICLOUD_SYNC_LOOKBACK_MS = 30 * 24 * 60 * 60 * 1_000;
 export const ICLOUD_SYNC_MESSAGE_LIMIT = 200;
 
@@ -132,6 +137,25 @@ export function planIncrementalMailboxSync(args: {
       trackedUids,
     } satisfies ICloudMailboxCursor,
   };
+}
+
+export function getTrackedReadStateChanges(args: {
+  cursor: ICloudMailboxCursor;
+  imported: ImportedMessageState[];
+  observed: { uid: number; isRead: boolean }[];
+}) {
+  const observed = new Map(
+    args.observed.map((item) => [item.uid, item.isRead]),
+  );
+  return args.imported.flatMap((item) => {
+    const isRead = observed.get(item.uid);
+    return item.uidValidity === args.cursor.uidValidity &&
+      args.cursor.trackedUids.includes(item.uid) &&
+      isRead !== undefined &&
+      isRead !== item.isRead
+      ? [{ remoteMessageId: item.remoteMessageId, isRead }]
+      : [];
+  });
 }
 
 export function toUidSequence(uids: number[]) {

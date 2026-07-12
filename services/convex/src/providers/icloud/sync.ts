@@ -25,6 +25,7 @@ import {
   toNormalizedFolder,
 } from "./normalize";
 import {
+  getTrackedReadStateChanges,
   parseICloudSyncCursor,
   planIncrementalMailboxSync,
   planInitialMailboxSync,
@@ -58,8 +59,8 @@ export const synchronize = internalAction({
         accountId: args.accountId,
         encryptedCredential: connection.credential.encryptedTokens,
       });
-      const knownRemoteIds = await ctx.runAction(
-        internal.sync.internal.listProviderRemoteMessageIds,
+      const knownMessages = await ctx.runAction(
+        internal.sync.internal.listProviderMessageStates,
         { ownerId: args.ownerId, accountId: args.accountId },
       );
       const cursor = await synchronizeMailboxes({
@@ -68,7 +69,7 @@ export const synchronize = internalAction({
         accountId: args.accountId,
         accountAddress: connection.account.address,
         credential,
-        knownRemoteIds,
+        knownMessages,
         reason: args.reason,
         previousCursor: parseICloudSyncCursor(connection.account.syncCursor),
       });
@@ -98,7 +99,7 @@ async function synchronizeMailboxes(args: {
   accountId: Id<"mailAccounts">;
   accountAddress: string;
   credential: ICloudCredential;
-  knownRemoteIds: string[];
+  knownMessages: { remoteMessageId: string; isRead: boolean }[];
   previousCursor: ICloudSyncCursor | undefined;
   reason: "incremental" | "initial" | "manual" | "reconcile";
 }) {
@@ -137,18 +138,16 @@ async function synchronizeMailbox(
     ownerId: string;
     accountId: Id<"mailAccounts">;
     accountAddress: string;
-    knownRemoteIds: string[];
+    knownMessages: { remoteMessageId: string; isRead: boolean }[];
     previousCursor: ICloudSyncCursor | undefined;
     reason: "incremental" | "initial" | "manual" | "reconcile";
   },
 ) {
   const opened = await client.mailboxOpen(mailbox.path, { readOnly: true });
   const uidValidity = opened.uidValidity.toString();
-  const known = args.knownRemoteIds.flatMap((remoteMessageId) => {
-    const parsed = parseRemoteMessageId(remoteMessageId);
-    return parsed?.mailbox === mailbox.path
-      ? [{ ...parsed, remoteMessageId }]
-      : [];
+  const known = args.knownMessages.flatMap((message) => {
+    const parsed = parseRemoteMessageId(message.remoteMessageId);
+    return parsed?.mailbox === mailbox.path ? [{ ...parsed, ...message }] : [];
   });
   const importedUids = new Set(
     known
@@ -178,6 +177,16 @@ async function synchronizeMailbox(
       accountId: args.accountId,
       remoteMessageId,
     });
+  }
+  for (const change of plan.readStateChanges) {
+    await args.ctx.runMutation(
+      internal.sync.internal.updateProviderMessageReadState,
+      {
+        ownerId: args.ownerId,
+        accountId: args.accountId,
+        ...change,
+      },
+    );
   }
   for (const uidBatch of chunk(plan.pendingUids, FETCH_BATCH_SIZE)) {
     for await (const message of client.fetch(
@@ -224,12 +233,15 @@ async function createInitialPlan(args: {
     { since: recentWindowCutoff(Date.now()) },
     { uid: true },
   );
-  return planInitialMailboxSync({
-    recentUids: found === false ? [] : found,
-    importedUids: args.importedUids,
-    mailboxHighWaterUid: args.mailboxHighWaterUid,
-    uidValidity: args.uidValidity,
-  });
+  return {
+    ...planInitialMailboxSync({
+      recentUids: found === false ? [] : found,
+      importedUids: args.importedUids,
+      mailboxHighWaterUid: args.mailboxHighWaterUid,
+      uidValidity: args.uidValidity,
+    }),
+    readStateChanges: [],
+  };
 }
 
 async function createIncrementalPlan(args: {
@@ -237,13 +249,24 @@ async function createIncrementalPlan(args: {
   previous: ICloudMailboxCursor;
   imported: (NonNullable<ReturnType<typeof parseRemoteMessageId>> & {
     remoteMessageId: string;
+    isRead: boolean;
   })[];
   mailboxHighWaterUid: number;
 }) {
   const trackedSequence = toUidSequence(args.previous.trackedUids);
-  const existingTracked = trackedSequence
-    ? await args.client.search({ uid: trackedSequence }, { uid: true })
-    : [];
+  const observedTracked = new Array<{ uid: number; isRead: boolean }>();
+  if (trackedSequence) {
+    for await (const message of args.client.fetch(
+      trackedSequence,
+      { uid: true, flags: true },
+      { uid: true },
+    )) {
+      observedTracked.push({
+        uid: message.uid,
+        isRead: message.flags?.has("\\Seen") ?? false,
+      });
+    }
+  }
   const newUids =
     args.mailboxHighWaterUid > args.previous.highWaterUid
       ? await args.client.search(
@@ -251,13 +274,20 @@ async function createIncrementalPlan(args: {
           { uid: true },
         )
       : [];
-  return planIncrementalMailboxSync({
-    cursor: args.previous,
-    existingTrackedUids: existingTracked === false ? [] : existingTracked,
-    imported: args.imported,
-    mailboxHighWaterUid: args.mailboxHighWaterUid,
-    newUids: newUids === false ? [] : newUids,
-  });
+  return {
+    ...planIncrementalMailboxSync({
+      cursor: args.previous,
+      existingTrackedUids: observedTracked.map((item) => item.uid),
+      imported: args.imported,
+      mailboxHighWaterUid: args.mailboxHighWaterUid,
+      newUids: newUids === false ? [] : newUids,
+    }),
+    readStateChanges: getTrackedReadStateChanges({
+      cursor: args.previous,
+      imported: args.imported,
+      observed: observedTracked,
+    }),
+  };
 }
 
 function chunk<T>(values: T[], size: number) {

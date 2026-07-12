@@ -80,6 +80,14 @@ interface RemoteMessageIdPage {
   page: string[];
 }
 
+interface ProviderMessageStatePage {
+  continueCursor: string;
+  isDone: boolean;
+  page: { remoteMessageId: string; isRead: boolean }[];
+}
+
+const PROVIDER_MESSAGE_PAGE_SIZE = 10;
+
 export const storeOAuthState = internalMutation({
   args: {
     ownerId: v.string(),
@@ -812,7 +820,7 @@ export const listProviderRemoteMessageIds = internalAction({
         internal.sync.internal.listProviderRemoteMessageIdsPage,
         {
           ...args,
-          paginationOpts: { cursor, numItems: 25 },
+          paginationOpts: { cursor, numItems: PROVIDER_MESSAGE_PAGE_SIZE },
         },
       )) as RemoteMessageIdPage;
       remoteMessageIds.push(...page.page);
@@ -841,6 +849,56 @@ export const listProviderRemoteMessageIdsPage = internalQuery({
     return {
       ...result,
       page: result.page.map((message) => message.remoteMessageId),
+    };
+  },
+});
+
+export const listProviderMessageStates = internalAction({
+  args: { ownerId: v.string(), accountId: v.id("mailAccounts") },
+  handler: async (ctx, args) => {
+    const states: { remoteMessageId: string; isRead: boolean }[] = [];
+    let cursor: string | null = null;
+    let isDone = false;
+    while (!isDone) {
+      const page = (await ctx.runQuery(
+        internal.sync.internal.listProviderMessageStatesPage,
+        {
+          ...args,
+          paginationOpts: {
+            cursor,
+            numItems: PROVIDER_MESSAGE_PAGE_SIZE,
+          },
+        },
+      )) as ProviderMessageStatePage;
+      states.push(...page.page);
+      cursor = page.continueCursor;
+      isDone = page.isDone;
+    }
+    return states;
+  },
+});
+
+export const listProviderMessageStatesPage = internalQuery({
+  args: {
+    ownerId: v.string(),
+    accountId: v.id("mailAccounts"),
+    paginationOpts: paginationOptsValidator,
+  },
+  handler: async (ctx, args) => {
+    const account = await ctx.db.get(args.accountId);
+    if (!account || account.ownerId !== args.ownerId) {
+      return { continueCursor: "", isDone: true, page: [] };
+    }
+    const result = await ctx.db
+      .query("messages")
+      .withIndex("by_account_remote", (q) => q.eq("accountId", args.accountId))
+      .paginate(args.paginationOpts);
+    return {
+      ...result,
+      page: result.page.map((message) => ({
+        remoteMessageId: message.remoteMessageId,
+        isRead: message.isRead,
+      })),
     };
   },
 });
@@ -1178,6 +1236,32 @@ export const upsertProviderMessage = internalMutation({
         messageId,
       });
     }
+  },
+});
+
+export const updateProviderMessageReadState = internalMutation({
+  args: {
+    ownerId: v.string(),
+    accountId: v.id("mailAccounts"),
+    remoteMessageId: v.string(),
+    isRead: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    await ensureInternalOwnedAccount(ctx, args.ownerId, args.accountId);
+    const message = await ctx.db
+      .query("messages")
+      .withIndex("by_account_remote", (q) =>
+        q
+          .eq("accountId", args.accountId)
+          .eq("remoteMessageId", args.remoteMessageId),
+      )
+      .unique();
+    if (!message || message.isRead === args.isRead) return;
+    await ctx.db.patch(message._id, {
+      isRead: args.isRead,
+      updatedAt: Date.now(),
+    });
+    await recalculateThread(ctx, message.threadId);
   },
 });
 
