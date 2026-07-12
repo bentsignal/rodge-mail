@@ -19,7 +19,7 @@ export default function TabLayout() {
         />
         <NativeTabs.Trigger.Label>Inbox</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="(new)">
+      <NativeTabs.Trigger name="(new)" disableAutomaticContentInsets>
         <NativeTabs.Trigger.Icon sf="square.and.pencil" md="edit" />
         <NativeTabs.Trigger.Label>New</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>

@@ -87,8 +87,9 @@ export function ComposerScreen({
     <SafeAreaView
       className="bg-background flex-1"
       edges={variant === "tab" ? ["top"] : []}
+      style={{ flex: 1 }}
     >
-      <View className="flex-1">
+      <View className="flex-1" style={{ flex: 1 }}>
         <ComposerHeader
           canSend={canSend}
           onCancel={variant === "modal" ? router.back : undefined}
@@ -145,10 +146,12 @@ function ComposerBody({
   autoFocusBody: boolean;
 }) {
   return (
-    <PostalPaperBackground>
+    <PostalPaperBackground className="min-h-0">
       <ScrollView
-        contentContainerClassName="gap-4 px-4 py-4 pb-10"
+        className="flex-1"
+        contentContainerClassName="gap-3 px-4 pt-3 pb-8"
         automaticallyAdjustKeyboardInsets
+        contentInsetAdjustmentBehavior="never"
         keyboardDismissMode="interactive"
         keyboardShouldPersistTaps="handled"
       >
@@ -188,7 +191,7 @@ function ComposerFieldsSurface({
   selectedAccountId: string | undefined;
 }) {
   return (
-    <PostalSurface className="overflow-hidden rounded-xl px-4" transparent>
+    <PostalSurface className="overflow-hidden rounded-xl px-4">
       <ComposerSenderField
         accounts={accounts}
         onChange={onSenderChange}
@@ -240,11 +243,11 @@ function ComposerMessageSurface({
 }) {
   const mutedForeground = useColor("muted-foreground");
   return (
-    <PostalSurface className="rounded-xl p-4" transparent>
+    <PostalSurface className="rounded-xl p-4">
       <TextInput
         accessibilityLabel="Message body"
         autoFocus={autoFocus}
-        className="text-foreground min-h-72 text-base leading-6"
+        className="text-foreground min-h-64 text-base leading-6"
         defaultValue={draft.body}
         multiline
         placeholder="Write a message"

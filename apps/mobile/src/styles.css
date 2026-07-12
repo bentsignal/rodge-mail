@@ -6,6 +6,16 @@
 
 @import "@rodge-mail/tailwind-config/theme";
 
+:root {
+  @variant light {
+    --stamp: #a83f32;
+  }
+
+  @variant dark {
+    --stamp: #d56a59;
+  }
+}
+
 @theme inline {
   --color-brass: var(--brass);
   --color-brass-soft: var(--brass-soft);

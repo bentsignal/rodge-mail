@@ -11,7 +11,16 @@ export function ComposerSenderField({
   onChange: (accountId: string) => void;
   selectedAccountId: string | undefined;
 }) {
-  if (accounts.length === 0) return null;
+  if (accounts.length === 0) {
+    return (
+      <View className="border-border min-h-14 flex-row items-center gap-3 border-b py-2">
+        <Text className="text-muted-foreground w-16 text-base">From</Text>
+        <Text className="text-muted-foreground min-w-0 flex-1 text-base">
+          No sending account
+        </Text>
+      </View>
+    );
+  }
   return (
     <View className="border-border flex-row items-center gap-3 border-b py-2">
       <Text className="text-muted-foreground w-16 text-base">From</Text>

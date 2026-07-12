@@ -1,4 +1,4 @@
-import type { ComponentProps, ReactNode } from "react";
+import type { ComponentProps } from "react";
 import { View } from "react-native";
 
 import { useColor } from "~/hooks/use-color";
@@ -32,11 +32,18 @@ export function PostalSurface({
 export function PostalPaperBackground({
   children,
   className = "",
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
-  return <View className={`bg-paper flex-1 ${className}`}>{children}</View>;
+  style,
+  ...props
+}: ComponentProps<typeof View>) {
+  return (
+    <View
+      className={`bg-paper flex-1 ${className}`}
+      style={[{ flex: 1, minHeight: 0 }, style]}
+      {...props}
+    >
+      {children}
+    </View>
+  );
 }
 
 export function PostalWell({

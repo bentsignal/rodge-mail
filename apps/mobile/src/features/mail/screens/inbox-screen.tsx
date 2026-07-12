@@ -9,8 +9,6 @@ import type { MailAccountFilter, MailThread } from "@rodge-mail/features/mail";
 import { api } from "@rodge-mail/convex/api";
 
 import type { MobileMailAccount } from "../lib/convex-mail";
-import { PostalPaperBackground } from "~/features/theme/postal-surface";
-import { postalDisplayFont } from "~/features/theme/postal-typography";
 import { useColor } from "~/hooks/use-color";
 import { useDebouncedValue } from "~/hooks/use-debounced-value";
 import { AccountFilter } from "../components/account-filter";
@@ -93,17 +91,17 @@ export function InboxScreen() {
     else if (search.status === "CanLoadMore") search.loadMore(30);
   }
   return (
-    <View className="bg-background flex-1">
+    <>
       <Stack.Screen
         options={{
           headerSearchBarOptions: {
             barTintColor: card,
-            hideWhenScrolling: false,
+            hideWhenScrolling: true,
             headerIconColor: foreground,
             onCancelButtonPress: () => setSearchTerm(""),
             onChangeText: (event) => setSearchTerm(event.nativeEvent.text),
             placeholder: "Search mail",
-            placement: "stacked",
+            placement: "integratedButton",
             textColor: foreground,
             tintColor: foreground,
           },
@@ -126,7 +124,7 @@ export function InboxScreen() {
         onRefresh={() => void refresh()}
         onToggleUnread={() => setShowUnreadOnly((current) => !current)}
       />
-    </View>
+    </>
   );
 }
 
@@ -172,46 +170,45 @@ function InboxThreadList({
   onToggleUnread: () => void;
 }) {
   return (
-    <PostalPaperBackground>
-      <FlatList
-        data={data}
-        keyExtractor={threadKey}
-        renderItem={renderThread}
-        contentInsetAdjustmentBehavior="automatic"
-        keyboardDismissMode="on-drag"
-        contentContainerClassName="pb-24"
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefreshing}
-            tintColor={primary}
-            onRefresh={onRefresh}
-          />
-        }
-        onEndReached={onEndReached}
-        onEndReachedThreshold={0.6}
-        ListHeaderComponent={
-          <InboxHeader
-            accountFilter={accountFilter}
-            accounts={accounts}
-            onAccountChange={onAccountChange}
-            refreshError={refreshError}
-            showUnreadOnly={showUnreadOnly}
-            onToggleUnread={onToggleUnread}
-          />
-        }
-        ListEmptyComponent={
-          <EmptyInbox
-            isLoading={emptyIsLoading}
-            primary={primary}
-            searchTerm={searchTerm}
-            showUnreadOnly={showUnreadOnly}
-          />
-        }
-        ListFooterComponent={
-          <InboxFooter isLoading={footerIsLoading} primary={primary} />
-        }
-      />
-    </PostalPaperBackground>
+    <FlatList
+      className="bg-paper flex-1"
+      data={data}
+      keyExtractor={threadKey}
+      renderItem={renderThread}
+      contentInsetAdjustmentBehavior="automatic"
+      keyboardDismissMode="on-drag"
+      contentContainerClassName="pb-6"
+      refreshControl={
+        <RefreshControl
+          refreshing={isRefreshing}
+          tintColor={primary}
+          onRefresh={onRefresh}
+        />
+      }
+      onEndReached={onEndReached}
+      onEndReachedThreshold={0.6}
+      ListHeaderComponent={
+        <InboxHeader
+          accountFilter={accountFilter}
+          accounts={accounts}
+          onAccountChange={onAccountChange}
+          refreshError={refreshError}
+          showUnreadOnly={showUnreadOnly}
+          onToggleUnread={onToggleUnread}
+        />
+      }
+      ListEmptyComponent={
+        <EmptyInbox
+          isLoading={emptyIsLoading}
+          primary={primary}
+          searchTerm={searchTerm}
+          showUnreadOnly={showUnreadOnly}
+        />
+      }
+      ListFooterComponent={
+        <InboxFooter isLoading={footerIsLoading} primary={primary} />
+      }
+    />
   );
 }
 
@@ -234,14 +231,8 @@ function InboxHeader({
   const primaryForeground = useColor("primary-foreground");
 
   return (
-    <View className="bg-background border-paper-border gap-3 border-b pt-4 pb-4">
-      <View className="flex-row items-center justify-between px-4">
-        <Text
-          className="text-foreground text-[32px] leading-10"
-          style={{ fontFamily: postalDisplayFont }}
-        >
-          Inbox
-        </Text>
+    <View className="bg-paper border-paper-border gap-3 border-b py-3">
+      <View className="items-end px-4">
         <Pressable
           accessibilityLabel={
             showUnreadOnly ? "Show all messages" : "Show unread messages only"
