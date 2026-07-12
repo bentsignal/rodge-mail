@@ -55,10 +55,7 @@ function useInternalStore() {
     ),
   );
   const accounts = accountRows?.map(toMailAccount) ?? [];
-  const { markRead, toggleRead } = useReadActions(
-    threads,
-    setThreadOverrides,
-  );
+  const { markRead, toggleRead } = useReadActions(threads, setThreadOverrides);
 
   // eslint-disable-next-line no-restricted-syntax -- Cache the latest settled Convex subscription page for instant mailbox revisits.
   useEffect(() => {

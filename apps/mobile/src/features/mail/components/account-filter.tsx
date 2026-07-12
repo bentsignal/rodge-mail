@@ -1,6 +1,6 @@
+import type { MenuAction } from "@expo/ui/community/menu";
 import { Pressable, Text, View } from "react-native";
 import { MenuView } from "@expo/ui/community/menu";
-import type { MenuAction } from "@expo/ui/community/menu";
 import { ChevronDown } from "lucide-react-native";
 
 import type { MailAccount, MailAccountFilter } from "@rodge-mail/features/mail";
@@ -18,7 +18,9 @@ export function AccountFilter({
 }) {
   const mutedForeground = useColor("muted-foreground");
   const selectedAccount =
-    value === "all" ? undefined : accounts.find((account) => account.id === value);
+    value === "all"
+      ? undefined
+      : accounts.find((account) => account.id === value);
   const selectedLabel = selectedAccount
     ? getAccountLabel(selectedAccount)
     : "All Inboxes";

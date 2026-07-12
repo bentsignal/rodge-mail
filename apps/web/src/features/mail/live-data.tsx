@@ -258,7 +258,9 @@ function useLiveMailActions(
       await navigate({ to: "/", search: (previous) => previous });
       toast.success("Archived in Rodge. Your provider copy is unchanged.");
     } catch (error) {
-      toast.error(getErrorMessage(error, "Could not archive the conversation."));
+      toast.error(
+        getErrorMessage(error, "Could not archive the conversation."),
+      );
     }
   }
 

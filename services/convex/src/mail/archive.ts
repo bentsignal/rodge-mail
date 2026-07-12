@@ -16,10 +16,7 @@ export function getArchiveRetentionCutoff(now: number) {
 }
 
 export function isProviderMessageArchived(
-  existing:
-    | { archivedAt?: number; hiddenAt?: number }
-    | null
-    | undefined,
+  existing: { archivedAt?: number; hiddenAt?: number } | null | undefined,
   tombstone: unknown,
 ) {
   return (
@@ -30,7 +27,11 @@ export function isProviderMessageArchived(
 }
 
 export function validateArchiveCleanupLimit(limit: number) {
-  if (!Number.isInteger(limit) || limit < 1 || limit > MAX_ARCHIVE_CLEANUP_BATCH) {
+  if (
+    !Number.isInteger(limit) ||
+    limit < 1 ||
+    limit > MAX_ARCHIVE_CLEANUP_BATCH
+  ) {
     throw new Error(
       `Archive cleanup limit must be an integer between 1 and ${MAX_ARCHIVE_CLEANUP_BATCH}`,
     );

@@ -1,8 +1,8 @@
 import { ConvexError, v } from "convex/values";
 
-import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
+import { internal } from "../_generated/api";
 import { deleteEmbeddingRecords } from "../embedding/storage";
 import { authedMutation } from "../utils";
 import {
