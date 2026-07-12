@@ -32,7 +32,7 @@ import { useInboxRefresh } from "./use-inbox-refresh";
 
 const skippedSearch = "skip";
 
-export function InboxScreen() {
+export function InboxScreen({ searchMode = false }: { searchMode?: boolean }) {
   const router = useRouter();
   const threads = useMailStore((store) => store.threads);
   const accounts = useMailStore((store) => store.accounts);
@@ -96,7 +96,11 @@ export function InboxScreen() {
   }
   return (
     <>
-      <InboxSearchScreen colors={colors} onSearchChange={setSearchTerm} />
+      <InboxSearchScreen
+        colors={colors}
+        searchMode={searchMode}
+        onSearchChange={setSearchTerm}
+      />
       <InboxThreadList
         accountFilter={accountFilter}
         accounts={accounts}
@@ -121,28 +125,27 @@ export function InboxScreen() {
 function InboxSearchScreen({
   colors,
   onSearchChange,
+  searchMode,
 }: {
   colors: ReturnType<typeof useInboxColors>;
   onSearchChange: (value: string) => void;
+  searchMode: boolean;
 }) {
+  if (!searchMode) return <Stack.Screen options={{ headerShown: false }} />;
   return (
-    <Stack.Screen
-      options={{
-        headerBackVisible: false,
-        headerSearchBarOptions: {
-          barTintColor: colors.paper,
-          hideWhenScrolling: false,
-          headerIconColor: colors.foreground,
-          onCancelButtonPress: () => onSearchChange(""),
-          onChangeText: (event) => onSearchChange(event.nativeEvent.text),
-          placeholder: "Search mail",
-          placement: "inline",
-          textColor: colors.foreground,
-          tintColor: colors.primary,
-        },
-        headerTitle: "",
-      }}
-    />
+    <>
+      <Stack.Title>Search</Stack.Title>
+      <Stack.SearchBar
+        barTintColor={colors.paper}
+        hideWhenScrolling={false}
+        onCancelButtonPress={() => onSearchChange("")}
+        onChangeText={(event) => onSearchChange(event.nativeEvent.text)}
+        placeholder="Search mail"
+        placement="automatic"
+        textColor={colors.foreground}
+        tintColor={colors.primary}
+      />
+    </>
   );
 }
 

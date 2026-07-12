@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react";
+import { useRouterState } from "@tanstack/react-router";
 import {
   AlertCircle,
   Archive,
@@ -28,6 +29,9 @@ const ACCOUNT_ICONS = {
 } satisfies Record<MailAccountView["provider"], LucideIcon>;
 
 export function AccountRail() {
+  const isArchive = useRouterState({
+    select: (state) => state.location.pathname === "/archive",
+  });
   const accountFilter = useMailStore((store) => store.accountFilter);
   const selectMailbox = useMailboxNavigation();
   const openComposer = useMailStore((store) => store.openComposer);
@@ -57,7 +61,7 @@ export function AccountRail() {
         className="mail-scrollbar mt-5 min-h-0 flex-1 space-y-1.5 overflow-x-hidden overflow-y-auto"
       >
         <AccountButton
-          active={accountFilter === "all"}
+          active={!isArchive && accountFilter === "all"}
           count={unreadCounts.all}
           icon={Inbox}
           label="All Inboxes"
@@ -65,7 +69,13 @@ export function AccountRail() {
         />
         <QuickLink
           aria-label="Archive"
-          className="group flex h-11 w-full items-center justify-center gap-3 rounded-lg border border-transparent px-3 text-sm text-[var(--mail-chassis-foreground)]/72 transition-colors hover:border-white/10 hover:bg-white/[0.07] hover:text-[var(--mail-chassis-foreground)] xl:justify-start"
+          aria-current={isArchive ? "page" : undefined}
+          className={cn(
+            "group relative flex h-11 w-full items-center justify-center gap-3 rounded-lg px-3 text-sm transition-colors xl:justify-start",
+            isArchive
+              ? "border border-white/10 bg-white/[0.09] text-[var(--mail-chassis-foreground)] shadow-[var(--warm-shadow-inset)] after:absolute after:inset-y-2 after:left-0 after:w-0.5 after:rounded-r after:bg-[var(--mail-brass)]"
+              : "border border-transparent text-[var(--mail-chassis-foreground)]/72 hover:border-white/10 hover:bg-white/[0.07] hover:text-[var(--mail-chassis-foreground)]",
+          )}
           to="/archive"
         >
           <Archive className="size-[18px]" strokeWidth={1.7} />
@@ -79,7 +89,7 @@ export function AccountRail() {
           const Icon = ACCOUNT_ICONS[account.provider];
           return (
             <AccountButton
-              active={accountFilter === account._id}
+              active={!isArchive && accountFilter === account._id}
               accent={account.accent}
               count={unreadCounts[account._id]}
               icon={Icon}
