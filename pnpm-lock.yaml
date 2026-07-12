@@ -140,11 +140,10 @@ importers:
         version: 6.0.3
 
   apps/desktop:
-    dependencies:
+    devDependencies:
       '@rodge-mail/config':
         specifier: workspace:*
         version: link:../../shared/config
-    devDependencies:
       '@rodge-mail/eslint-config':
         specifier: workspace:*
         version: link:../../tooling/eslint
