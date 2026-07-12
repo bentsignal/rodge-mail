@@ -7,7 +7,6 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
 import type { ComposerDraft, RecipientFields } from "@rodge-mail/features/mail";
@@ -73,6 +72,7 @@ export function ComposerScreen({
     setSelectedAccountId,
     variant,
   });
+  const backgroundColor = useColor("background");
 
   function attach() {
     showAttachmentPicker(attachFiles, attachImages);
@@ -82,34 +82,28 @@ export function ComposerScreen({
     setDraft((current) => ({ ...current, [field]: value }));
   }
   return (
-    <SafeAreaView
-      className="bg-background flex-1"
-      edges={[]}
-      style={{ flex: 1 }}
-    >
-      <View className="flex-1" style={{ flex: 1 }}>
-        <ComposerNavigationHeader
-          canSend={canSend}
-          variant={variant}
-          onCancel={router.back}
-          onDismissKeyboard={Keyboard.dismiss}
-          onSend={() => void send()}
-        />
-        <ComposerBody
-          key={idempotencyKey}
-          accounts={sendingAccounts}
-          draft={draft}
-          onAttach={attach}
-          onChange={setField}
-          onOpenSettings={() => router.navigate("/(tabs)/(settings)")}
-          onSenderChange={setSelectedAccountId}
-          onRemoveAttachment={(attachment) => void removeAttachment(attachment)}
-          recipientErrors={recipientErrors}
-          selectedAccountId={selectedAccount?.id}
-          autoFocusBody={variant === "modal"}
-        />
-      </View>
-    </SafeAreaView>
+    <View className="bg-background flex-1" style={{ backgroundColor, flex: 1 }}>
+      <ComposerNavigationHeader
+        canSend={canSend}
+        variant={variant}
+        onCancel={router.back}
+        onDismissKeyboard={Keyboard.dismiss}
+        onSend={() => void send()}
+      />
+      <ComposerBody
+        key={idempotencyKey}
+        accounts={sendingAccounts}
+        draft={draft}
+        onAttach={attach}
+        onChange={setField}
+        onOpenSettings={() => router.navigate("/(tabs)/(settings)")}
+        onSenderChange={setSelectedAccountId}
+        onRemoveAttachment={(attachment) => void removeAttachment(attachment)}
+        recipientErrors={recipientErrors}
+        selectedAccountId={selectedAccount?.id}
+        autoFocusBody={variant === "modal"}
+      />
+    </View>
   );
 }
 
@@ -147,16 +141,19 @@ function ComposerBody({
   selectedAccountId: string | undefined;
   autoFocusBody: boolean;
 }) {
-  const backgroundColor = useColor("background");
+  const paper = useColor("paper");
 
   return (
-    <PostalPaperBackground className="min-h-0" style={{ backgroundColor }}>
+    <PostalPaperBackground
+      className="min-h-0"
+      style={{ backgroundColor: paper }}
+    >
       <ScrollView
         className="flex-1"
-        contentContainerClassName="gap-3 px-4 pt-3 pb-24"
-        contentContainerStyle={{ flexGrow: 1 }}
+        contentContainerClassName="gap-3 px-4 py-3"
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
         automaticallyAdjustKeyboardInsets
-        contentInsetAdjustmentBehavior="never"
+        contentInsetAdjustmentBehavior="automatic"
         keyboardDismissMode="interactive"
         keyboardShouldPersistTaps="handled"
       >
@@ -250,7 +247,9 @@ function ComposerMessageSurface({
   onChange: (field: ComposerFieldName, value: string) => void;
   onRemoveAttachment: (attachment: NativeComposerAttachment) => void;
 }) {
+  const foreground = useColor("foreground");
   const mutedForeground = useColor("muted-foreground");
+  const primary = useColor("primary");
   return (
     <PostalSurface className="min-h-40 flex-1 rounded-xl p-4">
       <TextInput
@@ -261,6 +260,8 @@ function ComposerMessageSurface({
         multiline
         placeholder="Write a message"
         placeholderTextColor={mutedForeground}
+        selectionColor={primary}
+        style={{ color: foreground }}
         textAlignVertical="top"
         onChangeText={(value) => onChange("body", value)}
       />
@@ -275,12 +276,15 @@ function ComposerMessageSurface({
 function ComposerField({
   error,
   label,
+  style,
   ...props
 }: {
   error?: string;
   label: string;
 } & React.ComponentProps<typeof TextInput>) {
+  const foreground = useColor("foreground");
   const mutedForeground = useColor("muted-foreground");
+  const primary = useColor("primary");
 
   return (
     <View className="border-border border-b py-2">
@@ -290,6 +294,8 @@ function ComposerField({
           accessibilityLabel={label}
           className="text-foreground min-h-10 min-w-0 flex-1 text-base"
           placeholderTextColor={mutedForeground}
+          selectionColor={primary}
+          style={[{ color: foreground }, style]}
           {...props}
         />
       </View>

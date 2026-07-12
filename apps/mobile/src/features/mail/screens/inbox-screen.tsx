@@ -96,12 +96,12 @@ export function InboxScreen() {
         options={{
           headerSearchBarOptions: {
             barTintColor: card,
-            hideWhenScrolling: true,
+            hideWhenScrolling: false,
             headerIconColor: foreground,
             onCancelButtonPress: () => setSearchTerm(""),
             onChangeText: (event) => setSearchTerm(event.nativeEvent.text),
             placeholder: "Search mail",
-            placement: "integratedButton",
+            placement: "stacked",
             textColor: foreground,
             tintColor: foreground,
           },
@@ -231,8 +231,13 @@ function InboxHeader({
   const primaryForeground = useColor("primary-foreground");
 
   return (
-    <View className="bg-paper border-paper-border gap-3 border-b py-3">
-      <View className="items-end px-4">
+    <View className="bg-paper border-paper-border border-b py-2">
+      <View className="flex-row items-center gap-2 pr-4">
+        <AccountFilter
+          accounts={accounts}
+          value={accountFilter}
+          onChange={onAccountChange}
+        />
         <Pressable
           accessibilityLabel={
             showUnreadOnly ? "Show all messages" : "Show unread messages only"
@@ -242,7 +247,7 @@ function InboxHeader({
           className={
             showUnreadOnly
               ? "bg-primary border-brass-soft min-h-11 flex-row items-center gap-2 rounded-lg border px-3 py-2"
-              : "bg-paper border-paper-border min-h-11 flex-row items-center gap-2 rounded-lg border px-3 py-2"
+              : "bg-paper-deep border-paper-border min-h-11 flex-row items-center gap-2 rounded-lg border px-3 py-2"
           }
           onPress={onToggleUnread}
         >
@@ -261,11 +266,6 @@ function InboxHeader({
           </Text>
         </Pressable>
       </View>
-      <AccountFilter
-        accounts={accounts}
-        value={accountFilter}
-        onChange={onAccountChange}
-      />
       <InboxSyncStatus accounts={accounts} error={refreshError} />
     </View>
   );

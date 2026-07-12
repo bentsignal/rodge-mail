@@ -13,8 +13,9 @@ export function AccountFilter({
 }) {
   return (
     <ScrollView
+      className="min-w-0 flex-1"
       horizontal
-      contentContainerClassName="gap-2 px-4"
+      contentContainerClassName="gap-2 pl-4"
       showsHorizontalScrollIndicator={false}
     >
       <AccountFilterButton
