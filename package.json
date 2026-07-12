@@ -35,6 +35,7 @@
     "lint:ws": "pnpm dlx sherif@latest",
     "postinstall": "pnpm lint:ws",
     "readiness": "node scripts/check-production-readiness.mjs",
+    "readiness:dev": "node scripts/check-development-readiness.mjs",
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",
     "create-package": "turbo gen init",
