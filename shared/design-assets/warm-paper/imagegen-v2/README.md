@@ -21,6 +21,11 @@ The `raw/` directory retains the untouched generated images and chroma-key
 sources. The `final/` directory contains the usable paper PNGs and alpha-matted
 corner PNGs.
 
+Run `node shared/design-assets/warm-paper/optimize-imagegen-assets.mjs` to
+produce the bounded web-ready assets in `apps/web/public/warm-paper`. The paper
+is resized to 1024px and encoded as WebP; the corner is trimmed to its alpha
+bounds, resized within 256px, and encoded as lossless WebP.
+
 ## Prompts
 
 ### Paper candidates
@@ -48,4 +53,3 @@ on a flat green chroma key and converted to alpha with the imagegen skill's
 - **B:** smallest and quietest, but materially too flat.
 - **C:** most convincing page curl, but includes too much of the base sheet.
 - **D:** additional iteration with stronger curl depth; more assertive than A.
-
