@@ -58,20 +58,29 @@ export function useMobileNotifications(isAuthenticated: boolean) {
   // eslint-disable-next-line no-restricted-syntax -- Registration synchronizes native permission/token state with the signed-in owner.
   useEffect(() => {
     if (!isAuthenticated || !registrationEnabled) return;
-    void getNotificationPermission().then((permission) => {
-      if (
-        !shouldRestoreNotificationRegistration({
-          isDevice: Device.isDevice,
-          permission,
-          preferenceEnabled: registrationEnabled,
-        })
-      ) {
-        return;
-      }
-      void registerForNewMailNotifications(registerPushToken, {
-        requestPermission: false,
-      }).catch(() => undefined);
+
+    function restoreRegistration() {
+      void getNotificationPermission().then((permission) => {
+        if (
+          !shouldRestoreNotificationRegistration({
+            isDevice: Device.isDevice,
+            permission,
+            preferenceEnabled: registrationEnabled,
+          })
+        ) {
+          return;
+        }
+        void registerForNewMailNotifications(registerPushToken, {
+          requestPermission: false,
+        }).catch(() => undefined);
+      });
+    }
+
+    restoreRegistration();
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state === "active") restoreRegistration();
     });
+    return () => subscription.remove();
   }, [isAuthenticated, registerPushToken, registrationEnabled]);
 
   // eslint-disable-next-line no-restricted-syntax -- Notification response subscriptions bridge native lifecycle events into Expo Router.

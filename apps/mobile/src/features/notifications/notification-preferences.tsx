@@ -58,7 +58,6 @@ export function NotificationPreferences() {
   }
 
   async function enableDevice() {
-    if (setupState === "ready") return true;
     setIsSaving(true);
     setMessage(undefined);
     try {
