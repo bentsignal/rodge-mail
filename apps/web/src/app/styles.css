@@ -93,6 +93,9 @@
     --input: var(--warm-border-strong);
     --ring: var(--warm-brass);
     --mail-highlight: var(--warm-danger);
+    --mail-reader: #1c2019;
+    --mail-seam: #4d5246;
+    --mail-border-strong: #666b5e;
     --mail-selected: color-mix(
       in oklab,
       var(--warm-brass) 13%,
@@ -339,7 +342,7 @@ html[data-desktop-runtime="true"] .mail-app-frame {
 }
 
 .mail-reader-pane {
-  background-color: var(--mail-paper);
+  background-color: var(--mail-reader);
   box-shadow:
     -2px 0 7px rgb(43 41 36 / 7%),
     1px 0 0 rgb(255 255 255 / 55%) inset;

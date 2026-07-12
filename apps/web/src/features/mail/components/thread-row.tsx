@@ -35,17 +35,16 @@ export function ThreadRow({
         aria-posinset={position}
         aria-setsize={-1}
         className={cn(
-          "group relative w-full overflow-hidden border-y border-[var(--mail-seam)] bg-[var(--mail-paper)] shadow-[var(--warm-shadow-resting)] transition-[background-color,border-color,box-shadow,transform] duration-150",
-          position > 1 && "mt-1",
+          "group relative w-full overflow-hidden border-b border-[var(--mail-seam)] bg-[var(--mail-paper)] transition-[background-color,border-color,box-shadow] duration-150",
           isSelected
-            ? "z-[1] -translate-y-px border-[var(--mail-border-strong)] bg-[var(--mail-selected)] shadow-[var(--warm-shadow-raised)]"
-            : "hover:border-[var(--mail-border-strong)] hover:bg-[var(--mail-row-hover)]",
+            ? "z-[1] border-y border-[var(--mail-border-strong)] bg-[var(--mail-selected)] shadow-[var(--warm-shadow-raised)]"
+            : "hover:bg-[var(--mail-row-hover)]",
         )}
       >
         <SelectedMarker selected={isSelected} />
         <ContextMenu.Trigger asChild>
           <QuickLink
-            className="block w-full px-5 py-3 pr-14 text-left"
+            className="block w-full px-5 py-3 text-left"
             onClick={() => selectMessage(message)}
             params={{ messageId: message._id }}
             preload="intent"
@@ -54,7 +53,7 @@ export function ThreadRow({
             }}
             to="/messages/$messageId"
           >
-            <div className="flex items-start gap-3">
+            <div className="flex items-start gap-2">
               <SenderAvatar account={account} name={senderName} />
               <div className="min-w-0 flex-1">
                 <div className="flex items-baseline gap-2">
@@ -138,8 +137,19 @@ function ThreadMetadata({ message }: { message: InboxMessage }) {
   return (
     <div className="mt-1.5 flex h-3 items-center gap-2">
       <UnreadDot isRead={message.isRead} />
+      <PinnedMarker isPinned={message.isPinned} />
       <AttachmentMarker hasAttachments={message.hasAttachments} />
     </div>
+  );
+}
+
+function PinnedMarker({ isPinned }: { isPinned: boolean }) {
+  if (!isPinned) return null;
+  return (
+    <Pin
+      aria-label="Pinned"
+      className="size-3 fill-current text-[var(--mail-highlight)]"
+    />
   );
 }
 
@@ -163,16 +173,11 @@ function PinMessageButton({
   return (
     <button
       aria-label={message.isPinned ? "Unpin message" : "Pin message"}
-      className={cn(
-        "absolute right-3 bottom-3 flex size-7 items-center justify-center rounded-full transition",
-        message.isPinned
-          ? "text-[var(--mail-highlight)]"
-          : "text-[var(--mail-ink-soft)] opacity-0 group-hover:opacity-100 focus:opacity-100",
-      )}
+      className="absolute right-3 bottom-2.5 flex size-8 items-center justify-center rounded-lg border border-[var(--mail-seam)] bg-[var(--mail-paper-soft)] text-[var(--mail-ink-soft)] opacity-0 shadow-[var(--mail-shadow-raised)] transition-[color,opacity] group-focus-within:opacity-100 group-hover:opacity-100 hover:text-[var(--mail-highlight)] focus:opacity-100"
       onClick={() => void togglePinned(message)}
       type="button"
     >
-      <Pin className={cn("size-3.5", message.isPinned && "fill-current")} />
+      <Pin className="size-3.5" />
     </button>
   );
 }
@@ -198,7 +203,7 @@ function SenderAvatar({
   name: string;
 }) {
   return (
-    <div className="relative flex size-9 shrink-0 items-center justify-center rounded-[11px] border border-[var(--mail-seam)] bg-[var(--mail-avatar)] font-mono text-[10px] font-semibold text-[var(--mail-avatar-foreground)] shadow-[var(--mail-shadow-raised)]">
+    <div className="relative flex size-8 shrink-0 items-center justify-center rounded-[10px] border border-[var(--mail-seam)] bg-[var(--mail-avatar)] font-mono text-[10px] font-semibold text-[var(--mail-avatar-foreground)] shadow-[var(--mail-shadow-raised)]">
       {getInitials(name)}
       <AccountDot accent={account?.accent} />
     </div>

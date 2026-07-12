@@ -68,13 +68,10 @@ function InboxCount({
 }) {
   return (
     <span
-      aria-label={isLoading ? "Loading messages" : `${count} messages shown`}
-      className="mail-raised mb-0.5 flex items-baseline gap-1 rounded-[7px] border px-2 py-1 font-mono text-[var(--mail-ink-soft)]"
+      aria-label={isLoading ? "Loading messages" : `${count} messages`}
+      className="mail-raised mb-0.5 flex min-w-8 items-center justify-center rounded-[7px] border px-2 py-1 font-mono text-xs font-semibold text-[var(--mail-ink-soft)] tabular-nums"
     >
-      <span className="text-[10px] font-semibold tabular-nums">
-        <InboxCountValue count={count} isLoading={isLoading} />
-      </span>
-      <span className="text-[7px] tracking-[0.1em] uppercase">shown</span>
+      <InboxCountValue count={count} isLoading={isLoading} />
     </span>
   );
 }

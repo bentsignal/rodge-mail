@@ -216,10 +216,10 @@ function ThreadListSkeleton() {
     <div aria-label="Loading inbox" className="min-h-0 flex-1 overflow-hidden">
       {[0, 1, 2, 3, 4, 5].map((index) => (
         <div
-          className="flex animate-pulse gap-3 border-b border-[var(--mail-seam)] px-5 py-4"
+          className="flex animate-pulse gap-2 border-b border-[var(--mail-seam)] px-5 py-4"
           key={index}
         >
-          <div className="size-9 shrink-0 rounded-[11px] bg-[var(--mail-avatar)] shadow-[var(--mail-shadow-raised)]" />
+          <div className="size-8 shrink-0 rounded-[10px] bg-[var(--mail-avatar)] shadow-[var(--mail-shadow-raised)]" />
           <div className="flex-1 space-y-2.5">
             <div className="h-2.5 w-2/5 rounded-full bg-[var(--mail-paper-deep)]" />
             <div className="h-3.5 w-4/5 rounded-full bg-[var(--mail-paper-deep)]" />

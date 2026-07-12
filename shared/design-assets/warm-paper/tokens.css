@@ -45,10 +45,10 @@
 }
 
 :is([data-theme="dark"], .dark) {
-  --warm-canvas: #171b17;
-  --warm-paper: #242720;
-  --warm-paper-muted: #2d3029;
-  --warm-paper-raised: #33362e;
+  --warm-canvas: #141712;
+  --warm-paper: #242820;
+  --warm-paper-muted: #30342c;
+  --warm-paper-raised: #393d34;
   --warm-ink: #f3ebdd;
   --warm-ink-muted: #beb8aa;
   --warm-ink-subtle: #aaa397;
@@ -58,9 +58,9 @@
   --warm-brass: #c89a42;
   --warm-brass-hover: #d3aa55;
   --warm-brass-pressed: #af812d;
-  --warm-danger: #d56a59;
-  --warm-border: #41453b;
-  --warm-border-strong: #5a5d52;
+  --warm-danger: #e68372;
+  --warm-border: #4d5246;
+  --warm-border-strong: #666b5e;
 
   --warm-shadow-resting:
     0 1px 2px rgb(0 0 0 / 22%), 0 4px 12px rgb(0 0 0 / 12%);
