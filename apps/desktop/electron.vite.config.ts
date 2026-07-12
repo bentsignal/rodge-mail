@@ -3,7 +3,7 @@ import { defineConfig, externalizeDepsPlugin } from "electron-vite";
 
 export default defineConfig({
   main: {
-    plugins: [externalizeDepsPlugin()],
+    plugins: [externalizeDepsPlugin({ exclude: ["@rodge-mail/config"] })],
     build: {
       rollupOptions: {
         input: resolve("src/main/index.ts"),
