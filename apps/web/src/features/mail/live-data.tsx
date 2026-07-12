@@ -45,11 +45,11 @@ interface LiveMailContextValue {
   isSeedingDemo: boolean;
   isSyncingAccounts: boolean;
   loadMore: () => void;
+  markMessageRead: (message: InboxMessage) => void;
   removeFromRodge: (message: Pick<InboxMessage, "threadId">) => Promise<void>;
   replyToSelectedThread: () => void;
   seedDemoMail: () => Promise<void>;
   syncAllAccounts: () => Promise<void>;
-  selectMessage: (message: InboxMessage) => void;
   selectedMessageId: InboxMessage["_id"] | undefined;
   selectedThreadId: InboxMessage["threadId"] | undefined;
   selectedThread: MailThreadDetail | undefined;
@@ -161,7 +161,7 @@ function useLiveMailQueries({
     isLoadingAccounts: accountQuery.isPending,
     isLoadingInbox: getIsLoadingInbox({
       debouncedSearchQuery,
-      hasVisibleMessages: inboxMessages.length > 0,
+      hasCachedPage: activePage.hasCachedPage,
       pageStatus: activePage.status,
       searchQuery,
     }),
@@ -207,7 +207,6 @@ function useLiveMailActions(
   const navigate = useNavigate();
   const clearSelection = useMailStore((store) => store.clearSelection);
   const openReply = useMailStore((store) => store.openReply);
-  const selectThread = useMailStore((store) => store.selectThread);
   const setThreadPinned = useMutation(api.mail.mutations.setThreadPinned);
   const setThreadRead = useMutation(api.mail.mutations.setThreadRead);
   const removeThreadFromRodge = useMutation(
@@ -250,8 +249,7 @@ function useLiveMailActions(
     }
   }
 
-  function selectMessage(message: InboxMessage) {
-    selectThread({ messageId: message._id, threadId: message.threadId });
+  function markMessageRead(message: InboxMessage) {
     if (message.isRead) return;
     void setThreadRead({ threadId: message.threadId, isRead: true }).catch(
       (error) => {
@@ -295,10 +293,10 @@ function useLiveMailActions(
   return {
     isSeedingDemo,
     ...sync,
+    markMessageRead,
     removeFromRodge,
     replyToSelectedThread,
     seedDemoMail,
-    selectMessage,
     togglePinned,
     toggleRead,
   };

@@ -7,7 +7,7 @@ describe("mailbox page state", () => {
     expect(
       getIsLoadingInbox({
         debouncedSearchQuery: "",
-        hasVisibleMessages: false,
+        hasCachedPage: false,
         pageStatus: "LoadingFirstPage",
         searchQuery: "",
       }),
@@ -15,7 +15,7 @@ describe("mailbox page state", () => {
     expect(
       getIsLoadingInbox({
         debouncedSearchQuery: "",
-        hasVisibleMessages: true,
+        hasCachedPage: true,
         pageStatus: "LoadingFirstPage",
         searchQuery: "",
       }),
@@ -26,7 +26,7 @@ describe("mailbox page state", () => {
     expect(
       getIsLoadingInbox({
         debouncedSearchQuery: "",
-        hasVisibleMessages: false,
+        hasCachedPage: false,
         pageStatus: "LoadingFirstPage",
         searchQuery: "invoice",
       }),

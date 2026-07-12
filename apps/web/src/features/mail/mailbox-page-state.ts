@@ -1,11 +1,11 @@
 export function getIsLoadingInbox({
   debouncedSearchQuery,
-  hasVisibleMessages,
+  hasCachedPage,
   pageStatus,
   searchQuery,
 }: {
   debouncedSearchQuery: string;
-  hasVisibleMessages: boolean;
+  hasCachedPage: boolean;
   pageStatus: string;
   searchQuery: string;
 }) {
@@ -13,7 +13,7 @@ export function getIsLoadingInbox({
     searchQuery.trim().length === 0 &&
     debouncedSearchQuery.length === 0 &&
     pageStatus === "LoadingFirstPage" &&
-    !hasVisibleMessages
+    !hasCachedPage
   );
 }
 

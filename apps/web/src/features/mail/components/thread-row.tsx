@@ -18,8 +18,8 @@ export function ThreadRow({
 }) {
   const {
     accounts,
+    markMessageRead,
     removeFromRodge,
-    selectMessage,
     selectedThreadId,
     togglePinned,
   } = useLiveMail();
@@ -45,7 +45,7 @@ export function ThreadRow({
         <ContextMenu.Trigger asChild>
           <QuickLink
             className="block w-full px-4 py-3.5 text-left"
-            onClick={() => selectMessage(message)}
+            onClick={() => markMessageRead(message)}
             params={{ messageId: message._id }}
             preload="intent"
             search={{

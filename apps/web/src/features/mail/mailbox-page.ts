@@ -5,7 +5,10 @@ import { convexQuery } from "@convex-dev/react-query";
 import { useAction, usePaginatedQuery } from "convex/react";
 
 import { api } from "@rodge-mail/convex/api";
-import { mergeSearchResults } from "@rodge-mail/features/mail";
+import {
+  mergeSearchResults,
+  readCachedAccountPage,
+} from "@rodge-mail/features/mail";
 
 import type { InboxMessage } from "./types";
 import { MAIL_PAGE_SIZE } from "./constants";
@@ -39,13 +42,15 @@ export function useMailboxPage({
     !isSearching &&
     accountId === undefined &&
     activePage.status === "LoadingFirstPage";
-  const settledResults = useSettledMailboxPage({
+  const cachedPage = useSettledMailboxPage({
+    accountId,
     activeResults: activePage.results,
     initialInbox,
+    isSearching,
     scopeKey,
     status: activePage.status,
   });
-  const fallbackResults = useInitialInbox ? initialInbox : settledResults;
+  const fallbackResults = useInitialInbox ? initialInbox : cachedPage.items;
   const lexicalResults = getVisibleResults(
     activePage.status,
     activePage.results,
@@ -60,6 +65,7 @@ export function useMailboxPage({
     : lexicalResults;
   return {
     ...activePage,
+    hasCachedPage: useInitialInbox || cachedPage.isCached,
     isSemanticSearching: semantic.isLoading,
     results,
     status: getSmartSearchStatus(
@@ -72,43 +78,45 @@ export function useMailboxPage({
 }
 
 function useSettledMailboxPage({
+  accountId,
   activeResults,
   initialInbox,
+  isSearching,
   scopeKey,
   status,
 }: {
+  accountId: InboxMessage["accountId"] | undefined;
   activeResults: InboxMessage[];
   initialInbox: InboxMessage[];
+  isSearching: boolean;
   scopeKey: string;
   status: string;
 }) {
-  const [cache, setCache] = useState(() => ({
-    observedResultsKey: getResultsKey(initialInbox),
-    observedScopeKey: getMailboxScopeKey(undefined, ""),
-    pages: new Map<string, InboxMessage[]>([
-      [getMailboxScopeKey(undefined, ""), initialInbox],
-    ]),
-  }));
-  const activeResultsKey = getResultsKey(activeResults);
-  const hasChanged =
-    cache.observedScopeKey !== scopeKey ||
-    cache.observedResultsKey !== activeResultsKey;
+  const [cache, setCache] = useState(
+    () =>
+      new Map<string, InboxMessage[]>([
+        [getMailboxScopeKey(undefined, ""), initialInbox],
+      ]),
+  );
 
-  if (status !== "LoadingFirstPage" && hasChanged) {
-    const pages = new Map(cache.pages);
-    pages.set(scopeKey, activeResults);
-    setCache({
-      observedResultsKey: activeResultsKey,
-      observedScopeKey: scopeKey,
-      pages,
+  // eslint-disable-next-line no-restricted-syntax -- Cache the latest settled Convex page so revisiting a mailbox never discards visible data.
+  useEffect(() => {
+    if (status === "LoadingFirstPage") return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- The Convex page is an external subscription snapshot.
+    setCache((current) => {
+      if (current.get(scopeKey) === activeResults) return current;
+      const next = new Map(current);
+      next.set(scopeKey, activeResults);
+      return next;
     });
-  }
+  }, [activeResults, scopeKey, status]);
 
-  return cache.pages.get(scopeKey) ?? [];
-}
-
-function getResultsKey(messages: InboxMessage[]) {
-  return messages.map((message) => message._id).join(":");
+  return readCachedAccountPage({
+    accountId,
+    cache,
+    key: scopeKey,
+    unifiedKey: isSearching ? undefined : getMailboxScopeKey(undefined, ""),
+  });
 }
 
 function getSmartSearchStatus(

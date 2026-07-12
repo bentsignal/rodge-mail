@@ -4,6 +4,7 @@ import { createStore } from "rostra";
 
 import type { MailAccountFilter } from "@rodge-mail/features/mail";
 import { api } from "@rodge-mail/convex/api";
+import { readCachedAccountPage } from "@rodge-mail/features/mail";
 
 import { toConvexId } from "./lib/convex-id";
 import { toMailAccount, toMailThreads } from "./lib/convex-mail";
@@ -38,10 +39,13 @@ function useInternalStore() {
   const messages = inbox.results;
   const liveThreads = toMailThreads(messages);
   const hasLivePage = inbox.status !== "LoadingFirstPage";
-  const cachedThreads = threadCache.get(accountFilter);
-  const visibleThreads = hasLivePage
-    ? liveThreads
-    : (cachedThreads ?? liveThreads);
+  const cachedPage = readCachedAccountPage({
+    accountId: accountFilter === "all" ? undefined : accountFilter,
+    cache: threadCache,
+    key: accountFilter,
+    unifiedKey: "all",
+  });
+  const visibleThreads = hasLivePage ? liveThreads : cachedPage.items;
   const threads = applyThreadOverrides(visibleThreads, threadOverrides);
   const accounts = accountRows?.map(toMailAccount) ?? [];
 
@@ -109,7 +113,7 @@ function useInternalStore() {
     accountFilter,
     accounts,
     canLoadMore: inbox.status === "CanLoadMore",
-    isLoading: inbox.status === "LoadingFirstPage" && !cachedThreads,
+    isLoading: inbox.status === "LoadingFirstPage" && !cachedPage.isCached,
     isLoadingMore: inbox.status === "LoadingMore",
     loadMore,
     markRead,

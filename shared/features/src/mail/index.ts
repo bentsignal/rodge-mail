@@ -1,4 +1,5 @@
 export { DEMO_MAIL_ACCOUNTS, DEMO_MAIL_THREADS } from "./demo";
+export { readCachedAccountPage } from "./account-page-cache";
 export { parseEmailText } from "./email-text";
 export {
   normalizeRecipientFields,
