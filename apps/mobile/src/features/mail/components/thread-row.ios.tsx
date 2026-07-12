@@ -144,13 +144,12 @@ function ThreadSummary({
   return (
     <HStack
       alignment="center"
-      spacing={12}
+      spacing={10}
       modifiers={[
         frame({ height: rowHeight, maxWidth: Infinity, alignment: "leading" }),
-        padding({ leading: 14, trailing: 12 }),
+        padding({ leading: 12, trailing: 12 }),
       ]}
     >
-      <UnreadRail color={colors.brass} isRead={thread.isRead} />
       <SenderAvatar colors={colors} thread={thread} />
       <VStack
         alignment="leading"
@@ -212,11 +211,11 @@ function SenderAvatar({
   return (
     <Text
       modifiers={[
-        frame({ height: 42, width: 42 }),
+        frame({ height: 40, width: 40 }),
         font({ size: 13, weight: "semibold" }),
         foregroundStyle(colors.foreground),
         background(
-          colors.paperDeep,
+          thread.isRead ? colors.paperDeep : colors.brassSoft,
           shapes.roundedRectangle({
             cornerRadius: 11,
             roundedCornerStyle: "continuous",
@@ -225,19 +224,6 @@ function SenderAvatar({
       ]}
     >
       {getSenderInitials(thread.sender.name)}
-    </Text>
-  );
-}
-
-function UnreadRail({ color, isRead }: { color: string; isRead: boolean }) {
-  return (
-    <Text
-      modifiers={[
-        frame({ height: 64, width: 4 }),
-        background(isRead ? "clear" : color, shapes.capsule()),
-      ]}
-    >
-      {" "}
     </Text>
   );
 }
@@ -256,6 +242,7 @@ function PinIndicator({
 function useThreadRowColors() {
   return {
     brass: useColor("brass"),
+    brassSoft: useColor("brass-soft"),
     foreground: useColor("foreground"),
     forest: useColor("forest-raised"),
     muted: useColor("muted"),

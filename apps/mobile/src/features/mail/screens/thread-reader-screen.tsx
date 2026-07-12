@@ -1,9 +1,9 @@
 import type { LayoutChangeEvent } from "react-native";
 import { useEffect, useRef, useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useMutation, useQuery } from "convex/react";
-import { Pin, Reply } from "lucide-react-native";
+import { Archive, Pin, Reply } from "lucide-react-native";
 
 import type { MailThread } from "@rodge-mail/features/mail";
 import { api } from "@rodge-mail/convex/api";
@@ -54,6 +54,7 @@ function ThreadReader({
   thread: MailThread;
 }) {
   const router = useRouter();
+  const archiveThread = useMutation(api.mail.mutations.archiveThread);
   const setThreadPinned = useMutation(api.mail.mutations.setThreadPinned);
   const foreground = useColor("foreground");
   const scrollViewRef = useRef<ScrollView>(null);
@@ -69,6 +70,14 @@ function ThreadReader({
       });
     } catch {
       setPinOverride(undefined);
+    }
+  }
+  async function archive() {
+    try {
+      await archiveThread({ threadId: toConvexId<"threads">(thread.id) });
+      router.back();
+    } catch {
+      Alert.alert("Couldn’t archive this thread", "Please try again.");
     }
   }
   function reply() {
@@ -94,12 +103,7 @@ function ThreadReader({
         options={{
           title: thread.sender.name,
           headerRight: () => (
-            <ThreadHeaderActions
-              color={foreground}
-              isPinned={isPinned}
-              onPin={() => void togglePin()}
-              onReply={reply}
-            />
+            <ThreadReplyAction color={foreground} onReply={reply} />
           ),
         }}
       />
@@ -121,43 +125,88 @@ function ThreadReader({
               }
             />
           ))}
+          <ThreadFooterActions
+            isPinned={isPinned}
+            onArchive={() => void archive()}
+            onPin={() => void togglePin()}
+          />
         </ScrollView>
       </PostalPaperBackground>
     </>
   );
 }
 
-function ThreadHeaderActions({
+function ThreadReplyAction({
   color,
-  isPinned,
-  onPin,
   onReply,
 }: {
   color: string;
-  isPinned: boolean;
-  onPin: () => void;
   onReply: () => void;
 }) {
   return (
-    <View className="flex-row items-center gap-5">
-      <Pressable
-        accessibilityHint="Starts a reply to the latest message"
-        accessibilityLabel="Reply"
-        accessibilityRole="button"
-        hitSlop={10}
-        onPress={onReply}
-      >
-        <Reply color={color} size={19} />
-      </Pressable>
-      <Pressable
-        accessibilityLabel={isPinned ? "Unpin thread" : "Pin thread"}
-        accessibilityRole="button"
-        hitSlop={10}
+    <Pressable
+      accessibilityHint="Starts a reply to the latest message"
+      accessibilityLabel="Reply"
+      accessibilityRole="button"
+      hitSlop={10}
+      onPress={onReply}
+    >
+      <Reply color={color} size={20} />
+    </Pressable>
+  );
+}
+
+function ThreadFooterActions({
+  isPinned,
+  onArchive,
+  onPin,
+}: {
+  isPinned: boolean;
+  onArchive: () => void;
+  onPin: () => void;
+}) {
+  const foreground = useColor("foreground");
+  return (
+    <View className="border-paper-border bg-paper-deep mt-2 flex-row gap-2 rounded-2xl border p-2">
+      <ThreadFooterButton
+        icon={
+          <Pin
+            color={foreground}
+            fill={isPinned ? foreground : "transparent"}
+            size={18}
+          />
+        }
+        label={isPinned ? "Unpin" : "Pin"}
         onPress={onPin}
-      >
-        <Pin color={color} fill={isPinned ? color : "transparent"} size={19} />
-      </Pressable>
+      />
+      <ThreadFooterButton
+        icon={<Archive color={foreground} size={18} />}
+        label="Archive"
+        onPress={onArchive}
+      />
     </View>
+  );
+}
+
+function ThreadFooterButton({
+  icon,
+  label,
+  onPress,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityLabel={`${label} thread`}
+      accessibilityRole="button"
+      className="border-paper-border bg-paper flex-1 flex-row items-center justify-center gap-2 rounded-xl border px-3 py-3 active:opacity-70"
+      onPress={onPress}
+    >
+      {icon}
+      <Text className="text-foreground text-sm font-semibold">{label}</Text>
+    </Pressable>
   );
 }
 

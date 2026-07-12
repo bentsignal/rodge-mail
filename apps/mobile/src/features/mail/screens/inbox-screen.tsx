@@ -103,7 +103,7 @@ export function InboxScreen() {
             onCancelButtonPress: () => setSearchTerm(""),
             onChangeText: (event) => setSearchTerm(event.nativeEvent.text),
             placeholder: "Search mail",
-            placement: "stacked",
+            placement: "automatic",
             textColor: foreground,
             tintColor: primary,
           },

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -7,6 +7,7 @@ import {
   View,
 } from "react-native";
 import { useMutation } from "convex/react";
+import { Check, TriangleAlert } from "lucide-react-native";
 
 import { api } from "@rodge-mail/convex/api";
 
@@ -15,6 +16,7 @@ import { useColor } from "~/hooks/use-color";
 import { toConvexId } from "../lib/convex-id";
 
 const MAX_LABEL_LENGTH = 80;
+type SaveStatus = "idle" | "saving" | "success" | "error";
 
 export function AccountLabelSettings({
   accounts,
@@ -38,23 +40,23 @@ function AccountLabelForm({ account }: { account: MobileMailAccount }) {
   const foreground = useColor("foreground");
   const setDisplayLabel = useMutation(api.accounts.mutations.setDisplayLabel);
   const [label, setLabel] = useState(account.displayLabel ?? "");
-  const [isSaving, setIsSaving] = useState(false);
-  const [message, setMessage] = useState<string>();
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
+  const resetTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const identity = account.displayName?.trim();
 
   async function save() {
-    setIsSaving(true);
-    setMessage(undefined);
+    clearTimeout(resetTimer.current);
+    setSaveStatus("saving");
     try {
       await setDisplayLabel({
         accountId: toConvexId<"mailAccounts">(account.id),
         displayLabel: label,
       });
-      setMessage(label.trim() ? "Name saved." : "Name reset.");
+      setSaveStatus("success");
     } catch {
-      setMessage("Could not save this name.");
+      setSaveStatus("error");
     }
-    setIsSaving(false);
+    resetTimer.current = setTimeout(() => setSaveStatus("idle"), 1800);
   }
 
   return (
@@ -89,28 +91,34 @@ function AccountLabelForm({ account }: { account: MobileMailAccount }) {
           onSubmitEditing={() => void save()}
         />
         <Pressable
-          accessibilityLabel={`Save display name for ${account.address}`}
+          accessibilityLabel={`${getSaveStatusLabel(saveStatus)} for ${account.address}`}
+          accessibilityLiveRegion="polite"
           accessibilityRole="button"
-          className="bg-primary h-10 min-w-16 items-center justify-center rounded-lg px-3 disabled:opacity-50"
-          disabled={isSaving}
+          className="bg-primary h-10 w-16 items-center justify-center rounded-lg px-3 disabled:opacity-70"
+          disabled={saveStatus === "saving"}
           onPress={() => void save()}
         >
-          <SaveButtonContent isSaving={isSaving} />
+          <SaveButtonContent status={saveStatus} />
         </Pressable>
       </View>
-      <SaveMessage message={message} />
     </View>
   );
 }
 
-function SaveButtonContent({ isSaving }: { isSaving: boolean }) {
-  if (isSaving) return <ActivityIndicator color="white" size="small" />;
+function SaveButtonContent({ status }: { status: SaveStatus }) {
+  if (status === "saving") {
+    return <ActivityIndicator color="white" size="small" />;
+  }
+  if (status === "success") return <Check color="white" size={18} />;
+  if (status === "error") return <TriangleAlert color="white" size={18} />;
   return <Text className="font-semibold text-white">Save</Text>;
 }
 
-function SaveMessage({ message }: { message: string | undefined }) {
-  if (!message) return null;
-  return <Text className="text-muted-foreground text-xs">{message}</Text>;
+function getSaveStatusLabel(status: SaveStatus) {
+  if (status === "saving") return "Saving display name";
+  if (status === "success") return "Display name saved";
+  if (status === "error") return "Display name could not be saved";
+  return "Save display name";
 }
 
 function getAccountIdentity(

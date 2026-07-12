@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useMutation } from "convex/react";
+import { Check, LoaderCircle, TriangleAlert } from "lucide-react";
 
 import { api } from "@rodge-mail/convex/api";
 import { toast } from "@rodge-mail/ui-web/toast";
@@ -8,6 +9,7 @@ import type { MailAccountView } from "../types";
 import { useLiveMail } from "../live-data";
 
 const MAX_LABEL_LENGTH = 80;
+type SaveStatus = "idle" | "saving" | "success" | "error";
 
 export function AccountLabelSettings() {
   const { accounts } = useLiveMail();
@@ -42,21 +44,22 @@ function AccountLabelForms({ accounts }: { accounts: MailAccountView[] }) {
 function AccountLabelForm({ account }: { account: MailAccountView }) {
   const setDisplayLabel = useMutation(api.accounts.mutations.setDisplayLabel);
   const [label, setLabel] = useState(account.displayLabel ?? "");
-  const [isSaving, setIsSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
+  const resetTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const identity = account.displayName?.trim();
 
   async function save(event: React.FormEvent) {
     event.preventDefault();
-    setIsSaving(true);
+    clearTimeout(resetTimer.current);
+    setSaveStatus("saving");
     try {
       await setDisplayLabel({ accountId: account._id, displayLabel: label });
-      toast.success(
-        label.trim() ? "Account name saved." : "Account name reset.",
-      );
+      setSaveStatus("success");
     } catch {
       toast.error("Could not save this account name.");
+      setSaveStatus("error");
     }
-    setIsSaving(false);
+    resetTimer.current = setTimeout(() => setSaveStatus("idle"), 1800);
   }
 
   return (
@@ -73,7 +76,7 @@ function AccountLabelForm({ account }: { account: MailAccountView }) {
       <div className="mt-1.5 flex gap-2">
         <input
           autoComplete="off"
-          className="mail-input h-9 min-w-0 flex-1 rounded-lg border px-3 text-sm outline-none focus:border-[var(--mail-brass)]"
+          className="mail-field h-9 min-w-0 flex-1 rounded-lg border border-[var(--mail-border-strong)] px-3 text-sm outline-none focus:border-[var(--mail-brass)]"
           id={`account-label-${account._id}`}
           maxLength={MAX_LABEL_LENGTH}
           onChange={(event) => setLabel(event.target.value)}
@@ -81,11 +84,13 @@ function AccountLabelForm({ account }: { account: MailAccountView }) {
           value={label}
         />
         <button
-          className="mail-raised h-9 rounded-lg border px-3 text-xs font-semibold disabled:opacity-50"
-          disabled={isSaving}
+          aria-live="polite"
+          aria-label={getSaveStatusLabel(saveStatus)}
+          className="mail-raised flex h-9 w-[4.5rem] items-center justify-center rounded-lg border px-3 text-xs font-semibold disabled:opacity-70"
+          disabled={saveStatus === "saving"}
           type="submit"
         >
-          <SaveButtonLabel isSaving={isSaving} />
+          <SaveButtonContent status={saveStatus} />
         </button>
       </div>
       <p className="mail-label mt-2 truncate text-xs">
@@ -95,9 +100,22 @@ function AccountLabelForm({ account }: { account: MailAccountView }) {
   );
 }
 
-function SaveButtonLabel({ isSaving }: { isSaving: boolean }) {
-  if (isSaving) return <>Saving…</>;
+function SaveButtonContent({ status }: { status: SaveStatus }) {
+  if (status === "saving") {
+    return <LoaderCircle aria-hidden className="size-4 animate-spin" />;
+  }
+  if (status === "success") return <Check aria-hidden className="size-4" />;
+  if (status === "error") {
+    return <TriangleAlert aria-hidden className="size-4" />;
+  }
   return <>Save</>;
+}
+
+function getSaveStatusLabel(status: SaveStatus) {
+  if (status === "saving") return "Saving account name";
+  if (status === "success") return "Account name saved";
+  if (status === "error") return "Account name could not be saved";
+  return "Save account name";
 }
 
 function getAccountIdentity(
