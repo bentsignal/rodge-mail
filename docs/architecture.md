@@ -19,11 +19,13 @@ Electron host ───────┼─> Convex queries, mutations, and auth
 Expo mobile ─────────┘
 ```
 
-The Electron application loads the same HTTPS web origin as the browser:
-Portless during development and the hosted origin in packaged builds. That
-keeps one web implementation and one stable WebAuthn relying-party origin per
-environment. It must not expose Node, filesystem, shell, or generic IPC access
-to remote renderer content.
+The Electron application uses the same TanStack implementation as the browser.
+Development loads the Portless HTTPS origin. Packaged builds bundle the web
+output, run it in a sandboxed Electron utility process, and intercept only the
+baked `https://www.rodge-mail.local` origin so the renderer retains a stable
+WebAuthn relying-party origin without requiring Portless or Vercel at runtime.
+It exposes no Node, filesystem, shell, or generic IPC access to renderer
+content.
 
 ## Identity and mailbox access
 

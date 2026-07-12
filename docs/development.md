@@ -45,7 +45,8 @@ remain subdomains of the same relying-party ID.
 
 The desktop app defaults to the Portless web origin in development. Set
 `RODGE_WEB_URL` only when intentionally testing another safe development
-origin; packaged builds continue to use the deployed HTTPS origin.
+origin. Packaged builds ignore that override and serve the bundled TanStack
+output through Electron's intercepted `https://www.rodge-mail.local` origin.
 
 Desktop authentication opens `/desktop-auth` in the system browser and returns
 through `rodge-mail://`. Local development can use the Portless origin. For a
