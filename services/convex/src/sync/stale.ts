@@ -34,6 +34,10 @@ export function canFinishSyncRun(status: SyncRunState["status"]) {
   return status === "running";
 }
 
+export function canStartSyncRun(status: SyncRunState["status"]) {
+  return status === "pending";
+}
+
 export function getActiveSyncAccountIds<AccountId extends string>(
   runs: AccountSyncRunState<AccountId>[],
 ) {

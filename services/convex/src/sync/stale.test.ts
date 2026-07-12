@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   canFinishSyncRun,
+  canStartSyncRun,
   getActiveSyncAccountIds,
   getOrphanedSyncAccountIds,
   isStaleSyncRun,
@@ -42,6 +43,13 @@ describe("stale sync runs", () => {
   it("rejects late completion after recovery has failed a run", () => {
     expect(canFinishSyncRun("running")).toBe(true);
     expect(canFinishSyncRun("failed")).toBe(false);
+  });
+
+  it("does not restart a run after recovery has settled it", () => {
+    expect(canStartSyncRun("pending")).toBe(true);
+    expect(canStartSyncRun("running")).toBe(false);
+    expect(canStartSyncRun("failed")).toBe(false);
+    expect(canStartSyncRun("succeeded")).toBe(false);
   });
 
   it("does not fail an account while a newer run is still active", () => {

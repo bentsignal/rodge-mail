@@ -35,6 +35,7 @@ import {
 import { getUsableMicrosoftTokens } from "../providers/microsoft/tokenAccess";
 import {
   canFinishSyncRun,
+  canStartSyncRun,
   getActiveSyncAccountIds,
   getOrphanedSyncAccountIds,
   isStaleSyncRun,
@@ -328,6 +329,7 @@ export const startRun = internalMutation({
   handler: async (ctx, args) => {
     const run = await ctx.db.get(args.syncRunId);
     if (!run) throw new ConvexError("Sync run not found");
+    if (!canStartSyncRun(run.status)) return false;
     const now = Date.now();
     await Promise.all([
       ctx.db.patch(run._id, {
@@ -343,6 +345,7 @@ export const startRun = internalMutation({
         updatedAt: now,
       }),
     ]);
+    return true;
   },
 });
 
@@ -473,7 +476,10 @@ export const executeGmailSync = internalAction({
       },
     );
     if (!syncRunId) return;
-    await ctx.runMutation(internal.sync.internal.startRun, { syncRunId });
+    const started = await ctx.runMutation(internal.sync.internal.startRun, {
+      syncRunId,
+    });
+    if (!started) return;
     try {
       const connection = await ctx.runQuery(
         internal.sync.internal.getGmailSyncContext,
@@ -591,7 +597,10 @@ export const executeMicrosoftSync = internalAction({
       },
     );
     if (!syncRunId) return;
-    await ctx.runMutation(internal.sync.internal.startRun, { syncRunId });
+    const started = await ctx.runMutation(internal.sync.internal.startRun, {
+      syncRunId,
+    });
+    if (!started) return;
     try {
       const connection = await ctx.runQuery(
         internal.sync.internal.getMicrosoftSyncContext,

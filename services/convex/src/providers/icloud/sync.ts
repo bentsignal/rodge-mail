@@ -47,7 +47,10 @@ export const synchronize = internalAction({
       args,
     );
     if (!syncRunId) return;
-    await ctx.runMutation(internal.sync.internal.startRun, { syncRunId });
+    const started = await ctx.runMutation(internal.sync.internal.startRun, {
+      syncRunId,
+    });
+    if (!started) return;
     try {
       const connection = await ctx.runQuery(
         internal.providers.icloud.internal.getConnection,
