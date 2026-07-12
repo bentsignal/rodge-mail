@@ -88,13 +88,26 @@ async function checkDesktopApp() {
     };
   }
 
-  const appPath = join(homedir(), "Applications", "Rodge Mail.app");
-  try {
-    await access(appPath);
-    return { name: "Installed desktop app", ok: true, detail: ` (${appPath})` };
-  } catch {
-    return { name: "Installed desktop app", ok: false, detail: ` (${appPath})` };
+  const appPaths = [
+    "/Applications/Rodge Mail.app",
+    join(homedir(), "Applications", "Rodge Mail.app"),
+  ];
+  for (const appPath of appPaths) {
+    try {
+      await access(appPath);
+      return {
+        name: "Installed desktop app",
+        ok: true,
+        detail: ` (${appPath})`,
+      };
+    } catch {}
   }
+
+  return {
+    name: "Installed desktop app",
+    ok: false,
+    detail: ` (${appPaths.join(" or ")})`,
+  };
 }
 
 async function readLocalEnv() {
