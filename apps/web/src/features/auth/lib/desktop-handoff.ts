@@ -7,6 +7,7 @@ import {
 
 import { env } from "~/env";
 import { authClient } from "./client";
+import { createDesktopAuthDeepLink } from "./desktop-auth-contracts";
 
 const pendingDesktopAuthKey = "rodge-mail:desktop-auth";
 const tokenByteLength = 32;
@@ -153,10 +154,7 @@ export function createDesktopDeepLink(
   requestId: string,
   authorizationCode: string,
 ) {
-  const url = new URL("rodge-mail://auth/desktop-complete");
-  url.searchParams.set("authorization_code", authorizationCode);
-  url.searchParams.set("request_id", requestId);
-  return url.href;
+  return createDesktopAuthDeepLink(requestId, authorizationCode);
 }
 
 function getDesktopBrowserAuthOrigin() {

@@ -13,6 +13,7 @@ import {
   readPendingDesktopAuth,
   usesDesktopBrowserAuth,
 } from "./lib/desktop-handoff";
+import { getSafeAppRedirect } from "./lib/safe-redirect";
 
 interface RegistrationCodeRequest {
   email: string;
@@ -186,11 +187,6 @@ function createRecoveryActions(
   return { finishRecovery, requestRecoveryCode };
 }
 
-function getSafeRedirect(redirectUri: string | undefined) {
-  if (!redirectUri?.startsWith("/") || redirectUri.startsWith("//")) return "/";
-  return redirectUri;
-}
-
 function normalizeRegistrationVerification(details: RegistrationVerification) {
   const code = details.code.trim();
   const email = details.email.trim().toLowerCase();
@@ -204,7 +200,7 @@ async function authenticateWithPasskey(redirectUri: string | undefined) {
   if (result.error) {
     throw new Error(result.error.message ?? "Passkey sign-in failed");
   }
-  window.location.replace(getSafeRedirect(redirectUri));
+  window.location.replace(getSafeAppRedirect(redirectUri));
   return true;
 }
 
@@ -257,7 +253,7 @@ async function completeRegistration(
     await authClient.signOut();
     throw new Error(passkey.error.message ?? "Passkey setup failed");
   }
-  window.location.replace(getSafeRedirect(redirectUri));
+  window.location.replace(getSafeAppRedirect(redirectUri));
   return true;
 }
 

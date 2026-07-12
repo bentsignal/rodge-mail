@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { z } from "zod";
 
+import { desktopAuthRequestSearchSchema } from "~/features/auth/lib/desktop-auth-contracts";
 import {
   authorizeDesktopAuth,
   createDesktopDeepLink,
@@ -9,9 +9,7 @@ import {
 
 export const Route = createFileRoute("/desktop-auth")({
   component: DesktopAuth,
-  validateSearch: z.object({
-    request_id: z.string().regex(/^[A-Za-z0-9_-]{43}$/u),
-  }),
+  validateSearch: desktopAuthRequestSearchSchema,
   beforeLoad: ({ context, search }) => {
     if (context.isAuthenticated) return;
     throw redirect({

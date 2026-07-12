@@ -1,15 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { z } from "zod";
 
+import { desktopAuthCompleteSearchSchema } from "~/features/auth/lib/desktop-auth-contracts";
 import { useAuthStore } from "~/features/auth/store";
 
 export const Route = createFileRoute("/auth/desktop-complete")({
   component: DesktopAuthComplete,
-  validateSearch: z.object({
-    authorization_code: z.string().regex(/^[A-Za-z0-9_-]{43}$/u),
-    request_id: z.string().regex(/^[A-Za-z0-9_-]{43}$/u),
-  }),
+  validateSearch: desktopAuthCompleteSearchSchema,
 });
 
 function DesktopAuthComplete() {

@@ -1,15 +1,13 @@
 import { useEffect } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { z } from "zod";
 
-const providerSearchSchema = z.object({
-  gmail: z.enum(["connected", "error"]).optional(),
-  microsoft: z.enum(["connected", "error"]).optional(),
-  provider: z.enum(["gmail", "microsoft"]),
-});
+import {
+  createProviderCompletionDeepLink,
+  providerCompletionSearchSchema,
+} from "~/features/mail/provider-completion";
 
 export const Route = createFileRoute("/provider-complete")({
-  validateSearch: providerSearchSchema,
+  validateSearch: providerCompletionSearchSchema,
   component: ProviderComplete,
 });
 
@@ -17,8 +15,7 @@ function ProviderComplete() {
   const search = Route.useSearch({
     select: (value) => value,
   });
-  const result = search[search.provider] ?? "error";
-  const destination = `rodge-mail://provider-complete?provider=${search.provider}&result=${result}`;
+  const destination = createProviderCompletionDeepLink(search);
 
   // eslint-disable-next-line no-restricted-syntax -- The OAuth completion page must hand control from the system browser back to the native app.
   useEffect(() => {
