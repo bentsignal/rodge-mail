@@ -125,6 +125,26 @@ export async function toThreadListItem(
   };
 }
 
+export async function toArchivedThreadListItem(
+  ctx: Pick<QueryCtx, "db">,
+  thread: Doc<"threads">,
+) {
+  const latestArchivedMessage = await ctx.db
+    .query("messages")
+    .withIndex("by_thread_received", (q) => q.eq("threadId", thread._id))
+    .order("desc")
+    .filter((q) => q.neq(q.field("archivedAt"), undefined))
+    .first();
+  if (!latestArchivedMessage || thread.archivedAt === undefined) return null;
+  return {
+    ...(await toMessageListItem(ctx, latestArchivedMessage)),
+    archivedAt: thread.archivedAt,
+    isPinned: false,
+    isRead: thread.unreadCount === 0,
+    receivedAt: latestArchivedMessage.receivedAt,
+  };
+}
+
 export async function toMessageDetail(
   ctx: Pick<QueryCtx, "db">,
   message: Doc<"messages">,

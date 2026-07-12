@@ -64,6 +64,8 @@ import type * as http from "../http.js";
 import type * as limiter from "../limiter.js";
 import type * as mail_archive from "../mail/archive.js";
 import type * as mail_archiveMaintenance from "../mail/archiveMaintenance.js";
+import type * as mail_archiveMutations from "../mail/archiveMutations.js";
+import type * as mail_archiveQueries from "../mail/archiveQueries.js";
 import type * as mail_cleanupRecords from "../mail/cleanupRecords.js";
 import type * as mail_helpers from "../mail/helpers.js";
 import type * as mail_icloudCleanup from "../mail/icloudCleanup.js";
@@ -185,6 +187,8 @@ declare const fullApi: ApiFromModules<{
   limiter: typeof limiter;
   "mail/archive": typeof mail_archive;
   "mail/archiveMaintenance": typeof mail_archiveMaintenance;
+  "mail/archiveMutations": typeof mail_archiveMutations;
+  "mail/archiveQueries": typeof mail_archiveQueries;
   "mail/cleanupRecords": typeof mail_cleanupRecords;
   "mail/helpers": typeof mail_helpers;
   "mail/icloudCleanup": typeof mail_icloudCleanup;

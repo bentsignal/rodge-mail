@@ -52,6 +52,7 @@ export default defineSchema(
       .index("by_account_remote", ["accountId", "remoteFolderId"]),
     threads: defineTable(vThread)
       .index("by_owner_latest", ["ownerId", "latestMessageAt"])
+      .index("by_owner_archived", ["ownerId", "archivedAt"])
       .index("by_owner_pin_latest", [
         "ownerId",
         "isPinned",
@@ -59,6 +60,7 @@ export default defineSchema(
       ])
       .index("by_owner_unread", ["ownerId", "unreadCount"])
       .index("by_account_latest", ["accountId", "latestMessageAt"])
+      .index("by_account_archived", ["accountId", "archivedAt"])
       .index("by_account_pin_latest", [
         "accountId",
         "isPinned",

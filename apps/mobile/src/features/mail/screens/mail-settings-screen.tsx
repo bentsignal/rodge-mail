@@ -7,8 +7,15 @@ import {
   Text,
   View,
 } from "react-native";
+import { useRouter } from "expo-router";
 import { useMutation } from "convex/react";
-import { Bell, Fingerprint, LogOut } from "lucide-react-native";
+import {
+  Archive,
+  Bell,
+  ChevronRight,
+  Fingerprint,
+  LogOut,
+} from "lucide-react-native";
 
 import { api } from "@rodge-mail/convex/api";
 
@@ -55,12 +62,39 @@ export function MailSettingsScreen() {
       <SettingsSection title="Notifications">
         <NotificationPreferences />
       </SettingsSection>
+      <SettingsSection title="Mail">
+        <ArchiveSettingsLink />
+      </SettingsSection>
       <SettingsSection title="Account">
         <SignOutButton />
         <AddPasskeyButton />
       </SettingsSection>
       <DevelopmentTools />
     </ScrollView>
+  );
+}
+
+function ArchiveSettingsLink() {
+  const router = useRouter();
+  const mutedForeground = useColor("muted-foreground");
+  const primary = useColor("primary");
+  return (
+    <Pressable
+      accessibilityHint="View, restore, or permanently delete archived conversations"
+      accessibilityLabel="Archived mail"
+      accessibilityRole="button"
+      className="flex-row items-center gap-3 px-4 py-4 active:opacity-70"
+      onPress={() => router.push("/(tabs)/(settings)/archive")}
+    >
+      <Archive color={primary} size={20} />
+      <View className="min-w-0 flex-1 gap-0.5">
+        <Text className="text-foreground font-semibold">Archived mail</Text>
+        <Text className="text-muted-foreground text-sm">
+          Restore or permanently delete conversations.
+        </Text>
+      </View>
+      <ChevronRight color={mutedForeground} size={18} />
+    </Pressable>
   );
 }
 

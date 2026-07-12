@@ -16,6 +16,7 @@ import { Route as AuthedRouteImport } from './app/_authed'
 import { Route as AuthedIndexRouteImport } from './app/_authed/index'
 import { Route as AuthDesktopCompleteRouteImport } from './app/auth.desktop-complete'
 import { Route as AuthCallbackRouteImport } from './app/auth.callback'
+import { Route as AuthedArchiveRouteImport } from './app/_authed.archive'
 import { Route as ApiAuthSplatRouteImport } from './app/api.auth.$'
 import { Route as AuthedMessagesMessageIdRouteImport } from './app/_authed.messages.$messageId'
 
@@ -53,6 +54,11 @@ const AuthCallbackRoute = AuthCallbackRouteImport.update({
   path: '/auth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthedArchiveRoute = AuthedArchiveRouteImport.update({
+  id: '/archive',
+  path: '/archive',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -69,6 +75,7 @@ export interface FileRoutesByFullPath {
   '/desktop-auth': typeof DesktopAuthRoute
   '/login': typeof LoginRoute
   '/provider-complete': typeof ProviderCompleteRoute
+  '/archive': typeof AuthedArchiveRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/desktop-complete': typeof AuthDesktopCompleteRoute
   '/messages/$messageId': typeof AuthedMessagesMessageIdRoute
@@ -78,6 +85,7 @@ export interface FileRoutesByTo {
   '/desktop-auth': typeof DesktopAuthRoute
   '/login': typeof LoginRoute
   '/provider-complete': typeof ProviderCompleteRoute
+  '/archive': typeof AuthedArchiveRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/desktop-complete': typeof AuthDesktopCompleteRoute
   '/': typeof AuthedIndexRoute
@@ -90,6 +98,7 @@ export interface FileRoutesById {
   '/desktop-auth': typeof DesktopAuthRoute
   '/login': typeof LoginRoute
   '/provider-complete': typeof ProviderCompleteRoute
+  '/_authed/archive': typeof AuthedArchiveRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/desktop-complete': typeof AuthDesktopCompleteRoute
   '/_authed/': typeof AuthedIndexRoute
@@ -103,6 +112,7 @@ export interface FileRouteTypes {
     | '/desktop-auth'
     | '/login'
     | '/provider-complete'
+    | '/archive'
     | '/auth/callback'
     | '/auth/desktop-complete'
     | '/messages/$messageId'
@@ -112,6 +122,7 @@ export interface FileRouteTypes {
     | '/desktop-auth'
     | '/login'
     | '/provider-complete'
+    | '/archive'
     | '/auth/callback'
     | '/auth/desktop-complete'
     | '/'
@@ -123,6 +134,7 @@ export interface FileRouteTypes {
     | '/desktop-auth'
     | '/login'
     | '/provider-complete'
+    | '/_authed/archive'
     | '/auth/callback'
     | '/auth/desktop-complete'
     | '/_authed/'
@@ -191,6 +203,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authed/archive': {
+      id: '/_authed/archive'
+      path: '/archive'
+      fullPath: '/archive'
+      preLoaderRoute: typeof AuthedArchiveRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -209,11 +228,13 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthedRouteChildren {
+  AuthedArchiveRoute: typeof AuthedArchiveRoute
   AuthedIndexRoute: typeof AuthedIndexRoute
   AuthedMessagesMessageIdRoute: typeof AuthedMessagesMessageIdRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
+  AuthedArchiveRoute: AuthedArchiveRoute,
   AuthedIndexRoute: AuthedIndexRoute,
   AuthedMessagesMessageIdRoute: AuthedMessagesMessageIdRoute,
 }

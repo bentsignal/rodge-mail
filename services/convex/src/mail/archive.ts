@@ -37,3 +37,31 @@ export function validateArchiveCleanupLimit(limit: number) {
     );
   }
 }
+
+export function getRestoredInboxFlags(
+  messages: {
+    archivedFromInbox?: boolean;
+    direction: "incoming" | "outgoing";
+  }[],
+) {
+  const inferred = messages.map(
+    (message) => message.archivedFromInbox ?? message.direction === "incoming",
+  );
+  if (inferred.some(Boolean) || inferred.length === 0) return inferred;
+  return inferred.map((_, index) => index === inferred.length - 1);
+}
+
+export function isPermanentlyDeletableArchive(
+  thread: { archivedAt?: number; inInbox?: boolean },
+  messages: { archivedAt?: number; inInbox: boolean }[],
+) {
+  return (
+    thread.inInbox === false &&
+    (thread.archivedAt !== undefined ||
+      messages.some((item) => item.archivedAt !== undefined)) &&
+    messages.length > 0 &&
+    messages.every(
+      (message) => message.archivedAt !== undefined && !message.inInbox,
+    )
+  );
+}

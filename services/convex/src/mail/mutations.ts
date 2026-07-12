@@ -190,6 +190,7 @@ async function archiveOwnedThread(
       }
       await ctx.db.patch(message._id, {
         archivedAt: now,
+        archivedFromInbox: message.inInbox,
         inInbox: false,
         isPinned: false,
         updatedAt: now,
@@ -198,6 +199,7 @@ async function archiveOwnedThread(
     }),
     ctx.db.patch(thread._id, {
       unreadCount: 0,
+      archivedAt: now,
       inInbox: false,
       isPinned: false,
       latestInboxMessageAt: undefined,

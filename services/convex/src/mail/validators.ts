@@ -1,5 +1,7 @@
 import { v } from "convex/values";
 
+/* eslint-disable max-lines -- Mail's shared document validators intentionally remain colocated. */
+
 export const vMailProvider = v.union(
   v.literal("gmail"),
   v.literal("microsoft"),
@@ -94,6 +96,7 @@ export const vThread = v.object({
   unreadCount: v.number(),
   inInbox: v.optional(v.boolean()),
   isPinned: v.optional(v.boolean()),
+  archivedAt: v.optional(v.number()),
   hasAttachments: v.boolean(),
   createdAt: v.number(),
   updatedAt: v.number(),
@@ -122,6 +125,7 @@ export const vMessage = v.object({
   hasAttachments: v.boolean(),
   inInbox: v.boolean(),
   archivedAt: v.optional(v.number()),
+  archivedFromInbox: v.optional(v.boolean()),
   hiddenAt: v.optional(v.number()),
   isRead: v.boolean(),
   isPinned: v.boolean(),
