@@ -58,7 +58,7 @@ export function AccountRail() {
           active={accountFilter === "all"}
           count={unreadCounts.all}
           icon={Inbox}
-          label="Unified inbox"
+          label="All Inboxes"
           onClick={() => selectMailbox("all")}
         />
         <div className="mx-3 mt-4 mb-3 border-t border-white/10" />
@@ -75,6 +75,7 @@ export function AccountRail() {
               icon={Icon}
               key={account._id}
               label={account.label}
+              accessibleLabel={`${account.label}, ${getProviderLabel(account.provider)}, ${account.address}`}
               onClick={() => selectMailbox(account._id)}
             />
           );
@@ -175,6 +176,7 @@ function Brand() {
 
 function AccountButton({
   accent,
+  accessibleLabel,
   active,
   count,
   icon: Icon,
@@ -182,6 +184,7 @@ function AccountButton({
   onClick,
 }: {
   accent?: string;
+  accessibleLabel?: string;
   active: boolean;
   count: number | undefined;
   icon: LucideIcon;
@@ -190,7 +193,7 @@ function AccountButton({
 }) {
   return (
     <button
-      aria-label={getAccountButtonLabel(label, count)}
+      aria-label={getAccountButtonLabel(accessibleLabel ?? label, count)}
       aria-current={active ? "page" : undefined}
       className={cn(
         "group relative flex h-11 w-full items-center justify-center gap-3 rounded-lg px-3 text-sm transition-colors xl:justify-start",
@@ -220,6 +223,12 @@ function AccountAccent({ accent }: { accent: string | undefined }) {
       style={{ backgroundColor: accent }}
     />
   );
+}
+
+function getProviderLabel(provider: MailAccountView["provider"]) {
+  if (provider === "gmail") return "Gmail";
+  if (provider === "icloud") return "iCloud";
+  return "Microsoft 365";
 }
 
 function UnreadCount({

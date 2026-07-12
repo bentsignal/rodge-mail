@@ -4,6 +4,34 @@ import { internal } from "../_generated/api";
 import { ensureOwnedAccount } from "../mail/helpers";
 import { authedMutation } from "../utils";
 
+export const MAX_ACCOUNT_DISPLAY_LABEL_LENGTH = 80;
+
+export function normalizeAccountDisplayLabel(value: string) {
+  const label = value.trim();
+  if (label.length > MAX_ACCOUNT_DISPLAY_LABEL_LENGTH) {
+    throw new ConvexError(
+      `Account label must be ${MAX_ACCOUNT_DISPLAY_LABEL_LENGTH} characters or fewer`,
+    );
+  }
+  return label || undefined;
+}
+
+export const setDisplayLabel = authedMutation({
+  args: {
+    accountId: v.id("mailAccounts"),
+    displayLabel: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const account = await ensureOwnedAccount(ctx, ctx.ownerId, args.accountId);
+    const displayLabel = normalizeAccountDisplayLabel(args.displayLabel);
+    await ctx.db.patch(account._id, {
+      displayLabel,
+      updatedAt: Date.now(),
+    });
+    return { displayLabel };
+  },
+});
+
 export const syncGmailNow = authedMutation({
   args: { accountId: v.id("mailAccounts") },
   handler: async (ctx, args) => {

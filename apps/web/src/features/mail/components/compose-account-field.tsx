@@ -56,7 +56,7 @@ function AccountOptions({ accounts }: { accounts: MailAccountView[] }) {
   }
   return accounts.map((account) => (
     <option key={account._id} value={account._id}>
-      {providerLabel(account.provider)} · {account.address}
+      {account.label} · {providerLabel(account.provider)} · {account.address}
     </option>
   ));
 }

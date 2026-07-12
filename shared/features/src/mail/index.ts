@@ -9,6 +9,7 @@ export {
 } from "./recipients";
 export { getReplyAddress } from "./reply";
 export { mergeSearchResults } from "./search";
+export { sortPinnedMailRows } from "./order";
 export { dedupeThreadRows } from "./thread-rows";
 export type {
   ComposerAttachment,

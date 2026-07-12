@@ -1,9 +1,12 @@
 # Thread-level inbox pagination
 
 `mail.queries.listInbox` and `mail.queries.listPinned` paginate `threads`, not
-`messages`. Each returned row keeps the existing enriched message shape for
-client compatibility, but its `_id` is selected dynamically from the newest
-message that is still in the inbox. `threadId` is the stable list identity.
+`messages`. The main inbox uses thread indexes ordered by `isPinned` and then
+`latestInboxMessageAt`, so every pinned page precedes every unpinned page while
+each group remains newest-first. Each returned row keeps the existing enriched
+message shape for client compatibility, but its `_id` is selected dynamically
+from the newest message that is still in the inbox. `threadId` is the stable
+list identity.
 
 The thread projection stores:
 

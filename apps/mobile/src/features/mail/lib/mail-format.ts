@@ -1,4 +1,5 @@
 import type { MailAccountFilter, MailThread } from "@rodge-mail/features/mail";
+import { sortPinnedMailRows } from "@rodge-mail/features/mail";
 
 export function formatMessageTime(value: string) {
   const date = new Date(value);
@@ -20,14 +21,11 @@ export function filterAndSortThreads(
   threads: MailThread[],
   accountFilter: MailAccountFilter,
 ) {
-  return threads
-    .filter(
+  return sortPinnedMailRows(
+    threads.filter(
       (thread) => accountFilter === "all" || thread.accountId === accountFilter,
-    )
-    .sort((left, right) => {
-      if (left.isPinned !== right.isPinned) return left.isPinned ? -1 : 1;
-      return right.receivedAt.localeCompare(left.receivedAt);
-    });
+    ),
+  );
 }
 
 export function threadMatchesSearch(thread: MailThread, searchTerm: string) {

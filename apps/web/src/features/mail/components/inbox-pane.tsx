@@ -172,7 +172,7 @@ function MobileAccountFilters() {
     <div className="mail-scrollbar mt-3 flex gap-2 overflow-x-auto pb-1 md:hidden">
       <MobileAccountChip
         active={accountFilter === "all"}
-        label="Unified"
+        label="All Inboxes"
         onClick={() => selectMailbox("all")}
       />
       {accounts.map((account) => (

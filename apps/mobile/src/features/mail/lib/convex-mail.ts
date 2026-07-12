@@ -2,7 +2,10 @@ import type { FunctionReturnType } from "convex/server";
 
 import type { api } from "@rodge-mail/convex/api";
 import type { MailAccount, MailAttachment } from "@rodge-mail/features/mail";
-import { dedupeThreadRows } from "@rodge-mail/features/mail";
+import {
+  dedupeThreadRows,
+  sortPinnedMailRows,
+} from "@rodge-mail/features/mail";
 
 const attachmentTypes = {
   document: "document",
@@ -17,6 +20,8 @@ type ThreadMessage = ThreadDetail["messages"][number];
 type Account = FunctionReturnType<typeof api.accounts.queries.list>[number];
 
 export type MobileMailAccount = MailAccount & {
+  displayLabel: Account["displayLabel"];
+  displayName: Account["displayName"];
   isDemo: boolean;
   lastSyncError: string | undefined;
   lastSyncedAt: number | undefined;
@@ -41,7 +46,7 @@ export function toMailThread(item: InboxItem) {
 }
 
 export function toMailThreads(items: InboxItem[]) {
-  return dedupeThreadRows(items).map(toMailThread);
+  return sortPinnedMailRows(dedupeThreadRows(items).map(toMailThread));
 }
 
 export function toMailThreadDetail(item: ThreadDetail) {
@@ -64,10 +69,13 @@ export function toMailThreadDetail(item: ThreadDetail) {
 }
 
 export function toMailAccount(account: Account) {
-  const label = getNonemptyValue(account.displayName, account.address);
+  const providerLabel = getNonemptyValue(account.displayName, account.address);
+  const label = getNonemptyValue(account.displayLabel, providerLabel);
   return {
     accent: getProviderAccent(account.provider),
     address: account.address,
+    displayLabel: account.displayLabel,
+    displayName: account.displayName,
     id: account._id,
     initials: getInitials(label),
     isDemo: account.isDemo ?? false,

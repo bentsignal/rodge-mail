@@ -56,6 +56,7 @@ export function ThreadRow({
 }) {
   const togglePin = useMailStore((store) => store.togglePin);
   const toggleRead = useMailStore((store) => store.toggleRead);
+  const archiveThread = useMailStore((store) => store.archiveThread);
   const colorScheme = useResolvedMobileColorScheme();
   const colors = useThreadRowColors();
   const pinAction = getPinAction(thread);
@@ -111,6 +112,12 @@ export function ThreadRow({
             />
           </SwipeActions.Actions>
           <SwipeActions.Actions edge="trailing">
+            <Button
+              label="Archive"
+              modifiers={[tint(colors.brass)]}
+              systemImage="archivebox"
+              onPress={() => void archiveThread(thread.id)}
+            />
             <Button
               label={readAction.label}
               modifiers={[tint(thread.isRead ? colors.muted : colors.forest)]}

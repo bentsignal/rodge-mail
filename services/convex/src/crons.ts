@@ -63,4 +63,11 @@ crons.interval(
   { limit: 50 },
 );
 
+crons.interval(
+  "remove Rodge archive records older than 30 days",
+  { hours: 24 },
+  internal.mail.archiveMaintenance.cleanupArchivedMessages,
+  { limit: 100 },
+);
+
 export default crons;

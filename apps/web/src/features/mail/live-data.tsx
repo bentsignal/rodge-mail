@@ -224,9 +224,7 @@ function useLiveMailActions(
   const setThreadRead = useMutation(
     api.mail.mutations.setThreadRead,
   ).withOptimisticUpdate(optimisticallySetThreadRead);
-  const removeThreadFromRodge = useMutation(
-    api.mail.mutations.removeThreadFromRodge,
-  );
+  const archiveThreadMutation = useMutation(api.mail.mutations.archiveThread);
   const seedDemo = useMutation(api.devSeed.seedDemoMail);
   const [isSeedingDemo, setIsSeedingDemo] = useState(false);
   const sync = useSyncAll(accounts);
@@ -253,14 +251,14 @@ function useLiveMailActions(
     }
   }
 
-  async function removeFromRodge(message: Pick<InboxMessage, "threadId">) {
+  async function archiveThread(message: Pick<InboxMessage, "threadId">) {
     try {
-      await removeThreadFromRodge({ threadId: message.threadId });
+      await archiveThreadMutation({ threadId: message.threadId });
       clearSelection();
       await navigate({ to: "/", search: (previous) => previous });
-      toast.success("Removed from Rodge. Your provider copy is unchanged.");
+      toast.success("Archived in Rodge. Your provider copy is unchanged.");
     } catch (error) {
-      toast.error(getErrorMessage(error, "Could not remove the conversation."));
+      toast.error(getErrorMessage(error, "Could not archive the conversation."));
     }
   }
 
@@ -309,7 +307,7 @@ function useLiveMailActions(
     isSeedingDemo,
     ...sync,
     markMessageRead,
-    removeFromRodge,
+    archiveThread,
     replyToSelectedThread,
     seedDemoMail,
     togglePinned,

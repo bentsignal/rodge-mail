@@ -1,6 +1,9 @@
-import { dedupeThreadRows } from "@rodge-mail/features/mail";
+import {
+  dedupeThreadRows,
+  sortPinnedMailRows,
+} from "@rodge-mail/features/mail";
 
-import type { InboxMessage, MailAccountDocument } from "./types";
+import type { MailAccountDocument } from "./types";
 
 const ACCOUNT_ACCENTS = {
   gmail: "#c95d3f",
@@ -9,7 +12,8 @@ const ACCOUNT_ACCENTS = {
 } as const;
 
 export function toAccountView(account: MailAccountDocument) {
-  const accountLabel = account.displayName?.trim() ?? account.address;
+  const providerLabel = getNonemptyValue(account.displayName, account.address);
+  const accountLabel = getNonemptyValue(account.displayLabel, providerLabel);
   const isDemo =
     account.isDemo === true || account.remoteAccountId.startsWith("demo-");
   const label = isDemo ? `${accountLabel} · Demo` : accountLabel;
@@ -21,11 +25,10 @@ export function toAccountView(account: MailAccountDocument) {
   };
 }
 
-export function sortInboxMessages(messages: InboxMessage[]) {
-  const sortedMessages = messages.slice().sort((left, right) => {
-    return right.receivedAt - left.receivedAt;
-  });
-  return dedupeThreadRows(sortedMessages);
+export function sortInboxMessages<
+  T extends { isPinned: boolean; receivedAt: number; threadId: string },
+>(messages: T[]) {
+  return dedupeThreadRows(sortPinnedMailRows(messages));
 }
 
 export function toUnreadCountRecord(summary: {
@@ -45,4 +48,10 @@ function getInitials(value: string) {
     .slice(0, 2)
     .map((segment) => segment[0]?.toLocaleUpperCase())
     .join("");
+}
+
+function getNonemptyValue(value: string | undefined, fallback: string) {
+  const normalized = value?.trim();
+  if (normalized) return normalized;
+  return fallback;
 }

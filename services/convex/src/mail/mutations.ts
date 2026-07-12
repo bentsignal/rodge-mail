@@ -1,6 +1,8 @@
 import { ConvexError, v } from "convex/values";
 
 import { internal } from "../_generated/api";
+import type { Id } from "../_generated/dataModel";
+import type { MutationCtx } from "../_generated/server";
 import { deleteEmbeddingRecords } from "../embedding/storage";
 import { authedMutation } from "../utils";
 import {
@@ -143,39 +145,69 @@ export const setThreadRead = authedMutation({
   },
 });
 
+export const archiveThread = authedMutation({
+  args: { threadId: v.id("threads") },
+  handler: async (ctx, args) =>
+    await archiveOwnedThread(ctx, ctx.ownerId, args.threadId),
+});
+
 export const removeThreadFromRodge = authedMutation({
   args: { threadId: v.id("threads") },
-  handler: async (ctx, args) => {
-    const thread = await ensureOwnedThread(ctx, ctx.ownerId, args.threadId);
-    const messages = await ctx.db
-      .query("messages")
-      .withIndex("by_thread_received", (q) => q.eq("threadId", thread._id))
-      .collect();
-    const now = Date.now();
+  handler: async (ctx, args) =>
+    await archiveOwnedThread(ctx, ctx.ownerId, args.threadId),
+});
 
-    await Promise.all([
-      ...messages.map(async (message) => {
-        await ctx.db.patch(message._id, {
-          hiddenAt: now,
-          inInbox: false,
-          isPinned: false,
-          updatedAt: now,
+async function archiveOwnedThread(
+  ctx: MutationCtx,
+  ownerId: string,
+  threadId: Id<"threads">,
+) {
+  const thread = await ensureOwnedThread(ctx, ownerId, threadId);
+  const messages = await ctx.db
+    .query("messages")
+    .withIndex("by_thread_received", (q) => q.eq("threadId", thread._id))
+    .collect();
+  const now = Date.now();
+
+  await Promise.all([
+    ...messages.map(async (message) => {
+      const existingTombstone = await ctx.db
+        .query("archivedMessageTombstones")
+        .withIndex("by_account_remote", (q) =>
+          q
+            .eq("accountId", message.accountId)
+            .eq("remoteMessageId", message.remoteMessageId),
+        )
+        .unique();
+      if (!existingTombstone) {
+        await ctx.db.insert("archivedMessageTombstones", {
+          ownerId,
+          accountId: message.accountId,
+          remoteMessageId: message.remoteMessageId,
+          archivedAt: now,
+          createdAt: now,
         });
-        await deleteEmbeddingRecords(ctx, message._id);
-      }),
-      ctx.db.patch(thread._id, {
-        unreadCount: 0,
+      }
+      await ctx.db.patch(message._id, {
+        archivedAt: now,
         inInbox: false,
         isPinned: false,
-        latestInboxMessageAt: undefined,
-        latestInboxMessageId: undefined,
         updatedAt: now,
-      }),
-    ]);
+      });
+      await deleteEmbeddingRecords(ctx, message._id);
+    }),
+    ctx.db.patch(thread._id, {
+      unreadCount: 0,
+      inInbox: false,
+      isPinned: false,
+      latestInboxMessageAt: undefined,
+      latestInboxMessageId: undefined,
+      updatedAt: now,
+    }),
+  ]);
 
-    return { removedMessages: messages.length };
-  },
-});
+  return { archivedMessages: messages.length };
+}
 
 export const enqueuePlainText = authedMutation({
   args: {

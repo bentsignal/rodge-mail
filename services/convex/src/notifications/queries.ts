@@ -83,6 +83,7 @@ export const listAccountPreferences = authedQuery({
       accountId: account._id,
       address: account.address,
       displayName: account.displayName,
+      displayLabel: account.displayLabel,
       provider: account.provider,
       ...toAccountPreferences(
         globalPreference,

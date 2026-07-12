@@ -24,6 +24,7 @@ import { NotificationPreferences } from "../../notifications/notification-prefer
 import { MobileAppearanceSettings } from "../../theme/mobile-appearance-settings";
 import { useMailStore } from "../store";
 import { AccountConnections } from "./account-connections";
+import { AccountLabelSettings } from "./account-label-settings";
 import { SettingsSection } from "./settings-section";
 
 export function MailSettingsScreen() {
@@ -46,30 +47,7 @@ export function MailSettingsScreen() {
         <MobileAppearanceSettings />
       </SettingsSection>
       <SettingsSection title="Mail accounts">
-        {accounts.map((account) => (
-          <View
-            key={account.id}
-            className="border-well-border flex-row items-center gap-3 border-b px-4 py-3.5 last:border-b-0"
-          >
-            <View
-              className="border-brass/50 size-10 items-center justify-center rounded-full border"
-              style={{ backgroundColor: account.accent }}
-            >
-              <Text className="font-bold text-white">{account.initials}</Text>
-            </View>
-            <View className="min-w-0 flex-1">
-              <Text className="text-foreground font-semibold">
-                {account.label}
-              </Text>
-              <Text className="text-muted-foreground text-sm" numberOfLines={1}>
-                {account.address}
-              </Text>
-            </View>
-            <Text className="text-muted-foreground text-xs capitalize">
-              {getAccountStatusLabel(account.status, account.provider)}
-            </Text>
-          </View>
-        ))}
+        <AccountLabelSettings accounts={accounts} />
       </SettingsSection>
       <SettingsSection title="Add or reconnect">
         <AccountConnections />
@@ -84,22 +62,6 @@ export function MailSettingsScreen() {
       <DevelopmentTools />
     </ScrollView>
   );
-}
-
-function getAccountStatusLabel(
-  status:
-    | "connected"
-    | "disconnected"
-    | "error"
-    | "reauthorization_required"
-    | "syncing",
-  provider: "gmail" | "icloud" | "microsoft",
-) {
-  if (status === "syncing") return "Syncing";
-  if (status === "error") return "Sync error";
-  if (status === "reauthorization_required") return "Reconnect";
-  if (status === "disconnected") return "Offline";
-  return provider;
 }
 
 function DevelopmentTools() {

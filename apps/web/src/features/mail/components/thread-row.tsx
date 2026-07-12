@@ -1,4 +1,4 @@
-import { EyeOff, Paperclip, Pin } from "lucide-react";
+import { Archive, Paperclip, Pin } from "lucide-react";
 
 import { cn } from "@rodge-mail/std/cn";
 import * as ContextMenu from "@rodge-mail/ui-web/context-menu";
@@ -20,7 +20,7 @@ export function ThreadRow({
   const {
     accounts,
     markMessageRead,
-    removeFromRodge,
+    archiveThread,
     selectedThreadId,
     togglePinned,
   } = useLiveMail();
@@ -97,7 +97,7 @@ export function ThreadRow({
         <ThreadRowMenu
           message={message}
           pinLabel={pinLabel}
-          removeFromRodge={removeFromRodge}
+          archiveThread={archiveThread}
           togglePinned={togglePinned}
         />
       </article>
@@ -108,12 +108,12 @@ export function ThreadRow({
 function ThreadRowMenu({
   message,
   pinLabel,
-  removeFromRodge,
+  archiveThread,
   togglePinned,
 }: {
   message: InboxMessage;
   pinLabel: string;
-  removeFromRodge: (message: Pick<InboxMessage, "threadId">) => Promise<void>;
+  archiveThread: (message: Pick<InboxMessage, "threadId">) => Promise<void>;
   togglePinned: (message: InboxMessage) => Promise<void>;
 }) {
   return (
@@ -128,10 +128,10 @@ function ThreadRowMenu({
       <ContextMenu.Separator className="bg-[var(--mail-seam)]" />
       <ContextMenu.Item
         className="rounded-[7px] text-[var(--mail-highlight)] data-[highlighted]:bg-[var(--mail-paper-soft)] data-[highlighted]:text-[var(--mail-highlight)]"
-        onSelect={() => void removeFromRodge(message)}
+        onSelect={() => void archiveThread(message)}
       >
-        <EyeOff className="size-3.5" />
-        Remove from Rodge
+        <Archive className="size-3.5" />
+        Archive
       </ContextMenu.Item>
     </ContextMenu.Content>
   );

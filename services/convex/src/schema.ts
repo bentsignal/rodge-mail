@@ -5,6 +5,7 @@ import {
   vMessageEmbedding,
   vMessageEmbeddingJob,
 } from "./embedding/validators";
+import { vArchivedMessageTombstone } from "./mail/archive";
 import {
   vAttachment,
   vDraftAttachment,
@@ -51,8 +52,18 @@ export default defineSchema(
       .index("by_account_remote", ["accountId", "remoteFolderId"]),
     threads: defineTable(vThread)
       .index("by_owner_latest", ["ownerId", "latestMessageAt"])
+      .index("by_owner_pin_latest", [
+        "ownerId",
+        "isPinned",
+        "latestInboxMessageAt",
+      ])
       .index("by_owner_unread", ["ownerId", "unreadCount"])
       .index("by_account_latest", ["accountId", "latestMessageAt"])
+      .index("by_account_pin_latest", [
+        "accountId",
+        "isPinned",
+        "latestInboxMessageAt",
+      ])
       .index("by_account_remote", ["accountId", "remoteThreadId"]),
     messages: defineTable(vMessage)
       .index("by_account_remote", ["accountId", "remoteMessageId"])
@@ -76,10 +87,14 @@ export default defineSchema(
         "isPinned",
         "receivedAt",
       ])
+      .index("by_archived", ["archivedAt"])
       .searchIndex("search_headers", {
         searchField: "searchText",
         filterFields: ["ownerId", "accountId", "inInbox", "isRead"],
       }),
+    archivedMessageTombstones: defineTable(vArchivedMessageTombstone)
+      .index("by_account_remote", ["accountId", "remoteMessageId"])
+      .index("by_owner_archived", ["ownerId", "archivedAt"]),
     messageContents: defineTable(vMessageContent).index("by_message", [
       "messageId",
     ]),

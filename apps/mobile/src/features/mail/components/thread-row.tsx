@@ -1,6 +1,6 @@
 import { Pressable, Text, View } from "react-native";
 import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeable";
-import { Mail, MailOpen, Pin } from "lucide-react-native";
+import { Archive, Mail, MailOpen, Pin } from "lucide-react-native";
 
 import type { MailThread } from "@rodge-mail/features/mail";
 
@@ -21,6 +21,7 @@ export function ThreadRow({
 }) {
   const togglePin = useMailStore((store) => store.togglePin);
   const toggleRead = useMailStore((store) => store.toggleRead);
+  const archiveThread = useMailStore((store) => store.archiveThread);
   const shadowColor = useColor("shadow-color");
   const primaryForeground = useColor("primary-foreground");
 
@@ -57,15 +58,26 @@ export function ThreadRow({
         </SwipeAction>
       )}
       renderRightActions={(_progress, _translation, swipeable) => (
-        <SwipeAction
-          label={thread.isRead ? "Unread" : "Read"}
-          onPress={() => {
-            swipeable.close();
-            toggleThreadRead();
-          }}
-        >
-          <ReadIcon isRead={thread.isRead} color={primaryForeground} />
-        </SwipeAction>
+        <View className="flex-row">
+          <SwipeAction
+            label={thread.isRead ? "Unread" : "Read"}
+            onPress={() => {
+              swipeable.close();
+              toggleThreadRead();
+            }}
+          >
+            <ReadIcon isRead={thread.isRead} color={primaryForeground} />
+          </SwipeAction>
+          <SwipeAction
+            label="Archive"
+            onPress={() => {
+              swipeable.close();
+              void archiveThread(thread.id);
+            }}
+          >
+            <Archive color={primaryForeground} size={19} />
+          </SwipeAction>
+        </View>
       )}
       rightThreshold={48}
     >

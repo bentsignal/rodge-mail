@@ -169,6 +169,7 @@ export const lexicalSearch = internalQuery({
         !account ||
         message.ownerId !== args.ownerId ||
         !message.inInbox ||
+        message.archivedAt !== undefined ||
         message.hiddenAt !== undefined ||
         !matchesMailSearch(message, plan)
       ) {
@@ -245,6 +246,7 @@ export const hydrateSemantic = internalQuery({
         message.ownerId !== args.ownerId ||
         !allowed.has(message.accountId) ||
         !message.inInbox ||
+        message.archivedAt !== undefined ||
         message.hiddenAt !== undefined ||
         !matchesMailSearch(message, args)
       ) {

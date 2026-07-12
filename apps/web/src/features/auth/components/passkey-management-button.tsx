@@ -3,6 +3,7 @@ import { Fingerprint, Loader, Settings } from "lucide-react";
 
 import * as Dialog from "@rodge-mail/ui-web/dialog";
 
+import { AccountLabelSettings } from "~/features/mail/components/account-label-settings";
 import { AppearanceSettings } from "~/features/theme/components/theme-toggle";
 import { useAuthStore } from "../store";
 import { AgentAccessSettings } from "./agent-access-settings";
@@ -48,6 +49,9 @@ export function PasskeyManagementButton() {
         </div>
         <div className="mail-paper p-6">
           <AppearanceSettings />
+        </div>
+        <div className="mail-paper border-t border-[var(--mail-seam)] p-6">
+          <AccountLabelSettings />
         </div>
         <div className="mail-paper border-t border-[var(--mail-seam)] p-6">
           <AgentAccessSettings key={settingsSession} />

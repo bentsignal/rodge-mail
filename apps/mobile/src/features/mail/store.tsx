@@ -4,7 +4,10 @@ import { createStore } from "rostra";
 
 import type { MailAccountFilter } from "@rodge-mail/features/mail";
 import { api } from "@rodge-mail/convex/api";
-import { readCachedAccountPage } from "@rodge-mail/features/mail";
+import {
+  readCachedAccountPage,
+  sortPinnedMailRows,
+} from "@rodge-mail/features/mail";
 
 import { toConvexId } from "./lib/convex-id";
 import { toMailAccount, toMailThreads } from "./lib/convex-mail";
@@ -28,13 +31,13 @@ function useInternalStore() {
   );
   const accountRows = useQuery(api.accounts.queries.list, {});
   const setThreadPinned = useMutation(api.mail.mutations.setThreadPinned);
-  const setThreadRead = useMutation(api.mail.mutations.setThreadRead);
   const [threadCache, setThreadCache] = useState(
     () => new Map<MailAccountFilter, ReturnType<typeof toMailThreads>>(),
   );
   const [threadOverrides, setThreadOverrides] = useState<
     Record<string, ThreadOverride>
   >({});
+  const { archivedThreadIds, archiveThread } = useArchiveThread();
 
   const messages = inbox.results;
   const liveThreads = toMailThreads(messages);
@@ -46,8 +49,16 @@ function useInternalStore() {
     unifiedKey: "all",
   });
   const visibleThreads = hasLivePage ? liveThreads : cachedPage.items;
-  const threads = applyThreadOverrides(visibleThreads, threadOverrides);
+  const threads = sortPinnedMailRows(
+    applyThreadOverrides(visibleThreads, threadOverrides).filter(
+      (thread) => !archivedThreadIds.has(thread.id),
+    ),
+  );
   const accounts = accountRows?.map(toMailAccount) ?? [];
+  const { markRead, toggleRead } = useReadActions(
+    threads,
+    setThreadOverrides,
+  );
 
   // eslint-disable-next-line no-restricted-syntax -- Cache the latest settled Convex subscription page for instant mailbox revisits.
   useEffect(() => {
@@ -83,28 +94,6 @@ function useInternalStore() {
     }
   }
 
-  function markRead(threadId: string) {
-    const thread = threads.find((candidate) => candidate.id === threadId);
-    if (thread?.isRead) return;
-    void setRead(threadId, true);
-  }
-
-  async function toggleRead(threadId: string, isRead: boolean) {
-    await setRead(threadId, !isRead);
-  }
-
-  async function setRead(threadId: string, isRead: boolean) {
-    setThreadOverride(setThreadOverrides, threadId, { isRead });
-    try {
-      await setThreadRead({
-        threadId: toConvexId<"threads">(threadId),
-        isRead,
-      });
-    } catch {
-      clearThreadOverride(setThreadOverrides, threadId, "isRead");
-    }
-  }
-
   function loadMore() {
     if (inbox.status === "CanLoadMore") inbox.loadMore(30);
   }
@@ -112,6 +101,7 @@ function useInternalStore() {
   return {
     accountFilter,
     accounts,
+    archiveThread,
     canLoadMore: inbox.status === "CanLoadMore",
     isLoading: inbox.status === "LoadingFirstPage" && !cachedPage.isCached,
     isLoadingMore: inbox.status === "LoadingMore",
@@ -127,11 +117,70 @@ function useInternalStore() {
 export const { Store: MailStore, useStore: useMailStore } =
   createStore(useInternalStore);
 
+function useArchiveThread() {
+  const archiveThreadMutation = useMutation(api.mail.mutations.archiveThread);
+  const [archivedThreadIds, setArchivedThreadIds] = useState(
+    () => new Set<string>(),
+  );
+
+  async function archiveThread(threadId: string) {
+    setArchivedThreadIds((current) => new Set(current).add(threadId));
+    try {
+      await archiveThreadMutation({
+        threadId: toConvexId<"threads">(threadId),
+      });
+    } catch {
+      setArchivedThreadIds((current) => {
+        const next = new Set(current);
+        next.delete(threadId);
+        return next;
+      });
+    }
+  }
+
+  return { archivedThreadIds, archiveThread };
+}
+
+function useReadActions(
+  threads: ReturnType<typeof toMailThreads>,
+  setThreadOverrides: React.Dispatch<
+    React.SetStateAction<Record<string, ThreadOverride>>
+  >,
+) {
+  const setThreadRead = useMutation(api.mail.mutations.setThreadRead);
+
+  async function setRead(threadId: string, isRead: boolean) {
+    setThreadOverride(setThreadOverrides, threadId, { isRead });
+    try {
+      await setThreadRead({
+        threadId: toConvexId<"threads">(threadId),
+        isRead,
+      });
+    } catch {
+      clearThreadOverride(setThreadOverrides, threadId, "isRead");
+    }
+  }
+
+  function markRead(threadId: string) {
+    const thread = threads.find((candidate) => candidate.id === threadId);
+    if (thread?.isRead) return;
+    void setRead(threadId, true);
+  }
+
+  async function toggleRead(threadId: string, isRead: boolean) {
+    await setRead(threadId, !isRead);
+  }
+
+  return { markRead, toggleRead };
+}
+
 function applyThreadOverrides(
   threads: ReturnType<typeof toMailThreads>,
   overrides: Record<string, ThreadOverride>,
 ) {
-  return threads.map((thread) => ({ ...thread, ...overrides[thread.id] }));
+  return sortPinnedMailRows(
+    threads.map((thread) => ({ ...thread, ...overrides[thread.id] })),
+  );
 }
 
 function removeConfirmedOverrides(

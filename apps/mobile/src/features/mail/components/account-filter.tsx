@@ -23,10 +23,10 @@ export function AccountFilter({
     ? getAccountLabel(selectedAccount)
     : "All Inboxes";
   const actions = [
-    { id: "all", state: value === "all" ? "on" : "off", title: "All Inboxes" },
+    { id: "all", state: selectionState(value === "all"), title: "All Inboxes" },
     ...accounts.map((account) => ({
       id: account.id,
-      state: value === account.id ? "on" : "off",
+      state: selectionState(value === account.id),
       title: getAccountLabel(account),
     })),
   ] satisfies MenuAction[];
@@ -56,6 +56,10 @@ export function AccountFilter({
       </MenuView>
     </View>
   );
+}
+
+function selectionState(selected: boolean) {
+  return selected ? ("on" as const) : ("off" as const);
 }
 
 function getAccountLabel(account: MailAccount) {

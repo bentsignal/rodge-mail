@@ -1,9 +1,9 @@
 import type { LucideIcon } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import {
+  Archive,
   ArrowLeft,
   CheckCheck,
-  EyeOff,
   MailOpen,
   Pin,
   Reply,
@@ -52,7 +52,7 @@ function ReaderContent() {
   const closeMobileReader = useMailStore((store) => store.closeMobileReader);
   const navigate = useNavigate();
   const {
-    removeFromRodge,
+    archiveThread,
     replyToSelectedThread,
     selectedMessageId,
     selectedThread,
@@ -70,7 +70,7 @@ function ReaderContent() {
           closeMobileReader();
           void navigate({ to: "/", search: (previous) => previous });
         }}
-        removeFromRodge={removeFromRodge}
+        archiveThread={archiveThread}
         replyToSelectedThread={replyToSelectedThread}
         selectedMessage={selectedMessage}
         togglePinned={togglePinned}
@@ -87,14 +87,14 @@ function ReaderContent() {
 
 function ReaderToolbar({
   closeMobileReader,
-  removeFromRodge,
+  archiveThread,
   replyToSelectedThread,
   selectedMessage,
   togglePinned,
   toggleRead,
 }: {
   closeMobileReader: () => void;
-  removeFromRodge: (message: ThreadMessageDetail) => Promise<void>;
+  archiveThread: (message: ThreadMessageDetail) => Promise<void>;
   replyToSelectedThread: () => void;
   selectedMessage: ThreadMessageDetail | undefined;
   togglePinned: (message: ThreadMessageDetail) => Promise<void>;
@@ -111,9 +111,9 @@ function ReaderToolbar({
       <div className="mx-1 h-5 w-px bg-[var(--mail-seam)] lg:hidden" />
       <PinReaderAction message={selectedMessage} togglePinned={togglePinned} />
       <ReadReaderAction message={selectedMessage} toggleRead={toggleRead} />
-      <RemoveReaderAction
+      <ArchiveReaderAction
+        archiveThread={archiveThread}
         message={selectedMessage}
-        removeFromRodge={removeFromRodge}
       />
       <button
         className="mail-brass-button ml-auto flex h-11 items-center gap-2 rounded-lg px-4 text-xs font-bold transition-colors"
@@ -127,18 +127,18 @@ function ReaderToolbar({
   );
 }
 
-function RemoveReaderAction({
+function ArchiveReaderAction({
+  archiveThread,
   message,
-  removeFromRodge,
 }: {
+  archiveThread: (message: ThreadMessageDetail) => Promise<void>;
   message: ThreadMessageDetail | undefined;
-  removeFromRodge: (message: ThreadMessageDetail) => Promise<void>;
 }) {
   return (
     <ReaderIconButton
-      icon={EyeOff}
-      label="Remove from Rodge (provider copy stays unchanged)"
-      onClick={message ? () => void removeFromRodge(message) : undefined}
+      icon={Archive}
+      label="Archive (provider copy stays unchanged)"
+      onClick={message ? () => void archiveThread(message) : undefined}
     />
   );
 }

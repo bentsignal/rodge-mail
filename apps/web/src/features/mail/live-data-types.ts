@@ -14,7 +14,7 @@ export interface LiveMailContextValue {
   isSyncingAccounts: boolean;
   loadMore: () => void;
   markMessageRead: (message: InboxMessage) => void;
-  removeFromRodge: (message: Pick<InboxMessage, "threadId">) => Promise<void>;
+  archiveThread: (message: Pick<InboxMessage, "threadId">) => Promise<void>;
   replyToSelectedThread: () => void;
   seedDemoMail: () => Promise<void>;
   syncAllAccounts: () => Promise<void>;

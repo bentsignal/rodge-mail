@@ -78,7 +78,9 @@ export function AccountNotificationPreferences({
           <View key={preference.accountId} className="gap-2">
             <View>
               <Text className="text-foreground font-medium" numberOfLines={1}>
-                {preference.displayName ?? preference.address}
+                {preference.displayLabel ??
+                  preference.displayName ??
+                  preference.address}
               </Text>
               <Text className="text-muted-foreground text-xs" numberOfLines={1}>
                 {preference.address}

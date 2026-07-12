@@ -44,7 +44,9 @@ export const listInbox = authedQuery({
         ctx,
         await ctx.db
           .query("threads")
-          .withIndex("by_account_latest", (q) => q.eq("accountId", accountId))
+          .withIndex("by_account_pin_latest", (q) =>
+            q.eq("accountId", accountId),
+          )
           .order("desc")
           .filter((q) =>
             args.unreadOnly
@@ -62,7 +64,7 @@ export const listInbox = authedQuery({
       ctx,
       await ctx.db
         .query("threads")
-        .withIndex("by_owner_latest", (q) => q.eq("ownerId", ctx.ownerId))
+        .withIndex("by_owner_pin_latest", (q) => q.eq("ownerId", ctx.ownerId))
         .order("desc")
         .filter((q) =>
           args.unreadOnly
@@ -90,7 +92,9 @@ export const listPinned = authedQuery({
         ctx,
         await ctx.db
           .query("threads")
-          .withIndex("by_account_latest", (q) => q.eq("accountId", accountId))
+          .withIndex("by_account_pin_latest", (q) =>
+            q.eq("accountId", accountId),
+          )
           .order("desc")
           .filter((q) =>
             q.and(
@@ -106,7 +110,7 @@ export const listPinned = authedQuery({
       ctx,
       await ctx.db
         .query("threads")
-        .withIndex("by_owner_latest", (q) => q.eq("ownerId", ctx.ownerId))
+        .withIndex("by_owner_pin_latest", (q) => q.eq("ownerId", ctx.ownerId))
         .order("desc")
         .filter((q) =>
           q.and(

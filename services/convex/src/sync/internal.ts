@@ -14,6 +14,7 @@ import {
 import { CLASSIFICATION_PROMPT_VERSION } from "../classification/constants";
 import { queueClassificationForMessage } from "../classification/internal";
 import { reconcileEmbeddingSelection } from "../embedding/internal";
+import { isProviderMessageArchived } from "../mail/archive";
 import { createMessageSearchText } from "../mail/search";
 import { getThreadInboxState } from "../mail/threadState";
 import {
@@ -1121,6 +1122,15 @@ export const upsertProviderMessage = internalMutation({
     );
     const message = args.message as NormalizedMessage;
     const now = Date.now();
+    const archivedTombstone = await ctx.db
+      .query("archivedMessageTombstones")
+      .withIndex("by_account_remote", (q) =>
+        q
+          .eq("accountId", args.accountId)
+          .eq("remoteMessageId", message.remoteMessageId),
+      )
+      .unique();
+    if (isProviderMessageArchived(undefined, archivedTombstone)) return;
     let thread = await ctx.db
       .query("threads")
       .withIndex("by_account_remote", (q) =>
@@ -1163,7 +1173,9 @@ export const upsertProviderMessage = internalMutation({
           .eq("remoteMessageId", message.remoteMessageId),
       )
       .unique();
-    const inInbox = existing?.hiddenAt ? false : message.inInbox;
+    const inInbox = isProviderMessageArchived(existing, undefined)
+      ? false
+      : message.inInbox;
     const messageFields = {
       ownerId: args.ownerId,
       accountId: args.accountId,
