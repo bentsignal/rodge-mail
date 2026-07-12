@@ -3,11 +3,13 @@ import { Text, TextInput, View } from "react-native";
 import { useColor } from "~/hooks/use-color";
 
 export function ComposerField({
+  divider = true,
   error,
   label,
   style,
   ...props
 }: {
+  divider?: boolean;
   error?: string;
   label: string;
 } & React.ComponentProps<typeof TextInput>) {
@@ -16,7 +18,9 @@ export function ComposerField({
   const primary = useColor("primary");
 
   return (
-    <View className="border-border min-h-14 flex-row items-center gap-3 border-b py-1">
+    <View
+      className={`min-h-14 flex-row items-center gap-3 py-1 ${divider ? "border-border border-b" : ""}`}
+    >
       <Text className="text-muted-foreground w-14 text-sm font-medium">
         {label}
       </Text>

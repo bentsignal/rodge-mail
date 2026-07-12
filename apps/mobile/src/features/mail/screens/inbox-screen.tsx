@@ -43,7 +43,7 @@ export function InboxScreen() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showUnreadOnly, setShowUnreadOnly] = useState(false);
   const debouncedSearchTerm = useDebouncedValue(searchTerm.trim(), 250);
-  const { background, foreground, primary } = useInboxColors();
+  const { foreground, paper, primary } = useInboxColors();
   const { isRefreshing, refresh, refreshError } = useInboxRefresh(accounts);
   const selectedAccountId = getSelectedAccountId(accountFilter);
   const search = usePaginatedQuery(
@@ -97,7 +97,7 @@ export function InboxScreen() {
       <Stack.Screen
         options={{
           headerSearchBarOptions: {
-            barTintColor: background,
+            barTintColor: paper,
             hideWhenScrolling: false,
             headerIconColor: foreground,
             onCancelButtonPress: () => setSearchTerm(""),
@@ -132,8 +132,8 @@ export function InboxScreen() {
 
 function useInboxColors() {
   return {
-    background: useColor("background"),
     foreground: useColor("foreground"),
+    paper: useColor("paper"),
     primary: useColor("primary"),
   };
 }
@@ -240,8 +240,8 @@ function InboxHeader({
   const primary = useColor("primary");
 
   return (
-    <View className="bg-paper border-paper-border border-b px-4 py-2">
-      <View className="min-h-11 flex-row items-center gap-4">
+    <View className="bg-paper border-paper-border border-b px-3 py-2">
+      <View className="min-h-11 flex-row items-center gap-3">
         <AccountFilter
           accounts={accounts}
           value={accountFilter}

@@ -1,7 +1,6 @@
 import type { LayoutChangeEvent } from "react-native";
 import { useEffect, useRef, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useMutation, useQuery } from "convex/react";
 import { Pin, Reply } from "lucide-react-native";
@@ -57,9 +56,7 @@ function ThreadReader({
   const router = useRouter();
   const setThreadPinned = useMutation(api.mail.mutations.setThreadPinned);
   const foreground = useColor("foreground");
-  const primaryForeground = useColor("primary-foreground");
   const scrollViewRef = useRef<ScrollView>(null);
-  const insets = useSafeAreaInsets();
   const [pinOverride, setPinOverride] = useState<boolean>();
   const isPinned = pinOverride ?? thread.isPinned;
   async function togglePin() {
@@ -97,10 +94,11 @@ function ThreadReader({
         options={{
           title: thread.sender.name,
           headerRight: () => (
-            <ThreadPinButton
+            <ThreadHeaderActions
               color={foreground}
               isPinned={isPinned}
-              onPress={() => void togglePin()}
+              onPin={() => void togglePin()}
+              onReply={reply}
             />
           ),
         }}
@@ -108,7 +106,7 @@ function ThreadReader({
       <PostalPaperBackground>
         <ScrollView
           ref={scrollViewRef}
-          contentContainerClassName="gap-4 px-4 pt-4 pb-40"
+          contentContainerClassName="gap-4 px-4 pt-4 pb-24"
           contentInsetAdjustmentBehavior="automatic"
         >
           <ThreadHeader thread={thread} />
@@ -124,39 +122,42 @@ function ThreadReader({
             />
           ))}
         </ScrollView>
-        <Pressable
-          accessibilityLabel="Reply"
-          accessibilityRole="button"
-          className="bg-primary border-brass-soft absolute right-4 flex-row items-center gap-2 rounded-lg border px-5 py-3"
-          onPress={reply}
-          style={{ bottom: insets.bottom + 62 }}
-        >
-          <Reply color={primaryForeground} size={17} />
-          <Text className="text-primary-foreground font-semibold">Reply</Text>
-        </Pressable>
       </PostalPaperBackground>
     </>
   );
 }
 
-function ThreadPinButton({
+function ThreadHeaderActions({
   color,
   isPinned,
-  onPress,
+  onPin,
+  onReply,
 }: {
   color: string;
   isPinned: boolean;
-  onPress: () => void;
+  onPin: () => void;
+  onReply: () => void;
 }) {
   return (
-    <Pressable
-      accessibilityLabel={isPinned ? "Unpin thread" : "Pin thread"}
-      accessibilityRole="button"
-      hitSlop={12}
-      onPress={onPress}
-    >
-      <Pin color={color} fill={isPinned ? color : "transparent"} size={19} />
-    </Pressable>
+    <View className="flex-row items-center gap-5">
+      <Pressable
+        accessibilityHint="Starts a reply to the latest message"
+        accessibilityLabel="Reply"
+        accessibilityRole="button"
+        hitSlop={10}
+        onPress={onReply}
+      >
+        <Reply color={color} size={19} />
+      </Pressable>
+      <Pressable
+        accessibilityLabel={isPinned ? "Unpin thread" : "Pin thread"}
+        accessibilityRole="button"
+        hitSlop={10}
+        onPress={onPin}
+      >
+        <Pin color={color} fill={isPinned ? color : "transparent"} size={19} />
+      </Pressable>
+    </View>
   );
 }
 

@@ -14,13 +14,14 @@ export default function InboxLayout() {
         headerLargeStyle: { backgroundColor },
         headerLargeTitleStyle: { color: foreground },
         headerStyle: { backgroundColor },
+        headerShadowVisible: false,
         headerTintColor: foreground,
         headerTitleStyle: { color: foreground },
       }}
     >
       <Stack.Screen
         name="index"
-        options={{ headerLargeTitle: false, headerTitle: "Inbox" }}
+        options={{ headerLargeTitle: false, headerTitle: "" }}
       />
       <Stack.Screen name="thread/[id]" options={{ title: "Message" }} />
     </Stack>

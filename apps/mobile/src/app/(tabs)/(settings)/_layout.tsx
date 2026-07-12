@@ -13,6 +13,7 @@ export default function SettingsLayout() {
         headerLargeStyle: { backgroundColor },
         headerLargeTitleStyle: { color: foreground },
         headerStyle: { backgroundColor },
+        headerShadowVisible: false,
         headerTintColor: foreground,
         headerTitleStyle: { color: foreground },
       }}

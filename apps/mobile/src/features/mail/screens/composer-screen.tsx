@@ -143,7 +143,7 @@ function ComposerBody({
     >
       <ScrollView
         className="flex-1"
-        contentContainerClassName="gap-4 px-4 pt-3"
+        contentContainerClassName="gap-5 px-4 pt-4"
         contentContainerStyle={{ flexGrow: 1, paddingBottom: 32 }}
         automaticallyAdjustKeyboardInsets
         contentInsetAdjustmentBehavior="automatic"
@@ -189,40 +189,48 @@ function ComposerFieldsSurface({
   selectedAccountId: string | undefined;
 }) {
   return (
-    <View className="gap-2">
-      <ComposerSectionLabel>Recipients</ComposerSectionLabel>
-      <PostalSurface className="overflow-hidden rounded-xl px-4">
-        <ComposerSenderField
-          accounts={accounts}
-          onChange={onSenderChange}
-          onOpenSettings={onOpenSettings}
-          selectedAccountId={selectedAccountId}
-        />
-        <ComposerField
-          autoCapitalize="none"
-          defaultValue={draft.to}
-          keyboardType="email-address"
-          label="To"
-          error={recipientErrors.to}
-          onChangeText={(value) => onChange("to", value)}
-        />
-        <ComposerField
-          autoCapitalize="none"
-          defaultValue={draft.cc}
-          keyboardType="email-address"
-          label="CC"
-          error={recipientErrors.cc}
-          onChangeText={(value) => onChange("cc", value)}
-        />
-        <ComposerField
-          autoCapitalize="none"
-          defaultValue={draft.bcc}
-          keyboardType="email-address"
-          label="BCC"
-          error={recipientErrors.bcc}
-          onChangeText={(value) => onChange("bcc", value)}
-        />
-      </PostalSurface>
+    <View className="gap-4">
+      <View className="gap-2">
+        <ComposerSectionLabel>Delivery</ComposerSectionLabel>
+        <PostalSurface className="overflow-hidden px-4">
+          <ComposerSenderField
+            accounts={accounts}
+            onChange={onSenderChange}
+            onOpenSettings={onOpenSettings}
+            selectedAccountId={selectedAccountId}
+          />
+        </PostalSurface>
+      </View>
+      <View className="gap-2">
+        <ComposerSectionLabel>Recipients</ComposerSectionLabel>
+        <PostalSurface className="overflow-hidden px-4">
+          <ComposerField
+            autoCapitalize="none"
+            defaultValue={draft.to}
+            keyboardType="email-address"
+            label="To"
+            error={recipientErrors.to}
+            onChangeText={(value) => onChange("to", value)}
+          />
+          <ComposerField
+            autoCapitalize="none"
+            defaultValue={draft.cc}
+            keyboardType="email-address"
+            label="CC"
+            error={recipientErrors.cc}
+            onChangeText={(value) => onChange("cc", value)}
+          />
+          <ComposerField
+            autoCapitalize="none"
+            defaultValue={draft.bcc}
+            divider={false}
+            keyboardType="email-address"
+            label="BCC"
+            error={recipientErrors.bcc}
+            onChangeText={(value) => onChange("bcc", value)}
+          />
+        </PostalSurface>
+      </View>
     </View>
   );
 }
@@ -244,7 +252,7 @@ function ComposerMessageSurface({
   return (
     <View className="min-h-80 flex-1 gap-2">
       <ComposerSectionLabel>Message</ComposerSectionLabel>
-      <PostalSurface className="min-h-72 flex-1 overflow-hidden rounded-xl px-4">
+      <PostalSurface className="min-h-72 flex-1 overflow-hidden px-4">
         <ComposerField
           defaultValue={draft.subject}
           label="Subject"

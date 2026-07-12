@@ -1,8 +1,8 @@
 import { Pressable, Text, View } from "react-native";
-import { Host, Picker } from "@expo/ui";
+import { MenuView } from "@expo/ui/community/menu";
+import { ChevronDown } from "lucide-react-native";
 
 import type { MobileMailAccount } from "../lib/convex-mail";
-import { useResolvedMobileColorScheme } from "~/features/theme/mobile-theme";
 import { useColor } from "~/hooks/use-color";
 import { getComposerAccountLabel } from "./composer-presentation";
 
@@ -41,35 +41,46 @@ function SenderPicker({
   onChange: (accountId: string) => void;
   selectedAccountId: string;
 }) {
-  const colorScheme = useResolvedMobileColorScheme();
-  const primary = useColor("primary");
+  const mutedForeground = useColor("muted-foreground");
+  const selectedAccount =
+    accounts.find((account) => account.id === selectedAccountId) ?? accounts[0];
+  const selectedLabel = selectedAccount
+    ? getComposerAccountLabel(selectedAccount)
+    : "Choose an account";
 
   return (
-    <View className="border-border min-h-14 flex-row items-center gap-3 border-b py-1">
+    <View className="min-h-16 flex-row items-center gap-3 py-2">
       <Text className="text-muted-foreground w-14 text-sm font-medium">
         From
       </Text>
-      <Host
-        colorScheme={colorScheme}
-        matchContents={{ vertical: true }}
-        seedColor={primary}
+      <MenuView
+        actions={accounts.map((account) => ({
+          id: account.id,
+          state:
+            account.id === selectedAccountId
+              ? ("on" as const)
+              : ("off" as const),
+          title: getComposerAccountLabel(account),
+        }))}
         style={{ flex: 1 }}
+        testID="composer-sender-picker"
+        onPressAction={(event) => onChange(event.nativeEvent.event)}
       >
-        <Picker
-          appearance="menu"
-          selectedValue={selectedAccountId}
-          testID="composer-sender-picker"
-          onValueChange={onChange}
+        <Pressable
+          accessibilityHint="Choose the account that sends this message"
+          accessibilityLabel={`From ${selectedLabel}`}
+          accessibilityRole="button"
+          className="bg-paper-deep border-paper-border h-11 min-w-0 flex-1 flex-row items-center gap-2 rounded-xl border px-3"
         >
-          {accounts.map((account) => (
-            <Picker.Item
-              key={account.id}
-              label={getComposerAccountLabel(account)}
-              value={account.id}
-            />
-          ))}
-        </Picker>
-      </Host>
+          <Text
+            className="text-foreground min-w-0 flex-1 text-sm font-semibold"
+            numberOfLines={1}
+          >
+            {selectedLabel}
+          </Text>
+          <ChevronDown color={mutedForeground} size={16} />
+        </Pressable>
+      </MenuView>
     </View>
   );
 }
