@@ -1,6 +1,6 @@
 import type { LegendListRenderItemProps } from "@legendapp/list/react-native";
 import { useState } from "react";
-import { RefreshControl, View } from "react-native";
+import { Animated, RefreshControl, View } from "react-native";
 import { Stack, useRouter } from "expo-router";
 import { Host, Switch } from "@expo/ui";
 import { LegendList } from "@legendapp/list/react-native";
@@ -23,9 +23,11 @@ import { EmptyInbox, InboxFooter } from "./inbox-list-feedback";
 import {
   getEmptyIsLoading,
   getFooterIsLoading,
+  getInboxListFeedback,
   getVisibleInboxThreads,
 } from "./inbox-list-state";
 import { InboxSyncStatus } from "./inbox-sync-status";
+import { useInboxFilterTransition } from "./use-inbox-filter-transition";
 import { useInboxRefresh } from "./use-inbox-refresh";
 
 const skippedSearch = "skip";
@@ -43,7 +45,7 @@ export function InboxScreen() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showUnreadOnly, setShowUnreadOnly] = useState(false);
   const debouncedSearchTerm = useDebouncedValue(searchTerm.trim(), 250);
-  const { foreground, paper, primary } = useInboxColors();
+  const colors = useInboxColors();
   const { isRefreshing, refresh, refreshError } = useInboxRefresh(accounts);
   const selectedAccountId = getSelectedAccountId(accountFilter);
   const search = usePaginatedQuery(
@@ -96,17 +98,19 @@ export function InboxScreen() {
     <>
       <Stack.Screen
         options={{
+          headerBackVisible: false,
           headerSearchBarOptions: {
-            barTintColor: paper,
+            barTintColor: colors.paper,
             hideWhenScrolling: false,
-            headerIconColor: foreground,
+            headerIconColor: colors.foreground,
             onCancelButtonPress: () => setSearchTerm(""),
             onChangeText: (event) => setSearchTerm(event.nativeEvent.text),
             placeholder: "Search mail",
-            placement: "automatic",
-            textColor: foreground,
-            tintColor: primary,
+            placement: "inline",
+            textColor: colors.foreground,
+            tintColor: colors.primary,
           },
+          headerTitle: "",
         }}
       />
       <InboxThreadList
@@ -116,7 +120,7 @@ export function InboxScreen() {
         emptyIsLoading={emptyIsLoading}
         footerIsLoading={footerIsLoading}
         isRefreshing={isRefreshing}
-        primary={primary}
+        primary={colors.primary}
         refreshError={refreshError}
         renderThread={renderThread}
         searchTerm={isSearching ? searchTerm.trim() : undefined}
@@ -174,50 +178,58 @@ function InboxThreadList({
   onUnreadChange: (value: boolean) => void;
 }) {
   const paper = useColor("paper");
+  const transition = useInboxFilterTransition(data, showUnreadOnly);
+  const feedback = getInboxListFeedback({
+    emptyIsLoading,
+    footerIsLoading,
+    resultCount: transition.data.length,
+  });
 
   return (
-    <LegendList
-      contentContainerStyle={{ paddingBottom: 24 }}
-      data={data}
-      estimatedItemSize={109}
-      keyExtractor={threadKey}
-      maintainVisibleContentPosition={true}
-      recycleItems={true}
-      renderItem={renderThread}
-      contentInsetAdjustmentBehavior="automatic"
-      keyboardDismissMode="on-drag"
-      style={{ backgroundColor: paper, flex: 1 }}
-      refreshControl={
-        <RefreshControl
-          refreshing={isRefreshing}
-          tintColor={primary}
-          onRefresh={onRefresh}
-        />
-      }
-      onEndReached={onEndReached}
-      onEndReachedThreshold={0.6}
-      ListHeaderComponent={
-        <InboxHeader
-          accountFilter={accountFilter}
-          accounts={accounts}
-          onAccountChange={onAccountChange}
-          refreshError={refreshError}
-          showUnreadOnly={showUnreadOnly}
-          onUnreadChange={onUnreadChange}
-        />
-      }
-      ListEmptyComponent={
-        <EmptyInbox
-          isLoading={emptyIsLoading}
-          primary={primary}
-          searchTerm={searchTerm}
-          showUnreadOnly={showUnreadOnly}
-        />
-      }
-      ListFooterComponent={
-        <InboxFooter isLoading={footerIsLoading} primary={primary} />
-      }
-    />
+    <Animated.View style={{ flex: 1, opacity: transition.opacity }}>
+      <LegendList
+        contentContainerStyle={{ paddingBottom: 24 }}
+        data={transition.data}
+        estimatedItemSize={109}
+        keyExtractor={threadKey}
+        maintainVisibleContentPosition={true}
+        recycleItems={true}
+        renderItem={renderThread}
+        contentInsetAdjustmentBehavior="automatic"
+        keyboardDismissMode="on-drag"
+        style={{ backgroundColor: paper, flex: 1 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            tintColor={primary}
+            onRefresh={onRefresh}
+          />
+        }
+        onEndReached={onEndReached}
+        onEndReachedThreshold={0.6}
+        ListHeaderComponent={
+          <InboxHeader
+            accountFilter={accountFilter}
+            accounts={accounts}
+            onAccountChange={onAccountChange}
+            refreshError={refreshError}
+            showUnreadOnly={showUnreadOnly}
+            onUnreadChange={onUnreadChange}
+          />
+        }
+        ListEmptyComponent={
+          <EmptyInbox
+            isLoading={feedback.emptyIsLoading}
+            primary={primary}
+            searchTerm={searchTerm}
+            showUnreadOnly={transition.showUnreadOnly}
+          />
+        }
+        ListFooterComponent={
+          <InboxFooter isLoading={feedback.footerIsLoading} primary={primary} />
+        }
+      />
+    </Animated.View>
   );
 }
 

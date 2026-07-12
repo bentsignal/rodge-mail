@@ -67,7 +67,7 @@ function ModeOption({
     <button
       aria-checked={active}
       className={cn(
-        "focus-visible:ring-ring flex h-9 items-center justify-center gap-1.5 rounded-[8px] text-xs outline-none focus-visible:ring-2",
+        "focus-visible:ring-ring flex h-9 cursor-pointer items-center justify-center gap-1.5 rounded-[8px] text-xs outline-none focus-visible:ring-2",
         active
           ? "mail-raised text-foreground border"
           : "text-muted-foreground hover:text-foreground",

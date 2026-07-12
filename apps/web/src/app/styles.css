@@ -127,6 +127,16 @@
     -webkit-tap-highlight-color: transparent;
   }
 
+  :where(button:not(:disabled), a[href], select:not(:disabled), label[for]),
+  :where([role="button"], [role="radio"]):not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+
+  :where(button, select):disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+
   :where(button, a, input, textarea, select, [tabindex]):focus-visible {
     outline: 2px solid var(--mail-brass-bright);
     outline-offset: 2px;

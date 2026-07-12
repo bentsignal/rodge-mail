@@ -192,14 +192,14 @@ function ComposerFieldsSurface({
     <View className="gap-4">
       <View className="gap-2">
         <ComposerSectionLabel>Delivery</ComposerSectionLabel>
-        <PostalSurface className="overflow-hidden px-4">
+        <View className="border-border border-y px-1">
           <ComposerSenderField
             accounts={accounts}
             onChange={onSenderChange}
             onOpenSettings={onOpenSettings}
             selectedAccountId={selectedAccountId}
           />
-        </PostalSurface>
+        </View>
       </View>
       <View className="gap-2">
         <ComposerSectionLabel>Recipients</ComposerSectionLabel>

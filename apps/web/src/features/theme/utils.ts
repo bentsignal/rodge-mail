@@ -12,6 +12,14 @@ export function getTheme(theme: string | undefined) {
   return THEMES.find((candidate) => candidate === theme) ?? "system";
 }
 
+export function resolveThemePreference(
+  liveTheme: string | undefined,
+  initialTheme: Theme,
+) {
+  if (liveTheme === undefined) return initialTheme;
+  return getTheme(liveTheme);
+}
+
 export function getThemePalette(palette: string | undefined) {
   if (!palette) return "evergreen";
   return PALETTES.find((candidate) => candidate === palette) ?? "evergreen";

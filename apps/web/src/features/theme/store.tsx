@@ -7,6 +7,7 @@ import {
 import { createStore } from "rostra";
 
 import type { Theme, ThemePalette } from "./types";
+import { resolveThemePreference } from "./utils";
 
 function useInternalStore({
   initialPalette,
@@ -16,15 +17,21 @@ function useInternalStore({
   initialTheme: Theme;
 }) {
   const queryClient = useQueryClient();
-  const { setTheme: setNextTheme } = useNextTheme();
-  const [theme, setTheme] = useState<Theme>(initialTheme);
+  const { setTheme: setNextTheme, theme: nextTheme } = useNextTheme();
+  const theme = resolveThemePreference(nextTheme, initialTheme);
   const [palette, setPalette] = useState<ThemePalette>(initialPalette);
 
-  // eslint-disable-next-line no-restricted-syntax -- Theme changes must be persisted to a browser cookie.
+  // eslint-disable-next-line no-restricted-syntax -- next-themes is the live source of truth; its changes must also update SSR persistence.
   useEffect(() => {
-    setNextTheme(theme);
     document.cookie = `theme=${theme}; path=/; max-age=${60 * 60 * 24 * 30}`;
-  }, [setNextTheme, theme]);
+    queryClient.setQueryData<{ palette: ThemePalette; theme: Theme }>(
+      ["appearance"],
+      (current) => ({
+        palette: current?.palette ?? palette,
+        theme,
+      }),
+    );
+  }, [palette, queryClient, theme]);
 
   // eslint-disable-next-line no-restricted-syntax -- Palette changes must be persisted to a browser cookie.
   useEffect(() => {
@@ -34,14 +41,6 @@ function useInternalStore({
 
   function changeTheme(newTheme: Theme) {
     setNextTheme(newTheme);
-    setTheme(newTheme);
-    queryClient.setQueryData<{ palette: ThemePalette; theme: Theme }>(
-      ["appearance"],
-      (current) => ({
-        palette: current?.palette ?? palette,
-        theme: newTheme,
-      }),
-    );
   }
 
   function changePalette(newPalette: ThemePalette) {

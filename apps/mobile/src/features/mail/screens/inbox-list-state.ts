@@ -53,3 +53,21 @@ export function getFooterIsLoading({
   if (!isSearching) return isLoadingMore;
   return searchStatus === "LoadingMore" || searchIsLoading;
 }
+
+export function getInboxListFeedback({
+  emptyIsLoading,
+  footerIsLoading,
+  resultCount,
+}: {
+  emptyIsLoading: boolean;
+  footerIsLoading: boolean;
+  resultCount: number;
+}) {
+  if (resultCount === 0) {
+    return {
+      emptyIsLoading: emptyIsLoading || footerIsLoading,
+      footerIsLoading: false,
+    };
+  }
+  return { emptyIsLoading, footerIsLoading };
+}

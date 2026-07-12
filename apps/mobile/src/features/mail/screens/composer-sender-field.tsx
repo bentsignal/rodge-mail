@@ -70,7 +70,7 @@ function SenderPicker({
           accessibilityHint="Choose the account that sends this message"
           accessibilityLabel={`From ${selectedLabel}`}
           accessibilityRole="button"
-          className="bg-paper-deep border-paper-border h-11 min-w-0 flex-1 flex-row items-center gap-2 rounded-xl border px-3"
+          className="h-12 min-w-0 flex-1 flex-row items-center gap-2 px-1"
         >
           <Text
             className="text-foreground min-w-0 flex-1 text-sm font-semibold"

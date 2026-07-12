@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { getVisibleInboxThreads } from "./inbox-list-state";
+import {
+  getInboxListFeedback,
+  getVisibleInboxThreads,
+} from "./inbox-list-state";
 
 const inboxThreads = [
   { id: "read", isRead: true },
@@ -29,5 +32,37 @@ describe("getVisibleInboxThreads", () => {
         showUnreadOnly: true,
       }),
     ).toEqual([{ id: "unread", isRead: false }]);
+  });
+});
+
+describe("getInboxListFeedback", () => {
+  it("uses the empty slot for loading when there are no rows", () => {
+    expect(
+      getInboxListFeedback({
+        emptyIsLoading: false,
+        footerIsLoading: true,
+        resultCount: 0,
+      }),
+    ).toEqual({ emptyIsLoading: true, footerIsLoading: false });
+  });
+
+  it("keeps pagination loading in the footer when rows are visible", () => {
+    expect(
+      getInboxListFeedback({
+        emptyIsLoading: false,
+        footerIsLoading: true,
+        resultCount: 4,
+      }),
+    ).toEqual({ emptyIsLoading: false, footerIsLoading: true });
+  });
+
+  it("shows a settled empty state without either loader", () => {
+    expect(
+      getInboxListFeedback({
+        emptyIsLoading: false,
+        footerIsLoading: false,
+        resultCount: 0,
+      }),
+    ).toEqual({ emptyIsLoading: false, footerIsLoading: false });
   });
 });

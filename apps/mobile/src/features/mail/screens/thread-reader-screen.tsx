@@ -167,7 +167,7 @@ function ThreadFooterActions({
 }) {
   const foreground = useColor("foreground");
   return (
-    <View className="border-paper-border bg-paper-deep mt-2 flex-row gap-2 rounded-2xl border p-2">
+    <View className="mt-1 flex-row gap-2">
       <ThreadFooterButton
         icon={
           <Pin
