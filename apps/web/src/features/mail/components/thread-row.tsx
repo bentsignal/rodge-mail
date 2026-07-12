@@ -35,7 +35,8 @@ export function ThreadRow({
         aria-posinset={position}
         aria-setsize={-1}
         className={cn(
-          "group relative mx-2 mt-1 overflow-hidden rounded-xl border border-[var(--mail-seam)] bg-[var(--mail-paper)] shadow-[var(--warm-shadow-resting)] transition-[background-color,border-color,box-shadow,transform] duration-150",
+          "group relative w-full overflow-hidden border-y border-[var(--mail-seam)] bg-[var(--mail-paper)] shadow-[var(--warm-shadow-resting)] transition-[background-color,border-color,box-shadow,transform] duration-150",
+          position > 1 && "mt-1",
           isSelected
             ? "z-[1] -translate-y-px border-[var(--mail-border-strong)] bg-[var(--mail-selected)] shadow-[var(--warm-shadow-raised)]"
             : "hover:border-[var(--mail-border-strong)] hover:bg-[var(--mail-row-hover)]",
@@ -44,7 +45,7 @@ export function ThreadRow({
         <SelectedMarker selected={isSelected} />
         <ContextMenu.Trigger asChild>
           <QuickLink
-            className="w-full px-5 py-3 pr-14 text-left"
+            className="block w-full px-5 py-3 pr-14 text-left"
             onClick={() => selectMessage(message)}
             params={{ messageId: message._id }}
             preload="intent"

@@ -37,8 +37,8 @@ export function MailShell({
 
 function MailWorkspace() {
   return (
-    <main className="mail-atmosphere bg-background text-foreground relative flex h-dvh min-h-0 overflow-hidden md:p-4">
-      <div className="mail-app-frame relative z-10 flex min-w-0 flex-1 overflow-hidden md:rounded-[20px]">
+    <main className="mail-shell mail-atmosphere bg-background text-foreground relative flex h-dvh min-h-0 overflow-hidden">
+      <div className="mail-app-frame relative z-10 flex min-w-0 flex-1 overflow-hidden">
         <AccountRail />
         <div className="mail-workspace flex min-w-0 flex-1 overflow-hidden">
           <InboxPane />

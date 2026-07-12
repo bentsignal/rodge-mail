@@ -176,8 +176,16 @@ html[data-desktop-runtime="true"] .mail-account-rail {
 }
 
 .mail-app-frame {
-  border: 1px solid var(--mail-border-strong);
   background: var(--mail-paper);
+}
+
+html[data-desktop-runtime="true"] .mail-shell {
+  padding: 16px;
+}
+
+html[data-desktop-runtime="true"] .mail-app-frame {
+  border: 1px solid var(--mail-border-strong);
+  border-radius: 20px;
   box-shadow: var(--warm-shadow-floating);
 }
 
