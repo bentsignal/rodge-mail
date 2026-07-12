@@ -74,6 +74,10 @@ Run these package scripts from the repository root with
 - `package:mac:development-profile` and `dist:mac:development-profile` opt into
   the local Apple development provisioning profile for Touch ID passkey
   testing.
+- `install:mac:development-profile` builds the signed local app, installs the
+  verified bundle at `/Applications/Rodge Mail.app`, registers it with
+  LaunchServices, and opens it. Use this for the searchable, canonical local
+  desktop install.
 - `dist:win` creates the Windows x64 NSIS installer, including when run on
   macOS.
 
