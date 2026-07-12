@@ -1,5 +1,5 @@
 import type { LayoutChangeEvent } from "react-native";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
@@ -26,6 +26,13 @@ export function ThreadReaderScreen() {
   const threadId = id ? toConvexId<"threads">(id) : undefined;
   const queryArgs = threadId ? { threadId } : "skip";
   const thread = useQuery(api.mail.queries.getThread, queryArgs);
+  const setThreadRead = useMutation(api.mail.mutations.setThreadRead);
+
+  // eslint-disable-next-line no-restricted-syntax -- Direct and notification routes bypass the inbox tap that normally marks a thread read.
+  useEffect(() => {
+    if (!threadId || !thread || thread.unreadCount === 0) return;
+    void setThreadRead({ threadId, isRead: true }).catch(() => undefined);
+  }, [setThreadRead, thread, threadId]);
 
   if (thread === undefined && threadId) return <ThreadLoading />;
   if (!thread) return <ThreadNotFound />;

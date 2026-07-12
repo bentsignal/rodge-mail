@@ -55,6 +55,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         {
           color: "#0f2a1c",
           defaultChannel: "new-mail",
+          enableBackgroundRemoteNotifications: true,
         },
       ],
       "expo-secure-store",

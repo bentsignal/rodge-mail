@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { ActivityIndicator, Switch, Text, View } from "react-native";
+import { ActivityIndicator, Text, useColorScheme, View } from "react-native";
+import { Host, Switch } from "@expo/ui";
 import { useMutation, useQuery } from "convex/react";
 
 import { api } from "@rodge-mail/convex/api";
@@ -137,20 +138,32 @@ function NotificationToggle({
   onChange: (value: boolean) => void;
   value: boolean;
 }) {
+  const colorScheme = useColorScheme();
+  const primary = useColor("primary");
+
   return (
-    <View className="border-border flex-row items-center gap-4 border-b px-4 py-3 last:border-b-0">
-      <View className="min-w-0 flex-1 gap-1">
-        <Text className="text-foreground font-semibold">{label}</Text>
-        <Text className="text-muted-foreground text-sm leading-5">
-          {description}
-        </Text>
-      </View>
-      <Switch
-        accessibilityLabel={label}
-        disabled={disabled}
-        value={value}
-        onValueChange={onChange}
-      />
+    <View className="border-border gap-1 border-b px-4 py-3 last:border-b-0">
+      <Host
+        colorScheme={
+          colorScheme === "dark" || colorScheme === "light"
+            ? colorScheme
+            : undefined
+        }
+        matchContents={{ vertical: true }}
+        seedColor={primary}
+        style={{ width: "100%" }}
+      >
+        <Switch
+          disabled={disabled}
+          label={label}
+          testID={`notification-${label.toLowerCase().replaceAll(" ", "-")}`}
+          value={value}
+          onValueChange={onChange}
+        />
+      </Host>
+      <Text className="text-muted-foreground text-sm leading-5">
+        {description}
+      </Text>
     </View>
   );
 }
