@@ -4,6 +4,7 @@ packages:
   - "!tooling/github"
   - services/*
   - shared/*
+  - "!shared/design-assets"
   - "!shared/ui-mobile"
 
 catalog:
