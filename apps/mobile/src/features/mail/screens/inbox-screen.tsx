@@ -96,23 +96,7 @@ export function InboxScreen() {
   }
   return (
     <>
-      <Stack.Screen
-        options={{
-          headerBackVisible: false,
-          headerSearchBarOptions: {
-            barTintColor: colors.paper,
-            hideWhenScrolling: false,
-            headerIconColor: colors.foreground,
-            onCancelButtonPress: () => setSearchTerm(""),
-            onChangeText: (event) => setSearchTerm(event.nativeEvent.text),
-            placeholder: "Search mail",
-            placement: "inline",
-            textColor: colors.foreground,
-            tintColor: colors.primary,
-          },
-          headerTitle: "",
-        }}
-      />
+      <InboxSearchScreen colors={colors} onSearchChange={setSearchTerm} />
       <InboxThreadList
         accountFilter={accountFilter}
         accounts={accounts}
@@ -131,6 +115,34 @@ export function InboxScreen() {
         onUnreadChange={setShowUnreadOnly}
       />
     </>
+  );
+}
+
+function InboxSearchScreen({
+  colors,
+  onSearchChange,
+}: {
+  colors: ReturnType<typeof useInboxColors>;
+  onSearchChange: (value: string) => void;
+}) {
+  return (
+    <Stack.Screen
+      options={{
+        headerBackVisible: false,
+        headerSearchBarOptions: {
+          barTintColor: colors.paper,
+          hideWhenScrolling: false,
+          headerIconColor: colors.foreground,
+          onCancelButtonPress: () => onSearchChange(""),
+          onChangeText: (event) => onSearchChange(event.nativeEvent.text),
+          placeholder: "Search mail",
+          placement: "inline",
+          textColor: colors.foreground,
+          tintColor: colors.primary,
+        },
+        headerTitle: "",
+      }}
+    />
   );
 }
 

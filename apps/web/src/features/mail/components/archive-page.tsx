@@ -1,6 +1,5 @@
 import type { FunctionReturnType } from "convex/server";
 import { useState } from "react";
-import { Link } from "@tanstack/react-router";
 import { useMutation, usePaginatedQuery } from "convex/react";
 import { ArchiveRestore, ArrowLeft, Loader, Trash2 } from "lucide-react";
 
@@ -8,6 +7,7 @@ import { api } from "@rodge-mail/convex/api";
 import * as Dialog from "@rodge-mail/ui-web/dialog";
 import { toast } from "@rodge-mail/ui-web/toast";
 
+import { QuickLink } from "~/components/quick-link";
 import { formatInboxDate } from "../format";
 
 const PAGE_SIZE = 30;
@@ -23,13 +23,13 @@ export function ArchivePage() {
   return (
     <main className="mail-atmosphere bg-background text-foreground fixed inset-0 z-40 overflow-y-auto">
       <div className="mx-auto w-full max-w-5xl px-5 py-8 sm:px-8 sm:py-12">
-        <Link
+        <QuickLink
           className="mail-raised mb-6 inline-flex h-10 items-center gap-2 rounded-lg border border-[var(--mail-seam)] px-3 text-xs font-semibold"
           to="/"
         >
           <ArrowLeft className="size-3.5" />
           Back to inbox
-        </Link>
+        </QuickLink>
         <header className="mb-8 border-b border-[var(--mail-seam)] pb-6">
           <p className="mail-label mb-2 font-mono text-[9px] tracking-[0.16em] uppercase">
             Rodge Mail

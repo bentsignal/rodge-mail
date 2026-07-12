@@ -1,5 +1,4 @@
 import type { LucideIcon } from "lucide-react";
-import { Link } from "@tanstack/react-router";
 import {
   AlertCircle,
   Archive,
@@ -14,6 +13,7 @@ import {
 import { cn } from "@rodge-mail/std/cn";
 
 import type { MailAccountView } from "../types";
+import { QuickLink } from "~/components/quick-link";
 import { PasskeyManagementButton } from "~/features/auth/components/passkey-management-button";
 import { useLiveMail } from "../live-data";
 import { useMailStore } from "../store";
@@ -63,14 +63,14 @@ export function AccountRail() {
           label="All Inboxes"
           onClick={() => selectMailbox("all")}
         />
-        <Link
+        <QuickLink
           aria-label="Archive"
           className="group flex h-11 w-full items-center justify-center gap-3 rounded-lg border border-transparent px-3 text-sm text-[var(--mail-chassis-foreground)]/72 transition-colors hover:border-white/10 hover:bg-white/[0.07] hover:text-[var(--mail-chassis-foreground)] xl:justify-start"
           to="/archive"
         >
           <Archive className="size-[18px]" strokeWidth={1.7} />
           <span className="hidden truncate xl:block">Archive</span>
-        </Link>
+        </QuickLink>
         <div className="mx-3 mt-4 mb-3 border-t border-white/10" />
         <p className="mb-1 hidden px-3 font-mono text-[9px] tracking-[0.14em] text-[var(--mail-chassis-foreground)]/48 uppercase xl:block">
           Accounts
