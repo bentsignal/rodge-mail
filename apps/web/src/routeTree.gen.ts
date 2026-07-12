@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './app/__root'
+import { Route as ProviderCompleteRouteImport } from './app/provider-complete'
 import { Route as LoginRouteImport } from './app/login'
 import { Route as DesktopAuthRouteImport } from './app/desktop-auth'
 import { Route as AuthedRouteImport } from './app/_authed'
@@ -18,6 +19,11 @@ import { Route as AuthCallbackRouteImport } from './app/auth.callback'
 import { Route as ApiAuthSplatRouteImport } from './app/api.auth.$'
 import { Route as AuthedMessagesMessageIdRouteImport } from './app/_authed.messages.$messageId'
 
+const ProviderCompleteRoute = ProviderCompleteRouteImport.update({
+  id: '/provider-complete',
+  path: '/provider-complete',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -62,6 +68,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthedIndexRoute
   '/desktop-auth': typeof DesktopAuthRoute
   '/login': typeof LoginRoute
+  '/provider-complete': typeof ProviderCompleteRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/desktop-complete': typeof AuthDesktopCompleteRoute
   '/messages/$messageId': typeof AuthedMessagesMessageIdRoute
@@ -70,6 +77,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/desktop-auth': typeof DesktopAuthRoute
   '/login': typeof LoginRoute
+  '/provider-complete': typeof ProviderCompleteRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/desktop-complete': typeof AuthDesktopCompleteRoute
   '/': typeof AuthedIndexRoute
@@ -81,6 +89,7 @@ export interface FileRoutesById {
   '/_authed': typeof AuthedRouteWithChildren
   '/desktop-auth': typeof DesktopAuthRoute
   '/login': typeof LoginRoute
+  '/provider-complete': typeof ProviderCompleteRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/desktop-complete': typeof AuthDesktopCompleteRoute
   '/_authed/': typeof AuthedIndexRoute
@@ -93,6 +102,7 @@ export interface FileRouteTypes {
     | '/'
     | '/desktop-auth'
     | '/login'
+    | '/provider-complete'
     | '/auth/callback'
     | '/auth/desktop-complete'
     | '/messages/$messageId'
@@ -101,6 +111,7 @@ export interface FileRouteTypes {
   to:
     | '/desktop-auth'
     | '/login'
+    | '/provider-complete'
     | '/auth/callback'
     | '/auth/desktop-complete'
     | '/'
@@ -111,6 +122,7 @@ export interface FileRouteTypes {
     | '/_authed'
     | '/desktop-auth'
     | '/login'
+    | '/provider-complete'
     | '/auth/callback'
     | '/auth/desktop-complete'
     | '/_authed/'
@@ -122,6 +134,7 @@ export interface RootRouteChildren {
   AuthedRoute: typeof AuthedRouteWithChildren
   DesktopAuthRoute: typeof DesktopAuthRoute
   LoginRoute: typeof LoginRoute
+  ProviderCompleteRoute: typeof ProviderCompleteRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   AuthDesktopCompleteRoute: typeof AuthDesktopCompleteRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
@@ -129,6 +142,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/provider-complete': {
+      id: '/provider-complete'
+      path: '/provider-complete'
+      fullPath: '/provider-complete'
+      preLoaderRoute: typeof ProviderCompleteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -205,6 +225,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthedRoute: AuthedRouteWithChildren,
   DesktopAuthRoute: DesktopAuthRoute,
   LoginRoute: LoginRoute,
+  ProviderCompleteRoute: ProviderCompleteRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   AuthDesktopCompleteRoute: AuthDesktopCompleteRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,

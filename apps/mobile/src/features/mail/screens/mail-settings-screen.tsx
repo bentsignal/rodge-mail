@@ -24,6 +24,7 @@ import { NotificationPreferences } from "../../notifications/notification-prefer
 import { MobileAppearanceSettings } from "../../theme/mobile-appearance-settings";
 import { MobileOutboxStatus } from "../components/mobile-outbox-status";
 import { useMailStore } from "../store";
+import { AccountConnections } from "./account-connections";
 import { SettingsSection } from "./settings-section";
 
 export function MailSettingsScreen() {
@@ -70,6 +71,9 @@ export function MailSettingsScreen() {
             </Text>
           </View>
         ))}
+      </SettingsSection>
+      <SettingsSection title="Add or reconnect">
+        <AccountConnections />
       </SettingsSection>
       <SettingsSection title="Notifications">
         <NotificationPreferences />

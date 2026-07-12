@@ -1,6 +1,6 @@
 import type { EncryptedEnvelope } from "../crypto";
 import type { ProviderTokens } from "../types";
-/* eslint-disable no-restricted-syntax, @typescript-eslint/consistent-type-assertions -- The unauthenticated OAuth callback validates explicit network response contracts. */
+/* eslint-disable complexity, no-restricted-syntax, @typescript-eslint/consistent-type-assertions -- The unauthenticated OAuth callback validates explicit network response contracts. */
 import { internal } from "../../_generated/api";
 import { httpAction } from "../../_generated/server";
 import { urls } from "../../urls";
@@ -21,8 +21,26 @@ export const oauthCallback = httpAction(async (ctx, request) => {
   const state = requestUrl.searchParams.get("state");
   const code = requestUrl.searchParams.get("code");
   const providerError = requestUrl.searchParams.get("error");
-  if (!state || !code || providerError) {
+  if (!state) {
     return redirectWithResult("/settings/accounts", "error", providerError);
+  }
+  if (!code || providerError) {
+    let returnPath = "/settings/accounts";
+    try {
+      const stateHash = await sha256Base64Url(state);
+      const oauthState = await ctx.runMutation(
+        internal.sync.internal.consumeOAuthState,
+        {
+          provider: "gmail",
+          stateHash,
+          now: Date.now(),
+        },
+      );
+      returnPath = oauthState?.returnPath ?? returnPath;
+    } catch {
+      // Keep the safe web fallback when the state is invalid or expired.
+    }
+    return redirectWithResult(returnPath, "error", providerError);
   }
 
   let returnPath = "/settings/accounts";

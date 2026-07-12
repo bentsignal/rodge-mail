@@ -98,6 +98,7 @@ function AppNavigation({
         <Stack.Screen name="index" options={{ animation: "fade" }} />
         <Stack.Protected guard={isAuthenticated}>
           <Stack.Screen name="(tabs)" options={{ animation: "fade" }} />
+          <Stack.Screen name="provider-complete" />
           <Stack.Screen
             name="compose"
             options={{
