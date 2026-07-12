@@ -12,18 +12,22 @@ export default function TabLayout() {
       minimizeBehavior="onScrollDown"
       tintColor={primary}
     >
-      <NativeTabs.Trigger name="(inbox)">
+      <NativeTabs.Trigger name="(inbox)" contentStyle={{ backgroundColor }}>
         <NativeTabs.Trigger.Icon
           sf={{ default: "tray", selected: "tray.fill" }}
           md="inbox"
         />
         <NativeTabs.Trigger.Label>Inbox</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="(new)" disableAutomaticContentInsets>
+      <NativeTabs.Trigger
+        name="(new)"
+        contentStyle={{ backgroundColor }}
+        disableAutomaticContentInsets
+      >
         <NativeTabs.Trigger.Icon sf="square.and.pencil" md="edit" />
         <NativeTabs.Trigger.Label>New</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="(settings)">
+      <NativeTabs.Trigger name="(settings)" contentStyle={{ backgroundColor }}>
         <NativeTabs.Trigger.Icon
           sf={{ default: "gearshape", selected: "gearshape.fill" }}
           md="settings"

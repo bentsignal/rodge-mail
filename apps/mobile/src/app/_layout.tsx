@@ -21,9 +21,13 @@ void SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const readiness = useInitApp();
+  const backgroundColor = useColor("background");
 
   return (
-    <GestureHandlerRootView className="flex-1">
+    <GestureHandlerRootView
+      className="flex-1"
+      style={{ backgroundColor, flex: 1 }}
+    >
       <SafeAreaProvider>
         <StrictMode>
           <ConvexBetterAuthProvider authClient={authClient} client={convex}>
@@ -48,6 +52,10 @@ function AppShell({ readiness }: { readiness: ReturnType<typeof useInitApp> }) {
     }
     void SplashScreen.hideAsync();
   }, [readiness.backgroundColorsAreLoaded, readiness.fontsAreLoaded]);
+
+  if (!readiness.backgroundColorsAreLoaded || !readiness.fontsAreLoaded) {
+    return null;
+  }
 
   if (isAuthenticated) {
     return (

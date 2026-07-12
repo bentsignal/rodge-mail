@@ -5,19 +5,34 @@ import type { MobileMailAccount } from "../lib/convex-mail";
 export function ComposerSenderField({
   accounts,
   onChange,
+  onOpenSettings,
   selectedAccountId,
 }: {
   accounts: MobileMailAccount[];
   onChange: (accountId: string) => void;
+  onOpenSettings: () => void;
   selectedAccountId: string | undefined;
 }) {
   if (accounts.length === 0) {
     return (
-      <View className="border-border min-h-14 flex-row items-center gap-3 border-b py-2">
+      <View className="border-border flex-row items-center gap-3 border-b py-2">
         <Text className="text-muted-foreground w-16 text-base">From</Text>
-        <Text className="text-muted-foreground min-w-0 flex-1 text-base">
-          No sending account
-        </Text>
+        <View className="min-w-0 flex-1 gap-1 py-1">
+          <Text className="text-foreground text-sm font-medium">
+            Connect an account to send mail.
+          </Text>
+          <Pressable
+            accessibilityLabel="Open Settings to connect a sending account"
+            accessibilityRole="button"
+            className="min-h-8 justify-center self-start"
+            hitSlop={8}
+            onPress={onOpenSettings}
+          >
+            <Text className="text-primary text-sm font-semibold">
+              Open Settings
+            </Text>
+          </Pressable>
+        </View>
       </View>
     );
   }

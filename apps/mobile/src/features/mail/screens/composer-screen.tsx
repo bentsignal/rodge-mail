@@ -2,7 +2,6 @@ import { useState } from "react";
 import {
   Alert,
   Keyboard,
-  Pressable,
   ScrollView,
   Text,
   TextInput,
@@ -10,7 +9,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Paperclip } from "lucide-react-native";
 
 import type { ComposerDraft, RecipientFields } from "@rodge-mail/features/mail";
 
@@ -20,17 +18,17 @@ import type { NativeComposerAttachment } from "./use-native-attachments";
 import {
   PostalPaperBackground,
   PostalSurface,
-  PostalWell,
 } from "~/features/theme/postal-surface";
 import { useColor } from "~/hooks/use-color";
 import { useMailStore } from "../store";
+import { ComposerAttachButton } from "./composer-attach-button";
 import { ComposerAttachmentList } from "./composer-attachment-list";
-import { ComposerHeader } from "./composer-header";
 import {
   canSendFromAccount,
   createComposerDraft,
   getSelectedAccount,
 } from "./composer-helpers";
+import { ComposerNavigationHeader } from "./composer-navigation-header";
 import { ComposerSenderField } from "./composer-sender-field";
 import { useNativeAttachments } from "./use-native-attachments";
 import { useSendMessage } from "./use-send-message";
@@ -86,14 +84,15 @@ export function ComposerScreen({
   return (
     <SafeAreaView
       className="bg-background flex-1"
-      edges={variant === "tab" ? ["top"] : []}
+      edges={[]}
       style={{ flex: 1 }}
     >
       <View className="flex-1" style={{ flex: 1 }}>
-        <ComposerHeader
+        <ComposerNavigationHeader
           canSend={canSend}
-          onCancel={variant === "modal" ? router.back : undefined}
-          onDismissKeyboard={variant === "tab" ? Keyboard.dismiss : undefined}
+          variant={variant}
+          onCancel={router.back}
+          onDismissKeyboard={Keyboard.dismiss}
           onSend={() => void send()}
         />
         <ComposerBody
@@ -102,6 +101,7 @@ export function ComposerScreen({
           draft={draft}
           onAttach={attach}
           onChange={setField}
+          onOpenSettings={() => router.navigate("/(tabs)/(settings)")}
           onSenderChange={setSelectedAccountId}
           onRemoveAttachment={(attachment) => void removeAttachment(attachment)}
           recipientErrors={recipientErrors}
@@ -129,6 +129,7 @@ function ComposerBody({
   draft,
   onAttach,
   onChange,
+  onOpenSettings,
   onRemoveAttachment,
   recipientErrors,
   onSenderChange,
@@ -139,17 +140,21 @@ function ComposerBody({
   draft: ComposerDraft<NativeComposerAttachment>;
   onAttach: () => void;
   onChange: (field: ComposerFieldName, value: string) => void;
+  onOpenSettings: () => void;
   onRemoveAttachment: (attachment: NativeComposerAttachment) => void;
   recipientErrors: Partial<RecipientFields<string>>;
   onSenderChange: (accountId: string) => void;
   selectedAccountId: string | undefined;
   autoFocusBody: boolean;
 }) {
+  const backgroundColor = useColor("background");
+
   return (
-    <PostalPaperBackground className="min-h-0">
+    <PostalPaperBackground className="min-h-0" style={{ backgroundColor }}>
       <ScrollView
         className="flex-1"
-        contentContainerClassName="gap-3 px-4 pt-3 pb-8"
+        contentContainerClassName="gap-3 px-4 pt-3 pb-24"
+        contentContainerStyle={{ flexGrow: 1 }}
         automaticallyAdjustKeyboardInsets
         contentInsetAdjustmentBehavior="never"
         keyboardDismissMode="interactive"
@@ -159,6 +164,7 @@ function ComposerBody({
           accounts={accounts}
           draft={draft}
           onChange={onChange}
+          onOpenSettings={onOpenSettings}
           onSenderChange={onSenderChange}
           recipientErrors={recipientErrors}
           selectedAccountId={selectedAccountId}
@@ -179,6 +185,7 @@ function ComposerFieldsSurface({
   accounts,
   draft,
   onChange,
+  onOpenSettings,
   onSenderChange,
   recipientErrors,
   selectedAccountId,
@@ -186,6 +193,7 @@ function ComposerFieldsSurface({
   accounts: MobileMailAccount[];
   draft: ComposerDraft<NativeComposerAttachment>;
   onChange: (field: ComposerFieldName, value: string) => void;
+  onOpenSettings: () => void;
   onSenderChange: (accountId: string) => void;
   recipientErrors: Partial<RecipientFields<string>>;
   selectedAccountId: string | undefined;
@@ -195,6 +203,7 @@ function ComposerFieldsSurface({
       <ComposerSenderField
         accounts={accounts}
         onChange={onSenderChange}
+        onOpenSettings={onOpenSettings}
         selectedAccountId={selectedAccountId}
       />
       <ComposerField
@@ -243,11 +252,11 @@ function ComposerMessageSurface({
 }) {
   const mutedForeground = useColor("muted-foreground");
   return (
-    <PostalSurface className="rounded-xl p-4">
+    <PostalSurface className="min-h-40 flex-1 rounded-xl p-4">
       <TextInput
         accessibilityLabel="Message body"
         autoFocus={autoFocus}
-        className="text-foreground min-h-64 text-base leading-6"
+        className="text-foreground min-h-36 flex-1 text-base leading-6"
         defaultValue={draft.body}
         multiline
         placeholder="Write a message"
@@ -260,23 +269,6 @@ function ComposerMessageSurface({
         onRemove={onRemoveAttachment}
       />
     </PostalSurface>
-  );
-}
-
-function ComposerAttachButton({ onAttach }: { onAttach: () => void }) {
-  const mutedForeground = useColor("muted-foreground");
-  return (
-    <PostalWell>
-      <Pressable
-        accessibilityLabel="Add attachments"
-        accessibilityRole="button"
-        className="min-h-11 flex-row items-center justify-center gap-2 rounded-lg py-3"
-        onPress={onAttach}
-      >
-        <Paperclip color={mutedForeground} size={18} />
-        <Text className="text-foreground font-semibold">Attach</Text>
-      </Pressable>
-    </PostalWell>
   );
 }
 
