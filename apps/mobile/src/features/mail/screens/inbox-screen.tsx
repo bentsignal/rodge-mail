@@ -1,7 +1,9 @@
 import type { LegendListRenderItemProps } from "@legendapp/list/react-native";
-import { useState } from "react";
+import type { SearchBarCommands } from "react-native-screens";
+// eslint-disable-next-line no-restricted-imports -- useFocusEffect requires a stable callback so native search is not repeatedly focused during renders.
+import { useCallback, useRef, useState } from "react";
 import { Animated, RefreshControl, View } from "react-native";
-import { Stack, useRouter } from "expo-router";
+import { Stack, useFocusEffect, useRouter } from "expo-router";
 import { LegendList } from "@legendapp/list/react-native";
 import { usePaginatedQuery } from "convex/react";
 
@@ -129,6 +131,28 @@ function InboxSearchScreen({
   searchMode: boolean;
 }) {
   if (!searchMode) return <Stack.Screen options={{ headerShown: false }} />;
+  return <FocusedSearchBar colors={colors} onSearchChange={onSearchChange} />;
+}
+
+function FocusedSearchBar({
+  colors,
+  onSearchChange,
+}: {
+  colors: ReturnType<typeof useInboxColors>;
+  onSearchChange: (value: string) => void;
+}) {
+  const searchBarRef = useRef<SearchBarCommands>(null);
+  useFocusEffect(
+    useCallback(() => {
+      const focusTimer = setTimeout(() => {
+        searchBarRef.current?.focus();
+      }, 150);
+      return () => {
+        clearTimeout(focusTimer);
+        searchBarRef.current?.blur();
+      };
+    }, []),
+  );
   return (
     <>
       <Stack.Title>Search</Stack.Title>
@@ -139,6 +163,7 @@ function InboxSearchScreen({
         onChangeText={(event) => onSearchChange(event.nativeEvent.text)}
         placeholder="Search mail"
         placement="automatic"
+        ref={searchBarRef}
         textColor={colors.foreground}
         tintColor={colors.primary}
       />
