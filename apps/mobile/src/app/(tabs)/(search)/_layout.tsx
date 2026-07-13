@@ -12,6 +12,7 @@ export default function SearchLayout() {
         headerShadowVisible: false,
         headerStyle: { backgroundColor },
         headerTintColor: foreground,
+        headerTitle: "",
         headerTitleStyle: { color: foreground },
       }}
     />

@@ -1,9 +1,7 @@
 import type { LegendListRenderItemProps } from "@legendapp/list/react-native";
-import type { SearchBarCommands } from "react-native-screens";
-// eslint-disable-next-line no-restricted-imports -- useFocusEffect requires a stable callback so native search is not repeatedly focused during renders.
-import { useCallback, useRef, useState } from "react";
+import { useState } from "react";
 import { Animated, RefreshControl, View } from "react-native";
-import { Stack, useFocusEffect, useRouter } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import { LegendList } from "@legendapp/list/react-native";
 import { usePaginatedQuery } from "convex/react";
 
@@ -17,6 +15,7 @@ import { ThreadRow } from "../components/thread-row";
 import { useSemanticMailSearch } from "../hooks/use-semantic-mail-search";
 import { toConvexId } from "../lib/convex-id";
 import { toMailThreads } from "../lib/convex-mail";
+import { nativeSearchBarRef } from "../native-search-controller";
 import { useMailStore } from "../store";
 import { InboxHeader } from "./inbox-header";
 import { EmptyInbox, InboxFooter } from "./inbox-list-feedback";
@@ -97,6 +96,7 @@ export function InboxScreen({ searchMode = false }: { searchMode?: boolean }) {
     <>
       <InboxSearchScreen
         colors={colors}
+        onSearchClose={() => router.navigate("/(tabs)/(inbox)")}
         searchMode={searchMode}
         onSearchChange={setSearchTerm}
       />
@@ -124,50 +124,49 @@ export function InboxScreen({ searchMode = false }: { searchMode?: boolean }) {
 function InboxSearchScreen({
   colors,
   onSearchChange,
+  onSearchClose,
   searchMode,
 }: {
   colors: ReturnType<typeof useInboxColors>;
   onSearchChange: (value: string) => void;
+  onSearchClose: () => void;
   searchMode: boolean;
 }) {
   if (!searchMode) return <Stack.Screen options={{ headerShown: false }} />;
-  return <FocusedSearchBar colors={colors} onSearchChange={onSearchChange} />;
+  return (
+    <FocusedSearchBar
+      colors={colors}
+      onSearchChange={onSearchChange}
+      onSearchClose={onSearchClose}
+    />
+  );
 }
 
 function FocusedSearchBar({
   colors,
   onSearchChange,
+  onSearchClose,
 }: {
   colors: ReturnType<typeof useInboxColors>;
   onSearchChange: (value: string) => void;
+  onSearchClose: () => void;
 }) {
-  const searchBarRef = useRef<SearchBarCommands>(null);
-  useFocusEffect(
-    useCallback(() => {
-      const focusTimer = setTimeout(() => {
-        searchBarRef.current?.focus();
-      }, 150);
-      return () => {
-        clearTimeout(focusTimer);
-        searchBarRef.current?.blur();
-      };
-    }, []),
-  );
   return (
-    <>
-      <Stack.Title>Search</Stack.Title>
-      <Stack.SearchBar
-        barTintColor={colors.paper}
-        hideWhenScrolling={false}
-        onCancelButtonPress={() => onSearchChange("")}
-        onChangeText={(event) => onSearchChange(event.nativeEvent.text)}
-        placeholder="Search mail"
-        placement="automatic"
-        ref={searchBarRef}
-        textColor={colors.foreground}
-        tintColor={colors.primary}
-      />
-    </>
+    <Stack.SearchBar
+      barTintColor={colors.paper}
+      hideNavigationBar
+      hideWhenScrolling={false}
+      onCancelButtonPress={() => {
+        onSearchChange("");
+        onSearchClose();
+      }}
+      onChangeText={(event) => onSearchChange(event.nativeEvent.text)}
+      placeholder="Search mail"
+      placement="automatic"
+      ref={nativeSearchBarRef}
+      textColor={colors.foreground}
+      tintColor={colors.primary}
+    />
   );
 }
 

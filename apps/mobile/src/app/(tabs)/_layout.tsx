@@ -1,5 +1,9 @@
 import { NativeTabs } from "expo-router/unstable-native-tabs";
 
+import {
+  blurNativeSearch,
+  focusNativeSearch,
+} from "~/features/mail/native-search-controller";
 import { useColor } from "~/hooks/use-color";
 
 export default function TabLayout() {
@@ -33,6 +37,10 @@ export default function TabLayout() {
       <NativeTabs.Trigger
         name="(search)"
         contentStyle={{ backgroundColor }}
+        listeners={{
+          blur: blurNativeSearch,
+          focus: focusNativeSearch,
+        }}
         role="search"
       >
         <NativeTabs.Trigger.Label>Search</NativeTabs.Trigger.Label>
