@@ -1,12 +1,10 @@
 import type { LegendListRenderItemProps } from "@legendapp/list/react-native";
-import { useState } from "react";
-import { Stack, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { usePaginatedQuery, useQuery } from "convex/react";
 
-import type { MailThread } from "@rodge-mail/features/mail";
+import type { MailAccountFilter, MailThread } from "@rodge-mail/features/mail";
 import { api } from "@rodge-mail/convex/api";
 
-import { useColor } from "~/hooks/use-color";
 import { ThreadRow } from "../components/thread-row";
 import { toConvexId } from "../lib/convex-id";
 import { toMailThreads } from "../lib/convex-mail";
@@ -17,12 +15,23 @@ import { useArchiveActions } from "./use-archive-actions";
 
 const pageSize = 30;
 
-export function ArchiveScreen() {
+export function ArchiveMailbox({
+  primary,
+  searchTerm,
+  temporarySearch,
+  onAccountChange,
+}: {
+  onAccountChange: (value: MailAccountFilter) => void;
+  primary: string;
+  searchTerm: string;
+  temporarySearch?: {
+    onChange: (value: string) => void;
+    value: string;
+  };
+}) {
   const router = useRouter();
   const accounts = useMailStore((store) => store.accounts);
   const accountFilter = useMailStore((store) => store.accountFilter);
-  const setAccountFilter = useMailStore((store) => store.setAccountFilter);
-  const [searchTerm, setSearchTerm] = useState("");
   const actions = useArchiveActions();
   const accountId = getAccountId(accountFilter);
   const archive = usePaginatedQuery(
@@ -43,7 +52,6 @@ export function ArchiveScreen() {
     toMailThreads(sourceRows),
     actions.filter,
   );
-  const colors = useArchiveSearchColors();
 
   function renderThread({ item }: LegendListRenderItemProps<MailThread>) {
     return (
@@ -55,8 +63,8 @@ export function ArchiveScreen() {
         onDelete={() => actions.confirmDelete([item.id])}
         onOpen={() =>
           router.push({
-            pathname: "/(tabs)/(inbox)/archive/thread/[id]",
-            params: { id: item.id },
+            pathname: "/(tabs)/(inbox)/thread/[id]",
+            params: { id: item.id, mailbox: "archive" },
           })
         }
         onRestore={() => void actions.restoreThreads([item.id])}
@@ -70,59 +78,30 @@ export function ArchiveScreen() {
     }
   }
   return (
-    <>
-      <ArchiveSearchBar colors={colors} onSearchChange={setSearchTerm} />
-      <MailboxThreadList
-        accountFilter={accountFilter}
-        accounts={accounts}
-        bulkActions={actions.bulkActions}
-        data={threads}
-        emptyIsLoading={getArchiveIsLoading(
-          isSearching,
-          searchResults,
-          archive.status,
-        )}
-        filter={actions.filter}
-        footerIsLoading={!isSearching && archive.status === "LoadingMore"}
-        headerInList
-        includeTopSafeArea={false}
-        mailbox="archive"
-        primary={colors.primary}
-        renderThread={renderThread}
-        searchTerm={isSearching ? normalizedSearchTerm : undefined}
-        selectedCount={actions.selectedIds.size}
-        selectionMode={actions.selectionMode}
-        onAccountChange={(value) => {
-          setAccountFilter(value);
-          router.replace("/(tabs)/(inbox)");
-        }}
-        onArchiveSelect={() => undefined}
-        onEndReached={loadMore}
-        onFilterChange={actions.changeFilter}
-        onToggleSelection={actions.toggleSelectionMode}
-      />
-    </>
-  );
-}
-
-function ArchiveSearchBar({
-  colors,
-  onSearchChange,
-}: {
-  colors: ReturnType<typeof useArchiveSearchColors>;
-  onSearchChange: (value: string) => void;
-}) {
-  return (
-    <Stack.SearchBar
-      allowToolbarIntegration={false}
-      barTintColor={colors.paper}
-      hideWhenScrolling={false}
-      onCancelButtonPress={() => onSearchChange("")}
-      onChangeText={(event) => onSearchChange(event.nativeEvent.text)}
-      placeholder="Search archive"
-      placement="automatic"
-      textColor={colors.foreground}
-      tintColor={colors.primary}
+    <MailboxThreadList
+      accountFilter={accountFilter}
+      accounts={accounts}
+      bulkActions={actions.bulkActions}
+      data={threads}
+      emptyIsLoading={getArchiveIsLoading(
+        isSearching,
+        searchResults,
+        archive.status,
+      )}
+      filter={actions.filter}
+      footerIsLoading={!isSearching && archive.status === "LoadingMore"}
+      mailbox="archive"
+      primary={primary}
+      renderThread={renderThread}
+      searchTerm={isSearching ? normalizedSearchTerm : undefined}
+      selectedCount={actions.selectedIds.size}
+      selectionMode={actions.selectionMode}
+      temporarySearch={temporarySearch}
+      onAccountChange={onAccountChange}
+      onArchiveSelect={() => undefined}
+      onEndReached={loadMore}
+      onFilterChange={actions.changeFilter}
+      onToggleSelection={actions.toggleSelectionMode}
     />
   );
 }
@@ -139,12 +118,4 @@ function getArchiveIsLoading(
 ) {
   if (isSearching) return searchResults === undefined;
   return status === "LoadingFirstPage";
-}
-
-function useArchiveSearchColors() {
-  return {
-    foreground: useColor("foreground"),
-    paper: useColor("paper"),
-    primary: useColor("primary"),
-  };
 }

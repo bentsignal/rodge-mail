@@ -1,6 +1,6 @@
 import type { LegendListRenderItemProps } from "@legendapp/list/react-native";
 import { useState } from "react";
-import { Stack, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { usePaginatedQuery } from "convex/react";
 
 import type { MailAccountFilter, MailThread } from "@rodge-mail/features/mail";
@@ -13,15 +13,15 @@ import { useSemanticMailSearch } from "../hooks/use-semantic-mail-search";
 import { toConvexId } from "../lib/convex-id";
 import { toMailThreads } from "../lib/convex-mail";
 import { useTemporaryIos27Search } from "../mobile-search-preference";
-import { nativeSearchBarRef } from "../native-search-controller";
 import { useMailStore } from "../store";
+import { ArchiveMailbox } from "./archive-screen";
 import {
   getEmptyIsLoading,
   getFooterIsLoading,
   getVisibleInboxThreads,
 } from "./inbox-list-state";
+import { InboxSearchControls } from "./inbox-search-controls";
 import { MailboxThreadList } from "./mailbox-thread-list";
-import { TemporaryIosSearchBar } from "./temporary-ios-search-bar";
 import { useInboxMailboxControls } from "./use-inbox-mailbox-controls";
 import { useInboxRefresh } from "./use-inbox-refresh";
 
@@ -29,18 +29,110 @@ const skippedSearch = "skip";
 
 export function InboxScreen({ searchMode = false }: { searchMode?: boolean }) {
   const router = useRouter();
+  const mailbox = useMailStore((store) => store.mailbox);
+  const setAccountFilter = useMailStore((store) => store.setAccountFilter);
+  const setMailbox = useMailStore((store) => store.setMailbox);
+  const [searchTerm, setSearchTerm] = useState("");
+  const showTemporarySearch = useTemporaryIos27Search() && !searchMode;
+  const primary = useColor("primary");
+
+  function selectInbox(value: MailAccountFilter) {
+    setMailbox("inbox");
+    setAccountFilter(value);
+    setSearchTerm("");
+  }
+  function selectArchive() {
+    setMailbox("archive");
+    setAccountFilter("all");
+    setSearchTerm("");
+  }
+
+  return (
+    <>
+      <InboxSearchControls
+        mailbox={mailbox}
+        onSearchClose={() => router.navigate("/(tabs)/(inbox)")}
+        searchMode={searchMode}
+        onChange={setSearchTerm}
+      />
+      <ActiveMailbox
+        mailbox={mailbox}
+        primary={primary}
+        searchTerm={searchTerm}
+        showTemporarySearch={showTemporarySearch}
+        onAccountChange={selectInbox}
+        onArchiveSelect={selectArchive}
+        onSearchChange={setSearchTerm}
+      />
+    </>
+  );
+}
+
+function ActiveMailbox({
+  mailbox,
+  onAccountChange,
+  onArchiveSelect,
+  onSearchChange,
+  primary,
+  searchTerm,
+  showTemporarySearch,
+}: {
+  mailbox: "archive" | "inbox";
+  onAccountChange: (value: MailAccountFilter) => void;
+  onArchiveSelect: () => void;
+  onSearchChange: (value: string) => void;
+  primary: string;
+  searchTerm: string;
+  showTemporarySearch: boolean;
+}) {
+  if (mailbox === "archive") {
+    return (
+      <ArchiveMailbox
+        primary={primary}
+        searchTerm={searchTerm}
+        temporarySearch={
+          showTemporarySearch
+            ? { value: searchTerm, onChange: onSearchChange }
+            : undefined
+        }
+        onAccountChange={onAccountChange}
+      />
+    );
+  }
+  return (
+    <InboxMailbox
+      searchTerm={searchTerm}
+      showTemporarySearch={showTemporarySearch}
+      onAccountChange={onAccountChange}
+      onArchiveSelect={onArchiveSelect}
+      onSearchChange={onSearchChange}
+    />
+  );
+}
+
+function InboxMailbox({
+  onAccountChange,
+  onArchiveSelect,
+  onSearchChange,
+  searchTerm,
+  showTemporarySearch,
+}: {
+  onAccountChange: (value: MailAccountFilter) => void;
+  onArchiveSelect: () => void;
+  onSearchChange: (value: string) => void;
+  searchTerm: string;
+  showTemporarySearch: boolean;
+}) {
+  const router = useRouter();
   const threads = useMailStore((store) => store.threads);
   const accounts = useMailStore((store) => store.accounts);
   const accountFilter = useMailStore((store) => store.accountFilter);
   const markRead = useMailStore((store) => store.markRead);
-  const setAccountFilter = useMailStore((store) => store.setAccountFilter);
   const loadMore = useMailStore((store) => store.loadMore);
   const isLoading = useMailStore((store) => store.isLoading);
   const isLoadingMore = useMailStore((store) => store.isLoadingMore);
-  const [searchTerm, setSearchTerm] = useState("");
-  const showTemporarySearch = useTemporaryIos27Search() && !searchMode;
   const debouncedSearchTerm = useDebouncedValue(searchTerm.trim(), 250);
-  const colors = useInboxColors();
+  const primary = useColor("primary");
   const { isRefreshing, refresh, refreshError } = useInboxRefresh(accounts);
   const search = usePaginatedQuery(
     api.mail.queries.searchHeaders,
@@ -88,86 +180,35 @@ export function InboxScreen({ searchMode = false }: { searchMode?: boolean }) {
     else if (search.status === "CanLoadMore") search.loadMore(30);
   }
   return (
-    <>
-      <InboxSearchControls
-        colors={colors}
-        showTemporarySearch={showTemporarySearch}
-        value={searchTerm}
-        onSearchClose={() => router.navigate("/(tabs)/(inbox)")}
-        searchMode={searchMode}
-        onChange={setSearchTerm}
-      />
-      <MailboxThreadList
-        accountFilter={accountFilter}
-        accounts={accounts}
-        bulkActions={controls.bulkActions}
-        data={controls.threads}
-        emptyIsLoading={loadingFeedback.emptyIsLoading}
-        filter={controls.filter}
-        footerIsLoading={loadingFeedback.footerIsLoading}
-        includeTopSafeArea={!showTemporarySearch}
-        isRefreshing={isRefreshing}
-        mailbox="inbox"
-        primary={colors.primary}
-        refreshError={refreshError}
-        renderThread={renderThread}
-        searchTerm={isSearching ? searchTerm.trim() : undefined}
-        selectedCount={controls.selectedCount}
-        selectionMode={controls.selectionMode}
-        onAccountChange={setAccountFilter}
-        onArchiveSelect={() => router.push("/(tabs)/(inbox)/archive")}
-        onEndReached={loadNextPage}
-        onFilterChange={controls.changeFilter}
-        onRefresh={() => void refresh()}
-        onToggleSelection={controls.toggleSelectionMode}
-      />
-    </>
+    <MailboxThreadList
+      accountFilter={accountFilter}
+      accounts={accounts}
+      bulkActions={controls.bulkActions}
+      data={controls.threads}
+      emptyIsLoading={loadingFeedback.emptyIsLoading}
+      filter={controls.filter}
+      footerIsLoading={loadingFeedback.footerIsLoading}
+      isRefreshing={isRefreshing}
+      mailbox="inbox"
+      primary={primary}
+      refreshError={refreshError}
+      renderThread={renderThread}
+      searchTerm={isSearching ? searchTerm.trim() : undefined}
+      selectedCount={controls.selectedCount}
+      selectionMode={controls.selectionMode}
+      temporarySearch={
+        showTemporarySearch
+          ? { value: searchTerm, onChange: onSearchChange }
+          : undefined
+      }
+      onAccountChange={onAccountChange}
+      onArchiveSelect={onArchiveSelect}
+      onEndReached={loadNextPage}
+      onFilterChange={controls.changeFilter}
+      onRefresh={() => void refresh()}
+      onToggleSelection={controls.toggleSelectionMode}
+    />
   );
-}
-
-function InboxSearchControls({
-  colors,
-  onChange,
-  onSearchClose,
-  searchMode,
-  showTemporarySearch,
-  value,
-}: {
-  colors: ReturnType<typeof useInboxColors>;
-  onChange: (value: string) => void;
-  onSearchClose: () => void;
-  searchMode: boolean;
-  showTemporarySearch: boolean;
-  value: string;
-}) {
-  return (
-    <>
-      <InboxSearchScreen
-        colors={colors}
-        searchMode={searchMode}
-        onSearchChange={onChange}
-        onSearchClose={onSearchClose}
-      />
-      <TemporarySearchSlot
-        enabled={showTemporarySearch}
-        value={value}
-        onChange={onChange}
-      />
-    </>
-  );
-}
-
-function TemporarySearchSlot({
-  enabled,
-  onChange,
-  value,
-}: {
-  enabled: boolean;
-  onChange: (value: string) => void;
-  value: string;
-}) {
-  if (!enabled) return null;
-  return <TemporaryIosSearchBar value={value} onChange={onChange} />;
 }
 
 function InboxThreadRow({
@@ -188,68 +229,6 @@ function InboxThreadRow({
       onSelect={() => controls.toggleThreadSelection(thread.id)}
     />
   );
-}
-
-function InboxSearchScreen({
-  colors,
-  onSearchChange,
-  onSearchClose,
-  searchMode,
-}: {
-  colors: ReturnType<typeof useInboxColors>;
-  onSearchChange: (value: string) => void;
-  onSearchClose: () => void;
-  searchMode: boolean;
-}) {
-  if (!searchMode) return <Stack.Screen options={{ headerShown: false }} />;
-  return (
-    <FocusedSearchBar
-      colors={colors}
-      onSearchChange={onSearchChange}
-      onSearchClose={onSearchClose}
-    />
-  );
-}
-
-function FocusedSearchBar({
-  colors,
-  onSearchChange,
-  onSearchClose,
-}: {
-  colors: ReturnType<typeof useInboxColors>;
-  onSearchChange: (value: string) => void;
-  onSearchClose: () => void;
-}) {
-  return (
-    <Stack.Screen
-      options={{
-        headerSearchBarOptions: {
-          barTintColor: colors.paper,
-          hideNavigationBar: true,
-          hideWhenScrolling: false,
-          onCancelButtonPress: () => {
-            onSearchChange("");
-            onSearchClose();
-          },
-          onChangeText: (event) => onSearchChange(event.nativeEvent.text),
-          placeholder: "Search mail",
-          placement: "automatic",
-          ref: nativeSearchBarRef,
-          textColor: colors.foreground,
-          tintColor: colors.primary,
-        },
-        headerShown: false,
-      }}
-    />
-  );
-}
-
-function useInboxColors() {
-  return {
-    foreground: useColor("foreground"),
-    paper: useColor("paper"),
-    primary: useColor("primary"),
-  };
 }
 
 function getInboxLoadingFeedback(

@@ -19,15 +19,17 @@ import { ThreadMessageBody } from "./thread-message-body";
 import { ThreadReaderFooter } from "./thread-reader-footer";
 import { useThreadReaderActions } from "./use-thread-reader-actions";
 
-export function ThreadReaderScreen({
-  mailbox = "inbox",
-}: {
-  mailbox?: "archive" | "inbox";
-}) {
-  const { id, messageId } = useLocalSearchParams<{
+export function ThreadReaderScreen() {
+  const {
+    id,
+    mailbox: mailboxParam,
+    messageId,
+  } = useLocalSearchParams<{
     id: string;
+    mailbox?: string | string[];
     messageId?: string | string[];
   }>();
+  const mailbox = firstParam(mailboxParam) === "archive" ? "archive" : "inbox";
   const threadId = id ? toConvexId<"threads">(id) : undefined;
   const queryArgs = threadId ? { threadId } : "skip";
   const thread = useQuery(api.mail.queries.getThread, queryArgs);

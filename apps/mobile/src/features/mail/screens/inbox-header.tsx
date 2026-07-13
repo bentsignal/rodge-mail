@@ -1,5 +1,5 @@
 import type { MenuAction } from "@expo/ui/community/menu";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button, Host } from "@expo/ui";
 import { MenuView } from "@expo/ui/community/menu";
@@ -14,6 +14,7 @@ import { useColor } from "~/hooks/use-color";
 import { AccountFilter } from "../components/account-filter";
 import { InboxSyncStatus } from "./inbox-sync-status";
 import { getFilterLabel } from "./mailbox-controls";
+import { TemporaryIosSearchBar } from "./temporary-ios-search-bar";
 
 export function InboxHeader({
   accountFilter,
@@ -27,6 +28,7 @@ export function InboxHeader({
   onToggleSelection,
   refreshError,
   selectionMode,
+  temporarySearch,
 }: {
   accountFilter: MailAccountFilter;
   accounts: MobileMailAccount[];
@@ -39,6 +41,10 @@ export function InboxHeader({
   onToggleSelection: () => void;
   refreshError: string | undefined;
   selectionMode: boolean;
+  temporarySearch?: {
+    onChange: (value: string) => void;
+    value: string;
+  };
 }) {
   const colorScheme = useResolvedMobileColorScheme();
   const primary = useColor("primary");
@@ -48,7 +54,8 @@ export function InboxHeader({
       className="bg-paper"
       edges={includeTopSafeArea ? ["top"] : []}
     >
-      <View className="border-paper-border border-b px-3 py-2">
+      <View className="border-paper-border gap-2 border-b px-4 py-2">
+        <TemporarySearchSlot mailbox={mailbox} search={temporarySearch} />
         <View className="min-h-11 flex-row items-center gap-2">
           <AccountFilter
             accounts={accounts}
@@ -62,13 +69,13 @@ export function InboxHeader({
             colorScheme={colorScheme}
             matchContents
             seedColor={primary}
-            style={{ height: 44, width: 80 }}
+            style={{ height: 44, width: 64 }}
           >
             <Button
               label={selectionMode ? "Done" : "Select"}
-              style={{ height: 44, width: 80 }}
+              style={{ height: 44, width: 64 }}
               testID="mailbox-select-button"
-              variant={selectionMode ? "filled" : "outlined"}
+              variant="text"
               onPress={onToggleSelection}
             />
           </Host>
@@ -102,14 +109,36 @@ function MailboxFilterMenu({
       <Pressable
         accessibilityLabel={`Filter: ${getFilterLabel(filter)}`}
         accessibilityRole="button"
-        className="bg-paper-deep border-paper-border h-11 flex-row items-center gap-1.5 rounded-xl border px-2.5"
+        className="bg-paper-deep border-paper-border size-11 items-center justify-center rounded-xl border"
       >
-        <ListFilter color={mutedForeground} size={15} />
-        <Text className="text-foreground text-sm font-semibold">
-          {getFilterLabel(filter)}
-        </Text>
+        <ListFilter color={mutedForeground} size={17} />
+        <ActiveFilterDot filter={filter} />
       </Pressable>
     </MenuView>
+  );
+}
+
+function TemporarySearchSlot({
+  mailbox,
+  search,
+}: {
+  mailbox: "archive" | "inbox";
+  search: React.ComponentProps<typeof TemporaryIosSearchBar> | undefined;
+}) {
+  if (!search) return null;
+  return (
+    <TemporaryIosSearchBar
+      key={mailbox}
+      {...search}
+      placeholder={mailbox === "archive" ? "Search archive" : undefined}
+    />
+  );
+}
+
+function ActiveFilterDot({ filter }: { filter: MailboxFilter }) {
+  if (filter !== "unread") return null;
+  return (
+    <View className="bg-primary absolute top-2 right-2 size-1.5 rounded-full" />
   );
 }
 

@@ -5,6 +5,7 @@ import {
   accessibilityLabel,
   background,
   buttonStyle,
+  environment,
   frame,
   listRowBackground,
   listRowInsets,
@@ -13,6 +14,7 @@ import {
   scrollContentBackground,
   scrollDisabled,
   scrollIndicators,
+  tag,
   tint,
 } from "@expo/ui/swift-ui/modifiers";
 
@@ -45,7 +47,7 @@ export function ThreadRow(props: ThreadRowProps) {
 
   return (
     <Host
-      key={getNativeKey(thread, mailbox, selectionMode, selected)}
+      key={getNativeKey(thread, mailbox)}
       colorScheme={colorScheme}
       seedColor={colors.primary}
       style={{
@@ -57,13 +59,23 @@ export function ThreadRow(props: ThreadRowProps) {
       }}
     >
       <List
+        selection={selectionMode ? (selected ? [thread.id] : []) : undefined}
         modifiers={[
           listStyle("plain"),
           scrollDisabled(true),
           scrollIndicators("hidden"),
           scrollContentBackground("hidden"),
           background(colors.paper),
+          environment("editMode", selectionMode ? "active" : "inactive"),
         ]}
+        onSelectionChange={
+          selectionMode
+            ? (selection) => {
+                const nextSelected = selection.includes(thread.id);
+                if (nextSelected !== selected) props.onSelect?.();
+              }
+            : undefined
+        }
       >
         <NativeRowContent colors={colors} props={props} />
       </List>
@@ -80,12 +92,36 @@ function NativeRowContent({
 }) {
   const mailbox = props.mailbox ?? "inbox";
   if (props.selectionMode) {
-    return <NativeThreadButton colors={colors} props={props} />;
+    return <NativeSelectableThread colors={colors} props={props} />;
   }
   if (mailbox === "archive") {
     return <ArchiveSwipeRow colors={colors} props={props} />;
   }
   return <InboxSwipeRow colors={colors} props={props} />;
+}
+
+function NativeSelectableThread({
+  colors,
+  props,
+}: {
+  colors: NativeThreadRowColors;
+  props: ThreadRowProps;
+}) {
+  const { mailbox = "inbox", thread } = props;
+  return (
+    <NativeThreadSummary
+      colors={colors}
+      mailbox={mailbox}
+      modifiers={[
+        tag(thread.id),
+        accessibilityElement("ignore"),
+        accessibilityLabel(getNativeAccessibilityLabel(props)),
+        accessibilityHint("Toggles selection"),
+        ...rowModifiers(colors.paper),
+      ]}
+      thread={thread}
+    />
+  );
 }
 
 function NativeThreadButton({
@@ -95,14 +131,7 @@ function NativeThreadButton({
   colors: NativeThreadRowColors;
   props: ThreadRowProps;
 }) {
-  const {
-    mailbox = "inbox",
-    onOpen,
-    onSelect,
-    selected = false,
-    selectionMode = false,
-    thread,
-  } = props;
+  const { mailbox = "inbox", onOpen, thread } = props;
   return (
     <Button
       modifiers={[
@@ -110,20 +139,12 @@ function NativeThreadButton({
         frame({ height: rowHeight, maxWidth: Infinity }),
         accessibilityElement("ignore"),
         accessibilityLabel(getNativeAccessibilityLabel(props)),
-        accessibilityHint(
-          selectionMode ? "Toggles selection" : "Opens this email thread",
-        ),
+        accessibilityHint("Opens this email thread"),
         ...rowModifiers(colors.paper),
       ]}
-      onPress={selectionMode ? onSelect : onOpen}
+      onPress={onOpen}
     >
-      <NativeThreadSummary
-        colors={colors}
-        mailbox={mailbox}
-        selected={selected}
-        selectionMode={selectionMode}
-        thread={thread}
-      />
+      <NativeThreadSummary colors={colors} mailbox={mailbox} thread={thread} />
     </Button>
   );
 }
@@ -206,13 +227,8 @@ function getNativeAccessibilityLabel(props: ThreadRowProps) {
   return `${props.selected ? "Selected" : "Not selected"}, ${label}`;
 }
 
-function getNativeKey(
-  thread: MailThread,
-  mailbox: "archive" | "inbox",
-  selectionMode: boolean,
-  selected: boolean,
-) {
-  return `${getThreadRowNativeKey(thread)}:${mailbox}:${selectionMode ? "selecting" : "opening"}:${selected ? "selected" : "unselected"}`;
+function getNativeKey(thread: MailThread, mailbox: "archive" | "inbox") {
+  return `${getThreadRowNativeKey(thread)}:${mailbox}`;
 }
 
 function rowModifiers(paper: string) {

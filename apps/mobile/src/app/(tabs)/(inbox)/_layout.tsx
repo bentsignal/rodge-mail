@@ -23,7 +23,6 @@ export default function InboxLayout() {
         name="index"
         options={{ headerLargeTitle: false, headerTitle: "" }}
       />
-      <Stack.Screen name="archive" options={{ title: "Archive" }} />
       <Stack.Screen name="thread/[id]" options={{ title: "Message" }} />
     </Stack>
   );

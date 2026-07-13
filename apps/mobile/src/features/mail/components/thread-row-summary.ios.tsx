@@ -1,3 +1,4 @@
+import type { ViewModifier } from "@expo/ui/swift-ui/modifiers";
 import { HStack, Image, Spacer, Text, VStack, ZStack } from "@expo/ui/swift-ui";
 import {
   background,
@@ -31,14 +32,12 @@ export interface NativeThreadRowColors {
 export function NativeThreadSummary({
   colors,
   mailbox,
-  selected,
-  selectionMode,
+  modifiers,
   thread,
 }: {
   colors: NativeThreadRowColors;
   mailbox: "archive" | "inbox";
-  selected: boolean;
-  selectionMode: boolean;
+  modifiers?: ViewModifier[];
   thread: MailThread;
 }) {
   const isUnread = isThreadUnread(thread);
@@ -49,13 +48,9 @@ export function NativeThreadSummary({
       modifiers={[
         frame({ height: rowHeight, maxWidth: Infinity, alignment: "leading" }),
         padding({ leading: 12, trailing: 12 }),
+        ...(modifiers ?? []),
       ]}
     >
-      <SelectionIndicator
-        color={colors.primary}
-        selected={selected}
-        selectionMode={selectionMode}
-      />
       <SenderAvatar colors={colors} thread={thread} />
       <VStack
         alignment="leading"
@@ -155,25 +150,6 @@ function AvatarIndicator({
       color={isUnread ? colors.brass : "transparent"}
       size={8}
       systemName="circle.fill"
-    />
-  );
-}
-
-function SelectionIndicator({
-  color,
-  selected,
-  selectionMode,
-}: {
-  color: string;
-  selected: boolean;
-  selectionMode: boolean;
-}) {
-  if (!selectionMode) return null;
-  return (
-    <Image
-      color={color}
-      size={24}
-      systemName={selected ? "checkmark.circle.fill" : "circle"}
     />
   );
 }

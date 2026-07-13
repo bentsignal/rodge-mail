@@ -1,24 +1,28 @@
 import type { LegendListRenderItemProps } from "@legendapp/list/react-native";
-import { Animated, RefreshControl, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { Button, Host } from "@expo/ui";
+import { Animated, RefreshControl, View } from "react-native";
 import { LegendList } from "@legendapp/list/react-native";
 
 import type { MailAccountFilter, MailThread } from "@rodge-mail/features/mail";
 
 import type { MobileMailAccount } from "../lib/convex-mail";
 import type { MailboxFilter } from "./mailbox-controls";
-import { useResolvedMobileColorScheme } from "~/features/theme/mobile-theme";
 import { useColor } from "~/hooks/use-color";
 import { InboxHeader } from "./inbox-header";
 import { EmptyInbox, InboxFooter } from "./inbox-list-feedback";
 import { getInboxListFeedback } from "./inbox-list-state";
+import { MailboxBulkToolbar } from "./mailbox-bulk-toolbar";
 import { useInboxFilterTransition } from "./use-inbox-filter-transition";
 
 export interface MailboxBulkAction {
   destructive?: boolean;
   label: string;
   onPress: () => void;
+  systemImage:
+    | "archivebox"
+    | "arrow.uturn.backward"
+    | "envelope.badge"
+    | "envelope.open"
+    | "trash";
 }
 
 interface MailboxThreadListProps {
@@ -47,6 +51,10 @@ interface MailboxThreadListProps {
   searchTerm?: string;
   selectedCount: number;
   selectionMode: boolean;
+  temporarySearch?: {
+    onChange: (value: string) => void;
+    value: string;
+  };
 }
 
 export function MailboxThreadList({
@@ -73,6 +81,7 @@ export function MailboxThreadList({
   searchTerm,
   selectedCount,
   selectionMode,
+  temporarySearch,
 }: MailboxThreadListProps) {
   const paper = useColor("paper");
   const transition = useInboxFilterTransition(data, filter);
@@ -104,6 +113,7 @@ export function MailboxThreadList({
         onToggleSelection={onToggleSelection}
         refreshError={refreshError}
         selectionMode={selectionMode}
+        temporarySearch={temporarySearch}
       />
       <MailboxRows
         feedback={feedback}
@@ -120,6 +130,7 @@ export function MailboxThreadList({
           onToggleSelection,
           refreshError,
           selectionMode,
+          temporarySearch,
         }}
         mailbox={mailbox}
         listVersion={`${accountFilter}:${filter}:${selectionMode}:${selectedCount}`}
@@ -235,52 +246,6 @@ function MailboxBulkToolbarSlot({
 }) {
   if (!selectionMode) return null;
   return <MailboxBulkToolbar actions={actions} selectedCount={selectedCount} />;
-}
-
-function MailboxBulkToolbar({
-  actions,
-  selectedCount,
-}: {
-  actions: MailboxBulkAction[];
-  selectedCount: number;
-}) {
-  const colorScheme = useResolvedMobileColorScheme();
-  const destructive = useColor("destructive");
-  const primary = useColor("primary");
-
-  return (
-    <SafeAreaView
-      className="bg-paper border-paper-border border-t"
-      edges={["bottom"]}
-    >
-      <View className="min-h-14 flex-row items-center gap-1 px-3 py-1.5">
-        <Text className="text-foreground min-w-16 text-sm font-semibold">
-          {getSelectionLabel(selectedCount)}
-        </Text>
-        {actions.map((action) => (
-          <Host
-            key={action.label}
-            colorScheme={colorScheme}
-            seedColor={action.destructive ? destructive : primary}
-            style={{ flex: 1, height: 42 }}
-          >
-            <Button
-              disabled={selectedCount === 0}
-              label={action.label}
-              style={{ height: 42, width: "100%" }}
-              variant="outlined"
-              onPress={action.onPress}
-            />
-          </Host>
-        ))}
-      </View>
-    </SafeAreaView>
-  );
-}
-
-function getSelectionLabel(selectedCount: number) {
-  if (selectedCount === 1) return "1 selected";
-  return `${selectedCount} selected`;
 }
 
 function threadKey(thread: MailThread) {

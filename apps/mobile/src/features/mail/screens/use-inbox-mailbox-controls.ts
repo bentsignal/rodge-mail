@@ -3,6 +3,7 @@ import { useState } from "react";
 import type { MailThread } from "@rodge-mail/features/mail";
 
 import type { MailboxFilter } from "./mailbox-controls";
+import type { MailboxBulkAction } from "./mailbox-thread-list";
 import { useMailStore } from "../store";
 import { filterMailboxThreads, toggleSelectedThread } from "./mailbox-controls";
 
@@ -58,10 +59,22 @@ export function useInboxMailboxControls(threads: MailThread[]) {
   }
 
   const bulkActions = [
-    { label: "Archive", onPress: () => void archiveSelected() },
-    { label: "Read", onPress: () => void setSelectedRead(true) },
-    { label: "Unread", onPress: () => void setSelectedRead(false) },
-  ];
+    {
+      label: "Archive",
+      systemImage: "archivebox",
+      onPress: () => void archiveSelected(),
+    },
+    {
+      label: "Mark read",
+      systemImage: "envelope.open",
+      onPress: () => void setSelectedRead(true),
+    },
+    {
+      label: "Mark unread",
+      systemImage: "envelope.badge",
+      onPress: () => void setSelectedRead(false),
+    },
+  ] satisfies MailboxBulkAction[];
   return {
     bulkActions,
     changeFilter,

@@ -5,6 +5,7 @@ import { useMutation } from "convex/react";
 import { api } from "@rodge-mail/convex/api";
 
 import type { MailboxFilter } from "./mailbox-controls";
+import type { MailboxBulkAction } from "./mailbox-thread-list";
 import { toConvexId } from "../lib/convex-id";
 import { toggleSelectedThread } from "./mailbox-controls";
 
@@ -71,14 +72,16 @@ export function useArchiveActions() {
   const bulkActions = [
     {
       label: "Restore",
+      systemImage: "arrow.uturn.backward",
       onPress: () => void restoreThreads(selectedThreadIds),
     },
     {
       destructive: true,
       label: "Delete",
+      systemImage: "trash",
       onPress: () => confirmDelete(selectedThreadIds),
     },
-  ];
+  ] satisfies MailboxBulkAction[];
   return {
     bulkActions,
     changeFilter,

@@ -17,8 +17,11 @@ interface ThreadOverride {
   isRead?: boolean;
 }
 
+export type MobileMailbox = "archive" | "inbox";
+
 function useInternalStore() {
   const [accountFilter, setAccountFilter] = useState<MailAccountFilter>("all");
+  const [mailbox, setMailbox] = useState<MobileMailbox>("inbox");
   const inbox = usePaginatedQuery(
     api.mail.queries.listInbox,
     {
@@ -103,8 +106,10 @@ function useInternalStore() {
     isLoading: inbox.status === "LoadingFirstPage" && !cachedPage.isCached,
     isLoadingMore: inbox.status === "LoadingMore",
     loadMore,
+    mailbox,
     markRead,
     setAccountFilter,
+    setMailbox,
     threads,
     togglePin,
     toggleRead,
