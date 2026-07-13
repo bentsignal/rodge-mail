@@ -55,9 +55,7 @@ export function useLiveMailActions(
 }
 
 function useThreadActions() {
-  const clearBulkSelection = useMailStore(
-    (store) => store.clearBulkSelection,
-  );
+  const clearBulkSelection = useMailStore((store) => store.clearBulkSelection);
   const setBulkSelectionActive = useMailStore(
     (store) => store.setBulkSelectionActive,
   );
@@ -100,8 +98,9 @@ function useThreadActions() {
     if (messages.length === 0) return;
     try {
       await Promise.all(
-        messages.map(async (message) =>
-          await setThreadRead({ threadId: message.threadId, isRead }),
+        messages.map(
+          async (message) =>
+            await setThreadRead({ threadId: message.threadId, isRead }),
         ),
       );
       clearBulkSelection();
@@ -110,7 +109,9 @@ function useThreadActions() {
         `${messages.length} conversation${messages.length === 1 ? "" : "s"} marked ${isRead ? "read" : "unread"}.`,
       );
     } catch (error) {
-      toast.error(getErrorMessage(error, "Could not update the conversations."));
+      toast.error(
+        getErrorMessage(error, "Could not update the conversations."),
+      );
     }
   }
   return { markMessageRead, setThreadsRead, togglePinned, toggleRead };
@@ -194,9 +195,7 @@ function useArchiveBulkActions({
   const permanentlyDelete = useMutation(
     api.mail.archiveMutations.permanentlyDeleteArchivedThread,
   );
-  const clearBulkSelection = useMailStore(
-    (store) => store.clearBulkSelection,
-  );
+  const clearBulkSelection = useMailStore((store) => store.clearBulkSelection);
   const setBulkSelectionActive = useMailStore(
     (store) => store.setBulkSelectionActive,
   );
@@ -205,12 +204,9 @@ function useArchiveBulkActions({
     clearBulkSelection();
     setBulkSelectionActive(false);
   }
-  async function archiveThreads(
-    messages: Pick<InboxMessage, "threadId">[],
-  ) {
+  async function archiveThreads(messages: Pick<InboxMessage, "threadId">[]) {
     await runBulkAction({
-      action: async (message) =>
-        await archive({ threadId: message.threadId }),
+      action: async (message) => await archive({ threadId: message.threadId }),
       complete,
       errorLabel: "Could not archive the conversations.",
       messages,
@@ -223,8 +219,7 @@ function useArchiveBulkActions({
     messages: Pick<InboxMessage, "threadId">[],
   ) {
     await runBulkAction({
-      action: async (message) =>
-        await restore({ threadId: message.threadId }),
+      action: async (message) => await restore({ threadId: message.threadId }),
       complete,
       errorLabel: "Could not restore the conversations.",
       messages,

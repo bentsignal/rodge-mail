@@ -1,5 +1,5 @@
-import { useState } from "react";
 import type { LucideIcon } from "lucide-react";
+import { useState } from "react";
 import {
   Archive,
   CheckCheck,
@@ -117,8 +117,8 @@ function ArchiveBulkActions({
 }: BulkActionsProps) {
   async function permanentlyDelete() {
     if (!confirmPermanentDelete(messages.length)) return;
-    await run(async () =>
-      await liveMail.permanentlyDeleteArchivedThreads(messages),
+    await run(
+      async () => await liveMail.permanentlyDeleteArchivedThreads(messages),
     );
   }
   return (
@@ -128,9 +128,7 @@ function ArchiveBulkActions({
         icon={RotateCcw}
         label="Restore"
         onClick={() =>
-          void run(async () =>
-            await liveMail.restoreArchivedThreads(messages),
-          )
+          void run(async () => await liveMail.restoreArchivedThreads(messages))
         }
       />
       <BulkActionButton
@@ -237,6 +235,6 @@ function getBulkActionButtonClass(destructive: boolean) {
     "mail-raised flex h-8 shrink-0 items-center gap-1.5 rounded-[8px] border border-[var(--mail-seam)] px-2.5 font-mono text-[9px] font-semibold tracking-[0.04em] disabled:cursor-not-allowed disabled:opacity-40",
     destructive
       ? "text-[var(--mail-highlight)]"
-      : "text-[var(--mail-ink-soft)] hover:text-foreground",
+      : "hover:text-foreground text-[var(--mail-ink-soft)]",
   );
 }
