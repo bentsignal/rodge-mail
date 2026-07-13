@@ -8,9 +8,7 @@ import { ConvexReactClient } from "convex/react";
 
 import { createUrls } from "@rodge-mail/config/urls";
 
-const urls = createUrls({
-  nodeEnv: __DEV__ ? "development" : "production",
-});
+const urls = createUrls({ nodeEnv: runtimeEnvironment() });
 
 export const authClient = createAuthClient({
   baseURL: urls.convex.site,
@@ -31,3 +29,10 @@ export const convex = new ConvexReactClient(urls.convex.cloud, {
   expectAuth: true,
   unsavedChangesWarning: false,
 });
+
+function runtimeEnvironment() {
+  if (process.env.EXPO_PUBLIC_RUNTIME_ENVIRONMENT === "development") {
+    return "development";
+  }
+  return __DEV__ ? "development" : "production";
+}
