@@ -28,7 +28,8 @@ export const reserve = internalMutation({
         throw new Error("AI usage request key collision");
       }
       return {
-        allowed: existing.status !== "released",
+        allowed: false,
+        duplicate: true,
         limitUsd: AI_DAILY_LIMIT_USD,
         resetAt: utcDayBounds(Date.now()).end,
       };
@@ -37,6 +38,7 @@ export const reserve = internalMutation({
     if (!canReserveDailyUsage(0, args.reservedCostUsd)) {
       return {
         allowed: false,
+        duplicate: false,
         limitUsd: AI_DAILY_LIMIT_USD,
         resetAt: utcDayBounds(Date.now()).end,
       };
@@ -52,7 +54,12 @@ export const reserve = internalMutation({
       },
     });
     if (!canReserveDailyUsage(spentUsd, args.reservedCostUsd)) {
-      return { allowed: false, limitUsd: AI_DAILY_LIMIT_USD, resetAt: end };
+      return {
+        allowed: false,
+        duplicate: false,
+        limitUsd: AI_DAILY_LIMIT_USD,
+        resetAt: end,
+      };
     }
 
     const usageId = await ctx.db.insert("aiUsage", {
@@ -71,6 +78,7 @@ export const reserve = internalMutation({
     await aiUsageAggregate.insert(ctx, usage);
     return {
       allowed: true,
+      duplicate: false,
       limitUsd: AI_DAILY_LIMIT_USD,
       resetAt: end,
     };

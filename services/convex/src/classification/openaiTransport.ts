@@ -34,18 +34,26 @@ export async function postOpenAi(args: {
       reservedCostUsd: args.reservedCostUsd,
     },
   );
-  if (!reservation.allowed) throw new AiDailyLimitError(reservation.resetAt);
+  if (!reservation.allowed) {
+    if (reservation.duplicate) {
+      throw new Error("Duplicate AI request was blocked");
+    }
+    throw new AiDailyLimitError(reservation.resetAt);
+  }
 
+  let data: unknown;
   try {
-    const data = await fetchOpenAi(args, apiKey);
-    await completeUsage(args, data);
-    return data;
+    data = await fetchOpenAi(args, apiKey);
   } catch (error) {
-    await args.ctx.runMutation(internal.aiUsage.internal.release, {
-      requestKey: args.requestKey,
-    });
+    if (error instanceof DefinitiveOpenAiFailure) {
+      await args.ctx.runMutation(internal.aiUsage.internal.release, {
+        requestKey: args.requestKey,
+      });
+    }
     throw error;
   }
+  await completeUsage(args, data);
+  return data;
 }
 
 async function fetchOpenAi(
@@ -65,13 +73,20 @@ async function fetchOpenAi(
     if (response.ok) return await readJson(response);
     const error = await response.text();
     if (!isRetryable(response.status) || attempt === 1) {
-      throw new Error(
+      throw new DefinitiveOpenAiFailure(
         `OpenAI request failed (${response.status}): ${error.slice(0, 500)}`,
       );
     }
     await wait(retryDelay(response, attempt));
   }
   throw new Error("OpenAI request failed");
+}
+
+class DefinitiveOpenAiFailure extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "DefinitiveOpenAiFailure";
+  }
 }
 
 async function completeUsage(

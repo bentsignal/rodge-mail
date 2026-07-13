@@ -224,6 +224,7 @@ export const vMessageClassification = v.object({
   signals: v.optional(v.array(vClassificationSignal)),
   model: v.optional(v.string()),
   error: v.optional(v.string()),
+  generateCleanViewAfterClassification: v.optional(v.boolean()),
   recoveryAttemptedAt: v.optional(v.number()),
   classifiedAt: v.optional(v.number()),
   createdAt: v.number(),

@@ -12,7 +12,8 @@ import {
   internalQuery,
 } from "../_generated/server";
 import { CLASSIFICATION_PROMPT_VERSION } from "../classification/constants";
-import { queueClassificationForMessage } from "../classification/internal";
+import { queueClassificationForMessage } from "../classification/queue";
+import { shouldRequestAutomaticCleanView } from "../cleanView/policy";
 import { reconcileEmbeddingSelection } from "../embedding/internal";
 import { isProviderMessageArchived } from "../mail/archive";
 import { createMessageSearchText } from "../mail/search";
@@ -1245,6 +1246,13 @@ export const upsertProviderMessage = internalMutation({
         messageId,
         promptVersion: CLASSIFICATION_PROMPT_VERSION,
         replaceManual: false,
+        generateCleanView: shouldRequestAutomaticCleanView({
+          messageExists: existing !== null,
+          direction: message.direction,
+          inInbox,
+        })
+          ? true
+          : undefined,
       });
     }
     await reconcileEmbeddingSelection(ctx, messageId);
@@ -1306,33 +1314,44 @@ export const deleteProviderMessage = internalMutation({
       )
       .unique();
     if (!message) return;
-    const [contents, attachments, classifications, embeddingJobs, embeddings] =
-      await Promise.all([
-        ctx.db
-          .query("messageContents")
-          .withIndex("by_message", (q) => q.eq("messageId", message._id))
-          .collect(),
-        ctx.db
-          .query("attachments")
-          .withIndex("by_message", (q) => q.eq("messageId", message._id))
-          .collect(),
-        ctx.db
-          .query("messageClassifications")
-          .withIndex("by_message", (q) => q.eq("messageId", message._id))
-          .collect(),
-        ctx.db
-          .query("messageEmbeddingJobs")
-          .withIndex("by_message", (q) => q.eq("messageId", message._id))
-          .collect(),
-        ctx.db
-          .query("messageEmbeddings")
-          .withIndex("by_message", (q) => q.eq("messageId", message._id))
-          .collect(),
-      ]);
+    const [
+      contents,
+      attachments,
+      classifications,
+      cleanViews,
+      embeddingJobs,
+      embeddings,
+    ] = await Promise.all([
+      ctx.db
+        .query("messageContents")
+        .withIndex("by_message", (q) => q.eq("messageId", message._id))
+        .collect(),
+      ctx.db
+        .query("attachments")
+        .withIndex("by_message", (q) => q.eq("messageId", message._id))
+        .collect(),
+      ctx.db
+        .query("messageClassifications")
+        .withIndex("by_message", (q) => q.eq("messageId", message._id))
+        .collect(),
+      ctx.db
+        .query("messageCleanViews")
+        .withIndex("by_message", (q) => q.eq("messageId", message._id))
+        .collect(),
+      ctx.db
+        .query("messageEmbeddingJobs")
+        .withIndex("by_message", (q) => q.eq("messageId", message._id))
+        .collect(),
+      ctx.db
+        .query("messageEmbeddings")
+        .withIndex("by_message", (q) => q.eq("messageId", message._id))
+        .collect(),
+    ]);
     for (const row of [
       ...contents,
       ...attachments,
       ...classifications,
+      ...cleanViews,
       ...embeddingJobs,
       ...embeddings,
     ]) {

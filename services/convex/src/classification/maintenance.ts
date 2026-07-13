@@ -13,8 +13,8 @@ import {
   recentBackfillBounds,
 } from "./backfill";
 import { CLASSIFICATION_PROMPT_VERSION } from "./constants";
-import { queueClassificationForMessage } from "./internal";
 import { requiredClassificationMetadata } from "./pending";
+import { queueClassificationForMessage } from "./queue";
 import { classificationRecoveryPlan } from "./stale";
 
 const METADATA_MIGRATION_BATCH_SIZE = 200;

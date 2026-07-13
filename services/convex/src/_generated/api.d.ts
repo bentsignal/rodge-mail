@@ -47,6 +47,7 @@ import type * as classification_openaiPayloads from "../classification/openaiPay
 import type * as classification_openaiTransport from "../classification/openaiTransport.js";
 import type * as classification_pending from "../classification/pending.js";
 import type * as classification_queries from "../classification/queries.js";
+import type * as classification_queue from "../classification/queue.js";
 import type * as classification_retry from "../classification/retry.js";
 import type * as classification_retryPolicy from "../classification/retryPolicy.js";
 import type * as classification_signals from "../classification/signals.js";
@@ -54,6 +55,8 @@ import type * as classification_stale from "../classification/stale.js";
 import type * as cleanView_actions from "../cleanView/actions.js";
 import type * as cleanView_internal from "../cleanView/internal.js";
 import type * as cleanView_mutations from "../cleanView/mutations.js";
+import type * as cleanView_policy from "../cleanView/policy.js";
+import type * as cleanView_queue from "../cleanView/queue.js";
 import type * as crons from "../crons.js";
 import type * as desktopAuth from "../desktopAuth.js";
 import type * as devSeed from "../devSeed.js";
@@ -182,6 +185,7 @@ declare const fullApi: ApiFromModules<{
   "classification/openaiTransport": typeof classification_openaiTransport;
   "classification/pending": typeof classification_pending;
   "classification/queries": typeof classification_queries;
+  "classification/queue": typeof classification_queue;
   "classification/retry": typeof classification_retry;
   "classification/retryPolicy": typeof classification_retryPolicy;
   "classification/signals": typeof classification_signals;
@@ -189,6 +193,8 @@ declare const fullApi: ApiFromModules<{
   "cleanView/actions": typeof cleanView_actions;
   "cleanView/internal": typeof cleanView_internal;
   "cleanView/mutations": typeof cleanView_mutations;
+  "cleanView/policy": typeof cleanView_policy;
+  "cleanView/queue": typeof cleanView_queue;
   crons: typeof crons;
   desktopAuth: typeof desktopAuth;
   devSeed: typeof devSeed;

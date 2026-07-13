@@ -16,8 +16,8 @@ import {
   CLASSIFICATION_PROMPT_VERSION,
 } from "./constants";
 import { isImportantMessage } from "./importance";
-import { queueClassificationForMessage } from "./internal";
 import { assertProbability } from "./jobHelpers";
+import { queueClassificationForMessage } from "./queue";
 
 export const setManualOverride = authedMutation({
   args: {
