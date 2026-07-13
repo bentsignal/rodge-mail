@@ -15,6 +15,7 @@ import {
 } from "./embedded-web";
 import { desktopEnv } from "./env";
 import { secureSession, secureWindow } from "./security";
+import { waitForWebAppReady } from "./web-readiness";
 import { getPlatformWindowOptions } from "./window-options";
 
 let mainWindow: BrowserWindow | undefined;
@@ -104,10 +105,11 @@ async function start() {
       },
     });
   }
-  webAppUrl = resolveWebAppUrl({
+  const resolvedWebAppUrl = resolveWebAppUrl({
     configuredUrl: desktopEnv.webUrl,
     isPackaged: app.isPackaged,
   });
+  webAppUrl = resolvedWebAppUrl;
   if (app.isPackaged) {
     embeddedWebRuntime = await startEmbeddedWebRuntime((error) => {
       showStartupError(error);
@@ -115,11 +117,24 @@ async function start() {
     });
     routeEmbeddedWebOrigin(
       session.defaultSession,
-      webAppUrl,
+      resolvedWebAppUrl,
       embeddedWebRuntime,
     );
   }
-  secureSession(session.defaultSession, webAppUrl);
+  secureSession(session.defaultSession, resolvedWebAppUrl);
+  if (!app.isPackaged) {
+    await waitForWebAppReady(resolvedWebAppUrl, async () => {
+      const response = await session.defaultSession.fetch(
+        resolvedWebAppUrl.href,
+        {
+          cache: "no-store",
+          signal: AbortSignal.timeout(2_000),
+        },
+      );
+      void response.body?.cancel();
+      return response.status;
+    });
+  }
   app.on("web-contents-created", (_event, contents) => {
     contents.on("will-attach-webview", (event) => event.preventDefault());
   });
