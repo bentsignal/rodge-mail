@@ -1,5 +1,5 @@
 import { Pressable, Text, View } from "react-native";
-import { Check, Pin } from "lucide-react-native";
+import { CheckCircle2, Circle, Pin } from "lucide-react-native";
 
 import type { MailThread } from "@rodge-mail/features/mail";
 
@@ -44,11 +44,8 @@ export function FallbackThreadSummary({
         transform: [{ translateY: pressed ? 1 : 0 }],
       })}
     >
-      <SenderAvatar
-        selected={selected}
-        selectionMode={selectionMode}
-        thread={thread}
-      />
+      <SelectionIndicator selected={selected} selectionMode={selectionMode} />
+      <SenderAvatar thread={thread} />
       <ThreadText thread={thread} />
       <ThreadPinSlot
         mailbox={mailbox}
@@ -60,25 +57,13 @@ export function FallbackThreadSummary({
   );
 }
 
-function SenderAvatar({
-  selected,
-  selectionMode,
-  thread,
-}: {
-  selected: boolean;
-  selectionMode: boolean;
-  thread: MailThread;
-}) {
+function SenderAvatar({ thread }: { thread: MailThread }) {
   return (
     <View className="bg-paper-deep border-paper-border relative size-10 items-center justify-center rounded-lg border">
       <Text className="text-foreground text-xs font-semibold">
         {getSenderInitials(thread.sender.name)}
       </Text>
-      <AvatarIndicator
-        isUnread={isThreadUnread(thread)}
-        selected={selected}
-        selectionMode={selectionMode}
-      />
+      <AvatarIndicator isUnread={isThreadUnread(thread)} />
     </View>
   );
 }
@@ -121,16 +106,7 @@ function ThreadText({ thread }: { thread: MailThread }) {
   );
 }
 
-function AvatarIndicator({
-  isUnread,
-  selected,
-  selectionMode,
-}: {
-  isUnread: boolean;
-  selected: boolean;
-  selectionMode: boolean;
-}) {
-  if (selectionMode) return <SelectionIndicator selected={selected} />;
+function AvatarIndicator({ isUnread }: { isUnread: boolean }) {
   return (
     <View
       accessibilityElementsHidden
@@ -140,26 +116,31 @@ function AvatarIndicator({
   );
 }
 
-function SelectionIndicator({ selected }: { selected: boolean }) {
-  const primaryForeground = useColor("primary-foreground");
+function SelectionIndicator({
+  selected,
+  selectionMode,
+}: {
+  selected: boolean;
+  selectionMode: boolean;
+}) {
+  const primary = useColor("primary");
+  if (!selectionMode) return null;
   return (
-    <View
-      className={`border-paper absolute -top-1 -right-1 size-4 items-center justify-center rounded-full border ${selected ? "bg-primary" : "bg-paper-deep"}`}
-    >
-      <SelectedCheck color={primaryForeground} selected={selected} />
+    <View className="size-6 items-center justify-center self-center">
+      <SelectionIcon color={primary} selected={selected} />
     </View>
   );
 }
 
-function SelectedCheck({
+function SelectionIcon({
   color,
   selected,
 }: {
   color: string;
   selected: boolean;
 }) {
-  if (!selected) return null;
-  return <Check color={color} size={11} />;
+  if (!selected) return <Circle color={color} size={23} />;
+  return <CheckCircle2 color={color} size={23} />;
 }
 
 function ThreadPinSlot({

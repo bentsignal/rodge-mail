@@ -12,10 +12,8 @@ import { ThreadRow } from "../components/thread-row";
 import { useSemanticMailSearch } from "../hooks/use-semantic-mail-search";
 import { toConvexId } from "../lib/convex-id";
 import { toMailThreads } from "../lib/convex-mail";
-import {
-  focusNativeSearch,
-  nativeSearchBarRef,
-} from "../native-search-controller";
+import { useTemporaryIos27Search } from "../mobile-search-preference";
+import { nativeSearchBarRef } from "../native-search-controller";
 import { useMailStore } from "../store";
 import {
   getEmptyIsLoading,
@@ -23,6 +21,7 @@ import {
   getVisibleInboxThreads,
 } from "./inbox-list-state";
 import { MailboxThreadList } from "./mailbox-thread-list";
+import { TemporaryIosSearchBar } from "./temporary-ios-search-bar";
 import { useInboxMailboxControls } from "./use-inbox-mailbox-controls";
 import { useInboxRefresh } from "./use-inbox-refresh";
 
@@ -39,18 +38,18 @@ export function InboxScreen({ searchMode = false }: { searchMode?: boolean }) {
   const isLoading = useMailStore((store) => store.isLoading);
   const isLoadingMore = useMailStore((store) => store.isLoadingMore);
   const [searchTerm, setSearchTerm] = useState("");
+  const showTemporarySearch = useTemporaryIos27Search() && !searchMode;
   const debouncedSearchTerm = useDebouncedValue(searchTerm.trim(), 250);
   const colors = useInboxColors();
   const { isRefreshing, refresh, refreshError } = useInboxRefresh(accounts);
-  const selectedAccountId = getSelectedAccountId(accountFilter);
   const search = usePaginatedQuery(
     api.mail.queries.searchHeaders,
-    getSearchArgs(debouncedSearchTerm, selectedAccountId),
+    getSearchArgs(debouncedSearchTerm, getSelectedAccountId(accountFilter)),
     { initialNumItems: 30 },
   );
   const isSearching = searchTerm.trim().length > 0;
   const semanticSearch = useSemanticMailSearch({
-    accountId: selectedAccountId,
+    accountId: getSelectedAccountId(accountFilter),
     lexicalResults: search.results,
     searchTerm: debouncedSearchTerm,
   });
@@ -61,22 +60,18 @@ export function InboxScreen({ searchMode = false }: { searchMode?: boolean }) {
     showUnreadOnly: false,
   });
   const controls = useInboxMailboxControls(unfilteredResults);
-  const emptyIsLoading = getEmptyIsLoading({
+  const loadingFeedback = getInboxLoadingFeedback({
     debouncedSearchTerm,
     isLoading,
+    isLoadingMore,
     isSearching,
     lexicalResultCount: search.results.length,
     searchIsLoading: semanticSearch.isLoading,
     searchStatus: search.status,
     searchTerm,
   });
-  const footerIsLoading = getFooterIsLoading({
-    isLoadingMore,
-    isSearching,
-    searchIsLoading: semanticSearch.isLoading,
-    searchStatus: search.status,
-  });
   function openThread(threadId: string) {
+    controls.retainThreadInUnreadSession(threadId);
     markRead(threadId);
     router.push({
       pathname: "/(tabs)/(inbox)/thread/[id]",
@@ -94,20 +89,23 @@ export function InboxScreen({ searchMode = false }: { searchMode?: boolean }) {
   }
   return (
     <>
-      <InboxSearchScreen
+      <InboxSearchControls
         colors={colors}
+        showTemporarySearch={showTemporarySearch}
+        value={searchTerm}
         onSearchClose={() => router.navigate("/(tabs)/(inbox)")}
         searchMode={searchMode}
-        onSearchChange={setSearchTerm}
+        onChange={setSearchTerm}
       />
       <MailboxThreadList
         accountFilter={accountFilter}
         accounts={accounts}
         bulkActions={controls.bulkActions}
         data={controls.threads}
-        emptyIsLoading={emptyIsLoading}
+        emptyIsLoading={loadingFeedback.emptyIsLoading}
         filter={controls.filter}
-        footerIsLoading={footerIsLoading}
+        footerIsLoading={loadingFeedback.footerIsLoading}
+        includeTopSafeArea={!showTemporarySearch}
         isRefreshing={isRefreshing}
         mailbox="inbox"
         primary={colors.primary}
@@ -117,6 +115,7 @@ export function InboxScreen({ searchMode = false }: { searchMode?: boolean }) {
         selectedCount={controls.selectedCount}
         selectionMode={controls.selectionMode}
         onAccountChange={setAccountFilter}
+        onArchiveSelect={() => router.push("/(tabs)/(inbox)/archive")}
         onEndReached={loadNextPage}
         onFilterChange={controls.changeFilter}
         onRefresh={() => void refresh()}
@@ -124,6 +123,51 @@ export function InboxScreen({ searchMode = false }: { searchMode?: boolean }) {
       />
     </>
   );
+}
+
+function InboxSearchControls({
+  colors,
+  onChange,
+  onSearchClose,
+  searchMode,
+  showTemporarySearch,
+  value,
+}: {
+  colors: ReturnType<typeof useInboxColors>;
+  onChange: (value: string) => void;
+  onSearchClose: () => void;
+  searchMode: boolean;
+  showTemporarySearch: boolean;
+  value: string;
+}) {
+  return (
+    <>
+      <InboxSearchScreen
+        colors={colors}
+        searchMode={searchMode}
+        onSearchChange={onChange}
+        onSearchClose={onSearchClose}
+      />
+      <TemporarySearchSlot
+        enabled={showTemporarySearch}
+        value={value}
+        onChange={onChange}
+      />
+    </>
+  );
+}
+
+function TemporarySearchSlot({
+  enabled,
+  onChange,
+  value,
+}: {
+  enabled: boolean;
+  onChange: (value: string) => void;
+  value: string;
+}) {
+  if (!enabled) return null;
+  return <TemporaryIosSearchBar value={value} onChange={onChange} />;
 }
 
 function InboxThreadRow({
@@ -177,22 +221,25 @@ function FocusedSearchBar({
   onSearchClose: () => void;
 }) {
   return (
-    <Stack.SearchBar
-      ref={nativeSearchBarRef}
-      autoFocus
-      barTintColor={colors.paper}
-      hideNavigationBar={true}
-      hideWhenScrolling={false}
-      onCancelButtonPress={() => {
-        onSearchChange("");
-        onSearchClose();
+    <Stack.Screen
+      options={{
+        headerSearchBarOptions: {
+          barTintColor: colors.paper,
+          hideNavigationBar: true,
+          hideWhenScrolling: false,
+          onCancelButtonPress: () => {
+            onSearchChange("");
+            onSearchClose();
+          },
+          onChangeText: (event) => onSearchChange(event.nativeEvent.text),
+          placeholder: "Search mail",
+          placement: "automatic",
+          ref: nativeSearchBarRef,
+          textColor: colors.foreground,
+          tintColor: colors.primary,
+        },
+        headerShown: false,
       }}
-      onChangeText={(event) => onSearchChange(event.nativeEvent.text)}
-      onOpen={focusNativeSearch}
-      placeholder="Search mail"
-      placement="automatic"
-      textColor={colors.foreground}
-      tintColor={colors.primary}
     />
   );
 }
@@ -202,6 +249,20 @@ function useInboxColors() {
     foreground: useColor("foreground"),
     paper: useColor("paper"),
     primary: useColor("primary"),
+  };
+}
+
+function getInboxLoadingFeedback(
+  input: Parameters<typeof getEmptyIsLoading>[0] & { isLoadingMore: boolean },
+) {
+  return {
+    emptyIsLoading: getEmptyIsLoading(input),
+    footerIsLoading: getFooterIsLoading({
+      isLoadingMore: input.isLoadingMore,
+      isSearching: input.isSearching,
+      searchIsLoading: input.searchIsLoading,
+      searchStatus: input.searchStatus,
+    }),
   };
 }
 

@@ -8,6 +8,7 @@ import * as SystemUI from "expo-system-ui";
 import { Roboto_500Medium } from "@expo-google-fonts/roboto/500Medium";
 import { useFonts } from "@expo-google-fonts/roboto/useFonts";
 
+import { loadMobileSearchPreference } from "~/features/mail/mobile-search-preference";
 import { loadMobileAppearance } from "~/features/theme/mobile-theme";
 import { useColor } from "~/hooks/use-color";
 
@@ -24,7 +25,7 @@ export function useInitApp() {
   // eslint-disable-next-line no-restricted-syntax -- Persisted appearance must be restored before the native splash is hidden.
   useEffect(() => {
     let isMounted = true;
-    void loadMobileAppearance()
+    void Promise.all([loadMobileAppearance(), loadMobileSearchPreference()])
       .catch(() => undefined)
       .finally(() => {
         if (isMounted) setAppearanceIsLoaded(true);

@@ -33,14 +33,6 @@ export function EmptyInbox({
       />
     );
   }
-  if (filter === "read") {
-    return (
-      <InboxMessage
-        detail="There are no read conversations in this view."
-        title="No read messages"
-      />
-    );
-  }
   if (mailbox === "archive") {
     return (
       <InboxMessage

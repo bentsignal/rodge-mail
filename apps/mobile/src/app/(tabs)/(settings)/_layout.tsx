@@ -22,7 +22,6 @@ export default function SettingsLayout() {
         name="index"
         options={{ headerLargeTitle: true, title: "Settings" }}
       />
-      <Stack.Screen name="archive" options={{ headerShown: false }} />
     </Stack>
   );
 }

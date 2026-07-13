@@ -12,6 +12,9 @@ export function useInboxMailboxControls(threads: MailThread[]) {
   const [filter, setFilter] = useState<MailboxFilter>("all");
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState(() => new Set<string>());
+  const [retainedUnreadIds, setRetainedUnreadIds] = useState(
+    () => new Set<string>(),
+  );
 
   function toggleSelectionMode() {
     setSelectionMode((current) => !current);
@@ -20,6 +23,11 @@ export function useInboxMailboxControls(threads: MailThread[]) {
   function changeFilter(nextFilter: MailboxFilter) {
     setFilter(nextFilter);
     setSelectedIds(new Set());
+    setRetainedUnreadIds(new Set());
+  }
+  function retainThreadInUnreadSession(threadId: string) {
+    if (filter !== "unread") return;
+    setRetainedUnreadIds((current) => new Set(current).add(threadId));
   }
   function toggleThreadSelection(threadId: string) {
     setSelectedIds((current) => toggleSelectedThread(current, threadId));
@@ -34,8 +42,15 @@ export function useInboxMailboxControls(threads: MailThread[]) {
     toggleSelectionMode();
   }
   async function setSelectedRead(isRead: boolean) {
+    const selectedThreads = getSelectedThreads();
+    if (isRead && filter === "unread") {
+      setRetainedUnreadIds(
+        (current) =>
+          new Set([...current, ...selectedThreads.map((thread) => thread.id)]),
+      );
+    }
     await Promise.all(
-      getSelectedThreads()
+      selectedThreads
         .filter((thread) => thread.isRead !== isRead)
         .map(async (thread) => toggleRead(thread.id, thread.isRead)),
     );
@@ -44,8 +59,8 @@ export function useInboxMailboxControls(threads: MailThread[]) {
 
   const bulkActions = [
     { label: "Archive", onPress: () => void archiveSelected() },
-    { label: "Mark read", onPress: () => void setSelectedRead(true) },
-    { label: "Mark unread", onPress: () => void setSelectedRead(false) },
+    { label: "Read", onPress: () => void setSelectedRead(true) },
+    { label: "Unread", onPress: () => void setSelectedRead(false) },
   ];
   return {
     bulkActions,
@@ -54,7 +69,8 @@ export function useInboxMailboxControls(threads: MailThread[]) {
     selectedCount: selectedIds.size,
     selectedIds,
     selectionMode,
-    threads: filterMailboxThreads(threads, filter),
+    retainThreadInUnreadSession,
+    threads: filterMailboxThreads(threads, filter, retainedUnreadIds),
     toggleSelectionMode,
     toggleThreadSelection,
   };

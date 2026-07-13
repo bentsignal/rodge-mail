@@ -51,12 +51,12 @@ export function NativeThreadSummary({
         padding({ leading: 12, trailing: 12 }),
       ]}
     >
-      <SenderAvatar
-        colors={colors}
+      <SelectionIndicator
+        color={colors.primary}
         selected={selected}
         selectionMode={selectionMode}
-        thread={thread}
       />
+      <SenderAvatar colors={colors} thread={thread} />
       <VStack
         alignment="leading"
         spacing={4}
@@ -112,13 +112,9 @@ export function NativeThreadSummary({
 
 function SenderAvatar({
   colors,
-  selected,
-  selectionMode,
   thread,
 }: {
   colors: NativeThreadRowColors;
-  selected: boolean;
-  selectionMode: boolean;
   thread: MailThread;
 }) {
   return (
@@ -142,12 +138,7 @@ function SenderAvatar({
       >
         {getSenderInitials(thread.sender.name)}
       </Text>
-      <AvatarIndicator
-        colors={colors}
-        isUnread={isThreadUnread(thread)}
-        selected={selected}
-        selectionMode={selectionMode}
-      />
+      <AvatarIndicator colors={colors} isUnread={isThreadUnread(thread)} />
     </ZStack>
   );
 }
@@ -155,28 +146,34 @@ function SenderAvatar({
 function AvatarIndicator({
   colors,
   isUnread,
-  selected,
-  selectionMode,
 }: {
   colors: NativeThreadRowColors;
   isUnread: boolean;
-  selected: boolean;
-  selectionMode: boolean;
 }) {
-  if (selectionMode) {
-    return (
-      <Image
-        color={selected ? colors.primary : colors.mutedForeground}
-        size={16}
-        systemName={selected ? "checkmark.circle.fill" : "circle"}
-      />
-    );
-  }
   return (
     <Image
       color={isUnread ? colors.brass : "transparent"}
       size={8}
       systemName="circle.fill"
+    />
+  );
+}
+
+function SelectionIndicator({
+  color,
+  selected,
+  selectionMode,
+}: {
+  color: string;
+  selected: boolean;
+  selectionMode: boolean;
+}) {
+  if (!selectionMode) return null;
+  return (
+    <Image
+      color={color}
+      size={24}
+      systemName={selected ? "checkmark.circle.fill" : "circle"}
     />
   );
 }

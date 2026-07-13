@@ -161,6 +161,7 @@ function useInternalStore({
     initialSelection !== undefined,
   );
   const [unreadOnly, setUnreadOnlyState] = useState(initialUnreadOnly);
+  const [viewSessionId, setViewSessionId] = useState(0);
   const composer = useComposerState();
 
   function resetSelection() {
@@ -171,6 +172,7 @@ function useInternalStore({
   function setAccountFilter(nextAccountFilter: MailAccountFilter) {
     if (accountFilter === nextAccountFilter) return;
     setAccountFilterState(nextAccountFilter);
+    setViewSessionId((current) => current + 1);
     resetSelection();
     setBulkSelectionIsActive(false);
     setBulkSelectedThreadIds(new Set());
@@ -222,14 +224,17 @@ function useInternalStore({
       }
       resetSelection();
       setBulkSelectedThreadIds(new Set());
+      setViewSessionId((current) => current + 1);
     },
     setUnreadOnly: (nextUnreadOnly: boolean) => {
       if (unreadOnly === nextUnreadOnly) return;
       setUnreadOnlyState(nextUnreadOnly);
+      setViewSessionId((current) => current + 1);
       setBulkSelectedThreadIds(new Set());
     },
     toggleBulkThread,
     unreadOnly,
+    viewSessionId,
   };
 }
 

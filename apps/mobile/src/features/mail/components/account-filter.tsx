@@ -10,36 +10,60 @@ import { useColor } from "~/hooks/use-color";
 export function AccountFilter({
   value,
   accounts,
+  mailbox,
   onChange,
+  onArchiveSelect,
 }: {
   accounts: MailAccount[];
+  mailbox: "archive" | "inbox";
   value: MailAccountFilter;
   onChange: (value: MailAccountFilter) => void;
+  onArchiveSelect: () => void;
 }) {
   const mutedForeground = useColor("muted-foreground");
   const selectedAccount =
     value === "all"
       ? undefined
       : accounts.find((account) => account.id === value);
-  const selectedLabel = selectedAccount
-    ? getAccountLabel(selectedAccount)
-    : "All Inboxes";
+  const selectedLabel =
+    mailbox === "archive"
+      ? "Archive"
+      : selectedAccount
+        ? getAccountLabel(selectedAccount)
+        : "All Inboxes";
   const actions = [
-    { id: "all", state: selectionState(value === "all"), title: "All Inboxes" },
+    {
+      id: "all",
+      image: "tray.full" as const,
+      state: selectionState(mailbox === "inbox" && value === "all"),
+      title: "All Inboxes",
+    },
     ...accounts.map((account) => ({
       id: account.id,
-      state: selectionState(value === account.id),
+      image: "tray" as const,
+      state: selectionState(mailbox === "inbox" && value === account.id),
       title: getAccountLabel(account),
     })),
+    {
+      id: archiveMailboxId,
+      image: "archivebox" as const,
+      state: selectionState(mailbox === "archive"),
+      title: "Archive",
+    },
   ] satisfies MenuAction[];
 
   return (
     <View className="min-w-0 flex-1">
       <MenuView
+        key={`${mailbox}:${value}`}
         actions={actions}
         style={{ width: "100%" }}
         testID="mailbox-picker"
-        onPressAction={(event) => onChange(event.nativeEvent.event)}
+        onPressAction={(event) => {
+          const nextValue = event.nativeEvent.event;
+          if (nextValue === archiveMailboxId) onArchiveSelect();
+          else onChange(nextValue);
+        }}
       >
         <Pressable
           accessibilityHint="Choose which inbox to show"
@@ -59,6 +83,8 @@ export function AccountFilter({
     </View>
   );
 }
+
+const archiveMailboxId = "__archive__";
 
 function selectionState(selected: boolean) {
   return selected ? ("on" as const) : ("off" as const);

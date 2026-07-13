@@ -34,6 +34,7 @@ interface MailboxThreadListProps {
   isRefreshing?: boolean;
   mailbox: "archive" | "inbox";
   onAccountChange: (value: MailAccountFilter) => void;
+  onArchiveSelect: () => void;
   onEndReached: () => void;
   onFilterChange: (value: MailboxFilter) => void;
   onRefresh?: () => void;
@@ -61,6 +62,7 @@ export function MailboxThreadList({
   isRefreshing,
   mailbox,
   onAccountChange,
+  onArchiveSelect,
   onEndReached,
   onFilterChange,
   onRefresh,
@@ -89,70 +91,46 @@ export function MailboxThreadList({
 
   return (
     <View className="bg-paper flex-1">
-      {!headerInList && (
-        <MailboxHeader
-          accountFilter={accountFilter}
-          accounts={accounts}
-          filter={filter}
-          includeTopSafeArea={includeTopSafeArea}
-          onAccountChange={onAccountChange}
-          onFilterChange={onFilterChange}
-          onToggleSelection={onToggleSelection}
-          refreshError={refreshError}
-          selectionMode={selectionMode}
-        />
-      )}
-      <Animated.View style={{ flex: 1, opacity: transition.opacity }}>
-        <LegendList
-          contentContainerStyle={{
-            paddingBottom: 24,
-            paddingTop: headerInList ? 0 : 12,
-          }}
-          data={transition.data}
-          estimatedItemSize={109}
-          keyExtractor={threadKey}
-          maintainVisibleContentPosition={true}
-          recycleItems={true}
-          refreshControl={refreshControl}
-          renderItem={renderThread}
-          contentInsetAdjustmentBehavior="automatic"
-          keyboardDismissMode="on-drag"
-          stickyHeaderIndices={headerInList ? [0] : undefined}
-          style={{ backgroundColor: paper, flex: 1 }}
-          onEndReached={onEndReached}
-          onEndReachedThreshold={0.6}
-          ListEmptyComponent={
-            <EmptyInbox
-              filter={transition.filter}
-              isLoading={feedback.emptyIsLoading}
-              mailbox={mailbox}
-              primary={primary}
-              searchTerm={searchTerm}
-            />
-          }
-          ListHeaderComponent={
-            headerInList ? (
-              <MailboxHeader
-                accountFilter={accountFilter}
-                accounts={accounts}
-                filter={filter}
-                includeTopSafeArea={includeTopSafeArea}
-                onAccountChange={onAccountChange}
-                onFilterChange={onFilterChange}
-                onToggleSelection={onToggleSelection}
-                refreshError={refreshError}
-                selectionMode={selectionMode}
-              />
-            ) : undefined
-          }
-          ListFooterComponent={
-            <InboxFooter
-              isLoading={feedback.footerIsLoading}
-              primary={primary}
-            />
-          }
-        />
-      </Animated.View>
+      <MailboxHeaderSlot
+        accountFilter={accountFilter}
+        accounts={accounts}
+        filter={filter}
+        headerInList={headerInList}
+        includeTopSafeArea={includeTopSafeArea}
+        mailbox={mailbox}
+        onAccountChange={onAccountChange}
+        onArchiveSelect={onArchiveSelect}
+        onFilterChange={onFilterChange}
+        onToggleSelection={onToggleSelection}
+        refreshError={refreshError}
+        selectionMode={selectionMode}
+      />
+      <MailboxRows
+        feedback={feedback}
+        headerInList={headerInList}
+        headerProps={{
+          accountFilter,
+          accounts,
+          filter,
+          includeTopSafeArea,
+          mailbox,
+          onAccountChange,
+          onArchiveSelect,
+          onFilterChange,
+          onToggleSelection,
+          refreshError,
+          selectionMode,
+        }}
+        mailbox={mailbox}
+        listVersion={`${accountFilter}:${filter}:${selectionMode}:${selectedCount}`}
+        onEndReached={onEndReached}
+        paper={paper}
+        primary={primary}
+        refreshControl={refreshControl}
+        renderThread={renderThread}
+        searchTerm={searchTerm}
+        transition={transition}
+      />
       <MailboxBulkToolbarSlot
         actions={bulkActions}
         selectedCount={selectedCount}
@@ -162,8 +140,88 @@ export function MailboxThreadList({
   );
 }
 
+function MailboxRows({
+  feedback,
+  headerInList,
+  headerProps,
+  mailbox,
+  listVersion,
+  onEndReached,
+  paper,
+  primary,
+  refreshControl,
+  renderThread,
+  searchTerm,
+  transition,
+}: {
+  feedback: ReturnType<typeof getInboxListFeedback>;
+  headerInList: boolean;
+  headerProps: React.ComponentProps<typeof InboxHeader>;
+  mailbox: "archive" | "inbox";
+  listVersion: string;
+  onEndReached: () => void;
+  paper: string;
+  primary: string;
+  refreshControl:
+    | React.ReactElement<React.ComponentProps<typeof RefreshControl>>
+    | undefined;
+  renderThread: MailboxThreadListProps["renderThread"];
+  searchTerm: string | undefined;
+  transition: ReturnType<
+    typeof useInboxFilterTransition<MailThread, MailboxFilter>
+  >;
+}) {
+  return (
+    <Animated.View style={{ flex: 1, opacity: transition.opacity }}>
+      <LegendList
+        contentContainerStyle={{
+          paddingBottom: 24,
+          paddingTop: headerInList ? 0 : 12,
+        }}
+        data={transition.data}
+        estimatedItemSize={109}
+        extraData={listVersion}
+        keyExtractor={threadKey}
+        maintainVisibleContentPosition={true}
+        recycleItems={true}
+        refreshControl={refreshControl}
+        renderItem={renderThread}
+        contentInsetAdjustmentBehavior="automatic"
+        keyboardDismissMode="on-drag"
+        stickyHeaderIndices={headerInList ? [0] : undefined}
+        style={{ backgroundColor: paper, flex: 1 }}
+        onEndReached={onEndReached}
+        onEndReachedThreshold={0.6}
+        ListEmptyComponent={
+          <EmptyInbox
+            filter={transition.filter}
+            isLoading={feedback.emptyIsLoading}
+            mailbox={mailbox}
+            primary={primary}
+            searchTerm={searchTerm}
+          />
+        }
+        ListHeaderComponent={
+          headerInList ? <MailboxHeader {...headerProps} /> : undefined
+        }
+        ListFooterComponent={
+          <InboxFooter isLoading={feedback.footerIsLoading} primary={primary} />
+        }
+      />
+    </Animated.View>
+  );
+}
+
 function MailboxHeader(props: React.ComponentProps<typeof InboxHeader>) {
   return <InboxHeader {...props} />;
+}
+
+function MailboxHeaderSlot({
+  headerInList,
+  ...props
+}: React.ComponentProps<typeof InboxHeader> & { headerInList: boolean }) {
+  if (headerInList) return null;
+  return <MailboxHeader {...props} />;
 }
 
 function MailboxBulkToolbarSlot({
@@ -195,22 +253,22 @@ function MailboxBulkToolbar({
       className="bg-paper border-paper-border border-t"
       edges={["bottom"]}
     >
-      <Text className="text-muted-foreground pt-2 text-center text-xs font-medium">
-        {getSelectionLabel(selectedCount)}
-      </Text>
-      <View className="flex-row justify-center gap-1 px-2 pb-1">
+      <View className="min-h-14 flex-row items-center gap-1 px-3 py-1.5">
+        <Text className="text-foreground min-w-16 text-sm font-semibold">
+          {getSelectionLabel(selectedCount)}
+        </Text>
         {actions.map((action) => (
           <Host
             key={action.label}
             colorScheme={colorScheme}
             seedColor={action.destructive ? destructive : primary}
-            style={{ height: 42, width: 104 }}
+            style={{ flex: 1, height: 42 }}
           >
             <Button
               disabled={selectedCount === 0}
               label={action.label}
-              style={{ height: 42, width: 104 }}
-              variant="text"
+              style={{ height: 42, width: "100%" }}
+              variant="outlined"
               onPress={action.onPress}
             />
           </Host>

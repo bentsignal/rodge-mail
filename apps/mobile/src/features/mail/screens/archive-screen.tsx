@@ -55,7 +55,7 @@ export function ArchiveScreen() {
         onDelete={() => actions.confirmDelete([item.id])}
         onOpen={() =>
           router.push({
-            pathname: "/(tabs)/(settings)/archive/thread/[id]",
+            pathname: "/(tabs)/(inbox)/archive/thread/[id]",
             params: { id: item.id },
           })
         }
@@ -92,7 +92,11 @@ export function ArchiveScreen() {
         searchTerm={isSearching ? normalizedSearchTerm : undefined}
         selectedCount={actions.selectedIds.size}
         selectionMode={actions.selectionMode}
-        onAccountChange={setAccountFilter}
+        onAccountChange={(value) => {
+          setAccountFilter(value);
+          router.replace("/(tabs)/(inbox)");
+        }}
+        onArchiveSelect={() => undefined}
         onEndReached={loadMore}
         onFilterChange={actions.changeFilter}
         onToggleSelection={actions.toggleSelectionMode}

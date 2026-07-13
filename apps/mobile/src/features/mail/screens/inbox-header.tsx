@@ -20,7 +20,9 @@ export function InboxHeader({
   accounts,
   filter,
   includeTopSafeArea = true,
+  mailbox,
   onAccountChange,
+  onArchiveSelect,
   onFilterChange,
   onToggleSelection,
   refreshError,
@@ -30,7 +32,9 @@ export function InboxHeader({
   accounts: MobileMailAccount[];
   filter: MailboxFilter;
   includeTopSafeArea?: boolean;
+  mailbox: "archive" | "inbox";
   onAccountChange: (value: MailAccountFilter) => void;
+  onArchiveSelect: () => void;
   onFilterChange: (value: MailboxFilter) => void;
   onToggleSelection: () => void;
   refreshError: string | undefined;
@@ -48,21 +52,23 @@ export function InboxHeader({
         <View className="min-h-11 flex-row items-center gap-2">
           <AccountFilter
             accounts={accounts}
+            mailbox={mailbox}
             value={accountFilter}
             onChange={onAccountChange}
+            onArchiveSelect={onArchiveSelect}
           />
           <MailboxFilterMenu filter={filter} onChange={onFilterChange} />
           <Host
             colorScheme={colorScheme}
             matchContents
             seedColor={primary}
-            style={{ height: 44, width: 68 }}
+            style={{ height: 44, width: 80 }}
           >
             <Button
               label={selectionMode ? "Done" : "Select"}
-              style={{ height: 44, width: 68 }}
+              style={{ height: 44, width: 80 }}
               testID="mailbox-select-button"
-              variant="text"
+              variant={selectionMode ? "filled" : "outlined"}
               onPress={onToggleSelection}
             />
           </Host>
@@ -84,17 +90,17 @@ function MailboxFilterMenu({
   const actions = [
     filterAction("all", "All", filter),
     filterAction("unread", "Unread", filter),
-    filterAction("read", "Read", filter),
   ] satisfies MenuAction[];
 
   return (
     <MenuView
+      key={filter}
       actions={actions}
       testID="mailbox-filter-button"
       onPressAction={(event) => onChange(parseFilter(event.nativeEvent.event))}
     >
       <Pressable
-        accessibilityLabel={`Filter: ${filter === "all" ? "All" : getFilterLabel(filter)}`}
+        accessibilityLabel={`Filter: ${getFilterLabel(filter)}`}
         accessibilityRole="button"
         className="bg-paper-deep border-paper-border h-11 flex-row items-center gap-1.5 rounded-xl border px-2.5"
       >
@@ -108,7 +114,7 @@ function MailboxFilterMenu({
 }
 
 function parseFilter(value: string) {
-  if (value === "read" || value === "unread") return value;
+  if (value === "unread") return value;
   return "all";
 }
 

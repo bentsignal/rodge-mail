@@ -1,4 +1,4 @@
-import { createContext, use, useEffect } from "react";
+import { createContext, use, useEffect, useState } from "react";
 // eslint-disable-next-line no-restricted-imports -- Mail has intentional loading states and a selection-dependent thread query.
 import { useQuery } from "@tanstack/react-query";
 import { convexQuery } from "@convex-dev/react-query";
@@ -8,6 +8,7 @@ import { api } from "@rodge-mail/convex/api";
 import type { LiveMailContextValue } from "./live-data-types";
 import type { MailAccountFilter } from "./store";
 import type { InboxMessage, MailAccountDocument } from "./types";
+import type { UnreadSessionSnapshot } from "./unread-session";
 import { env } from "~/env";
 import { useArchiveLiveMailValue } from "./archive-live-data";
 import { MAIL_PAGE_SIZE } from "./constants";
@@ -24,6 +25,13 @@ import {
   useMailboxPage,
 } from "./mailbox-page";
 import { useMailStore } from "./store";
+import {
+  forgetUnreadSessionMessage,
+  getUnreadSessionMessages,
+  getUnreadSessionScopeKey,
+  mergeUnreadSessionMessages,
+  preserveUnreadSessionMessage,
+} from "./unread-session";
 import { useUnreadSelectionSync } from "./use-unread-selection-sync";
 
 const LiveMailContext = createContext<LiveMailContextValue | undefined>(
@@ -91,9 +99,16 @@ function useLiveMailValue({
   const selectedMessageId = useMailStore((store) => store.selectedMessageId);
   const selectedThreadId = useMailStore((store) => store.selectedThreadId);
   const unreadOnly = useMailStore((store) => store.unreadOnly);
+  const viewSessionId = useMailStore((store) => store.viewSessionId);
   const setInitialSelection = useMailStore(
     (store) => store.setInitialSelection,
   );
+  const unreadSession = useUnreadViewSession({
+    accountFilter,
+    searchQuery,
+    unreadOnly,
+    viewSessionId,
+  });
   const queryState = useLiveMailQueries({
     accountFilter,
     debouncedSearchQuery,
@@ -103,6 +118,7 @@ function useLiveMailValue({
     initialInbox,
     initialAccountFilter,
     initialUnreadOnly,
+    preservedUnreadMessages: unreadSession.messages,
     unreadOnly,
   });
   const firstMessage = queryState.inboxMessages[0];
@@ -126,6 +142,7 @@ function useLiveMailValue({
     queryState.accounts,
     queryState.selectedThread,
     "inbox",
+    unreadSession,
   );
 
   return {
@@ -144,6 +161,7 @@ function useLiveMailQueries({
   initialInbox,
   initialAccountFilter,
   initialUnreadOnly,
+  preservedUnreadMessages,
   unreadOnly,
 }: {
   accountFilter: MailAccountFilter;
@@ -154,6 +172,7 @@ function useLiveMailQueries({
   initialInbox: InboxMessage[];
   initialAccountFilter: MailAccountFilter;
   initialUnreadOnly: boolean;
+  preservedUnreadMessages: InboxMessage[];
   unreadOnly: boolean;
 }) {
   const accountId = accountFilter === "all" ? undefined : accountFilter;
@@ -168,7 +187,9 @@ function useLiveMailQueries({
     searchTerm: debouncedSearchQuery,
     unreadOnly,
   });
-  const inboxMessages = sortInboxMessages(activePage.results);
+  const inboxMessages = sortInboxMessages(
+    mergeUnreadSessionMessages(activePage.results, preservedUnreadMessages),
+  );
   const effectiveThreadId = selectedThreadId ?? inboxMessages[0]?.threadId;
   const threadQuery = useThreadQuery(effectiveThreadId);
   throwQueryError(accountQuery.error);
@@ -202,6 +223,43 @@ function useLiveMailQueries({
     unreadCounts: unreadCountQuery.data
       ? toUnreadCountRecord(unreadCountQuery.data)
       : {},
+  };
+}
+
+function useUnreadViewSession({
+  accountFilter,
+  searchQuery,
+  unreadOnly,
+  viewSessionId,
+}: {
+  accountFilter: MailAccountFilter;
+  searchQuery: string;
+  unreadOnly: boolean;
+  viewSessionId: number;
+}) {
+  const [snapshot, setSnapshot] = useState<
+    UnreadSessionSnapshot<InboxMessage> | undefined
+  >();
+  const scopeKey = getUnreadSessionScopeKey(
+    accountFilter === "all" ? undefined : accountFilter,
+    searchQuery.trim(),
+    viewSessionId,
+  );
+  function preserve(message: InboxMessage) {
+    if (!unreadOnly || message.isRead) return;
+    setSnapshot((current) =>
+      preserveUnreadSessionMessage(current, scopeKey, message),
+    );
+  }
+  function forget(threadId: InboxMessage["threadId"]) {
+    setSnapshot((current) =>
+      forgetUnreadSessionMessage(current, scopeKey, threadId),
+    );
+  }
+  return {
+    forget,
+    messages: getUnreadSessionMessages(snapshot, scopeKey, unreadOnly),
+    preserve,
   };
 }
 

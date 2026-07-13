@@ -23,28 +23,26 @@ describe("optimistic unread state", () => {
     ).toEqual({ all: 0, byAccount: { gmail: 0 } });
   });
 
-  it("removes a read thread from unread-only pages", () => {
+  it("keeps a newly read thread in the current unread-only page", () => {
     const rows = [
       { isRead: false, threadId: "thread-1" },
       { isRead: false, threadId: "thread-2" },
     ];
 
     expect(
-      updateOptimisticThreadRows(
-        rows,
-        { isRead: true, threadId: "thread-1" },
-        true,
-      ),
-    ).toEqual([{ isRead: false, threadId: "thread-2" }]);
+      updateOptimisticThreadRows(rows, { isRead: true, threadId: "thread-1" }),
+    ).toEqual([
+      { isRead: true, threadId: "thread-1" },
+      { isRead: false, threadId: "thread-2" },
+    ]);
   });
 
   it("updates rows in normal inbox and search pages", () => {
     expect(
-      updateOptimisticThreadRows(
-        [{ isRead: false, threadId: "thread-1" }],
-        { isRead: true, threadId: "thread-1" },
-        false,
-      ),
+      updateOptimisticThreadRows([{ isRead: false, threadId: "thread-1" }], {
+        isRead: true,
+        threadId: "thread-1",
+      }),
     ).toEqual([{ isRead: true, threadId: "thread-1" }]);
   });
 });

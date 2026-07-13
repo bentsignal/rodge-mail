@@ -23,14 +23,19 @@ function makeThread(id: string, isRead: boolean) {
 }
 
 describe("mailbox controls", () => {
-  it("filters read and unread mail without reordering all mail", () => {
+  it("filters unread mail without reordering all mail", () => {
     expect(filterMailboxThreads(threads, "all")).toBe(threads);
-    expect(filterMailboxThreads(threads, "read").map(({ id }) => id)).toEqual([
-      "read",
-    ]);
     expect(filterMailboxThreads(threads, "unread").map(({ id }) => id)).toEqual(
       ["unread"],
     );
+  });
+
+  it("retains an opened thread for the current unread-filter session", () => {
+    expect(
+      filterMailboxThreads(threads, "unread", new Set(["read"])).map(
+        ({ id }) => id,
+      ),
+    ).toEqual(["read", "unread"]);
   });
 
   it("toggles selection without mutating the previous set", () => {
@@ -44,8 +49,7 @@ describe("mailbox controls", () => {
   });
 
   it("uses the active filter as the toolbar label", () => {
-    expect(getFilterLabel("all")).toBe("Filter");
-    expect(getFilterLabel("read")).toBe("Read");
+    expect(getFilterLabel("all")).toBe("All");
     expect(getFilterLabel("unread")).toBe("Unread");
   });
 });

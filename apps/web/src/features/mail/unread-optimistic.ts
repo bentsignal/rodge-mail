@@ -54,11 +54,7 @@ function updateInboxQueries(
 ) {
   for (const query of store.getAllQueries(api.mail.queries.listInbox)) {
     if (!query.value) continue;
-    const page = updateOptimisticThreadRows(
-      query.value.page,
-      args,
-      query.args.unreadOnly === true,
-    );
+    const page = updateOptimisticThreadRows(query.value.page, args);
     store.setQuery(api.mail.queries.listInbox, query.args, {
       ...query.value,
       page,
@@ -72,11 +68,7 @@ function updateSearchQueries(
 ) {
   for (const query of store.getAllQueries(api.mail.queries.searchHeaders)) {
     if (!query.value) continue;
-    const page = updateOptimisticThreadRows(
-      query.value.page,
-      args,
-      query.args.unreadOnly === true,
-    );
+    const page = updateOptimisticThreadRows(query.value.page, args);
     store.setQuery(api.mail.queries.searchHeaders, query.args, {
       ...query.value,
       page,
@@ -93,11 +85,7 @@ function updateMessageHydrationQueries(
     store.setQuery(
       api.mail.queries.getMessagesByIds,
       query.args,
-      updateOptimisticThreadRows(
-        query.value,
-        args,
-        query.args.unreadOnly === true,
-      ),
+      updateOptimisticThreadRows(query.value, args),
     );
   }
 }
@@ -126,14 +114,7 @@ function updateThreadQuery(
 
 export function updateOptimisticThreadRows<
   Item extends { isRead: boolean; threadId: string },
->(
-  items: Item[],
-  args: { isRead: boolean; threadId: string },
-  unreadOnly: boolean,
-) {
-  if (unreadOnly && args.isRead) {
-    return items.filter((item) => item.threadId !== args.threadId);
-  }
+>(items: Item[], args: { isRead: boolean; threadId: string }) {
   return items.map((item) =>
     item.threadId === args.threadId ? { ...item, isRead: args.isRead } : item,
   );
