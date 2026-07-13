@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 // eslint-disable-next-line no-restricted-imports -- Archive selection loads its thread independently from the inbox provider.
 import { useQuery } from "@tanstack/react-query";
 import { convexQuery } from "@convex-dev/react-query";
@@ -98,16 +98,82 @@ function useArchiveMailboxPage({
     select: (results) => results,
   });
   const isWaitingForDebounce = searchQuery.trim() !== searchTerm;
+  const transition = useArchiveSearchTransition({
+    archiveResults: archive.results,
+    archiveStatus: archive.status,
+    isSearching,
+    isWaitingForDebounce,
+    searchData: search.data,
+    searchIsPending: search.isPending,
+  });
   return {
     canLoadMore: !isSearching && archive.status === "CanLoadMore",
     isLoading:
-      isWaitingForDebounce ||
-      (isSearching ? search.isPending : archive.status === "LoadingFirstPage"),
+      !isSearching &&
+      archive.status === "LoadingFirstPage" &&
+      transition.results.length === 0,
     isLoadingMore: !isSearching && archive.status === "LoadingMore",
-    isSearching: isSearching && search.isPending,
+    isSearching: isSearching && transition.sourceIsPending,
     loadMore: () => archive.loadMore(MAIL_PAGE_SIZE),
-    results: isSearching ? (search.data ?? []) : archive.results,
+    results: transition.results,
   };
+}
+
+function useArchiveSearchTransition({
+  archiveResults,
+  archiveStatus,
+  isSearching,
+  isWaitingForDebounce,
+  searchData,
+  searchIsPending,
+}: {
+  archiveResults: InboxMessage[];
+  archiveStatus: string;
+  isSearching: boolean;
+  isWaitingForDebounce: boolean;
+  searchData: InboxMessage[] | undefined;
+  searchIsPending: boolean;
+}) {
+  const sourceIsPending = isSearching
+    ? searchIsPending
+    : archiveStatus === "LoadingFirstPage";
+  const candidateResults = isSearching ? (searchData ?? []) : archiveResults;
+  const [settledResults, setSettledResults] = useState<InboxMessage[]>();
+
+  // eslint-disable-next-line no-restricted-syntax -- Preserve the last settled archive page until a new lexical subscription resolves.
+  useEffect(() => {
+    if (isWaitingForDebounce || sourceIsPending) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Query settlement is an external subscription snapshot.
+    setSettledResults(isSearching ? (searchData ?? []) : archiveResults);
+  }, [
+    archiveResults,
+    isSearching,
+    isWaitingForDebounce,
+    searchData,
+    sourceIsPending,
+  ]);
+
+  return {
+    results: resolveArchiveTransitionResults({
+      candidateResults,
+      isPending: isWaitingForDebounce || sourceIsPending,
+      settledResults,
+    }),
+    sourceIsPending,
+  };
+}
+
+export function resolveArchiveTransitionResults<T>({
+  candidateResults,
+  isPending,
+  settledResults,
+}: {
+  candidateResults: T[];
+  isPending: boolean;
+  settledResults: T[] | undefined;
+}) {
+  if (!isPending) return candidateResults;
+  return settledResults ?? candidateResults;
 }
 
 function useArchiveThreadQuery(threadId: InboxMessage["threadId"] | undefined) {

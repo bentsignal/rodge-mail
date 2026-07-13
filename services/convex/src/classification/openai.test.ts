@@ -3,12 +3,14 @@ import { describe, expect, it } from "vitest";
 import { classificationRequest, parseClassification } from "./openai";
 
 const classification = {
-  schemaVersion: "classification-v2",
+  schemaVersion: "classification-v3",
   category: "action_required",
   importance: 0.92,
   confidence: 0.88,
   reason: "A reply is requested before a deadline.",
   summary: "Review and reply before Friday.",
+  cleanedMarkdown: "Please review the proposal and reply before Friday.",
+  isSpam: false,
 };
 
 describe("classification model output", () => {
@@ -31,7 +33,7 @@ describe("classification model output", () => {
         [],
       ),
     ).toMatchObject({
-      max_output_tokens: 1_200,
+      max_output_tokens: 6_000,
       reasoning: { effort: "minimal" },
     });
   });
@@ -50,15 +52,19 @@ describe("classification model output", () => {
     ).not.toHaveProperty("bucket");
   });
 
-  it.each(["category", "importance", "reason", "summary"])(
-    "rejects output missing %s",
-    (field) => {
-      const incomplete = Object.fromEntries(
-        Object.entries(classification).filter(([key]) => key !== field),
-      );
-      expect(() => parseClassification(JSON.stringify(incomplete))).toThrow(
-        "Model returned an invalid classification",
-      );
-    },
-  );
+  it.each([
+    "category",
+    "importance",
+    "reason",
+    "summary",
+    "cleanedMarkdown",
+    "isSpam",
+  ])("rejects output missing %s", (field) => {
+    const incomplete = Object.fromEntries(
+      Object.entries(classification).filter(([key]) => key !== field),
+    );
+    expect(() => parseClassification(JSON.stringify(incomplete))).toThrow(
+      "Model returned an invalid classification",
+    );
+  });
 });

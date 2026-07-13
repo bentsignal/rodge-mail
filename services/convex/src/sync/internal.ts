@@ -65,6 +65,7 @@ const vNormalizedMessage = v.object({
   subject: v.string(),
   snippet: v.string(),
   plainText: v.optional(v.string()),
+  sanitizedHtml: v.optional(v.string()),
   headers: v.array(vMessageHeader),
   remoteLabelIds: v.array(v.string()),
   sentAt: v.optional(v.number()),
@@ -1201,9 +1202,10 @@ export const upsertProviderMessage = internalMutation({
       }),
       headers: message.headers,
       remoteLabelIds: message.remoteLabelIds,
-      bodyState: message.plainText
-        ? ("available" as const)
-        : ("remote" as const),
+      bodyState:
+        message.plainText || message.sanitizedHtml
+          ? ("available" as const)
+          : ("remote" as const),
       sentAt: message.sentAt,
       receivedAt: message.receivedAt,
       hasAttachments: message.hasAttachments,
@@ -1227,6 +1229,7 @@ export const upsertProviderMessage = internalMutation({
       args.ownerId,
       messageId,
       message.plainText,
+      message.sanitizedHtml,
       now,
     );
     await reconcileAttachments(
@@ -1629,6 +1632,7 @@ async function upsertMessageContent(
   ownerId: string,
   messageId: Id<"messages">,
   plainText: string | undefined,
+  sanitizedHtml: string | undefined,
   now: number,
 ) {
   const existing = await ctx.db
@@ -1638,6 +1642,7 @@ async function upsertMessageContent(
   if (existing) {
     await ctx.db.patch(existing._id, {
       plainText,
+      sanitizedHtml,
       truncated: false,
       updatedAt: now,
     });
@@ -1646,6 +1651,7 @@ async function upsertMessageContent(
       ownerId,
       messageId,
       plainText,
+      sanitizedHtml,
       truncated: false,
       createdAt: now,
       updatedAt: now,

@@ -1,6 +1,6 @@
-export const CLASSIFICATION_PROMPT_VERSION = "importance-mail-v2";
-export const CLASSIFICATION_OUTPUT_SCHEMA_VERSION = "classification-v2";
-export const DEFAULT_CLASSIFICATION_MODEL = "gpt-5-mini";
+export const CLASSIFICATION_PROMPT_VERSION = "clean-mail-v4";
+export const CLASSIFICATION_OUTPUT_SCHEMA_VERSION = "classification-v3";
+export const DEFAULT_CLASSIFICATION_MODEL = "gpt-5-nano";
 export const DEFAULT_EMBEDDING_MODEL = "text-embedding-3-small";
 export const EMBEDDING_DIMENSIONS = 512;
 export const MAX_JOB_ATTEMPTS = 3;
@@ -33,4 +33,6 @@ export interface ClassificationResult {
   confidence: number;
   reason: string;
   summary: string;
+  cleanedMarkdown: string;
+  isSpam: boolean;
 }

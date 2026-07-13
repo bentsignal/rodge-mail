@@ -5,6 +5,7 @@ import { LegendList } from "@legendapp/list/react-native";
 import type { MailAccountFilter, MailThread } from "@rodge-mail/features/mail";
 
 import type { MobileMailAccount } from "../lib/convex-mail";
+import type { MobileMailbox } from "../store";
 import type { MailboxFilter } from "./mailbox-controls";
 import { useColor } from "~/hooks/use-color";
 import { InboxHeader } from "./inbox-header";
@@ -36,12 +37,13 @@ interface MailboxThreadListProps {
   headerInList?: boolean;
   includeTopSafeArea?: boolean;
   isRefreshing?: boolean;
-  mailbox: "archive" | "inbox";
+  mailbox: MobileMailbox;
   onAccountChange: (value: MailAccountFilter) => void;
   onArchiveSelect: () => void;
   onEndReached: () => void;
   onFilterChange: (value: MailboxFilter) => void;
   onRefresh?: () => void;
+  onSpamSelect: () => void;
   onToggleSelection: () => void;
   primary: string;
   refreshError?: string;
@@ -51,6 +53,7 @@ interface MailboxThreadListProps {
   searchTerm?: string;
   selectedCount: number;
   selectionMode: boolean;
+  selectionEnabled?: boolean;
   temporarySearch?: {
     onChange: (value: string) => void;
     value: string;
@@ -74,6 +77,7 @@ export function MailboxThreadList({
   onEndReached,
   onFilterChange,
   onRefresh,
+  onSpamSelect,
   onToggleSelection,
   primary,
   refreshError,
@@ -81,6 +85,7 @@ export function MailboxThreadList({
   searchTerm,
   selectedCount,
   selectionMode,
+  selectionEnabled = true,
   temporarySearch,
 }: MailboxThreadListProps) {
   const paper = useColor("paper");
@@ -111,7 +116,9 @@ export function MailboxThreadList({
         onArchiveSelect={onArchiveSelect}
         onFilterChange={onFilterChange}
         onToggleSelection={onToggleSelection}
+        onSpamSelect={onSpamSelect}
         refreshError={refreshError}
+        selectionEnabled={selectionEnabled}
         selectionMode={selectionMode}
         temporarySearch={temporarySearch}
       />
@@ -128,8 +135,10 @@ export function MailboxThreadList({
           onArchiveSelect,
           onFilterChange,
           onToggleSelection,
+          onSpamSelect,
           refreshError,
           selectionMode,
+          selectionEnabled,
           temporarySearch,
         }}
         mailbox={mailbox}
@@ -168,7 +177,7 @@ function MailboxRows({
   feedback: ReturnType<typeof getInboxListFeedback>;
   headerInList: boolean;
   headerProps: React.ComponentProps<typeof InboxHeader>;
-  mailbox: "archive" | "inbox";
+  mailbox: MobileMailbox;
   listVersion: string;
   onEndReached: () => void;
   paper: string;

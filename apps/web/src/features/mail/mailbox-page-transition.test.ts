@@ -38,11 +38,9 @@ describe("mailbox page transitions", () => {
     expect(getMailboxViewScopeKey(undefined, true)).not.toBe(unified);
   });
 
-  it("waits for lexical and semantic search settlement", () => {
-    expect(getMailboxTransitionPending("LoadingFirstPage", true, false)).toBe(
-      true,
-    );
-    expect(getMailboxTransitionPending("Exhausted", true, true)).toBe(true);
-    expect(getMailboxTransitionPending("Exhausted", true, false)).toBe(false);
+  it("waits only for the lexical page before revealing search results", () => {
+    expect(getMailboxTransitionPending("LoadingFirstPage")).toBe(true);
+    expect(getMailboxTransitionPending("Exhausted")).toBe(false);
+    expect(getMailboxTransitionPending("CanLoadMore")).toBe(false);
   });
 });

@@ -3,6 +3,7 @@ import { CheckCircle2, Circle, Pin } from "lucide-react-native";
 
 import type { MailThread } from "@rodge-mail/features/mail";
 
+import type { MobileMailbox } from "../store";
 import { useColor } from "~/hooks/use-color";
 import { formatMessageTime } from "../lib/mail-format";
 import {
@@ -20,7 +21,7 @@ export function FallbackThreadSummary({
   shadowColor,
   thread,
 }: {
-  mailbox: "archive" | "inbox";
+  mailbox: MobileMailbox;
   onOpen: () => void;
   onPin: () => void;
   selected: boolean;
@@ -73,11 +74,7 @@ function ThreadText({ thread }: { thread: MailThread }) {
     <View className="min-w-0 flex-1 gap-1">
       <View className="flex-row items-center gap-2">
         <Text
-          className={
-            thread.isRead
-              ? "text-foreground min-w-0 flex-1 text-sm"
-              : "text-foreground min-w-0 flex-1 text-sm font-bold"
-          }
+          className="text-foreground min-w-0 flex-1 text-sm font-medium"
           numberOfLines={1}
         >
           {thread.sender.name}
@@ -86,14 +83,7 @@ function ThreadText({ thread }: { thread: MailThread }) {
           {formatMessageTime(thread.receivedAt)}
         </Text>
       </View>
-      <Text
-        className={
-          thread.isRead
-            ? "text-foreground text-sm"
-            : "text-foreground text-sm font-semibold"
-        }
-        numberOfLines={1}
-      >
+      <Text className="text-foreground text-sm" numberOfLines={1}>
         {thread.subject}
       </Text>
       <Text
@@ -107,10 +97,11 @@ function ThreadText({ thread }: { thread: MailThread }) {
 }
 
 function AvatarIndicator({ isUnread }: { isUnread: boolean }) {
+  if (!isUnread) return null;
   return (
     <View
       accessibilityElementsHidden
-      className={`border-paper absolute -top-1 -right-1 size-2.5 rounded-full border ${isUnread ? "bg-brass" : "bg-transparent"}`}
+      className="border-paper bg-brass absolute -top-1 -right-1 size-2.5 rounded-full border"
       importantForAccessibility="no-hide-descendants"
     />
   );
@@ -149,12 +140,12 @@ function ThreadPinSlot({
   selectionMode,
   thread,
 }: {
-  mailbox: "archive" | "inbox";
+  mailbox: MobileMailbox;
   onPin: () => void;
   selectionMode: boolean;
   thread: MailThread;
 }) {
-  if (mailbox === "archive" || selectionMode) return null;
+  if (mailbox !== "inbox" || selectionMode) return null;
   return <ThreadPinAction thread={thread} onPin={onPin} />;
 }
 

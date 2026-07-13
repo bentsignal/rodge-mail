@@ -1,14 +1,15 @@
 import type { LegendListRenderItemProps } from "@legendapp/list/react-native";
-import { useState } from "react";
+// eslint-disable-next-line no-restricted-imports -- Stable converted-result identity prevents the external query snapshot effect from retriggering unchanged rows.
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "expo-router";
 import { usePaginatedQuery } from "convex/react";
 
 import type { MailAccountFilter, MailThread } from "@rodge-mail/features/mail";
 import { api } from "@rodge-mail/convex/api";
 
+import type { MobileMailbox } from "../store";
 import { useColor } from "~/hooks/use-color";
 import { useDebouncedValue } from "~/hooks/use-debounced-value";
-import { ThreadRow } from "../components/thread-row";
 import { useSemanticMailSearch } from "../hooks/use-semantic-mail-search";
 import { toConvexId } from "../lib/convex-id";
 import { toMailThreads } from "../lib/convex-mail";
@@ -19,9 +20,12 @@ import {
   getEmptyIsLoading,
   getFooterIsLoading,
   getVisibleInboxThreads,
+  MAIL_SEARCH_DEBOUNCE_MS,
 } from "./inbox-list-state";
 import { InboxSearchControls } from "./inbox-search-controls";
+import { InboxThreadRow } from "./inbox-thread-row";
 import { MailboxThreadList } from "./mailbox-thread-list";
+import { SpamMailbox } from "./spam-screen";
 import { useInboxMailboxControls } from "./use-inbox-mailbox-controls";
 import { useInboxRefresh } from "./use-inbox-refresh";
 
@@ -46,6 +50,11 @@ export function InboxScreen({ searchMode = false }: { searchMode?: boolean }) {
     setAccountFilter("all");
     setSearchTerm("");
   }
+  function selectSpam() {
+    setMailbox("spam");
+    setAccountFilter("all");
+    setSearchTerm("");
+  }
 
   return (
     <>
@@ -62,6 +71,7 @@ export function InboxScreen({ searchMode = false }: { searchMode?: boolean }) {
         showTemporarySearch={showTemporarySearch}
         onAccountChange={selectInbox}
         onArchiveSelect={selectArchive}
+        onSpamSelect={selectSpam}
         onSearchChange={setSearchTerm}
       />
     </>
@@ -73,14 +83,16 @@ function ActiveMailbox({
   onAccountChange,
   onArchiveSelect,
   onSearchChange,
+  onSpamSelect,
   primary,
   searchTerm,
   showTemporarySearch,
 }: {
-  mailbox: "archive" | "inbox";
+  mailbox: MobileMailbox;
   onAccountChange: (value: MailAccountFilter) => void;
   onArchiveSelect: () => void;
   onSearchChange: (value: string) => void;
+  onSpamSelect: () => void;
   primary: string;
   searchTerm: string;
   showTemporarySearch: boolean;
@@ -96,6 +108,22 @@ function ActiveMailbox({
             : undefined
         }
         onAccountChange={onAccountChange}
+        onSpamSelect={onSpamSelect}
+      />
+    );
+  }
+  if (mailbox === "spam") {
+    return (
+      <SpamMailbox
+        primary={primary}
+        searchTerm={searchTerm}
+        temporarySearch={
+          showTemporarySearch
+            ? { value: searchTerm, onChange: onSearchChange }
+            : undefined
+        }
+        onAccountChange={onAccountChange}
+        onArchiveSelect={onArchiveSelect}
       />
     );
   }
@@ -105,24 +133,29 @@ function ActiveMailbox({
       showTemporarySearch={showTemporarySearch}
       onAccountChange={onAccountChange}
       onArchiveSelect={onArchiveSelect}
+      onSpamSelect={onSpamSelect}
       onSearchChange={onSearchChange}
     />
   );
+}
+
+interface InboxMailboxProps {
+  onAccountChange: (value: MailAccountFilter) => void;
+  onArchiveSelect: () => void;
+  onSearchChange: (value: string) => void;
+  onSpamSelect: () => void;
+  searchTerm: string;
+  showTemporarySearch: boolean;
 }
 
 function InboxMailbox({
   onAccountChange,
   onArchiveSelect,
   onSearchChange,
+  onSpamSelect,
   searchTerm,
   showTemporarySearch,
-}: {
-  onAccountChange: (value: MailAccountFilter) => void;
-  onArchiveSelect: () => void;
-  onSearchChange: (value: string) => void;
-  searchTerm: string;
-  showTemporarySearch: boolean;
-}) {
+}: InboxMailboxProps) {
   const router = useRouter();
   const threads = useMailStore((store) => store.threads);
   const accounts = useMailStore((store) => store.accounts);
@@ -131,7 +164,7 @@ function InboxMailbox({
   const loadMore = useMailStore((store) => store.loadMore);
   const isLoading = useMailStore((store) => store.isLoading);
   const isLoadingMore = useMailStore((store) => store.isLoadingMore);
-  const debouncedSearchTerm = useDebouncedValue(searchTerm.trim(), 250);
+  const debouncedSearchTerm = useMailSearchTerm(searchTerm);
   const primary = useColor("primary");
   const { isRefreshing, refresh, refreshError } = useInboxRefresh(accounts);
   const search = usePaginatedQuery(
@@ -139,17 +172,17 @@ function InboxMailbox({
     getSearchArgs(debouncedSearchTerm, getSelectedAccountId(accountFilter)),
     { initialNumItems: 30 },
   );
-  const isSearching = searchTerm.trim().length > 0;
+  const isSearching = debouncedSearchTerm.length > 0;
   const semanticSearch = useSemanticMailSearch({
     accountId: getSelectedAccountId(accountFilter),
     lexicalResults: search.results,
     searchTerm: debouncedSearchTerm,
   });
-  const unfilteredResults = getVisibleInboxThreads({
+  const unfilteredResults = useStableInboxSearchThreads({
     inboxThreads: threads,
     isSearching,
-    searchThreads: toMailThreads(semanticSearch.results),
-    showUnreadOnly: false,
+    searchResults: semanticSearch.results,
+    searchStatus: search.status,
   });
   const controls = useInboxMailboxControls(unfilteredResults);
   const loadingFeedback = getInboxLoadingFeedback({
@@ -206,29 +239,56 @@ function InboxMailbox({
       onEndReached={loadNextPage}
       onFilterChange={controls.changeFilter}
       onRefresh={() => void refresh()}
+      onSpamSelect={onSpamSelect}
       onToggleSelection={controls.toggleSelectionMode}
     />
   );
 }
 
-function InboxThreadRow({
-  controls,
-  onOpen,
-  thread,
+function useStableInboxSearchThreads({
+  inboxThreads,
+  isSearching,
+  searchResults,
+  searchStatus,
 }: {
-  controls: ReturnType<typeof useInboxMailboxControls>;
-  onOpen: (threadId: string) => void;
-  thread: MailThread;
+  inboxThreads: MailThread[];
+  isSearching: boolean;
+  searchResults: ReturnType<typeof useSemanticMailSearch>["results"];
+  searchStatus: string;
 }) {
-  return (
-    <ThreadRow
-      selected={controls.selectedIds.has(thread.id)}
-      selectionMode={controls.selectionMode}
-      thread={thread}
-      onOpen={() => onOpen(thread.id)}
-      onSelect={() => controls.toggleThreadSelection(thread.id)}
-    />
+  const searchThreads = useMemo(
+    () => toMailThreads(searchResults),
+    [searchResults],
   );
+  const searchIsPending = isSearching && searchStatus === "LoadingFirstPage";
+  const [settledSearchThreads, setSettledSearchThreads] = useState<
+    MailThread[] | undefined
+  >();
+
+  // eslint-disable-next-line no-restricted-syntax -- The settled query snapshot keeps the list stable while the next search subscription starts.
+  useEffect(() => {
+    if (!isSearching || searchIsPending) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Convex query settlement is an external subscription snapshot.
+    setSettledSearchThreads(searchThreads);
+  }, [isSearching, searchIsPending, searchThreads]);
+
+  return getVisibleInboxThreads({
+    inboxThreads,
+    isSearching,
+    searchIsPending,
+    searchThreads,
+    settledSearchThreads,
+    showUnreadOnly: false,
+  });
+}
+
+function useMailSearchTerm(searchTerm: string) {
+  const normalizedSearchTerm = searchTerm.trim();
+  const delayedSearchTerm = useDebouncedValue(
+    normalizedSearchTerm,
+    MAIL_SEARCH_DEBOUNCE_MS,
+  );
+  return normalizedSearchTerm ? delayedSearchTerm : "";
 }
 
 function getInboxLoadingFeedback(

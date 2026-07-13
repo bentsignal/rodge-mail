@@ -211,6 +211,8 @@ export const vMessageClassification = v.object({
   confidence: v.number(),
   reason: v.string(),
   summary: v.string(),
+  cleanedMarkdown: v.optional(v.string()),
+  isSpam: v.optional(v.boolean()),
   shouldEmbed: v.boolean(),
   source: vClassificationSource,
   promptVersion: v.string(),

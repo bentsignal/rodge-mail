@@ -7,11 +7,15 @@ import { Check, ListChecks, ListFilter } from "lucide-react-native";
 import type { MailAccountFilter } from "@rodge-mail/features/mail";
 
 import type { MobileMailAccount } from "../lib/convex-mail";
+import type { MobileMailbox } from "../store";
 import type { MailboxFilter } from "./mailbox-controls";
 import { useColor } from "~/hooks/use-color";
 import { AccountFilter } from "../components/account-filter";
 import { InboxSyncStatus } from "./inbox-sync-status";
-import { getFilterLabel } from "./mailbox-controls";
+import {
+  getFilterLabel,
+  getMailboxSearchPlaceholder,
+} from "./mailbox-controls";
 import { TemporaryIosSearchBar } from "./temporary-ios-search-bar";
 
 export function InboxHeader({
@@ -22,9 +26,11 @@ export function InboxHeader({
   mailbox,
   onAccountChange,
   onArchiveSelect,
+  onSpamSelect,
   onFilterChange,
   onToggleSelection,
   refreshError,
+  selectionEnabled = true,
   selectionMode,
   temporarySearch,
 }: {
@@ -32,12 +38,14 @@ export function InboxHeader({
   accounts: MobileMailAccount[];
   filter: MailboxFilter;
   includeTopSafeArea?: boolean;
-  mailbox: "archive" | "inbox";
+  mailbox: MobileMailbox;
   onAccountChange: (value: MailAccountFilter) => void;
   onArchiveSelect: () => void;
+  onSpamSelect: () => void;
   onFilterChange: (value: MailboxFilter) => void;
   onToggleSelection: () => void;
   refreshError: string | undefined;
+  selectionEnabled?: boolean;
   selectionMode: boolean;
   temporarySearch?: {
     onChange: (value: string) => void;
@@ -58,9 +66,11 @@ export function InboxHeader({
             value={accountFilter}
             onChange={onAccountChange}
             onArchiveSelect={onArchiveSelect}
+            onSpamSelect={onSpamSelect}
           />
           <MailboxFilterMenu filter={filter} onChange={onFilterChange} />
-          <SelectionButton
+          <SelectionButtonSlot
+            enabled={selectionEnabled}
             selectionMode={selectionMode}
             onPress={onToggleSelection}
           />
@@ -69,6 +79,19 @@ export function InboxHeader({
       </View>
     </SafeAreaView>
   );
+}
+
+function SelectionButtonSlot({
+  enabled,
+  onPress,
+  selectionMode,
+}: {
+  enabled: boolean;
+  onPress: () => void;
+  selectionMode: boolean;
+}) {
+  if (!enabled) return null;
+  return <SelectionButton selectionMode={selectionMode} onPress={onPress} />;
 }
 
 function SelectionButton({
@@ -144,7 +167,7 @@ function TemporarySearchSlot({
   mailbox,
   search,
 }: {
-  mailbox: "archive" | "inbox";
+  mailbox: MobileMailbox;
   search: React.ComponentProps<typeof TemporaryIosSearchBar> | undefined;
 }) {
   if (!search) return null;
@@ -152,7 +175,7 @@ function TemporarySearchSlot({
     <TemporaryIosSearchBar
       key={mailbox}
       {...search}
-      placeholder={mailbox === "archive" ? "Search archive" : undefined}
+      placeholder={getMailboxSearchPlaceholder(mailbox)}
     />
   );
 }

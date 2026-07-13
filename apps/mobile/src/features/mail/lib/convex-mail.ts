@@ -91,6 +91,7 @@ function toMailMessage(item: ThreadMessage) {
   return {
     attachments: item.attachments.map(toMailAttachment),
     body: toParagraphs(item.content?.plainText, item.snippet),
+    cleanedBody: item.classification?.cleanedMarkdown,
     cc: item.cc.map((address) => ({
       address: address.address,
       name: getAddressName(address),
@@ -101,6 +102,9 @@ function toMailMessage(item: ThreadMessage) {
     },
     id: item._id,
     internetMessageId: item.internetMessageId,
+    isSpam: item.classification?.isSpam,
+    originalHtml: item.content?.sanitizedHtml,
+    overview: item.classification?.summary ?? item.snippet,
     replyTo: item.replyTo?.map((address) => ({
       address: address.address,
       name: getAddressName(address),

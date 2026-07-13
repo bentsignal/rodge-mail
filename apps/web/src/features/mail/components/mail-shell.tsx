@@ -2,7 +2,11 @@ import { useRouterState } from "@tanstack/react-router";
 
 import type { MailAccountFilter, ThreadSelection } from "../store";
 import type { InboxMessage } from "../types";
-import { ArchiveLiveMailProvider, LiveMailProvider } from "../live-data";
+import {
+  ArchiveLiveMailProvider,
+  LiveMailProvider,
+  SpamLiveMailProvider,
+} from "../live-data";
 import { MailStore } from "../store";
 import { AccountRail } from "./account-rail";
 import { ArchivePage } from "./archive-page";
@@ -59,6 +63,12 @@ function MailModeProvider({
   const isArchive = useRouterState({
     select: (state) => state.location.pathname.startsWith("/archive"),
   });
+  const isSpam = useRouterState({
+    select: (state) => state.location.pathname.startsWith("/spam"),
+  });
+  if (isSpam) {
+    return <SpamLiveMailProvider>{children}</SpamLiveMailProvider>;
+  }
   if (isArchive) {
     return <ArchiveLiveMailProvider>{children}</ArchiveLiveMailProvider>;
   }
@@ -77,12 +87,15 @@ function MailWorkspace() {
   const isArchive = useRouterState({
     select: (state) => state.location.pathname.startsWith("/archive"),
   });
+  const isSpam = useRouterState({
+    select: (state) => state.location.pathname.startsWith("/spam"),
+  });
   return (
     <main className="mail-shell mail-atmosphere bg-background text-foreground relative flex h-dvh min-h-0 overflow-hidden">
       <div className="mail-app-frame relative z-10 flex min-w-0 flex-1 overflow-hidden">
         <AccountRail />
         <div className="mail-workspace flex min-w-0 flex-1 overflow-hidden">
-          <MailWorkspaceContent isArchive={isArchive} />
+          <MailWorkspaceContent isArchive={isArchive} isSpam={isSpam} />
         </div>
       </div>
       <ComposeDialog />
@@ -91,8 +104,22 @@ function MailWorkspace() {
   );
 }
 
-function MailWorkspaceContent({ isArchive }: { isArchive: boolean }) {
+function MailWorkspaceContent({
+  isArchive,
+  isSpam,
+}: {
+  isArchive: boolean;
+  isSpam: boolean;
+}) {
   if (isArchive) return <ArchivePage />;
+  if (isSpam) {
+    return (
+      <>
+        <InboxPane />
+        <ReaderPane />
+      </>
+    );
+  }
   return (
     <>
       <InboxPane />

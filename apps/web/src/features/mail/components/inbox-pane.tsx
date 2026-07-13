@@ -58,7 +58,7 @@ function InboxHeader() {
           </button>
         </div>
       </div>
-      <SearchInput />
+      <SearchInputSlot mailMode={mailMode} />
       <BulkSelectionToolbar />
       <MobileAccountFilters />
       <SearchResultsLabel />
@@ -66,13 +66,27 @@ function InboxHeader() {
   );
 }
 
-function getMailboxTitle(mailMode: "archive" | "inbox") {
+function SearchInputSlot({
+  mailMode,
+}: {
+  mailMode: "archive" | "inbox" | "spam";
+}) {
+  if (mailMode === "spam") return null;
+  return <SearchInput />;
+}
+
+function getMailboxTitle(mailMode: "archive" | "inbox" | "spam") {
   if (mailMode === "archive") return "Archive";
+  if (mailMode === "spam") return "Spam";
   return "Inbox";
 }
 
-function MailboxFilterControl({ mailMode }: { mailMode: "archive" | "inbox" }) {
-  if (mailMode === "archive") return null;
+function MailboxFilterControl({
+  mailMode,
+}: {
+  mailMode: "archive" | "inbox" | "spam";
+}) {
+  if (mailMode !== "inbox") return null;
   return <UnreadFilterButton />;
 }
 
@@ -86,7 +100,12 @@ function UnreadFilterButton() {
     const nextUnreadOnly = !unreadOnly;
     setUnreadOnly(nextUnreadOnly);
     void navigate({
-      to: mailMode === "archive" ? "/archive" : "/",
+      to:
+        mailMode === "archive"
+          ? "/archive"
+          : mailMode === "spam"
+            ? "/spam"
+            : "/",
       search: (previous) => withUnreadSearch(previous, nextUnreadOnly),
     });
   }
@@ -154,6 +173,7 @@ function MobileAccountFilters() {
   const selectMailbox = useMailboxNavigation(
     mailMode === "archive" ? "/archive" : "/",
   );
+  if (mailMode === "spam") return null;
 
   return (
     <div className="mail-scrollbar mt-3 flex gap-2 overflow-x-auto pb-1 md:hidden">
@@ -176,8 +196,18 @@ function MobileAccountFilters() {
 }
 
 function SearchResultsLabel() {
+  const debouncedSearchQuery = useMailStore(
+    (store) => store.debouncedSearchQuery,
+  );
   const searchQuery = useMailStore((store) => store.searchQuery);
-  if (!searchQuery) return null;
+  const { isSearchingInbox } = useLiveMail();
+  if (
+    !debouncedSearchQuery ||
+    searchQuery.trim() !== debouncedSearchQuery ||
+    isSearchingInbox
+  ) {
+    return null;
+  }
   return (
     <p className="mail-label mt-3 font-mono text-[9px] tracking-[0.12em] uppercase">
       Search results

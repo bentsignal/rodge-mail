@@ -8,7 +8,7 @@ import type {
 } from "@rodge-mail/features/mail";
 import { useDebouncedInput } from "@rodge-mail/std/use-debounced-input";
 
-const SEARCH_DEBOUNCE_MS = 350;
+const SEARCH_DEBOUNCE_MS = 600;
 
 export type MailAccountFilter = "all" | Id<"mailAccounts">;
 
@@ -216,13 +216,14 @@ function useInternalStore({
     setBulkSelectionActive,
     setInitialSelection: (nextSelection: ThreadSelection) =>
       setSelection((current) => current ?? nextSelection),
+    setMailboxSelection: (nextSelection: ThreadSelection) =>
+      setSelection(nextSelection),
     setSearchQuery: (query: string) => {
       if (query.trim().length === 0) {
         setSearchQueryImmediately(query);
       } else {
         setSearchQueryState(query);
       }
-      resetSelection();
       setBulkSelectedThreadIds(new Set());
       setViewSessionId((current) => current + 1);
     },

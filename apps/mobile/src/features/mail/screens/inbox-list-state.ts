@@ -1,17 +1,47 @@
+export const MAIL_SEARCH_DEBOUNCE_MS = 600;
+
 export function getVisibleInboxThreads<T extends { isRead: boolean }>({
   inboxThreads,
   isSearching,
+  searchIsPending = false,
   searchThreads,
+  settledSearchThreads,
   showUnreadOnly,
 }: {
   inboxThreads: T[];
   isSearching: boolean;
+  searchIsPending?: boolean;
   searchThreads: T[];
+  settledSearchThreads?: T[];
   showUnreadOnly: boolean;
 }) {
-  const threads = isSearching ? searchThreads : inboxThreads;
+  const threads = resolveVisibleSearchThreads({
+    inboxThreads,
+    isSearching,
+    searchIsPending,
+    searchThreads,
+    settledSearchThreads,
+  });
   if (!showUnreadOnly) return threads;
   return threads.filter((thread) => !thread.isRead);
+}
+
+function resolveVisibleSearchThreads<T>({
+  inboxThreads,
+  isSearching,
+  searchIsPending,
+  searchThreads,
+  settledSearchThreads,
+}: {
+  inboxThreads: T[];
+  isSearching: boolean;
+  searchIsPending: boolean;
+  searchThreads: T[];
+  settledSearchThreads: T[] | undefined;
+}) {
+  if (!isSearching) return inboxThreads;
+  if (!searchIsPending) return searchThreads;
+  return settledSearchThreads ?? inboxThreads;
 }
 
 export function getEmptyIsLoading({

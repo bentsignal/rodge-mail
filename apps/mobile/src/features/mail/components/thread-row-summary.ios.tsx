@@ -12,6 +12,7 @@ import {
 
 import type { MailThread } from "@rodge-mail/features/mail";
 
+import type { MobileMailbox } from "../store";
 import { formatMessageTime } from "../lib/mail-format";
 import { getSenderInitials, isThreadUnread } from "./thread-row-presentation";
 
@@ -36,11 +37,10 @@ export function NativeThreadSummary({
   thread,
 }: {
   colors: NativeThreadRowColors;
-  mailbox: "archive" | "inbox";
+  mailbox: MobileMailbox;
   modifiers?: ViewModifier[];
   thread: MailThread;
 }) {
-  const isUnread = isThreadUnread(thread);
   return (
     <HStack
       alignment="center"
@@ -60,7 +60,7 @@ export function NativeThreadSummary({
         <HStack spacing={7} modifiers={[frame({ maxWidth: Infinity })]}>
           <Text
             modifiers={[
-              font({ size: 15, weight: isUnread ? "bold" : "medium" }),
+              font({ size: 15, weight: "medium" }),
               foregroundStyle(colors.foreground),
               lineLimit(1),
             ]}
@@ -74,7 +74,7 @@ export function NativeThreadSummary({
           />
           <Text
             modifiers={[
-              font({ size: 12, weight: isUnread ? "medium" : "regular" }),
+              font({ size: 12, weight: "regular" }),
               foregroundStyle(colors.mutedForeground),
               lineLimit(1),
             ]}
@@ -84,7 +84,7 @@ export function NativeThreadSummary({
         </HStack>
         <Text
           modifiers={[
-            font({ size: 14, weight: isUnread ? "semibold" : "regular" }),
+            font({ size: 14, weight: "regular" }),
             foregroundStyle(colors.foreground),
             lineLimit(1),
           ]}
@@ -145,13 +145,8 @@ function AvatarIndicator({
   colors: NativeThreadRowColors;
   isUnread: boolean;
 }) {
-  return (
-    <Image
-      color={isUnread ? colors.brass : "transparent"}
-      size={8}
-      systemName="circle.fill"
-    />
-  );
+  if (!isUnread) return null;
+  return <Image color={colors.brass} size={8} systemName="circle.fill" />;
 }
 
 function PinIndicator({

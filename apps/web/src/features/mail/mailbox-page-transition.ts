@@ -88,14 +88,8 @@ export function getMailboxViewScopeKey(
   return `${accountId ?? "all"}:${unreadOnly ? "unread" : "all"}`;
 }
 
-export function getMailboxTransitionPending(
-  pageStatus: string,
-  isSearching: boolean,
-  semanticIsLoading: boolean,
-) {
-  return (
-    pageStatus === "LoadingFirstPage" || (isSearching && semanticIsLoading)
-  );
+export function getMailboxTransitionPending(pageStatus: string) {
+  return pageStatus === "LoadingFirstPage";
 }
 
 function getMailboxResultsFingerprint(results: InboxMessage[]) {

@@ -8,6 +8,7 @@ import {
   MailOpen,
   Pin,
   Reply,
+  ShieldCheck,
   Trash2,
 } from "lucide-react";
 
@@ -19,7 +20,8 @@ import type { ThreadMessageDetail } from "../types";
 interface ReaderToolbarProps {
   archiveThread: (message: ThreadMessageDetail) => Promise<void>;
   closeMobileReader: () => void;
-  mailMode: "archive" | "inbox";
+  mailMode: "archive" | "inbox" | "spam";
+  markNotSpam: (message: ThreadMessageDetail) => Promise<void>;
   permanentlyDeleteArchivedThread: (
     message: ThreadMessageDetail,
   ) => Promise<void>;
@@ -75,12 +77,24 @@ function getDeleteMessage(
 function ReaderModeActions({
   archiveThread,
   mailMode,
+  markNotSpam,
   requestDelete,
   restoreArchivedThread,
   selectedMessage,
   togglePinned,
   toggleRead,
 }: ReaderToolbarProps & { requestDelete: () => void }) {
+  if (mailMode === "spam") {
+    return (
+      <ReaderIconButton
+        icon={ShieldCheck}
+        label="Not spam"
+        onClick={
+          selectedMessage ? () => void markNotSpam(selectedMessage) : undefined
+        }
+      />
+    );
+  }
   if (mailMode === "archive") {
     return (
       <>

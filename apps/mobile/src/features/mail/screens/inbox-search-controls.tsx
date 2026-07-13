@@ -1,7 +1,9 @@
 import { Stack } from "expo-router";
 
+import type { MobileMailbox } from "../store";
 import { useColor } from "~/hooks/use-color";
 import { nativeSearchBarRef } from "../native-search-controller";
+import { getMailboxSearchPlaceholder } from "./mailbox-controls";
 
 export function InboxSearchControls({
   mailbox,
@@ -9,7 +11,7 @@ export function InboxSearchControls({
   onSearchClose,
   searchMode,
 }: {
-  mailbox: "archive" | "inbox";
+  mailbox: MobileMailbox;
   onChange: (value: string) => void;
   onSearchClose: () => void;
   searchMode: boolean;
@@ -17,7 +19,7 @@ export function InboxSearchControls({
   if (!searchMode) return <Stack.Screen options={{ headerShown: false }} />;
   return (
     <FocusedSearchBar
-      placeholder={mailbox === "archive" ? "Search archive" : "Search mail"}
+      placeholder={getMailboxSearchPlaceholder(mailbox) ?? "Search mail"}
       onSearchChange={onChange}
       onSearchClose={onSearchClose}
     />

@@ -1,9 +1,13 @@
 import type { FunctionReturnType } from "convex/server";
-import { useEffect, useState } from "react";
+// eslint-disable-next-line no-restricted-imports -- Stable merged-result identity prevents the external query snapshot effect from retriggering unchanged rows.
+import { useEffect, useMemo, useState } from "react";
 import { useAction, useQuery } from "convex/react";
 
 import { api } from "@rodge-mail/convex/api";
-import { mergeSearchResults } from "@rodge-mail/features/mail";
+import {
+  getStrongSemanticMessageIds,
+  mergeSearchResults,
+} from "@rodge-mail/features/mail";
 
 type InboxItem = FunctionReturnType<
   typeof api.mail.queries.listInbox
@@ -32,7 +36,7 @@ export function useSemanticMailSearch({
       .then((matches) => {
         if (!active) return;
         setResult({
-          ids: matches.map((match) => match.messageId),
+          ids: getStrongSemanticMessageIds(matches),
           term: searchTerm,
         });
       })
@@ -49,15 +53,20 @@ export function useSemanticMailSearch({
     api.mail.queries.getMessagesByIds,
     ids.length > 0 ? { messageIds: ids } : "skip",
   );
+  const results = useMemo(
+    () =>
+      mergeSearchResults(
+        lexicalResults,
+        semanticResults ?? [],
+        (message) => message._id,
+      ),
+    [lexicalResults, semanticResults],
+  );
   return {
     isLoading:
       searchTerm.length >= 2 &&
       (result.term !== searchTerm ||
         (ids.length > 0 && semanticResults === undefined)),
-    results: mergeSearchResults(
-      lexicalResults,
-      semanticResults ?? [],
-      (message) => message._id,
-    ),
+    results,
   };
 }

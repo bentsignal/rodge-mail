@@ -1,34 +1,41 @@
 import type { LegendListRenderItemProps } from "@legendapp/list/react-native";
+import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
 import { usePaginatedQuery, useQuery } from "convex/react";
 
 import type { MailAccountFilter, MailThread } from "@rodge-mail/features/mail";
 import { api } from "@rodge-mail/convex/api";
 
+import { useDebouncedValue } from "~/hooks/use-debounced-value";
 import { ThreadRow } from "../components/thread-row";
 import { toConvexId } from "../lib/convex-id";
 import { toMailThreads } from "../lib/convex-mail";
 import { useMailStore } from "../store";
+import { MAIL_SEARCH_DEBOUNCE_MS } from "./inbox-list-state";
 import { filterMailboxThreads } from "./mailbox-controls";
 import { MailboxThreadList } from "./mailbox-thread-list";
 import { useArchiveActions } from "./use-archive-actions";
 
 const pageSize = 30;
 
-export function ArchiveMailbox({
-  primary,
-  searchTerm,
-  temporarySearch,
-  onAccountChange,
-}: {
+interface ArchiveMailboxProps {
   onAccountChange: (value: MailAccountFilter) => void;
+  onSpamSelect: () => void;
   primary: string;
   searchTerm: string;
   temporarySearch?: {
     onChange: (value: string) => void;
     value: string;
   };
-}) {
+}
+
+export function ArchiveMailbox({
+  primary,
+  searchTerm,
+  temporarySearch,
+  onAccountChange,
+  onSpamSelect,
+}: ArchiveMailboxProps) {
   const router = useRouter();
   const accounts = useMailStore((store) => store.accounts);
   const accountFilter = useMailStore((store) => store.accountFilter);
@@ -40,14 +47,29 @@ export function ArchiveMailbox({
     { initialNumItems: pageSize },
   );
   const normalizedSearchTerm = searchTerm.trim();
+  const delayedSearchTerm = useDebouncedValue(
+    normalizedSearchTerm,
+    MAIL_SEARCH_DEBOUNCE_MS,
+  );
+  const activeSearchTerm = normalizedSearchTerm ? delayedSearchTerm : "";
   const searchResults = useQuery(
     api.mail.archiveQueries.searchArchive,
-    normalizedSearchTerm
-      ? { accountId, searchTerm: normalizedSearchTerm }
-      : "skip",
+    activeSearchTerm ? { accountId, searchTerm: activeSearchTerm } : "skip",
   );
-  const isSearching = normalizedSearchTerm.length > 0;
-  const sourceRows = isSearching ? (searchResults ?? []) : archive.results;
+  const isSearching = activeSearchTerm.length > 0;
+  const [settledSearchResults, setSettledSearchResults] =
+    useState<typeof searchResults>();
+
+  // eslint-disable-next-line no-restricted-syntax -- Preserve the settled archive search while the next subscription loads.
+  useEffect(() => {
+    if (!isSearching || searchResults === undefined) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Convex query settlement is an external subscription snapshot.
+    setSettledSearchResults(searchResults);
+  }, [isSearching, searchResults]);
+
+  const sourceRows = isSearching
+    ? (searchResults ?? settledSearchResults ?? archive.results)
+    : archive.results;
   const threads = filterMailboxThreads(
     toMailThreads(sourceRows),
     actions.filter,
@@ -101,6 +123,7 @@ export function ArchiveMailbox({
       onArchiveSelect={() => undefined}
       onEndReached={loadMore}
       onFilterChange={actions.changeFilter}
+      onSpamSelect={onSpamSelect}
       onToggleSelection={actions.toggleSelectionMode}
     />
   );

@@ -1,29 +1,30 @@
 import type { LucideIcon } from "lucide-react";
 import { useRouterState } from "@tanstack/react-router";
 import {
-  AlertCircle,
   Archive,
   BriefcaseBusiness,
   Cloud,
   Inbox,
   Mail,
   PenLine,
-  RefreshCw,
+  ShieldAlert,
 } from "lucide-react";
 
 import { cn } from "@rodge-mail/std/cn";
 
+import type { MailAccountFilter } from "../store";
 import type { MailAccountView } from "../types";
 import { QuickLink } from "~/components/quick-link";
 import { PasskeyManagementButton } from "~/features/auth/components/passkey-management-button";
 import { useLiveMail } from "../live-data";
 import { useMailStore } from "../store";
 import { useMailboxNavigation } from "../use-mailbox-navigation";
+import { AccountManagerButton } from "./account-manager-dialog";
 import {
   getAccountButtonLabel,
   getAccountRailMailboxTarget,
 } from "./account-rail-presentation";
-import { AddAccountButton } from "./provider-connection-buttons";
+import { SyncAllButton } from "./sync-all-button";
 
 const ACCOUNT_ICONS = {
   gmail: Mail,
@@ -34,6 +35,9 @@ const ACCOUNT_ICONS = {
 export function AccountRail() {
   const isArchive = useRouterState({
     select: (state) => state.location.pathname.startsWith("/archive"),
+  });
+  const isSpam = useRouterState({
+    select: (state) => state.location.pathname.startsWith("/spam"),
   });
   const accountFilter = useMailStore((store) => store.accountFilter);
   const clearSelection = useMailStore((store) => store.clearSelection);
@@ -60,126 +64,117 @@ export function AccountRail() {
         <span className="hidden xl:inline">New</span>
       </button>
 
-      <nav
-        aria-label="Mail accounts"
-        className="mail-scrollbar mt-5 min-h-0 flex-1 space-y-1.5 overflow-x-hidden overflow-y-auto"
-      >
-        <AccountButton
-          active={!isArchive && accountFilter === "all"}
-          count={unreadCounts.all}
-          icon={Inbox}
-          label="All Inboxes"
-          onClick={() => selectMailbox("all")}
-        />
-        <QuickLink
-          aria-label="Archive"
-          aria-current={isArchive ? "page" : undefined}
-          className={cn(
-            "group relative flex h-11 w-full items-center justify-center gap-3 rounded-lg px-3 text-sm transition-colors xl:justify-start",
-            isArchive
-              ? "border border-white/10 bg-white/[0.09] text-[var(--mail-chassis-foreground)] shadow-[var(--warm-shadow-inset)] after:absolute after:inset-y-2 after:left-0 after:w-0.5 after:rounded-r after:bg-[var(--mail-brass)]"
-              : "border border-transparent text-[var(--mail-chassis-foreground)]/72 hover:border-white/10 hover:bg-white/[0.07] hover:text-[var(--mail-chassis-foreground)]",
-          )}
-          onClick={clearSelection}
-          to="/archive"
-        >
-          <Archive className="size-[18px]" strokeWidth={1.7} />
-          <span className="hidden truncate xl:block">Archive</span>
-        </QuickLink>
-        <div className="mx-3 mt-4 mb-3 border-t border-white/10" />
-        <p className="mb-1 hidden px-3 font-mono text-[9px] tracking-[0.14em] text-[var(--mail-chassis-foreground)]/48 uppercase xl:block">
-          Accounts
-        </p>
-        {accounts.map((account) => {
-          const Icon = ACCOUNT_ICONS[account.provider];
-          return (
-            <AccountButton
-              active={!isArchive && accountFilter === account._id}
-              accent={account.accent}
-              count={unreadCounts[account._id]}
-              icon={Icon}
-              key={account._id}
-              label={account.label}
-              accessibleLabel={`${account.label}, ${getProviderLabel(account.provider)}, ${account.address}`}
-              onClick={() => selectMailbox(account._id)}
-            />
-          );
-        })}
-        <AccountLoadingState isLoading={isLoadingAccounts} />
-        <AddAccountButton accounts={accounts} />
-        <SyncAllButton
-          accounts={accounts}
-          isSyncing={isSyncingAccounts}
-          onSync={syncAllAccounts}
-        />
-      </nav>
+      <AccountRailNavigation
+        accountFilter={accountFilter}
+        accounts={accounts}
+        isArchive={isArchive}
+        isLoadingAccounts={isLoadingAccounts}
+        isSpam={isSpam}
+        selectMailbox={selectMailbox}
+        unreadCounts={unreadCounts}
+        onClearSelection={clearSelection}
+      />
 
-      <div className="mt-auto space-y-1.5">
-        <div className="mx-3 mb-3 border-t border-white/10" />
-        <PasskeyManagementButton />
+      <div className="mt-3 shrink-0 border-t border-white/10 pt-3">
+        <div className="grid grid-cols-1 gap-1 rounded-xl border border-white/[0.08] bg-black/10 p-1 xl:grid-cols-2">
+          <SyncAllButton
+            accounts={accounts}
+            isSyncing={isSyncingAccounts}
+            onSync={syncAllAccounts}
+          />
+          <PasskeyManagementButton compact />
+        </div>
       </div>
     </aside>
   );
 }
 
-function SyncAllButton({
+function AccountRailNavigation({
+  accountFilter,
   accounts,
-  isSyncing,
-  onSync,
+  isArchive,
+  isLoadingAccounts,
+  isSpam,
+  onClearSelection,
+  selectMailbox,
+  unreadCounts,
 }: {
+  accountFilter: MailAccountFilter;
   accounts: MailAccountView[];
-  isSyncing: boolean;
-  onSync: () => Promise<void>;
+  isArchive: boolean;
+  isLoadingAccounts: boolean;
+  isSpam: boolean;
+  onClearSelection: () => void;
+  selectMailbox: (accountId: MailAccountFilter) => void;
+  unreadCounts: Record<string, number>;
 }) {
-  const failedAccounts = accounts.filter(
-    (account) => account.status === "error" || account.lastSyncError,
-  );
-  const state = getSyncButtonState(isSyncing, failedAccounts.length);
-  const Icon = state === "failed" ? AlertCircle : RefreshCw;
-  const label = getSyncButtonLabel(state, failedAccounts.length);
-
   return (
-    <button
-      aria-label={label}
-      className={cn(
-        "group flex h-10 w-full items-center justify-center gap-3 rounded-xl px-3 text-xs transition-colors xl:justify-start",
-        state === "failed"
-          ? "text-[#ff9a7f] hover:bg-white/[0.08]"
-          : "text-[var(--mail-chassis-foreground)]/65 hover:bg-white/[0.08] hover:text-[var(--mail-chassis-foreground)]",
-      )}
-      disabled={accounts.length === 0 || isSyncing}
-      onClick={() => void onSync()}
-      title={failedAccounts[0]?.lastSyncError ?? label}
-      type="button"
+    <nav
+      aria-label="Mail accounts"
+      className="mail-scrollbar mt-5 min-h-0 flex-1 space-y-1.5 overflow-x-hidden overflow-y-auto"
     >
-      <Icon className={cn("size-[17px]", isSyncing && "animate-spin")} />
-      <span className="hidden truncate xl:block">
-        <SyncButtonText state={state} />
-      </span>
-    </button>
+      <AccountButton
+        active={!isArchive && !isSpam && accountFilter === "all"}
+        count={unreadCounts.all}
+        icon={Inbox}
+        label="All Inboxes"
+        onClick={() => selectMailbox("all")}
+      />
+      <QuickLink
+        aria-label="Archive"
+        aria-current={isArchive ? "page" : undefined}
+        className={cn(
+          "group relative flex h-11 w-full items-center justify-center gap-3 rounded-lg px-3 text-sm transition-colors xl:justify-start",
+          isArchive
+            ? "border border-white/10 bg-white/[0.09] text-[var(--mail-chassis-foreground)] shadow-[var(--warm-shadow-inset)] after:absolute after:inset-y-2 after:left-0 after:w-0.5 after:rounded-r after:bg-[var(--mail-brass)]"
+            : "border border-transparent text-[var(--mail-chassis-foreground)]/72 hover:border-white/10 hover:bg-white/[0.07] hover:text-[var(--mail-chassis-foreground)]",
+        )}
+        onClick={onClearSelection}
+        to="/archive"
+      >
+        <Archive className="size-[18px]" strokeWidth={1.7} />
+        <span className="hidden truncate xl:block">Archive</span>
+      </QuickLink>
+      <QuickLink
+        aria-label="Spam"
+        aria-current={isSpam ? "page" : undefined}
+        className={cn(
+          "group relative flex h-11 w-full items-center justify-center gap-3 rounded-lg px-3 text-sm transition-colors xl:justify-start",
+          isSpam
+            ? "border border-white/10 bg-white/[0.09] text-[var(--mail-chassis-foreground)] shadow-[var(--warm-shadow-inset)] after:absolute after:inset-y-2 after:left-0 after:w-0.5 after:rounded-r after:bg-[var(--mail-brass)]"
+            : "border border-transparent text-[var(--mail-chassis-foreground)]/72 hover:border-white/10 hover:bg-white/[0.07] hover:text-[var(--mail-chassis-foreground)]",
+        )}
+        onClick={onClearSelection}
+        to="/spam"
+      >
+        <ShieldAlert className="size-[18px]" strokeWidth={1.7} />
+        <span className="hidden truncate xl:block">Spam</span>
+      </QuickLink>
+      <div className="mx-3 mt-4 mb-2.5 border-t border-white/10" />
+      <div className="mb-1 flex items-center justify-center px-1 xl:justify-between xl:pl-3">
+        <p className="hidden font-mono text-[9px] tracking-[0.14em] text-[var(--mail-chassis-foreground)]/48 uppercase xl:block">
+          Accounts
+        </p>
+        <AccountManagerButton accounts={accounts} />
+      </div>
+      {accounts.map((account) => {
+        const Icon = ACCOUNT_ICONS[account.provider];
+        return (
+          <AccountButton
+            active={!isArchive && !isSpam && accountFilter === account._id}
+            accent={account.accent}
+            count={unreadCounts[account._id]}
+            icon={Icon}
+            key={account._id}
+            label={account.label}
+            accessibleLabel={`${account.label}, ${getProviderLabel(account.provider)}, ${account.address}`}
+            onClick={() => selectMailbox(account._id)}
+          />
+        );
+      })}
+      <AccountLoadingState isLoading={isLoadingAccounts} />
+    </nav>
   );
-}
-
-type SyncButtonState = "failed" | "idle" | "syncing";
-
-function getSyncButtonState(isSyncing: boolean, failedCount: number) {
-  if (isSyncing) return "syncing";
-  if (failedCount > 0) return "failed";
-  return "idle";
-}
-
-function getSyncButtonLabel(state: SyncButtonState, failedCount: number) {
-  if (state === "syncing") return "Syncing accounts";
-  if (state === "failed") {
-    return `Retry sync for ${failedCount} account${failedCount === 1 ? "" : "s"}`;
-  }
-  return "Sync all accounts";
-}
-
-function SyncButtonText({ state }: { state: SyncButtonState }) {
-  if (state === "syncing") return <>Syncing…</>;
-  if (state === "failed") return <>Retry sync</>;
-  return <>Sync all</>;
 }
 
 function Brand() {

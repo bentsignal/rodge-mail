@@ -14,7 +14,7 @@ export interface LiveMailContextValue {
   isSeedingDemo: boolean;
   isSyncingAccounts: boolean;
   loadMore: () => void;
-  mailMode: "archive" | "inbox";
+  mailMode: "archive" | "inbox" | "spam";
   markMessageRead: (message: InboxMessage) => void;
   archiveThread: (message: Pick<InboxMessage, "threadId">) => Promise<void>;
   archiveThreads: (messages: Pick<InboxMessage, "threadId">[]) => Promise<void>;

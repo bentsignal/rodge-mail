@@ -1,24 +1,27 @@
-import { useState } from "react";
-import { useAction } from "convex/react";
-import { Download, FileText, Paperclip } from "lucide-react";
+import { useRef, useState } from "react";
+import { LoaderCircle, ShieldAlert, Sparkles } from "lucide-react";
 
 import type {
   EmailTextBlock,
   EmailTextInline,
 } from "@rodge-mail/features/mail";
-import { api } from "@rodge-mail/convex/api";
-import { normalizeAttachmentFileName } from "@rodge-mail/convex/attachments/constants";
 import { parseEmailText } from "@rodge-mail/features/mail";
-import { toast } from "@rodge-mail/ui-web/toast";
 
 import type { ThreadMessageDetail } from "../types";
-import { downloadAttachmentFile } from "../download-attachment";
 import { formatFullDate, getInitials } from "../format";
+import { ReaderAttachments } from "./reader-attachments";
 
-export function ReaderMessage({ message }: { message: ThreadMessageDetail }) {
+export type ReaderViewMode = "clean" | "original";
+
+export function ReaderMessage({
+  message,
+  viewMode,
+}: {
+  message: ThreadMessageDetail;
+  viewMode: ReaderViewMode;
+}) {
   const senderName = getAddressName(message.from);
   const recipients = [...message.to, ...message.cc];
-  const body = parseEmailText(message.content?.plainText);
 
   return (
     <section className="pt-7">
@@ -41,12 +44,112 @@ export function ReaderMessage({ message }: { message: ThreadMessageDetail }) {
         </div>
       </header>
 
+      <MessageOverview message={message} />
+
       <div className="text-foreground mt-7 space-y-5 font-serif text-[17px] leading-[1.75] tracking-[-0.008em] sm:pl-[52px] sm:text-[18px]">
-        <EmailMessageBody blocks={body} messageId={message._id} />
+        <ReaderMessageContent
+          message={message}
+          senderName={senderName}
+          viewMode={viewMode}
+        />
       </div>
 
-      <MessageAttachments attachments={message.attachments} />
+      <ReaderAttachments attachments={message.attachments} />
     </section>
+  );
+}
+
+function MessageOverview({ message }: { message: ThreadMessageDetail }) {
+  const classification = message.classification;
+  const isPreparing = isClassificationPreparing(classification?.status);
+  const summary = getOverviewSummary(classification?.summary, message.snippet);
+  const label = classification?.isSpam ? "Likely spam" : "Overview";
+  return (
+    <aside className="mail-inset mt-6 rounded-[13px] border px-4 py-3.5 sm:ml-[52px]">
+      <div className="flex items-start gap-3">
+        <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg bg-[color-mix(in_srgb,var(--mail-brass)_18%,transparent)] text-[var(--mail-brass-bright)]">
+          <OverviewIcon
+            isPreparing={isPreparing}
+            isSpam={classification?.isSpam === true}
+          />
+        </span>
+        <div className="min-w-0">
+          <p className="mail-label font-mono text-[8px] tracking-[0.16em] uppercase">
+            {label}
+          </p>
+          <p className="mt-1 text-sm leading-5.5 text-[var(--mail-ink-soft)]">
+            {summary}
+          </p>
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+function OverviewIcon({
+  isPreparing,
+  isSpam,
+}: {
+  isPreparing: boolean;
+  isSpam: boolean;
+}) {
+  if (isSpam) return <ShieldAlert className="size-3.5" />;
+  if (isPreparing) return <LoaderCircle className="size-3.5 animate-spin" />;
+  return <Sparkles className="size-3.5" />;
+}
+
+function ReaderMessageContent({
+  message,
+  senderName,
+  viewMode,
+}: {
+  message: ThreadMessageDetail;
+  senderName: string;
+  viewMode: ReaderViewMode;
+}) {
+  const html = message.content?.sanitizedHtml;
+  if (viewMode === "original" && html) {
+    return (
+      <OriginalHtml html={html} title={`Original email from ${senderName}`} />
+    );
+  }
+  const body = parseEmailText(getReaderBody(message, viewMode));
+  return (
+    <>
+      <OriginalUnavailableNotice viewMode={viewMode} />
+      <EmailMessageBody blocks={body} messageId={message._id} />
+    </>
+  );
+}
+
+function OriginalUnavailableNotice({ viewMode }: { viewMode: ReaderViewMode }) {
+  if (viewMode !== "original") return null;
+  return (
+    <p className="mail-label font-sans text-xs">
+      Original HTML is not available for this older message. Showing its
+      extracted text.
+    </p>
+  );
+}
+
+function OriginalHtml({ html, title }: { html: string; title: string }) {
+  const frameRef = useRef<HTMLIFrameElement>(null);
+  const [height, setHeight] = useState(420);
+  return (
+    <iframe
+      className="w-full rounded-xl border border-[var(--mail-seam)] bg-white shadow-[var(--mail-shadow-inset)]"
+      height={height}
+      onLoad={() => {
+        const nextHeight = frameRef.current?.contentDocument?.body.scrollHeight;
+        if (nextHeight)
+          setHeight(Math.max(320, Math.min(2_400, nextHeight + 32)));
+      }}
+      ref={frameRef}
+      referrerPolicy="no-referrer"
+      sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin"
+      srcDoc={html}
+      title={title}
+    />
   );
 }
 
@@ -138,91 +241,6 @@ function EmailInline({ token }: { token: EmailTextInline }) {
   );
 }
 
-function MessageAttachments({
-  attachments,
-}: {
-  attachments: ThreadMessageDetail["attachments"];
-}) {
-  const downloadAttachment = useAction(api.attachments.actions.download);
-  const [downloadingId, setDownloadingId] = useState<string>();
-
-  async function download(
-    attachment: ThreadMessageDetail["attachments"][number],
-  ) {
-    if (downloadingId) return;
-    setDownloadingId(attachment._id);
-    try {
-      const { url } = await downloadAttachment({
-        attachmentId: attachment._id,
-      });
-      await downloadAttachmentFile({ fileName: attachment.fileName, url });
-    } catch (error) {
-      toast.error(getDownloadError(error));
-    }
-    setDownloadingId(undefined);
-  }
-
-  if (attachments.length === 0) return null;
-
-  return (
-    <div className="mt-9 sm:pl-[52px]">
-      <p className="mail-label mb-3 flex items-center gap-2 font-mono text-[9px] tracking-[0.14em] uppercase">
-        <Paperclip className="size-3" />
-        {attachments.length} attachment
-      </p>
-      <div className="grid gap-2 sm:grid-cols-2">
-        {attachments.map((attachment) => (
-          <AttachmentButton
-            attachment={attachment}
-            disabled={downloadingId !== undefined}
-            isDownloading={downloadingId === attachment._id}
-            key={attachment._id}
-            onDownload={() => void download(attachment)}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function AttachmentButton({
-  attachment,
-  disabled,
-  isDownloading,
-  onDownload,
-}: {
-  attachment: ThreadMessageDetail["attachments"][number];
-  disabled: boolean;
-  isDownloading: boolean;
-  onDownload: () => void;
-}) {
-  const fileName =
-    normalizeAttachmentFileName(attachment.fileName) || "attachment";
-  return (
-    <button
-      aria-label={`Download ${fileName}`}
-      className="mail-raised group flex items-center gap-3 rounded-[11px] border p-3 text-left transition hover:border-[var(--mail-brass)]"
-      disabled={disabled}
-      onClick={onDownload}
-      title={`Download ${fileName}`}
-      type="button"
-    >
-      <span className="mail-inset flex size-10 shrink-0 items-center justify-center rounded-[9px] border text-[var(--mail-brass-deep)] dark:text-[var(--mail-brass-bright)]">
-        <FileText className="size-4" />
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-xs font-semibold">{fileName}</span>
-        <span className="mail-label mt-0.5 block font-mono text-[8px] tracking-[0.08em] uppercase">
-          {attachment.contentType} · {formatFileSize(attachment.size)}
-        </span>
-      </span>
-      <Download
-        className={`group-hover:text-foreground size-4 text-[var(--mail-ink-soft)] transition ${isDownloading ? "animate-bounce" : ""}`}
-      />
-    </button>
-  );
-}
-
 function formatRecipients(recipients: ThreadMessageDetail["to"]) {
   if (recipients.length === 0) return "undisclosed recipients";
   return recipients.map(getAddressName).join(", ");
@@ -234,13 +252,27 @@ function getAddressName(address: ThreadMessageDetail["from"]) {
   return address.address;
 }
 
-function getDownloadError(error: unknown) {
-  if (error instanceof Error && error.message.trim()) return error.message;
-  return "Could not download this attachment.";
+function readableBody(value: string | undefined, fallback: string) {
+  const body = value?.trim();
+  if (!body || body === "undefined" || body === "null") return fallback;
+  return body;
 }
 
-function formatFileSize(bytes: number) {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+function getReaderBody(message: ThreadMessageDetail, viewMode: ReaderViewMode) {
+  const source =
+    viewMode === "clean"
+      ? (message.classification?.cleanedMarkdown ?? message.content?.plainText)
+      : message.content?.plainText;
+  return readableBody(source, message.snippet);
+}
+
+function getOverviewSummary(value: string | undefined, fallback: string) {
+  const summary = value?.trim();
+  if (summary) return summary;
+  if (fallback.trim()) return fallback;
+  return "Preparing a clean overview…";
+}
+
+function isClassificationPreparing(status: string | undefined) {
+  return status === "pending" || status === "running";
 }

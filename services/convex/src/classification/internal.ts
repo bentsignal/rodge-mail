@@ -136,6 +136,8 @@ export const complete = internalMutation({
     confidence: v.number(),
     reason: v.string(),
     summary: v.string(),
+    cleanedMarkdown: v.string(),
+    isSpam: v.boolean(),
     signals: v.array(vClassificationSignal),
     source: vClassificationSource,
     model: v.optional(v.string()),
@@ -165,7 +167,10 @@ export const complete = internalMutation({
       confidence: args.confidence,
       reason: args.reason.slice(0, 240),
       summary: args.summary.slice(0, 280),
-      shouldEmbed: message.inInbox && isImportantMessage(args.importance),
+      cleanedMarkdown: args.cleanedMarkdown.slice(0, 24_000),
+      isSpam: args.isSpam,
+      shouldEmbed:
+        message.inInbox && !args.isSpam && isImportantMessage(args.importance),
       signals: args.signals,
       source: args.source,
       model: args.model,
@@ -178,7 +183,7 @@ export const complete = internalMutation({
 
     await reconcileEmbeddingSelection(ctx, message._id);
     await resolveNewMailNotification(ctx, {
-      important: isImportantMessage(args.importance),
+      important: !args.isSpam && isImportantMessage(args.importance),
       messageId: message._id,
       ownerId: message.ownerId,
     });

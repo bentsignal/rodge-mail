@@ -106,6 +106,7 @@ export default defineSchema(
     messageClassifications: defineTable(vMessageClassification)
       .index("by_message", ["messageId"])
       .index("by_status", ["status"])
+      .index("by_owner_spam_updated", ["ownerId", "isSpam", "updatedAt"])
       .index("by_owner_status", ["ownerId", "status"])
       .index("by_owner_status_importance", ["ownerId", "status", "importance"]),
     messageEmbeddingJobs: defineTable(vMessageEmbeddingJob)

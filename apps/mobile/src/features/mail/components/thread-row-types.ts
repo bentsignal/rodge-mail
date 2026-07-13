@@ -1,7 +1,9 @@
 import type { MailThread } from "@rodge-mail/features/mail";
 
+import type { MobileMailbox } from "../store";
+
 export interface ThreadRowProps {
-  mailbox?: "archive" | "inbox";
+  mailbox?: MobileMailbox;
   onDelete?: () => void;
   onOpen: () => void;
   onRestore?: () => void;

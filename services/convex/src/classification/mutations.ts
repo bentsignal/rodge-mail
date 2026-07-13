@@ -42,6 +42,8 @@ export const setManualOverride = authedMutation({
         0,
         280,
       ),
+      cleanedMarkdown: existing?.cleanedMarkdown,
+      isSpam: false,
       shouldEmbed: message.inInbox && isImportantMessage(args.importance),
       source: "manual" as const,
       promptVersion: "manual-v1",
@@ -86,6 +88,55 @@ export const clearManualOverride = authedMutation({
       messageId: message._id,
       promptVersion: CLASSIFICATION_PROMPT_VERSION,
       replaceManual: true,
+    });
+  },
+});
+
+export const requestCleanView = authedMutation({
+  args: { messageId: v.id("messages") },
+  handler: async (ctx, args) => {
+    const message = await ensureOwnedMessage(ctx, ctx.ownerId, args.messageId);
+    const existing = await getClassificationForMessage(ctx, message._id);
+    if (
+      existing?.cleanedMarkdown !== undefined &&
+      existing.promptVersion === CLASSIFICATION_PROMPT_VERSION
+    ) {
+      return { queued: false };
+    }
+    return await queueClassificationForMessage(ctx, {
+      ownerId: ctx.ownerId,
+      messageId: message._id,
+      promptVersion: CLASSIFICATION_PROMPT_VERSION,
+      replaceManual: false,
+    });
+  },
+});
+
+export const setSpamState = authedMutation({
+  args: { messageId: v.id("messages"), isSpam: v.boolean() },
+  handler: async (ctx, args) => {
+    const message = await ensureOwnedMessage(ctx, ctx.ownerId, args.messageId);
+    const existing = await getClassificationForMessage(ctx, message._id);
+    if (!existing) {
+      await queueClassificationForMessage(ctx, {
+        ownerId: ctx.ownerId,
+        messageId: message._id,
+        promptVersion: CLASSIFICATION_PROMPT_VERSION,
+        replaceManual: false,
+      });
+      return;
+    }
+    const important = !args.isSpam && isImportantMessage(existing.importance);
+    await ctx.db.patch(existing._id, {
+      isSpam: args.isSpam,
+      shouldEmbed: message.inInbox && important,
+      updatedAt: Date.now(),
+    });
+    await reconcileEmbeddingSelection(ctx, message._id);
+    await resolveNewMailNotification(ctx, {
+      important,
+      messageId: message._id,
+      ownerId: ctx.ownerId,
     });
   },
 });
