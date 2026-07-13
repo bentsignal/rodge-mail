@@ -3,6 +3,8 @@ import { Archive, Paperclip, Pin } from "lucide-react";
 import { cn } from "@rodge-mail/std/cn";
 import * as ContextMenu from "@rodge-mail/ui-web/context-menu";
 
+import type { MailRouteSearch } from "../mail-route-search";
+import type { MailAccountFilter } from "../store";
 import type { InboxMessage, MailAccountView } from "../types";
 import { QuickLink } from "~/components/quick-link";
 import { formatInboxDate, getInitials } from "../format";
@@ -21,6 +23,7 @@ export function ThreadRow({
     accounts,
     markMessageRead,
     archiveThread,
+    mailMode,
     selectedThreadId,
     togglePinned,
   } = useLiveMail();
@@ -46,16 +49,12 @@ export function ThreadRow({
       >
         <SelectedMarker selected={isSelected} />
         <ContextMenu.Trigger asChild>
-          <QuickLink
-            className="block w-full px-4 py-3.5 text-left"
+          <ThreadLink
+            accountFilter={accountFilter}
+            mailMode={mailMode}
+            message={message}
             onClick={() => markMessageRead(message)}
-            params={{ messageId: message._id }}
-            preload="intent"
-            search={{
-              mailbox: accountFilter === "all" ? undefined : accountFilter,
-              unread: unreadOnly ? true : undefined,
-            }}
-            to="/messages/$messageId"
+            unreadOnly={unreadOnly}
           >
             <div className="flex items-start gap-2.5">
               <SenderAvatar account={account} name={senderName} />
@@ -91,18 +90,78 @@ export function ThreadRow({
                 <ThreadMetadata message={message} />
               </div>
             </div>
-          </QuickLink>
+          </ThreadLink>
         </ContextMenu.Trigger>
-        <PinMessageButton message={message} togglePinned={togglePinned} />
-        <ThreadRowMenu
+        <InboxThreadActions
+          archiveThread={archiveThread}
+          mailMode={mailMode}
           message={message}
           pinLabel={pinLabel}
-          archiveThread={archiveThread}
           togglePinned={togglePinned}
         />
       </article>
     </ContextMenu.Container>
   );
+}
+
+function InboxThreadActions({
+  archiveThread,
+  mailMode,
+  message,
+  pinLabel,
+  togglePinned,
+}: {
+  archiveThread: (message: Pick<InboxMessage, "threadId">) => Promise<void>;
+  mailMode: "archive" | "inbox";
+  message: InboxMessage;
+  pinLabel: string;
+  togglePinned: (message: InboxMessage) => Promise<void>;
+}) {
+  if (mailMode === "archive") return null;
+  return (
+    <>
+      <PinMessageButton message={message} togglePinned={togglePinned} />
+      <ThreadRowMenu
+        message={message}
+        pinLabel={pinLabel}
+        archiveThread={archiveThread}
+        togglePinned={togglePinned}
+      />
+    </>
+  );
+}
+
+function ThreadLink({
+  accountFilter,
+  children,
+  mailMode,
+  message,
+  onClick,
+  unreadOnly,
+}: {
+  accountFilter: MailAccountFilter;
+  children: React.ReactNode;
+  mailMode: "archive" | "inbox";
+  message: InboxMessage;
+  onClick: () => void;
+  unreadOnly: boolean;
+}) {
+  const search = {
+    mailbox: accountFilter === "all" ? undefined : accountFilter,
+    unread: unreadOnly ? true : undefined,
+  } satisfies MailRouteSearch;
+  const props = {
+    children,
+    className: "block w-full px-4 py-3.5 text-left",
+    onClick,
+    params: { messageId: message._id },
+    preload: "intent" as const,
+    search,
+  };
+  if (mailMode === "archive") {
+    return <QuickLink {...props} to="/archive/messages/$messageId" />;
+  }
+  return <QuickLink {...props} to="/messages/$messageId" />;
 }
 
 function ThreadRowMenu({

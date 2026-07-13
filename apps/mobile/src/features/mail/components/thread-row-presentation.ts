@@ -32,6 +32,10 @@ export function getReadAction(thread: Pick<MailThread, "isRead">) {
     : { label: "Mark Read", systemImage: "envelope.open" as const };
 }
 
+export function isThreadUnread(thread: Pick<MailThread, "isRead">) {
+  return !thread.isRead;
+}
+
 export function getThreadRowNativeKey(
   thread: Pick<MailThread, "id" | "isPinned" | "isRead">,
 ) {

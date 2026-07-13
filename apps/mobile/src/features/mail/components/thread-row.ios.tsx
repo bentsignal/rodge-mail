@@ -43,6 +43,7 @@ import {
   getSenderInitials,
   getThreadRowAccessibilityLabel,
   getThreadRowNativeKey,
+  isThreadUnread,
 } from "./thread-row-presentation";
 
 const rowHeight = 100;
@@ -88,7 +89,7 @@ export function ThreadRow({
           modifiers={[
             listRowInsets({ bottom: 0, leading: 0, top: 0, trailing: 0 }),
             listRowSeparator("hidden"),
-            listRowBackground(thread.isRead ? colors.paper : colors.paperDeep),
+            listRowBackground(colors.paper),
           ]}
         >
           <Button
@@ -138,8 +139,9 @@ function ThreadSummary({
   colors: ThreadRowColors;
   thread: MailThread;
 }) {
-  const senderWeight = thread.isRead ? "medium" : "bold";
-  const subjectWeight = thread.isRead ? "regular" : "semibold";
+  const isUnread = isThreadUnread(thread);
+  const senderWeight = isUnread ? "bold" : "medium";
+  const subjectWeight = isUnread ? "semibold" : "regular";
 
   return (
     <HStack
@@ -150,6 +152,7 @@ function ThreadSummary({
         padding({ leading: 12, trailing: 12 }),
       ]}
     >
+      <UnreadIndicator colors={colors} isUnread={isUnread} />
       <SenderAvatar colors={colors} thread={thread} />
       <VStack
         alignment="leading"
@@ -215,7 +218,7 @@ function SenderAvatar({
         font({ size: 13, weight: "semibold" }),
         foregroundStyle(colors.foreground),
         background(
-          thread.isRead ? colors.paperDeep : colors.brassSoft,
+          colors.paperDeep,
           shapes.roundedRectangle({
             cornerRadius: 11,
             roundedCornerStyle: "continuous",
@@ -225,6 +228,22 @@ function SenderAvatar({
     >
       {getSenderInitials(thread.sender.name)}
     </Text>
+  );
+}
+
+function UnreadIndicator({
+  colors,
+  isUnread,
+}: {
+  colors: ThreadRowColors;
+  isUnread: boolean;
+}) {
+  return (
+    <Image
+      color={isUnread ? colors.brass : "transparent"}
+      size={8}
+      systemName="circle.fill"
+    />
   );
 }
 
@@ -242,7 +261,6 @@ function PinIndicator({
 function useThreadRowColors() {
   return {
     brass: useColor("brass"),
-    brassSoft: useColor("brass-soft"),
     foreground: useColor("foreground"),
     forest: useColor("forest-raised"),
     muted: useColor("muted"),

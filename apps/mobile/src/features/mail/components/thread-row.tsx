@@ -10,6 +10,7 @@ import { useMailStore } from "../store";
 import {
   getSenderInitials,
   getThreadRowAccessibilityLabel,
+  isThreadUnread,
 } from "./thread-row-presentation";
 
 export function ThreadRow({
@@ -102,12 +103,14 @@ function ThreadSummary({
   shadowColor: string;
   thread: MailThread;
 }) {
+  const isUnread = isThreadUnread(thread);
+
   return (
     <Pressable
       accessibilityHint="Opens this email thread"
       accessibilityLabel={getThreadRowAccessibilityLabel(thread)}
       accessibilityRole="button"
-      className={`${thread.isRead ? "bg-paper" : "bg-paper-deep"} border-paper-border min-h-[94px] flex-row gap-3 rounded-xl border px-4 py-3`}
+      className="bg-paper border-paper-border min-h-[94px] flex-row gap-3 rounded-xl border px-4 py-3"
       onPress={onOpen}
       style={({ pressed }) => ({
         elevation: pressed ? 0 : 1,
@@ -118,7 +121,7 @@ function ThreadSummary({
         transform: [{ translateY: pressed ? 1 : 0 }],
       })}
     >
-      <UnreadRail isRead={thread.isRead} />
+      <UnreadIndicator isUnread={isUnread} />
       <View className="bg-paper-deep border-paper-border size-10 items-center justify-center rounded-lg border">
         <Text className="text-foreground text-xs font-semibold">
           {getSenderInitials(thread.sender.name)}
@@ -162,11 +165,11 @@ function ThreadSummary({
   );
 }
 
-function UnreadRail({ isRead }: { isRead: boolean }) {
+function UnreadIndicator({ isUnread }: { isUnread: boolean }) {
   return (
     <View
       accessibilityElementsHidden
-      className={`h-16 w-1 rounded-full ${isRead ? "bg-transparent" : "bg-brass"}`}
+      className={`mt-1.5 size-2 rounded-full ${isUnread ? "bg-brass" : "bg-transparent"}`}
       importantForAccessibility="no-hide-descendants"
     />
   );

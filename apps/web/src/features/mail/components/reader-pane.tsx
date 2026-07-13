@@ -1,13 +1,5 @@
-import type { LucideIcon } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
-import {
-  Archive,
-  ArrowLeft,
-  CheckCheck,
-  MailOpen,
-  Pin,
-  Reply,
-} from "lucide-react";
+import { MailOpen, Reply } from "lucide-react";
 
 import { cn } from "@rodge-mail/std/cn";
 
@@ -15,6 +7,7 @@ import type { MailThreadDetail, ThreadMessageDetail } from "../types";
 import { useLiveMail } from "../live-data";
 import { useMailStore } from "../store";
 import { ReaderMessage } from "./reader-message";
+import { ReaderToolbar } from "./reader-toolbar";
 
 export function ReaderPane() {
   const mobileReaderIsOpen = useMailStore((store) => store.mobileReaderIsOpen);
@@ -53,7 +46,10 @@ function ReaderContent() {
   const navigate = useNavigate();
   const {
     archiveThread,
+    mailMode,
+    permanentlyDeleteArchivedThread,
     replyToSelectedThread,
+    restoreArchivedThread,
     selectedMessageId,
     selectedThread,
     togglePinned,
@@ -68,10 +64,16 @@ function ReaderContent() {
       <ReaderToolbar
         closeMobileReader={() => {
           closeMobileReader();
-          void navigate({ to: "/", search: (previous) => previous });
+          void navigate({
+            to: mailMode === "archive" ? "/archive" : "/",
+            search: (previous) => previous,
+          });
         }}
         archiveThread={archiveThread}
+        mailMode={mailMode}
+        permanentlyDeleteArchivedThread={permanentlyDeleteArchivedThread}
         replyToSelectedThread={replyToSelectedThread}
+        restoreArchivedThread={restoreArchivedThread}
         selectedMessage={selectedMessage}
         togglePinned={togglePinned}
         toggleRead={toggleRead}
@@ -82,99 +84,6 @@ function ReaderContent() {
         selectedThread={selectedThread}
       />
     </>
-  );
-}
-
-function ReaderToolbar({
-  closeMobileReader,
-  archiveThread,
-  replyToSelectedThread,
-  selectedMessage,
-  togglePinned,
-  toggleRead,
-}: {
-  closeMobileReader: () => void;
-  archiveThread: (message: ThreadMessageDetail) => Promise<void>;
-  replyToSelectedThread: () => void;
-  selectedMessage: ThreadMessageDetail | undefined;
-  togglePinned: (message: ThreadMessageDetail) => Promise<void>;
-  toggleRead: (message: ThreadMessageDetail) => Promise<void>;
-}) {
-  return (
-    <header className="mail-reader-toolbar mail-paper-soft relative z-[3] flex h-16 shrink-0 items-center gap-1 border-b border-[var(--mail-seam)] px-4 sm:px-6">
-      <ReaderIconButton
-        className="lg:hidden"
-        icon={ArrowLeft}
-        label="Back to inbox"
-        onClick={closeMobileReader}
-      />
-      <div className="mx-1 h-5 w-px bg-[var(--mail-seam)] lg:hidden" />
-      <PinReaderAction message={selectedMessage} togglePinned={togglePinned} />
-      <ReadReaderAction message={selectedMessage} toggleRead={toggleRead} />
-      <ArchiveReaderAction
-        archiveThread={archiveThread}
-        message={selectedMessage}
-      />
-      <button
-        className="mail-brass-button ml-auto flex h-11 items-center gap-2 rounded-lg px-4 text-xs font-bold transition-colors"
-        onClick={replyToSelectedThread}
-        type="button"
-      >
-        <Reply className="size-3.5" />
-        Reply
-      </button>
-    </header>
-  );
-}
-
-function ArchiveReaderAction({
-  archiveThread,
-  message,
-}: {
-  archiveThread: (message: ThreadMessageDetail) => Promise<void>;
-  message: ThreadMessageDetail | undefined;
-}) {
-  return (
-    <ReaderIconButton
-      icon={Archive}
-      label="Archive (provider copy stays unchanged)"
-      onClick={message ? () => void archiveThread(message) : undefined}
-    />
-  );
-}
-
-function PinReaderAction({
-  message,
-  togglePinned,
-}: {
-  message: ThreadMessageDetail | undefined;
-  togglePinned: (message: ThreadMessageDetail) => Promise<void>;
-}) {
-  if (!message) return <ReaderIconButton icon={Pin} label="Pin message" />;
-  return (
-    <ReaderIconButton
-      active={message.isPinned}
-      icon={Pin}
-      label={message.isPinned ? "Unpin message" : "Pin message"}
-      onClick={() => void togglePinned(message)}
-    />
-  );
-}
-
-function ReadReaderAction({
-  message,
-  toggleRead,
-}: {
-  message: ThreadMessageDetail | undefined;
-  toggleRead: (message: ThreadMessageDetail) => Promise<void>;
-}) {
-  if (!message) return <ReaderIconButton icon={CheckCheck} label="Mark read" />;
-  return (
-    <ReaderIconButton
-      icon={message.isRead ? MailOpen : CheckCheck}
-      label={message.isRead ? "Mark unread" : "Mark read"}
-      onClick={() => void toggleRead(message)}
-    />
   );
 }
 
@@ -209,37 +118,6 @@ function ReaderArticle({
         </button>
       </article>
     </div>
-  );
-}
-
-function ReaderIconButton({
-  active,
-  className,
-  icon: Icon,
-  label,
-  onClick,
-}: {
-  active?: boolean;
-  className?: string;
-  icon: LucideIcon;
-  label: string;
-  onClick?: () => void;
-}) {
-  return (
-    <button
-      aria-label={label}
-      className={cn(
-        "mail-icon-button flex size-11 items-center justify-center rounded-lg transition disabled:cursor-not-allowed disabled:opacity-40",
-        active && "text-[var(--mail-highlight)]",
-        className,
-      )}
-      disabled={!onClick}
-      onClick={onClick}
-      title={label}
-      type="button"
-    >
-      <Icon className={cn("size-4", active && "fill-current")} />
-    </button>
   );
 }
 

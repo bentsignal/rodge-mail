@@ -19,6 +19,7 @@ import { Route as AuthCallbackRouteImport } from './app/auth.callback'
 import { Route as AuthedArchiveRouteImport } from './app/_authed.archive'
 import { Route as ApiAuthSplatRouteImport } from './app/api.auth.$'
 import { Route as AuthedMessagesMessageIdRouteImport } from './app/_authed.messages.$messageId'
+import { Route as AuthedArchiveMessagesMessageIdRouteImport } from './app/_authed.archive.messages.$messageId'
 
 const ProviderCompleteRoute = ProviderCompleteRouteImport.update({
   id: '/provider-complete',
@@ -69,28 +70,36 @@ const AuthedMessagesMessageIdRoute = AuthedMessagesMessageIdRouteImport.update({
   path: '/messages/$messageId',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedArchiveMessagesMessageIdRoute =
+  AuthedArchiveMessagesMessageIdRouteImport.update({
+    id: '/messages/$messageId',
+    path: '/messages/$messageId',
+    getParentRoute: () => AuthedArchiveRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthedIndexRoute
   '/desktop-auth': typeof DesktopAuthRoute
   '/login': typeof LoginRoute
   '/provider-complete': typeof ProviderCompleteRoute
-  '/archive': typeof AuthedArchiveRoute
+  '/archive': typeof AuthedArchiveRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/desktop-complete': typeof AuthDesktopCompleteRoute
   '/messages/$messageId': typeof AuthedMessagesMessageIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/archive/messages/$messageId': typeof AuthedArchiveMessagesMessageIdRoute
 }
 export interface FileRoutesByTo {
   '/desktop-auth': typeof DesktopAuthRoute
   '/login': typeof LoginRoute
   '/provider-complete': typeof ProviderCompleteRoute
-  '/archive': typeof AuthedArchiveRoute
+  '/archive': typeof AuthedArchiveRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/desktop-complete': typeof AuthDesktopCompleteRoute
   '/': typeof AuthedIndexRoute
   '/messages/$messageId': typeof AuthedMessagesMessageIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/archive/messages/$messageId': typeof AuthedArchiveMessagesMessageIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -98,12 +107,13 @@ export interface FileRoutesById {
   '/desktop-auth': typeof DesktopAuthRoute
   '/login': typeof LoginRoute
   '/provider-complete': typeof ProviderCompleteRoute
-  '/_authed/archive': typeof AuthedArchiveRoute
+  '/_authed/archive': typeof AuthedArchiveRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/desktop-complete': typeof AuthDesktopCompleteRoute
   '/_authed/': typeof AuthedIndexRoute
   '/_authed/messages/$messageId': typeof AuthedMessagesMessageIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/_authed/archive/messages/$messageId': typeof AuthedArchiveMessagesMessageIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -117,6 +127,7 @@ export interface FileRouteTypes {
     | '/auth/desktop-complete'
     | '/messages/$messageId'
     | '/api/auth/$'
+    | '/archive/messages/$messageId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/desktop-auth'
@@ -128,6 +139,7 @@ export interface FileRouteTypes {
     | '/'
     | '/messages/$messageId'
     | '/api/auth/$'
+    | '/archive/messages/$messageId'
   id:
     | '__root__'
     | '/_authed'
@@ -140,6 +152,7 @@ export interface FileRouteTypes {
     | '/_authed/'
     | '/_authed/messages/$messageId'
     | '/api/auth/$'
+    | '/_authed/archive/messages/$messageId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -224,17 +237,36 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedMessagesMessageIdRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/archive/messages/$messageId': {
+      id: '/_authed/archive/messages/$messageId'
+      path: '/messages/$messageId'
+      fullPath: '/archive/messages/$messageId'
+      preLoaderRoute: typeof AuthedArchiveMessagesMessageIdRouteImport
+      parentRoute: typeof AuthedArchiveRoute
+    }
   }
 }
 
+interface AuthedArchiveRouteChildren {
+  AuthedArchiveMessagesMessageIdRoute: typeof AuthedArchiveMessagesMessageIdRoute
+}
+
+const AuthedArchiveRouteChildren: AuthedArchiveRouteChildren = {
+  AuthedArchiveMessagesMessageIdRoute: AuthedArchiveMessagesMessageIdRoute,
+}
+
+const AuthedArchiveRouteWithChildren = AuthedArchiveRoute._addFileChildren(
+  AuthedArchiveRouteChildren,
+)
+
 interface AuthedRouteChildren {
-  AuthedArchiveRoute: typeof AuthedArchiveRoute
+  AuthedArchiveRoute: typeof AuthedArchiveRouteWithChildren
   AuthedIndexRoute: typeof AuthedIndexRoute
   AuthedMessagesMessageIdRoute: typeof AuthedMessagesMessageIdRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
-  AuthedArchiveRoute: AuthedArchiveRoute,
+  AuthedArchiveRoute: AuthedArchiveRouteWithChildren,
   AuthedIndexRoute: AuthedIndexRoute,
   AuthedMessagesMessageIdRoute: AuthedMessagesMessageIdRoute,
 }

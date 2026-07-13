@@ -28,7 +28,7 @@ export function InboxPane() {
 
 function InboxHeader() {
   const openComposer = useMailStore((store) => store.openComposer);
-  const { inboxMessages, isLoadingInbox } = useLiveMail();
+  const { inboxMessages, isLoadingInbox, mailMode } = useLiveMail();
 
   return (
     <header className="mail-paper shrink-0 border-b border-[var(--mail-seam)] px-4 pt-5 pb-4 shadow-[0_2px_6px_rgba(55,40,19,0.08)] sm:px-5 dark:shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
@@ -37,7 +37,7 @@ function InboxHeader() {
           <div className="flex items-center gap-2.5">
             <MobileBrand />
             <h1 className="font-serif text-[32px] leading-none font-semibold tracking-[-0.04em] sm:text-[34px]">
-              Inbox
+              {getMailboxTitle(mailMode)}
             </h1>
             <InboxCount
               count={inboxMessages.length}
@@ -46,7 +46,7 @@ function InboxHeader() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <UnreadFilterButton />
+          <MailboxFilterControl mailMode={mailMode} />
           <button
             aria-label="New message"
             className="mail-brass-button flex size-10 items-center justify-center rounded-[10px] transition-colors md:hidden"
@@ -64,16 +64,27 @@ function InboxHeader() {
   );
 }
 
+function getMailboxTitle(mailMode: "archive" | "inbox") {
+  if (mailMode === "archive") return "Archive";
+  return "Inbox";
+}
+
+function MailboxFilterControl({ mailMode }: { mailMode: "archive" | "inbox" }) {
+  if (mailMode === "archive") return null;
+  return <UnreadFilterButton />;
+}
+
 function UnreadFilterButton() {
   const navigate = useNavigate();
   const setUnreadOnly = useMailStore((store) => store.setUnreadOnly);
   const unreadOnly = useMailStore((store) => store.unreadOnly);
+  const { mailMode } = useLiveMail();
 
   function toggleUnread() {
     const nextUnreadOnly = !unreadOnly;
     setUnreadOnly(nextUnreadOnly);
     void navigate({
-      to: "/",
+      to: mailMode === "archive" ? "/archive" : "/",
       search: (previous) => withUnreadSearch(previous, nextUnreadOnly),
     });
   }
@@ -165,8 +176,10 @@ export function ClearSearchButton({ query }: { query: string }) {
 
 function MobileAccountFilters() {
   const accountFilter = useMailStore((store) => store.accountFilter);
-  const selectMailbox = useMailboxNavigation();
-  const { accounts } = useLiveMail();
+  const { accounts, mailMode } = useLiveMail();
+  const selectMailbox = useMailboxNavigation(
+    mailMode === "archive" ? "/archive" : "/",
+  );
 
   return (
     <div className="mail-scrollbar mt-3 flex gap-2 overflow-x-auto pb-1 md:hidden">

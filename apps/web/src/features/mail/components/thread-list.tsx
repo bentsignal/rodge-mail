@@ -20,6 +20,7 @@ export function ThreadList() {
     isSearchingInbox,
     isSeedingDemo,
     loadMore,
+    mailMode,
     seedDemoMail,
   } = useLiveMail();
 
@@ -35,6 +36,7 @@ export function ThreadList() {
         canSeedDemo={canSeedDemo}
         isSearch={searchQuery.trim().length > 0}
         isSeedingDemo={isSeedingDemo}
+        mailMode={mailMode}
         seedDemoMail={seedDemoMail}
         unreadOnly={unreadOnly}
       />
@@ -175,12 +177,14 @@ function EmptyThreadList({
   canSeedDemo,
   isSearch,
   isSeedingDemo,
+  mailMode,
   seedDemoMail,
   unreadOnly,
 }: {
   canSeedDemo: boolean;
   isSearch: boolean;
   isSeedingDemo: boolean;
+  mailMode: "archive" | "inbox";
   seedDemoMail: () => Promise<void>;
   unreadOnly: boolean;
 }) {
@@ -191,7 +195,7 @@ function EmptyThreadList({
       </span>
       <p className="font-serif text-lg font-semibold">No messages</p>
       <p className="mail-label mt-1 max-w-xs text-sm leading-6">
-        {getEmptyDescription(isSearch, canSeedDemo, unreadOnly)}
+        {getEmptyDescription(isSearch, canSeedDemo, unreadOnly, mailMode)}
       </p>
       <DevelopmentSeedButton
         canSeedDemo={canSeedDemo}
@@ -239,8 +243,10 @@ function getEmptyDescription(
   isSearch: boolean,
   canSeedDemo: boolean,
   unreadOnly: boolean,
+  mailMode: "archive" | "inbox",
 ) {
   if (isSearch) return "Try a sender, subject, or phrase from the message.";
+  if (mailMode === "archive") return "Conversations you archive appear here.";
   if (unreadOnly) return "Everything in this mailbox has been read.";
   if (canSeedDemo) {
     return "This development mailbox is empty. Add the safe demo set to exercise the live Convex path.";

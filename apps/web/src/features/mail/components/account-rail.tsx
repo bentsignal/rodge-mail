@@ -30,10 +30,11 @@ const ACCOUNT_ICONS = {
 
 export function AccountRail() {
   const isArchive = useRouterState({
-    select: (state) => state.location.pathname === "/archive",
+    select: (state) => state.location.pathname.startsWith("/archive"),
   });
   const accountFilter = useMailStore((store) => store.accountFilter);
-  const selectMailbox = useMailboxNavigation();
+  const clearSelection = useMailStore((store) => store.clearSelection);
+  const selectMailbox = useMailboxNavigation(isArchive ? "/archive" : "/");
   const openComposer = useMailStore((store) => store.openComposer);
   const {
     accounts,
@@ -76,6 +77,7 @@ export function AccountRail() {
               ? "border border-white/10 bg-white/[0.09] text-[var(--mail-chassis-foreground)] shadow-[var(--warm-shadow-inset)] after:absolute after:inset-y-2 after:left-0 after:w-0.5 after:rounded-r after:bg-[var(--mail-brass)]"
               : "border border-transparent text-[var(--mail-chassis-foreground)]/72 hover:border-white/10 hover:bg-white/[0.07] hover:text-[var(--mail-chassis-foreground)]",
           )}
+          onClick={clearSelection}
           to="/archive"
         >
           <Archive className="size-[18px]" strokeWidth={1.7} />

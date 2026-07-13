@@ -6,6 +6,7 @@ import {
   getSenderInitials,
   getThreadRowAccessibilityLabel,
   getThreadRowNativeKey,
+  isThreadUnread,
 } from "./thread-row-presentation";
 
 const thread = {
@@ -39,6 +40,11 @@ describe("thread row presentation", () => {
     expect(getPinAction({ isPinned: true }).label).toBe("Unpin");
     expect(getReadAction(thread).label).toBe("Mark Read");
     expect(getReadAction({ isRead: true }).label).toBe("Mark Unread");
+  });
+
+  it("shows unread emphasis only for unread threads", () => {
+    expect(isThreadUnread(thread)).toBe(true);
+    expect(isThreadUnread({ isRead: true })).toBe(false);
   });
 
   it("remounts native actions when their source state changes", () => {

@@ -2,7 +2,6 @@ import type { LegendListRenderItemProps } from "@legendapp/list/react-native";
 import { useState } from "react";
 import { Animated, RefreshControl, View } from "react-native";
 import { Stack, useRouter } from "expo-router";
-import { Host, Switch } from "@expo/ui";
 import { LegendList } from "@legendapp/list/react-native";
 import { usePaginatedQuery } from "convex/react";
 
@@ -10,15 +9,14 @@ import type { MailAccountFilter, MailThread } from "@rodge-mail/features/mail";
 import { api } from "@rodge-mail/convex/api";
 
 import type { MobileMailAccount } from "../lib/convex-mail";
-import { useResolvedMobileColorScheme } from "~/features/theme/mobile-theme";
 import { useColor } from "~/hooks/use-color";
 import { useDebouncedValue } from "~/hooks/use-debounced-value";
-import { AccountFilter } from "../components/account-filter";
 import { ThreadRow } from "../components/thread-row";
 import { useSemanticMailSearch } from "../hooks/use-semantic-mail-search";
 import { toConvexId } from "../lib/convex-id";
 import { toMailThreads } from "../lib/convex-mail";
 import { useMailStore } from "../store";
+import { InboxHeader } from "./inbox-header";
 import { EmptyInbox, InboxFooter } from "./inbox-list-feedback";
 import {
   getEmptyIsLoading,
@@ -26,7 +24,6 @@ import {
   getInboxListFeedback,
   getVisibleInboxThreads,
 } from "./inbox-list-state";
-import { InboxSyncStatus } from "./inbox-sync-status";
 import { useInboxFilterTransition } from "./use-inbox-filter-transition";
 import { useInboxRefresh } from "./use-inbox-refresh";
 
@@ -199,96 +196,53 @@ function InboxThreadList({
     footerIsLoading,
     resultCount: transition.data.length,
   });
-
   return (
-    <Animated.View style={{ flex: 1, opacity: transition.opacity }}>
-      <LegendList
-        contentContainerStyle={{ paddingBottom: 24 }}
-        data={transition.data}
-        estimatedItemSize={109}
-        keyExtractor={threadKey}
-        maintainVisibleContentPosition={true}
-        recycleItems={true}
-        renderItem={renderThread}
-        contentInsetAdjustmentBehavior="automatic"
-        keyboardDismissMode="on-drag"
-        style={{ backgroundColor: paper, flex: 1 }}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefreshing}
-            tintColor={primary}
-            onRefresh={onRefresh}
-          />
-        }
-        onEndReached={onEndReached}
-        onEndReachedThreshold={0.6}
-        ListHeaderComponent={
-          <InboxHeader
-            accountFilter={accountFilter}
-            accounts={accounts}
-            onAccountChange={onAccountChange}
-            refreshError={refreshError}
-            showUnreadOnly={showUnreadOnly}
-            onUnreadChange={onUnreadChange}
-          />
-        }
-        ListEmptyComponent={
-          <EmptyInbox
-            isLoading={feedback.emptyIsLoading}
-            primary={primary}
-            searchTerm={searchTerm}
-            showUnreadOnly={transition.showUnreadOnly}
-          />
-        }
-        ListFooterComponent={
-          <InboxFooter isLoading={feedback.footerIsLoading} primary={primary} />
-        }
+    <View className="bg-paper flex-1">
+      <InboxHeader
+        accountFilter={accountFilter}
+        accounts={accounts}
+        onAccountChange={onAccountChange}
+        refreshError={refreshError}
+        showUnreadOnly={showUnreadOnly}
+        onUnreadChange={onUnreadChange}
       />
-    </Animated.View>
-  );
-}
-
-function InboxHeader({
-  accountFilter,
-  accounts,
-  onAccountChange,
-  refreshError,
-  showUnreadOnly,
-  onUnreadChange,
-}: {
-  accountFilter: MailAccountFilter;
-  accounts: MobileMailAccount[];
-  onAccountChange: (value: MailAccountFilter) => void;
-  refreshError: string | undefined;
-  showUnreadOnly: boolean;
-  onUnreadChange: (value: boolean) => void;
-}) {
-  const colorScheme = useResolvedMobileColorScheme();
-  const primary = useColor("primary");
-
-  return (
-    <View className="bg-paper border-paper-border border-b px-3 py-2">
-      <View className="min-h-11 flex-row items-center gap-3">
-        <AccountFilter
-          accounts={accounts}
-          value={accountFilter}
-          onChange={onAccountChange}
+      <Animated.View style={{ flex: 1, opacity: transition.opacity }}>
+        <LegendList
+          contentContainerStyle={{ paddingBottom: 24, paddingTop: 12 }}
+          data={transition.data}
+          estimatedItemSize={109}
+          keyExtractor={threadKey}
+          maintainVisibleContentPosition={true}
+          recycleItems={true}
+          renderItem={renderThread}
+          contentInsetAdjustmentBehavior="automatic"
+          keyboardDismissMode="on-drag"
+          style={{ backgroundColor: paper, flex: 1 }}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              tintColor={primary}
+              onRefresh={onRefresh}
+            />
+          }
+          onEndReached={onEndReached}
+          onEndReachedThreshold={0.6}
+          ListEmptyComponent={
+            <EmptyInbox
+              isLoading={feedback.emptyIsLoading}
+              primary={primary}
+              searchTerm={searchTerm}
+              showUnreadOnly={transition.showUnreadOnly}
+            />
+          }
+          ListFooterComponent={
+            <InboxFooter
+              isLoading={feedback.footerIsLoading}
+              primary={primary}
+            />
+          }
         />
-        <Host
-          colorScheme={colorScheme}
-          matchContents={{ vertical: true }}
-          seedColor={primary}
-          style={{ width: 132 }}
-        >
-          <Switch
-            label="Unread"
-            testID="unread-only-switch"
-            value={showUnreadOnly}
-            onValueChange={onUnreadChange}
-          />
-        </Host>
-      </View>
-      <InboxSyncStatus accounts={accounts} error={refreshError} />
+      </Animated.View>
     </View>
   );
 }

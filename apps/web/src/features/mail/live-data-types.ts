@@ -13,9 +13,16 @@ export interface LiveMailContextValue {
   isSeedingDemo: boolean;
   isSyncingAccounts: boolean;
   loadMore: () => void;
+  mailMode: "archive" | "inbox";
   markMessageRead: (message: InboxMessage) => void;
   archiveThread: (message: Pick<InboxMessage, "threadId">) => Promise<void>;
+  permanentlyDeleteArchivedThread: (
+    message: Pick<InboxMessage, "threadId">,
+  ) => Promise<void>;
   replyToSelectedThread: () => void;
+  restoreArchivedThread: (
+    message: Pick<InboxMessage, "threadId">,
+  ) => Promise<void>;
   seedDemoMail: () => Promise<void>;
   syncAllAccounts: () => Promise<void>;
   selectedMessageId: InboxMessage["_id"] | undefined;

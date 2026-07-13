@@ -2,7 +2,7 @@ import { useRouterState } from "@tanstack/react-router";
 
 import type { MailAccountFilter, ThreadSelection } from "../store";
 import type { InboxMessage } from "../types";
-import { LiveMailProvider } from "../live-data";
+import { ArchiveLiveMailProvider, LiveMailProvider } from "../live-data";
 import { MailStore } from "../store";
 import { AccountRail } from "./account-rail";
 import { ArchivePage } from "./archive-page";
@@ -32,22 +32,50 @@ export function MailShell({
       initialUnreadOnly={initialUnreadOnly}
     >
       <MailDataErrorBoundary>
-        <LiveMailProvider
+        <MailModeProvider
           initialAccountFilter={initialAccountFilter}
           initialInbox={initialInbox}
           initialUnreadOnly={initialUnreadOnly}
         >
           {children}
           <MailWorkspace />
-        </LiveMailProvider>
+        </MailModeProvider>
       </MailDataErrorBoundary>
     </MailStore>
   );
 }
 
+function MailModeProvider({
+  children,
+  initialAccountFilter,
+  initialInbox,
+  initialUnreadOnly,
+}: {
+  children: React.ReactNode;
+  initialAccountFilter: MailAccountFilter;
+  initialInbox: InboxMessage[];
+  initialUnreadOnly: boolean;
+}) {
+  const isArchive = useRouterState({
+    select: (state) => state.location.pathname.startsWith("/archive"),
+  });
+  if (isArchive) {
+    return <ArchiveLiveMailProvider>{children}</ArchiveLiveMailProvider>;
+  }
+  return (
+    <LiveMailProvider
+      initialAccountFilter={initialAccountFilter}
+      initialInbox={initialInbox}
+      initialUnreadOnly={initialUnreadOnly}
+    >
+      {children}
+    </LiveMailProvider>
+  );
+}
+
 function MailWorkspace() {
   const isArchive = useRouterState({
-    select: (state) => state.location.pathname === "/archive",
+    select: (state) => state.location.pathname.startsWith("/archive"),
   });
   return (
     <main className="mail-shell mail-atmosphere bg-background text-foreground relative flex h-dvh min-h-0 overflow-hidden">

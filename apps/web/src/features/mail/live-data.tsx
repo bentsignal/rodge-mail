@@ -1,27 +1,19 @@
-import { createContext, use, useEffect, useState } from "react";
+import { createContext, use, useEffect } from "react";
 // eslint-disable-next-line no-restricted-imports -- Mail has intentional loading states and a selection-dependent thread query.
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
 import { convexQuery } from "@convex-dev/react-query";
-import { useMutation } from "convex/react";
 
 import { api } from "@rodge-mail/convex/api";
-import { getReplyAddress } from "@rodge-mail/features/mail";
-import { toast } from "@rodge-mail/ui-web/toast";
 
 import type { LiveMailContextValue } from "./live-data-types";
 import type { MailAccountFilter } from "./store";
-import type {
-  InboxMessage,
-  MailAccountDocument,
-  MailAccountView,
-  MailThreadDetail,
-} from "./types";
+import type { InboxMessage, MailAccountDocument } from "./types";
 import { env } from "~/env";
+import { useArchiveLiveMailValue } from "./archive-live-data";
 import { MAIL_PAGE_SIZE } from "./constants";
+import { useLiveMailActions } from "./live-data-actions";
 import { useAccountsQuery, useUnreadCountQuery } from "./live-data-query-hooks";
 import {
-  getErrorMessage,
   sortInboxMessages,
   toAccountView,
   toUnreadCountRecord,
@@ -32,8 +24,6 @@ import {
   useMailboxPage,
 } from "./mailbox-page";
 import { useMailStore } from "./store";
-import { optimisticallySetThreadRead } from "./unread-optimistic";
-import { useSyncAll } from "./use-sync-all";
 import { useUnreadSelectionSync } from "./use-unread-selection-sync";
 
 const LiveMailContext = createContext<LiveMailContextValue | undefined>(
@@ -56,6 +46,19 @@ export function LiveMailProvider({
     initialInbox,
     initialUnreadOnly,
   });
+  return (
+    <LiveMailContext.Provider value={value}>
+      {children}
+    </LiveMailContext.Provider>
+  );
+}
+
+export function ArchiveLiveMailProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const value = useArchiveLiveMailValue();
   return (
     <LiveMailContext.Provider value={value}>
       {children}
@@ -122,11 +125,13 @@ function useLiveMailValue({
   const actions = useLiveMailActions(
     queryState.accounts,
     queryState.selectedThread,
+    "inbox",
   );
 
   return {
     ...actions,
     ...queryState,
+    mailMode: "inbox",
   } satisfies LiveMailContextValue;
 }
 
@@ -211,110 +216,6 @@ function useThreadQuery(threadId: InboxMessage["threadId"] | undefined) {
     ),
     select: (thread) => thread,
   });
-}
-
-function useLiveMailActions(
-  accounts: MailAccountView[],
-  selectedThread: MailThreadDetail | undefined,
-) {
-  const navigate = useNavigate();
-  const clearSelection = useMailStore((store) => store.clearSelection);
-  const openReply = useMailStore((store) => store.openReply);
-  const setThreadPinned = useMutation(api.mail.mutations.setThreadPinned);
-  const setThreadRead = useMutation(
-    api.mail.mutations.setThreadRead,
-  ).withOptimisticUpdate(optimisticallySetThreadRead);
-  const archiveThreadMutation = useMutation(api.mail.mutations.archiveThread);
-  const seedDemo = useMutation(api.devSeed.seedDemoMail);
-  const [isSeedingDemo, setIsSeedingDemo] = useState(false);
-  const sync = useSyncAll(accounts);
-
-  async function togglePinned(message: InboxMessage) {
-    try {
-      await setThreadPinned({
-        threadId: message.threadId,
-        isPinned: !message.isPinned,
-      });
-    } catch (error) {
-      toast.error(getErrorMessage(error, "Could not update the pin."));
-    }
-  }
-
-  async function toggleRead(message: InboxMessage) {
-    try {
-      await setThreadRead({
-        threadId: message.threadId,
-        isRead: !message.isRead,
-      });
-    } catch (error) {
-      toast.error(getErrorMessage(error, "Could not update read status."));
-    }
-  }
-
-  async function archiveThread(message: Pick<InboxMessage, "threadId">) {
-    try {
-      await archiveThreadMutation({ threadId: message.threadId });
-      clearSelection();
-      await navigate({ to: "/", search: (previous) => previous });
-      toast.success("Archived in Rodge. Your provider copy is unchanged.");
-    } catch (error) {
-      toast.error(
-        getErrorMessage(error, "Could not archive the conversation."),
-      );
-    }
-  }
-
-  function markMessageRead(message: InboxMessage) {
-    if (message.isRead) return;
-    void setThreadRead({ threadId: message.threadId, isRead: true }).catch(
-      (error) => {
-        toast.error(getErrorMessage(error, "Could not mark the message read."));
-      },
-    );
-  }
-
-  function replyToSelectedThread() {
-    const latestMessage = selectedThread?.messages.at(-1);
-    if (!selectedThread || !latestMessage) return;
-    const address = getReplyAddress(
-      selectedThread.messages,
-      selectedThread.account.address,
-    );
-    if (!address) return;
-    openReply({
-      accountId: selectedThread.accountId,
-      address,
-      messageId: latestMessage._id,
-      subject: selectedThread.subject,
-    });
-  }
-
-  async function seedDemoMail() {
-    if (env.VITE_NODE_ENV !== "development") return;
-    setIsSeedingDemo(true);
-    try {
-      const result = await seedDemo();
-      toast.success(
-        result.insertedMessages > 0
-          ? `Added ${result.insertedMessages} development messages.`
-          : "Development mail is already seeded.",
-      );
-    } catch (error) {
-      toast.error(getErrorMessage(error, "Could not seed development mail."));
-    }
-    setIsSeedingDemo(false);
-  }
-
-  return {
-    isSeedingDemo,
-    ...sync,
-    markMessageRead,
-    archiveThread,
-    replyToSelectedThread,
-    seedDemoMail,
-    togglePinned,
-    toggleRead,
-  };
 }
 
 function throwQueryError(error: Error | null) {
