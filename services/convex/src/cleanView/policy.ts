@@ -15,3 +15,14 @@ export function shouldRequestAutomaticCleanView(args: {
 }) {
   return !args.messageExists && args.direction === "incoming" && args.inInbox;
 }
+
+export function canQueueCleanView(
+  cleanView:
+    | Pick<Doc<"messageCleanViews">, "generatedAt" | "status">
+    | null
+    | undefined,
+) {
+  if (!cleanView) return true;
+  if (cleanView.generatedAt !== undefined) return false;
+  return cleanView.status === "failed";
+}

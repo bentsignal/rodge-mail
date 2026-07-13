@@ -196,7 +196,6 @@ export const complete = internalMutation({
       await queueCleanViewForMessage(ctx, {
         ownerId: message.ownerId,
         messageId: message._id,
-        regenerate: false,
       });
     }
     return true;

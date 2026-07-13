@@ -1,6 +1,6 @@
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { useMutation } from "convex/react";
-import { RotateCcw, ShieldAlert, Sparkles } from "lucide-react-native";
+import { ShieldAlert, Sparkles } from "lucide-react-native";
 
 import type { MailMessage } from "@rodge-mail/features/mail";
 import { api } from "@rodge-mail/convex/api";
@@ -13,7 +13,7 @@ export function MessageOverview({ message }: { message: MailMessage }) {
   const label = message.isSpam ? "Likely spam" : "Overview";
   const isPreparing =
     message.cleanStatus === "pending" || message.cleanStatus === "running";
-  const hasCleanView = Boolean(message.overview?.trim());
+  const hasCleanView = hasGeneratedCleanView(message);
   const overview = getOverviewText(message.overview, isPreparing);
   return (
     <View className="bg-well border-well-border flex-row gap-3 rounded-xl border px-4 py-3">
@@ -52,6 +52,19 @@ function CleanViewAction({
   isPreparing: boolean;
   messageId: string;
 }) {
+  if (hasCleanView) return null;
+  return (
+    <GenerateCleanViewButton isPreparing={isPreparing} messageId={messageId} />
+  );
+}
+
+function GenerateCleanViewButton({
+  isPreparing,
+  messageId,
+}: {
+  isPreparing: boolean;
+  messageId: string;
+}) {
   const muted = useColor("muted-foreground");
   const generate = useMutation(api.cleanView.mutations.generate);
   return (
@@ -63,13 +76,9 @@ function CleanViewAction({
         void generate({ messageId: toConvexId<"messages">(messageId) })
       }
     >
-      <CleanViewActionIcon
-        color={muted}
-        hasCleanView={hasCleanView}
-        isPreparing={isPreparing}
-      />
+      <CleanViewActionIcon color={muted} isPreparing={isPreparing} />
       <Text className="text-muted-foreground ml-2 text-[10px] font-bold tracking-wider uppercase">
-        {cleanViewActionLabel(hasCleanView, isPreparing)}
+        {cleanViewActionLabel(isPreparing)}
       </Text>
     </Pressable>
   );
@@ -77,15 +86,12 @@ function CleanViewAction({
 
 function CleanViewActionIcon({
   color,
-  hasCleanView,
   isPreparing,
 }: {
   color: string;
-  hasCleanView: boolean;
   isPreparing: boolean;
 }) {
   if (isPreparing) return <ActivityIndicator color={color} size="small" />;
-  if (hasCleanView) return <RotateCcw color={color} size={13} />;
   return <Sparkles color={color} size={13} />;
 }
 
@@ -100,9 +106,15 @@ function getOverviewText(value: string | undefined, isPreparing: boolean) {
   return "Generate a clean overview and reader view when you want one.";
 }
 
-function cleanViewActionLabel(hasCleanView: boolean, isPreparing: boolean) {
+function cleanViewActionLabel(isPreparing: boolean) {
   if (isPreparing) return "Generating";
-  return hasCleanView ? "Regenerate" : "Generate clean view";
+  return "Generate clean version";
+}
+
+function hasGeneratedCleanView(message: MailMessage) {
+  if (message.cleanStatus === "ready") return true;
+  if (message.overview?.trim()) return true;
+  return Boolean(message.cleanedBody?.trim());
 }
 
 function formatCleanViewError(error: string | undefined) {

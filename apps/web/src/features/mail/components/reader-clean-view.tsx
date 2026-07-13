@@ -1,5 +1,5 @@
 import { useMutation } from "convex/react";
-import { LoaderCircle, RotateCcw, ShieldAlert, Sparkles } from "lucide-react";
+import { LoaderCircle, ShieldAlert, Sparkles } from "lucide-react";
 
 import { api } from "@rodge-mail/convex/api";
 
@@ -10,6 +10,7 @@ export function MessageOverview({ message }: { message: ThreadMessageDetail }) {
   const cleanView = message.cleanView;
   const isPreparing =
     cleanView?.status === "pending" || cleanView?.status === "running";
+  const hasCleanView = hasGeneratedCleanView(cleanView);
   const summary = getOverviewSummary(cleanView?.summary, isPreparing);
   const label = classification?.isSpam ? "Likely spam" : "Overview";
   return (
@@ -30,7 +31,7 @@ export function MessageOverview({ message }: { message: ThreadMessageDetail }) {
           </p>
           <CleanViewError cleanView={cleanView} />
           <CleanViewAction
-            hasCleanView={Boolean(cleanView?.summary?.trim())}
+            hasCleanView={hasCleanView}
             isPreparing={isPreparing}
             messageId={message._id}
           />
@@ -62,6 +63,19 @@ function CleanViewAction({
   isPreparing: boolean;
   messageId: ThreadMessageDetail["_id"];
 }) {
+  if (hasCleanView) return null;
+  return (
+    <GenerateCleanViewButton isPreparing={isPreparing} messageId={messageId} />
+  );
+}
+
+function GenerateCleanViewButton({
+  isPreparing,
+  messageId,
+}: {
+  isPreparing: boolean;
+  messageId: ThreadMessageDetail["_id"];
+}) {
   const generate = useMutation(api.cleanView.mutations.generate);
   return (
     <button
@@ -70,24 +84,14 @@ function CleanViewAction({
       onClick={() => void generate({ messageId })}
       type="button"
     >
-      <CleanViewActionIcon
-        hasCleanView={hasCleanView}
-        isPreparing={isPreparing}
-      />
-      {cleanViewActionLabel(hasCleanView, isPreparing)}
+      <CleanViewActionIcon isPreparing={isPreparing} />
+      {cleanViewActionLabel(isPreparing)}
     </button>
   );
 }
 
-function CleanViewActionIcon({
-  hasCleanView,
-  isPreparing,
-}: {
-  hasCleanView: boolean;
-  isPreparing: boolean;
-}) {
+function CleanViewActionIcon({ isPreparing }: { isPreparing: boolean }) {
   if (isPreparing) return <LoaderCircle className="size-3 animate-spin" />;
-  if (hasCleanView) return <RotateCcw className="size-3" />;
   return <Sparkles className="size-3" />;
 }
 
@@ -110,9 +114,15 @@ function getOverviewSummary(value: string | undefined, isPreparing: boolean) {
   return "Generate a clean overview and reader view when you want one.";
 }
 
-function cleanViewActionLabel(hasCleanView: boolean, isPreparing: boolean) {
+function cleanViewActionLabel(isPreparing: boolean) {
   if (isPreparing) return "Generating";
-  return hasCleanView ? "Regenerate" : "Generate clean view";
+  return "Generate clean version";
+}
+
+function hasGeneratedCleanView(cleanView: ThreadMessageDetail["cleanView"]) {
+  if (cleanView?.status === "ready") return true;
+  if (cleanView?.summary?.trim()) return true;
+  return Boolean(cleanView?.cleanedMarkdown?.trim());
 }
 
 function formatCleanViewError(error: string) {

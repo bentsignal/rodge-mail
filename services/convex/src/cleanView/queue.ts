@@ -8,19 +8,18 @@ import {
   CLEAN_VIEW_PROMPT_VERSION,
 } from "../classification/constants";
 import { normalizeMail, stableHash } from "../classification/normalize";
+import { canQueueCleanView } from "./policy";
 
 const RUN_CLEAN_VIEW = makeFunctionReference<
   "action",
   { messageId: Id<"messages">; jobKey: string }
 >("cleanView/actions:run");
 
-// eslint-disable-next-line complexity
 export async function queueCleanViewForMessage(
   ctx: MutationCtx,
   args: {
     ownerId: string;
     messageId: Id<"messages">;
-    regenerate: boolean;
   },
 ) {
   const [message, content, existing] = await Promise.all([
@@ -37,10 +36,7 @@ export async function queueCleanViewForMessage(
   if (!message || message.ownerId !== args.ownerId) {
     throw new ConvexError("Message not found");
   }
-  if (existing?.status === "pending" || existing?.status === "running") {
-    return { queued: false };
-  }
-  if (existing?.status === "ready" && !args.regenerate) {
+  if (!canQueueCleanView(existing)) {
     return { queued: false };
   }
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  canQueueCleanView,
   shouldAutoGenerateCleanView,
   shouldRequestAutomaticCleanView,
 } from "./policy";
@@ -58,6 +59,18 @@ describe("automatic clean view policy", () => {
         direction: "outgoing",
         inInbox: true,
       }),
+    ).toBe(false);
+  });
+
+  it("allows retries after an initial failure but never regenerates a completed view", () => {
+    expect(canQueueCleanView(undefined)).toBe(true);
+    expect(
+      canQueueCleanView({ status: "failed", generatedAt: undefined }),
+    ).toBe(true);
+    expect(canQueueCleanView({ status: "ready", generatedAt: 1 })).toBe(false);
+    expect(canQueueCleanView({ status: "failed", generatedAt: 1 })).toBe(false);
+    expect(
+      canQueueCleanView({ status: "pending", generatedAt: undefined }),
     ).toBe(false);
   });
 });

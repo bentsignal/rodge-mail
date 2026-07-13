@@ -9,7 +9,6 @@ export const generate = authedMutation({
     return await queueCleanViewForMessage(ctx, {
       ownerId: ctx.ownerId,
       messageId: args.messageId,
-      regenerate: true,
     });
   },
 });
