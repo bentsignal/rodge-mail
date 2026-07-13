@@ -1,5 +1,7 @@
-export const CLASSIFICATION_PROMPT_VERSION = "clean-mail-v4";
-export const CLASSIFICATION_OUTPUT_SCHEMA_VERSION = "classification-v3";
+export const CLASSIFICATION_PROMPT_VERSION = "mail-screen-v5";
+export const CLASSIFICATION_OUTPUT_SCHEMA_VERSION = "classification-v4";
+export const CLEAN_VIEW_PROMPT_VERSION = "clean-view-v1";
+export const CLEAN_VIEW_OUTPUT_SCHEMA_VERSION = "clean-view-v1";
 export const DEFAULT_CLASSIFICATION_MODEL = "gpt-5-nano";
 export const DEFAULT_EMBEDDING_MODEL = "text-embedding-3-small";
 export const EMBEDDING_DIMENSIONS = 512;
@@ -32,7 +34,11 @@ export interface ClassificationResult {
   importance: number;
   confidence: number;
   reason: string;
+  isSpam: boolean;
+}
+
+export interface CleanViewResult {
+  schemaVersion: typeof CLEAN_VIEW_OUTPUT_SCHEMA_VERSION;
   summary: string;
   cleanedMarkdown: string;
-  isSpam: boolean;
 }

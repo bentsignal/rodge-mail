@@ -92,26 +92,6 @@ export const clearManualOverride = authedMutation({
   },
 });
 
-export const requestCleanView = authedMutation({
-  args: { messageId: v.id("messages") },
-  handler: async (ctx, args) => {
-    const message = await ensureOwnedMessage(ctx, ctx.ownerId, args.messageId);
-    const existing = await getClassificationForMessage(ctx, message._id);
-    if (
-      existing?.cleanedMarkdown !== undefined &&
-      existing.promptVersion === CLASSIFICATION_PROMPT_VERSION
-    ) {
-      return { queued: false };
-    }
-    return await queueClassificationForMessage(ctx, {
-      ownerId: ctx.ownerId,
-      messageId: message._id,
-      promptVersion: CLASSIFICATION_PROMPT_VERSION,
-      replaceManual: false,
-    });
-  },
-});
-
 export const setSpamState = authedMutation({
   args: { messageId: v.id("messages"), isSpam: v.boolean() },
   handler: async (ctx, args) => {

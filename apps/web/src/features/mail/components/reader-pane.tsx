@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import { Code2, MailOpen, Reply, Sparkles } from "lucide-react";
@@ -59,19 +59,7 @@ function ReaderContent() {
     togglePinned,
     toggleRead,
   } = useLiveMail();
-  const requestCleanView = useMutation(
-    api.classification.mutations.requestCleanView,
-  );
   const setSpamState = useMutation(api.classification.mutations.setSpamState);
-
-  // eslint-disable-next-line no-restricted-syntax -- Opening a thread synchronizes its stored clean-reader classification with the current prompt.
-  useEffect(() => {
-    if (!selectedThread) return;
-    for (const message of selectedThread.messages) {
-      if (message.classification?.cleanedMarkdown !== undefined) continue;
-      void requestCleanView({ messageId: message._id }).catch(() => undefined);
-    }
-  }, [requestCleanView, selectedThread]);
 
   if (!selectedThread) return null;
   const selectedMessage = getSelectedMessage(selectedThread, selectedMessageId);

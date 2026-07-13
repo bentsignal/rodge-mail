@@ -44,6 +44,7 @@
     "@better-auth/expo": "catalog:",
     "@better-auth/passkey": "1.6.11",
     "@better-auth/utils": "0.4.0",
+    "@convex-dev/aggregate": "^0.2.1",
     "@convex-dev/better-auth": "catalog:",
     "@convex-dev/rate-limiter": "^0.3.2",
     "@rodge-mail/agent-contract": "workspace:*",

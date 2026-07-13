@@ -230,6 +230,30 @@ export const vMessageClassification = v.object({
   updatedAt: v.number(),
 });
 
+export const vCleanViewStatus = v.union(
+  v.literal("pending"),
+  v.literal("running"),
+  v.literal("ready"),
+  v.literal("failed"),
+);
+
+export const vMessageCleanView = v.object({
+  ownerId: v.string(),
+  messageId: v.id("messages"),
+  status: vCleanViewStatus,
+  promptVersion: v.string(),
+  outputSchemaVersion: v.string(),
+  jobKey: v.string(),
+  inputHash: v.string(),
+  summary: v.optional(v.string()),
+  cleanedMarkdown: v.optional(v.string()),
+  model: v.optional(v.string()),
+  error: v.optional(v.string()),
+  generatedAt: v.optional(v.number()),
+  createdAt: v.number(),
+  updatedAt: v.number(),
+});
+
 export const vSyncReason = v.union(
   v.literal("initial"),
   v.literal("incremental"),

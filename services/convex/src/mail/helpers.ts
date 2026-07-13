@@ -62,6 +62,16 @@ export async function getContentForMessage(
     .first();
 }
 
+export async function getCleanViewForMessage(
+  ctx: Pick<QueryCtx, "db"> | Pick<MutationCtx, "db">,
+  messageId: Id<"messages">,
+) {
+  return await ctx.db
+    .query("messageCleanViews")
+    .withIndex("by_message", (q) => q.eq("messageId", messageId))
+    .unique();
+}
+
 export async function toMessageListItem(
   ctx: Pick<QueryCtx, "db">,
   message: Doc<"messages">,
@@ -149,14 +159,15 @@ export async function toMessageDetail(
   ctx: Pick<QueryCtx, "db">,
   message: Doc<"messages">,
 ) {
-  const [listItem, content, attachments] = await Promise.all([
+  const [listItem, content, cleanView, attachments] = await Promise.all([
     toMessageListItem(ctx, message),
     getContentForMessage(ctx, message._id),
+    getCleanViewForMessage(ctx, message._id),
     ctx.db
       .query("attachments")
       .withIndex("by_message", (q) => q.eq("messageId", message._id))
       .collect(),
   ]);
 
-  return { ...listItem, attachments, content };
+  return { ...listItem, attachments, cleanView, content };
 }

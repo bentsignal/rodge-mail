@@ -135,8 +135,6 @@ export const complete = internalMutation({
     importance: v.number(),
     confidence: v.number(),
     reason: v.string(),
-    summary: v.string(),
-    cleanedMarkdown: v.string(),
     isSpam: v.boolean(),
     signals: v.array(vClassificationSignal),
     source: vClassificationSource,
@@ -166,8 +164,6 @@ export const complete = internalMutation({
       importance: args.importance,
       confidence: args.confidence,
       reason: args.reason.slice(0, 240),
-      summary: args.summary.slice(0, 280),
-      cleanedMarkdown: args.cleanedMarkdown.slice(0, 24_000),
       isSpam: args.isSpam,
       shouldEmbed:
         message.inInbox && !args.isSpam && isImportantMessage(args.importance),

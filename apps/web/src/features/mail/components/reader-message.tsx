@@ -1,5 +1,4 @@
 import { useRef, useState } from "react";
-import { LoaderCircle, ShieldAlert, Sparkles } from "lucide-react";
 
 import type {
   EmailTextBlock,
@@ -10,6 +9,7 @@ import { parseEmailText } from "@rodge-mail/features/mail";
 import type { ThreadMessageDetail } from "../types";
 import { formatFullDate, getInitials } from "../format";
 import { ReaderAttachments } from "./reader-attachments";
+import { MessageOverview } from "./reader-clean-view";
 
 export type ReaderViewMode = "clean" | "original";
 
@@ -57,45 +57,6 @@ export function ReaderMessage({
       <ReaderAttachments attachments={message.attachments} />
     </section>
   );
-}
-
-function MessageOverview({ message }: { message: ThreadMessageDetail }) {
-  const classification = message.classification;
-  const isPreparing = isClassificationPreparing(classification?.status);
-  const summary = getOverviewSummary(classification?.summary, message.snippet);
-  const label = classification?.isSpam ? "Likely spam" : "Overview";
-  return (
-    <aside className="mail-inset mt-6 rounded-[13px] border px-4 py-3.5 sm:ml-[52px]">
-      <div className="flex items-start gap-3">
-        <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg bg-[color-mix(in_srgb,var(--mail-brass)_18%,transparent)] text-[var(--mail-brass-bright)]">
-          <OverviewIcon
-            isPreparing={isPreparing}
-            isSpam={classification?.isSpam === true}
-          />
-        </span>
-        <div className="min-w-0">
-          <p className="mail-label font-mono text-[8px] tracking-[0.16em] uppercase">
-            {label}
-          </p>
-          <p className="mt-1 text-sm leading-5.5 text-[var(--mail-ink-soft)]">
-            {summary}
-          </p>
-        </div>
-      </div>
-    </aside>
-  );
-}
-
-function OverviewIcon({
-  isPreparing,
-  isSpam,
-}: {
-  isPreparing: boolean;
-  isSpam: boolean;
-}) {
-  if (isSpam) return <ShieldAlert className="size-3.5" />;
-  if (isPreparing) return <LoaderCircle className="size-3.5 animate-spin" />;
-  return <Sparkles className="size-3.5" />;
 }
 
 function ReaderMessageContent({
@@ -261,18 +222,7 @@ function readableBody(value: string | undefined, fallback: string) {
 function getReaderBody(message: ThreadMessageDetail, viewMode: ReaderViewMode) {
   const source =
     viewMode === "clean"
-      ? (message.classification?.cleanedMarkdown ?? message.content?.plainText)
+      ? (message.cleanView?.cleanedMarkdown ?? message.content?.plainText)
       : message.content?.plainText;
   return readableBody(source, message.snippet);
-}
-
-function getOverviewSummary(value: string | undefined, fallback: string) {
-  const summary = value?.trim();
-  if (summary) return summary;
-  if (fallback.trim()) return fallback;
-  return "Preparing a clean overview…";
-}
-
-function isClassificationPreparing(status: string | undefined) {
-  return status === "pending" || status === "running";
 }

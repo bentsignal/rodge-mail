@@ -5,12 +5,7 @@ import { File, Paths } from "expo-file-system";
 import * as Sharing from "expo-sharing";
 import { WebView } from "@expo/dom-webview";
 import { useAction } from "convex/react";
-import {
-  Download,
-  Paperclip,
-  ShieldAlert,
-  Sparkles,
-} from "lucide-react-native";
+import { Download, Paperclip } from "lucide-react-native";
 
 import type { MailAttachment, MailMessage } from "@rodge-mail/features/mail";
 import { api } from "@rodge-mail/convex/api";
@@ -20,6 +15,7 @@ import { PostalSurface } from "~/features/theme/postal-surface";
 import { useColor } from "~/hooks/use-color";
 import { MobileEmailBody } from "../components/mobile-email-body";
 import { toConvexId } from "../lib/convex-id";
+import { MessageOverview } from "./clean-view-overview";
 
 export type MessageViewMode = "clean" | "original";
 
@@ -51,28 +47,6 @@ export function ThreadMessageBody({
       />
     </PostalSurface>
   );
-}
-
-function MessageOverview({ message }: { message: MailMessage }) {
-  const brass = useColor("primary");
-  const label = message.isSpam ? "Likely spam" : "Overview";
-  const overview = message.overview ?? "Preparing a clean overview…";
-  return (
-    <View className="bg-well border-well-border flex-row gap-3 rounded-xl border px-4 py-3">
-      <OverviewIcon color={brass} isSpam={message.isSpam === true} />
-      <View className="min-w-0 flex-1 gap-1">
-        <Text className="text-muted-foreground text-[10px] font-bold tracking-widest uppercase">
-          {label}
-        </Text>
-        <Text className="text-foreground text-sm leading-5">{overview}</Text>
-      </View>
-    </View>
-  );
-}
-
-function OverviewIcon({ color, isSpam }: { color: string; isSpam: boolean }) {
-  if (isSpam) return <ShieldAlert color={color} size={16} />;
-  return <Sparkles color={color} size={16} />;
 }
 
 function MessageContent({

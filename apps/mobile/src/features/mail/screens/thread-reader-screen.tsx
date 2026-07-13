@@ -37,24 +37,12 @@ export function ThreadReaderScreen() {
   const queryArgs = threadId ? { threadId } : "skip";
   const thread = useQuery(api.mail.queries.getThread, queryArgs);
   const setThreadRead = useMutation(api.mail.mutations.setThreadRead);
-  const requestCleanView = useMutation(
-    api.classification.mutations.requestCleanView,
-  );
 
   // eslint-disable-next-line no-restricted-syntax -- Direct and notification routes bypass the inbox tap that normally marks a thread read.
   useEffect(() => {
     if (!threadId || !thread || thread.unreadCount === 0) return;
     void setThreadRead({ threadId, isRead: true }).catch(() => undefined);
   }, [setThreadRead, thread, threadId]);
-
-  // eslint-disable-next-line no-restricted-syntax -- Opening a thread requests any missing server-generated clean views.
-  useEffect(() => {
-    if (!thread) return;
-    for (const message of thread.messages) {
-      if (message.classification?.cleanedMarkdown !== undefined) continue;
-      void requestCleanView({ messageId: message._id }).catch(() => undefined);
-    }
-  }, [requestCleanView, thread]);
 
   if (thread === undefined && threadId) return <ThreadLoading />;
   if (!thread) return <ThreadNotFound />;

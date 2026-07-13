@@ -1,6 +1,7 @@
 import { defineSchema, defineTable } from "convex/server";
 
 import { vAgentAuditEvent, vAgentCredential } from "./agent/validators";
+import { vAiUsage } from "./aiUsage/validators";
 import {
   vMessageEmbedding,
   vMessageEmbeddingJob,
@@ -13,6 +14,7 @@ import {
   vMailFolder,
   vMessage,
   vMessageClassification,
+  vMessageCleanView,
   vMessageContent,
   vOutboxMessage,
   vProviderCredential,
@@ -109,6 +111,12 @@ export default defineSchema(
       .index("by_owner_spam_updated", ["ownerId", "isSpam", "updatedAt"])
       .index("by_owner_status", ["ownerId", "status"])
       .index("by_owner_status_importance", ["ownerId", "status", "importance"]),
+    messageCleanViews: defineTable(vMessageCleanView)
+      .index("by_message", ["messageId"])
+      .index("by_owner_status", ["ownerId", "status"]),
+    aiUsage: defineTable(vAiUsage)
+      .index("by_request_key", ["requestKey"])
+      .index("by_owner_created", ["ownerId", "createdAt"]),
     messageEmbeddingJobs: defineTable(vMessageEmbeddingJob)
       .index("by_message", ["messageId"])
       .index("by_status", ["status"])

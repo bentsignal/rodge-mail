@@ -34,8 +34,6 @@ export function deterministicClassification(
     reason:
       topSignals.map((signal) => signal.explanation).join("; ") ||
       "No strong priority signals were detected.",
-    summary: mail.snippet || mail.subject || "No message preview available.",
-    cleanedMarkdown: mail.body,
     isSpam: false,
   } satisfies ClassificationResult;
 }

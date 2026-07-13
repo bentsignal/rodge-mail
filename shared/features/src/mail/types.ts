@@ -31,6 +31,8 @@ export interface MailMessage {
   attachments: MailAttachment[];
   body: string[];
   cleanedBody?: string;
+  cleanError?: string;
+  cleanStatus?: "pending" | "running" | "ready" | "failed";
   cc: MailAddress[];
   from: MailAddress;
   id: string;
