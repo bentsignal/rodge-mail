@@ -152,20 +152,25 @@ function FocusedSearchBar({
   onSearchClose: () => void;
 }) {
   return (
-    <Stack.SearchBar
-      barTintColor={colors.paper}
-      hideNavigationBar
-      hideWhenScrolling={false}
-      onCancelButtonPress={() => {
-        onSearchChange("");
-        onSearchClose();
+    <Stack.Screen
+      options={{
+        headerSearchBarOptions: {
+          barTintColor: colors.paper,
+          hideNavigationBar: true,
+          hideWhenScrolling: false,
+          onCancelButtonPress: () => {
+            onSearchChange("");
+            onSearchClose();
+          },
+          onChangeText: (event) => onSearchChange(event.nativeEvent.text),
+          placeholder: "Search mail",
+          placement: "automatic",
+          ref: nativeSearchBarRef,
+          textColor: colors.foreground,
+          tintColor: colors.primary,
+        },
+        headerShown: false,
       }}
-      onChangeText={(event) => onSearchChange(event.nativeEvent.text)}
-      placeholder="Search mail"
-      placement="automatic"
-      ref={nativeSearchBarRef}
-      textColor={colors.foreground}
-      tintColor={colors.primary}
     />
   );
 }

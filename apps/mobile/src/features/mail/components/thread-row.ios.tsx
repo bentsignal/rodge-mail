@@ -8,6 +8,7 @@ import {
   SwipeActions,
   Text,
   VStack,
+  ZStack,
 } from "@expo/ui/swift-ui";
 import {
   accessibilityElement,
@@ -152,7 +153,6 @@ function ThreadSummary({
         padding({ leading: 12, trailing: 12 }),
       ]}
     >
-      <UnreadIndicator colors={colors} isUnread={isUnread} />
       <SenderAvatar colors={colors} thread={thread} />
       <VStack
         alignment="leading"
@@ -211,23 +211,30 @@ function SenderAvatar({
   colors: ThreadRowColors;
   thread: MailThread;
 }) {
+  const isUnread = isThreadUnread(thread);
   return (
-    <Text
-      modifiers={[
-        frame({ height: 40, width: 40 }),
-        font({ size: 13, weight: "semibold" }),
-        foregroundStyle(colors.foreground),
-        background(
-          colors.paperDeep,
-          shapes.roundedRectangle({
-            cornerRadius: 11,
-            roundedCornerStyle: "continuous",
-          }),
-        ),
-      ]}
+    <ZStack
+      alignment="topTrailing"
+      modifiers={[frame({ height: 40, width: 40 })]}
     >
-      {getSenderInitials(thread.sender.name)}
-    </Text>
+      <Text
+        modifiers={[
+          frame({ height: 40, width: 40 }),
+          font({ size: 13, weight: "semibold" }),
+          foregroundStyle(colors.foreground),
+          background(
+            colors.paperDeep,
+            shapes.roundedRectangle({
+              cornerRadius: 11,
+              roundedCornerStyle: "continuous",
+            }),
+          ),
+        ]}
+      >
+        {getSenderInitials(thread.sender.name)}
+      </Text>
+      <UnreadIndicator colors={colors} isUnread={isUnread} />
+    </ZStack>
   );
 }
 

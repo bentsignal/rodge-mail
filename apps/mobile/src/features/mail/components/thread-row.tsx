@@ -121,11 +121,11 @@ function ThreadSummary({
         transform: [{ translateY: pressed ? 1 : 0 }],
       })}
     >
-      <UnreadIndicator isUnread={isUnread} />
-      <View className="bg-paper-deep border-paper-border size-10 items-center justify-center rounded-lg border">
+      <View className="bg-paper-deep border-paper-border relative size-10 items-center justify-center rounded-lg border">
         <Text className="text-foreground text-xs font-semibold">
           {getSenderInitials(thread.sender.name)}
         </Text>
+        <UnreadIndicator isUnread={isUnread} />
       </View>
       <View className="min-w-0 flex-1 gap-1">
         <View className="flex-row items-center gap-2">
@@ -169,7 +169,7 @@ function UnreadIndicator({ isUnread }: { isUnread: boolean }) {
   return (
     <View
       accessibilityElementsHidden
-      className={`mt-1.5 size-2 rounded-full ${isUnread ? "bg-brass" : "bg-transparent"}`}
+      className={`border-paper absolute -top-1 -right-1 size-2.5 rounded-full border ${isUnread ? "bg-brass" : "bg-transparent"}`}
       importantForAccessibility="no-hide-descendants"
     />
   );
