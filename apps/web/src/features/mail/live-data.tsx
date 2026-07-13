@@ -188,6 +188,7 @@ function useLiveMailQueries({
       searchQuery,
     }),
     isLoadingMore: activePage.status === "LoadingMore",
+    isLoadingUnreadCounts: unreadCountQuery.isPending,
     isSearchingInbox: getIsSearchingInbox({
       debouncedSearchQuery,
       pageStatus: activePage.status,

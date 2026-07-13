@@ -5,8 +5,13 @@ import { cn } from "@rodge-mail/std/cn";
 
 import { useLiveMail } from "../live-data";
 import { withUnreadSearch } from "../mail-route-search";
+import { getMailboxBadgeCount } from "../mailbox-badge-count";
 import { useMailStore } from "../store";
 import { useMailboxNavigation } from "../use-mailbox-navigation";
+import {
+  BulkSelectButton,
+  BulkSelectionToolbar,
+} from "./bulk-selection-toolbar";
 import { ThreadList } from "./thread-list";
 
 export function InboxPane() {
@@ -28,7 +33,20 @@ export function InboxPane() {
 
 function InboxHeader() {
   const openComposer = useMailStore((store) => store.openComposer);
-  const { inboxMessages, isLoadingInbox, mailMode } = useLiveMail();
+  const accountFilter = useMailStore((store) => store.accountFilter);
+  const {
+    inboxMessages,
+    isLoadingInbox,
+    isLoadingUnreadCounts,
+    mailMode,
+    unreadCounts,
+  } = useLiveMail();
+  const count = getMailboxBadgeCount({
+    accountFilter,
+    archivedCount: inboxMessages.length,
+    mailMode,
+    unreadCounts,
+  });
 
   return (
     <header className="mail-paper shrink-0 border-b border-[var(--mail-seam)] px-4 pt-5 pb-4 shadow-[0_2px_6px_rgba(55,40,19,0.08)] sm:px-5 dark:shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
@@ -40,13 +58,17 @@ function InboxHeader() {
               {getMailboxTitle(mailMode)}
             </h1>
             <InboxCount
-              count={inboxMessages.length}
-              isLoading={isLoadingInbox}
+              count={count}
+              isLoading={
+                mailMode === "archive" ? isLoadingInbox : isLoadingUnreadCounts
+              }
+              label={mailMode === "archive" ? "messages" : "unread"}
             />
           </div>
         </div>
         <div className="flex items-center gap-2">
           <MailboxFilterControl mailMode={mailMode} />
+          <BulkSelectButton />
           <button
             aria-label="New message"
             className="mail-brass-button flex size-10 items-center justify-center rounded-[10px] transition-colors md:hidden"
@@ -58,6 +80,7 @@ function InboxHeader() {
         </div>
       </div>
       <SearchInput />
+      <BulkSelectionToolbar />
       <MobileAccountFilters />
       <SearchResultsLabel />
     </header>
@@ -110,13 +133,15 @@ function UnreadFilterButton() {
 function InboxCount({
   count,
   isLoading,
+  label,
 }: {
   count: number;
   isLoading: boolean;
+  label: "messages" | "unread";
 }) {
   return (
     <span
-      aria-label={isLoading ? "Loading messages" : `${count} messages`}
+      aria-label={isLoading ? `Loading ${label}` : `${count} ${label}`}
       className="mail-raised mb-0.5 flex min-w-8 items-center justify-center rounded-[7px] border px-2 py-1 font-mono text-xs font-semibold text-[var(--mail-ink-soft)] tabular-nums"
     >
       <InboxCountValue count={count} isLoading={isLoading} />

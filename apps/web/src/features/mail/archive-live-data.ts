@@ -60,6 +60,7 @@ export function useArchiveLiveMailValue() {
     isLoadingAccounts: accountQuery.isPending,
     isLoadingInbox: archivePage.isLoading,
     isLoadingMore: archivePage.isLoadingMore,
+    isLoadingUnreadCounts: unreadCountQuery.isPending,
     isLoadingThread: effectiveThreadId !== undefined && threadQuery.isPending,
     isSearchingInbox: archivePage.isSearching,
     isSeedingDemo: false,

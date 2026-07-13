@@ -153,6 +153,10 @@ function useInternalStore({
     value: searchQuery,
   } = useDebouncedInput({ initialValue: "", timeInMs: SEARCH_DEBOUNCE_MS });
   const [selection, setSelection] = useState(initialSelection);
+  const [bulkSelectionIsActive, setBulkSelectionIsActive] = useState(false);
+  const [bulkSelectedThreadIds, setBulkSelectedThreadIds] = useState<
+    Set<Id<"threads">>
+  >(() => new Set());
   const [mobileReaderIsOpen, setMobileReaderIsOpen] = useState(
     initialSelection !== undefined,
   );
@@ -168,6 +172,8 @@ function useInternalStore({
     if (accountFilter === nextAccountFilter) return;
     setAccountFilterState(nextAccountFilter);
     resetSelection();
+    setBulkSelectionIsActive(false);
+    setBulkSelectedThreadIds(new Set());
   }
 
   function selectThread(nextSelection: ThreadSelection) {
@@ -175,9 +181,26 @@ function useInternalStore({
     setMobileReaderIsOpen(true);
   }
 
+  function setBulkSelectionActive(isActive: boolean) {
+    setBulkSelectionIsActive(isActive);
+    if (!isActive) setBulkSelectedThreadIds(new Set());
+  }
+
+  function toggleBulkThread(threadId: Id<"threads">) {
+    setBulkSelectedThreadIds((current) => {
+      const next = new Set(current);
+      if (next.has(threadId)) next.delete(threadId);
+      else next.add(threadId);
+      return next;
+    });
+  }
+
   return {
     ...composer,
     accountFilter,
+    bulkSelectedThreadIds,
+    bulkSelectionIsActive,
+    clearBulkSelection: () => setBulkSelectedThreadIds(new Set()),
     clearSelection: resetSelection,
     closeMobileReader: () => setMobileReaderIsOpen(false),
     mobileReaderIsOpen,
@@ -188,6 +211,7 @@ function useInternalStore({
     selectedMessageId: selection?.messageId,
     selectedThreadId: selection?.threadId,
     setAccountFilter,
+    setBulkSelectionActive,
     setInitialSelection: (nextSelection: ThreadSelection) =>
       setSelection((current) => current ?? nextSelection),
     setSearchQuery: (query: string) => {
@@ -197,11 +221,14 @@ function useInternalStore({
         setSearchQueryState(query);
       }
       resetSelection();
+      setBulkSelectedThreadIds(new Set());
     },
     setUnreadOnly: (nextUnreadOnly: boolean) => {
       if (unreadOnly === nextUnreadOnly) return;
       setUnreadOnlyState(nextUnreadOnly);
+      setBulkSelectedThreadIds(new Set());
     },
+    toggleBulkThread,
     unreadOnly,
   };
 }

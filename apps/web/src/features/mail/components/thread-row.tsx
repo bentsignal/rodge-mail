@@ -1,4 +1,4 @@
-import { Archive, Paperclip, Pin } from "lucide-react";
+import { Archive, Pin } from "lucide-react";
 
 import { cn } from "@rodge-mail/std/cn";
 import * as ContextMenu from "@rodge-mail/ui-web/context-menu";
@@ -7,10 +7,10 @@ import type { MailRouteSearch } from "../mail-route-search";
 import type { MailAccountFilter } from "../store";
 import type { InboxMessage, MailAccountView } from "../types";
 import { QuickLink } from "~/components/quick-link";
-import { formatInboxDate, getInitials } from "../format";
 import { useLiveMail } from "../live-data";
 import { useMailStore } from "../store";
 import { getUnreadThreadRowClass } from "../thread-row-presentation";
+import { ThreadRowContent } from "./thread-row-content";
 
 export function ThreadRow({
   message,
@@ -29,8 +29,21 @@ export function ThreadRow({
   } = useLiveMail();
   const account = accounts.find((item) => item._id === message.accountId);
   const accountFilter = useMailStore((store) => store.accountFilter);
+  const bulkSelectedThreadIds = useMailStore(
+    (store) => store.bulkSelectedThreadIds,
+  );
+  const bulkSelectionIsActive = useMailStore(
+    (store) => store.bulkSelectionIsActive,
+  );
+  const toggleBulkThread = useMailStore((store) => store.toggleBulkThread);
   const unreadOnly = useMailStore((store) => store.unreadOnly);
   const isSelected = selectedThreadId === message.threadId;
+  const isBulkSelected = bulkSelectedThreadIds.has(message.threadId);
+  const rowIsSelected = getRowIsSelected({
+    bulkSelectionIsActive,
+    isBulkSelected,
+    isSelected,
+  });
   const senderName = getSenderName(message);
   const pinLabel = message.isPinned ? "Unpin message" : "Pin message";
   const preview = message.classification?.summary ?? message.snippet;
@@ -41,59 +54,29 @@ export function ThreadRow({
         aria-setsize={-1}
         className={cn(
           "mail-thread-row group relative overflow-hidden border-b border-[var(--mail-seam)] bg-[var(--mail-paper)] transition-[background-color,border-color,box-shadow] duration-150",
-          getUnreadThreadRowClass(message.isRead, isSelected),
-          isSelected
+          getUnreadThreadRowClass(message.isRead, rowIsSelected),
+          rowIsSelected
             ? "z-[1] border-y border-[var(--mail-border-strong)] bg-[var(--mail-selected)] shadow-[var(--warm-shadow-raised)]"
             : "hover:bg-[var(--mail-row-hover)]",
         )}
       >
-        <SelectedMarker selected={isSelected} />
-        <ContextMenu.Trigger asChild>
-          <ThreadLink
-            accountFilter={accountFilter}
-            mailMode={mailMode}
-            message={message}
-            onClick={() => markMessageRead(message)}
-            unreadOnly={unreadOnly}
-          >
-            <div className="flex items-start gap-2.5">
-              <SenderAvatar account={account} name={senderName} />
-              <div className="min-w-0 flex-1">
-                <div className="flex items-baseline gap-2">
-                  <p
-                    className={cn(
-                      "min-w-0 flex-1 truncate text-[13px]",
-                      message.isRead
-                        ? "font-medium"
-                        : "text-foreground font-bold",
-                    )}
-                  >
-                    {senderName}
-                  </p>
-                  <time className="mail-label shrink-0 font-mono text-[9px] tabular-nums">
-                    {formatInboxDate(
-                      new Date(message.receivedAt).toISOString(),
-                    )}
-                  </time>
-                </div>
-                <p
-                  className={cn(
-                    "mt-0.5 truncate font-serif text-[16px] leading-5 tracking-[-0.01em]",
-                    message.isRead ? "text-foreground/80" : "font-semibold",
-                  )}
-                >
-                  {message.subject}
-                </p>
-                <p className="mail-label mt-0.5 line-clamp-2 text-[12px] leading-[1.45]">
-                  {preview}
-                </p>
-                <ThreadMetadata message={message} />
-              </div>
-            </div>
-          </ThreadLink>
-        </ContextMenu.Trigger>
-        <InboxThreadActions
+        <SelectedMarker selected={rowIsSelected} />
+        <ThreadRowTarget
+          account={account}
+          accountFilter={accountFilter}
+          bulkSelectionIsActive={bulkSelectionIsActive}
+          isBulkSelected={isBulkSelected}
+          mailMode={mailMode}
+          markMessageRead={markMessageRead}
+          message={message}
+          preview={preview}
+          senderName={senderName}
+          toggleBulkThread={toggleBulkThread}
+          unreadOnly={unreadOnly}
+        />
+        <ThreadRowActions
           archiveThread={archiveThread}
+          bulkSelectionIsActive={bulkSelectionIsActive}
           mailMode={mailMode}
           message={message}
           pinLabel={pinLabel}
@@ -102,6 +85,83 @@ export function ThreadRow({
       </article>
     </ContextMenu.Container>
   );
+}
+
+function ThreadRowTarget({
+  account,
+  accountFilter,
+  bulkSelectionIsActive,
+  isBulkSelected,
+  mailMode,
+  markMessageRead,
+  message,
+  preview,
+  senderName,
+  toggleBulkThread,
+  unreadOnly,
+}: {
+  account: MailAccountView | undefined;
+  accountFilter: MailAccountFilter;
+  bulkSelectionIsActive: boolean;
+  isBulkSelected: boolean;
+  mailMode: "archive" | "inbox";
+  markMessageRead: (message: InboxMessage) => void;
+  message: InboxMessage;
+  preview: string;
+  senderName: string;
+  toggleBulkThread: (threadId: InboxMessage["threadId"]) => void;
+  unreadOnly: boolean;
+}) {
+  if (bulkSelectionIsActive) {
+    return (
+      <button
+        aria-label={getBulkSelectionLabel(isBulkSelected, message.subject)}
+        aria-pressed={isBulkSelected}
+        className="block w-full px-4 py-3.5 text-left"
+        onClick={() => toggleBulkThread(message.threadId)}
+        type="button"
+      >
+        <ThreadRowContent
+          account={account}
+          isBulkSelected={isBulkSelected}
+          message={message}
+          preview={preview}
+          senderName={senderName}
+          showSelection={true}
+        />
+      </button>
+    );
+  }
+  return (
+    <ContextMenu.Trigger asChild>
+      <ThreadLink
+        accountFilter={accountFilter}
+        mailMode={mailMode}
+        message={message}
+        onClick={() => markMessageRead(message)}
+        unreadOnly={unreadOnly}
+      >
+        <ThreadRowContent
+          account={account}
+          isBulkSelected={false}
+          message={message}
+          preview={preview}
+          senderName={senderName}
+          showSelection={false}
+        />
+      </ThreadLink>
+    </ContextMenu.Trigger>
+  );
+}
+
+function ThreadRowActions({
+  bulkSelectionIsActive,
+  ...props
+}: React.ComponentProps<typeof InboxThreadActions> & {
+  bulkSelectionIsActive: boolean;
+}) {
+  if (bulkSelectionIsActive) return null;
+  return <InboxThreadActions {...props} />;
 }
 
 function InboxThreadActions({
@@ -196,43 +256,6 @@ function ThreadRowMenu({
   );
 }
 
-function ThreadMetadata({ message }: { message: InboxMessage }) {
-  return (
-    <div className="mt-1.5 flex min-h-4 items-center gap-2">
-      <UnreadMarker isRead={message.isRead} />
-      <PinnedMarker isPinned={message.isPinned} />
-      <AttachmentMarker hasAttachments={message.hasAttachments} />
-    </div>
-  );
-}
-
-function PinnedMarker({ isPinned }: { isPinned: boolean }) {
-  if (!isPinned) return null;
-  return (
-    <Pin
-      aria-label="Pinned"
-      className="size-3 fill-current text-[var(--mail-highlight)]"
-    />
-  );
-}
-
-function UnreadMarker({ isRead }: { isRead: boolean }) {
-  if (isRead) return null;
-  return (
-    <span
-      aria-label="Unread message"
-      className="flex h-4 items-center rounded-[4px] border border-[var(--mail-brass-deep)] bg-[color-mix(in_oklab,var(--mail-brass)_14%,transparent)] px-1.5 font-mono text-[8px] font-bold tracking-[0.08em] text-[var(--mail-brass-deep)] uppercase"
-    >
-      <span aria-hidden="true">Unread</span>
-    </span>
-  );
-}
-
-function AttachmentMarker({ hasAttachments }: { hasAttachments: boolean }) {
-  if (!hasAttachments) return null;
-  return <Paperclip className="size-3 text-[var(--mail-ink-soft)]" />;
-}
-
 function PinMessageButton({
   message,
   togglePinned,
@@ -265,27 +288,19 @@ function SelectedMarker({ selected }: { selected: boolean }) {
   );
 }
 
-function SenderAvatar({
-  account,
-  name,
+function getRowIsSelected({
+  bulkSelectionIsActive,
+  isBulkSelected,
+  isSelected,
 }: {
-  account: MailAccountView | undefined;
-  name: string;
+  bulkSelectionIsActive: boolean;
+  isBulkSelected: boolean;
+  isSelected: boolean;
 }) {
-  return (
-    <div className="relative flex size-8 shrink-0 items-center justify-center rounded-[10px] border border-[var(--mail-seam)] bg-[var(--mail-avatar)] font-mono text-[10px] font-semibold text-[var(--mail-avatar-foreground)] shadow-[var(--mail-shadow-raised)]">
-      {getInitials(name)}
-      <AccountDot accent={account?.accent} />
-    </div>
-  );
+  if (bulkSelectionIsActive) return isBulkSelected;
+  return isSelected;
 }
 
-function AccountDot({ accent }: { accent: string | undefined }) {
-  if (!accent) return null;
-  return (
-    <span
-      className="absolute right-0 bottom-0 size-2.5 rounded-full ring-2 ring-[var(--mail-paper-soft)]"
-      style={{ backgroundColor: accent }}
-    />
-  );
+function getBulkSelectionLabel(isSelected: boolean, subject: string) {
+  return `${isSelected ? "Deselect" : "Select"} ${subject}`;
 }

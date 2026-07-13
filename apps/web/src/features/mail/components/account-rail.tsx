@@ -19,7 +19,10 @@ import { PasskeyManagementButton } from "~/features/auth/components/passkey-mana
 import { useLiveMail } from "../live-data";
 import { useMailStore } from "../store";
 import { useMailboxNavigation } from "../use-mailbox-navigation";
-import { getAccountButtonLabel } from "./account-rail-presentation";
+import {
+  getAccountButtonLabel,
+  getAccountRailMailboxTarget,
+} from "./account-rail-presentation";
 import { AddAccountButton } from "./provider-connection-buttons";
 
 const ACCOUNT_ICONS = {
@@ -34,7 +37,7 @@ export function AccountRail() {
   });
   const accountFilter = useMailStore((store) => store.accountFilter);
   const clearSelection = useMailStore((store) => store.clearSelection);
-  const selectMailbox = useMailboxNavigation(isArchive ? "/archive" : "/");
+  const selectMailbox = useMailboxNavigation(getAccountRailMailboxTarget());
   const openComposer = useMailStore((store) => store.openComposer);
   const {
     accounts,

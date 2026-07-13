@@ -5,3 +5,7 @@ export function getAccountButtonLabel(
   if (!count) return label;
   return `${label}, ${count} unread`;
 }
+
+export function getAccountRailMailboxTarget() {
+  return "/" as const;
+}

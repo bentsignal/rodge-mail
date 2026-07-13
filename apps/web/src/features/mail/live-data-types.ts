@@ -8,6 +8,7 @@ export interface LiveMailContextValue {
   isLoadingAccounts: boolean;
   isLoadingInbox: boolean;
   isLoadingMore: boolean;
+  isLoadingUnreadCounts: boolean;
   isSearchingInbox: boolean;
   isLoadingThread: boolean;
   isSeedingDemo: boolean;
@@ -16,12 +17,19 @@ export interface LiveMailContextValue {
   mailMode: "archive" | "inbox";
   markMessageRead: (message: InboxMessage) => void;
   archiveThread: (message: Pick<InboxMessage, "threadId">) => Promise<void>;
+  archiveThreads: (messages: Pick<InboxMessage, "threadId">[]) => Promise<void>;
   permanentlyDeleteArchivedThread: (
     message: Pick<InboxMessage, "threadId">,
+  ) => Promise<void>;
+  permanentlyDeleteArchivedThreads: (
+    messages: Pick<InboxMessage, "threadId">[],
   ) => Promise<void>;
   replyToSelectedThread: () => void;
   restoreArchivedThread: (
     message: Pick<InboxMessage, "threadId">,
+  ) => Promise<void>;
+  restoreArchivedThreads: (
+    messages: Pick<InboxMessage, "threadId">[],
   ) => Promise<void>;
   seedDemoMail: () => Promise<void>;
   syncAllAccounts: () => Promise<void>;
@@ -30,5 +38,9 @@ export interface LiveMailContextValue {
   selectedThread: MailThreadDetail | undefined;
   togglePinned: (message: InboxMessage) => Promise<void>;
   toggleRead: (message: InboxMessage) => Promise<void>;
+  setThreadsRead: (
+    messages: Pick<InboxMessage, "threadId">[],
+    isRead: boolean,
+  ) => Promise<void>;
   unreadCounts: Record<string, number>;
 }
