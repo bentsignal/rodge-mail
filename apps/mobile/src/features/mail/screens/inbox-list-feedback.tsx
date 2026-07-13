@@ -1,16 +1,20 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
 
+import type { MailboxFilter } from "./mailbox-controls";
+
 export function EmptyInbox({
   isLoading,
+  mailbox = "inbox",
   primary,
   searchTerm,
-  showUnreadOnly,
+  filter,
 }: {
+  filter: MailboxFilter;
   isLoading: boolean;
+  mailbox?: "archive" | "inbox";
   primary: string;
   searchTerm?: string;
-  showUnreadOnly: boolean;
 }) {
   if (isLoading) return <DelayedInboxLoader color={primary} />;
   if (searchTerm) {
@@ -21,11 +25,27 @@ export function EmptyInbox({
       />
     );
   }
-  if (showUnreadOnly) {
+  if (filter === "unread") {
     return (
       <InboxMessage
         detail="Everything in this view has been read."
         title="No unread messages"
+      />
+    );
+  }
+  if (filter === "read") {
+    return (
+      <InboxMessage
+        detail="There are no read conversations in this view."
+        title="No read messages"
+      />
+    );
+  }
+  if (mailbox === "archive") {
+    return (
+      <InboxMessage
+        detail="Conversations you archive stay here for 30 days."
+        title="Archive is empty"
       />
     );
   }

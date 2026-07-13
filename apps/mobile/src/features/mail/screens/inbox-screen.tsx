@@ -1,31 +1,29 @@
 import type { LegendListRenderItemProps } from "@legendapp/list/react-native";
 import { useState } from "react";
-import { Animated, RefreshControl, View } from "react-native";
 import { Stack, useRouter } from "expo-router";
-import { LegendList } from "@legendapp/list/react-native";
 import { usePaginatedQuery } from "convex/react";
 
 import type { MailAccountFilter, MailThread } from "@rodge-mail/features/mail";
 import { api } from "@rodge-mail/convex/api";
 
-import type { MobileMailAccount } from "../lib/convex-mail";
 import { useColor } from "~/hooks/use-color";
 import { useDebouncedValue } from "~/hooks/use-debounced-value";
 import { ThreadRow } from "../components/thread-row";
 import { useSemanticMailSearch } from "../hooks/use-semantic-mail-search";
 import { toConvexId } from "../lib/convex-id";
 import { toMailThreads } from "../lib/convex-mail";
-import { nativeSearchBarRef } from "../native-search-controller";
+import {
+  focusNativeSearch,
+  nativeSearchBarRef,
+} from "../native-search-controller";
 import { useMailStore } from "../store";
-import { InboxHeader } from "./inbox-header";
-import { EmptyInbox, InboxFooter } from "./inbox-list-feedback";
 import {
   getEmptyIsLoading,
   getFooterIsLoading,
-  getInboxListFeedback,
   getVisibleInboxThreads,
 } from "./inbox-list-state";
-import { useInboxFilterTransition } from "./use-inbox-filter-transition";
+import { MailboxThreadList } from "./mailbox-thread-list";
+import { useInboxMailboxControls } from "./use-inbox-mailbox-controls";
 import { useInboxRefresh } from "./use-inbox-refresh";
 
 const skippedSearch = "skip";
@@ -41,7 +39,6 @@ export function InboxScreen({ searchMode = false }: { searchMode?: boolean }) {
   const isLoading = useMailStore((store) => store.isLoading);
   const isLoadingMore = useMailStore((store) => store.isLoadingMore);
   const [searchTerm, setSearchTerm] = useState("");
-  const [showUnreadOnly, setShowUnreadOnly] = useState(false);
   const debouncedSearchTerm = useDebouncedValue(searchTerm.trim(), 250);
   const colors = useInboxColors();
   const { isRefreshing, refresh, refreshError } = useInboxRefresh(accounts);
@@ -57,12 +54,13 @@ export function InboxScreen({ searchMode = false }: { searchMode?: boolean }) {
     lexicalResults: search.results,
     searchTerm: debouncedSearchTerm,
   });
-  const results = getVisibleInboxThreads({
+  const unfilteredResults = getVisibleInboxThreads({
     inboxThreads: threads,
     isSearching,
     searchThreads: toMailThreads(semanticSearch.results),
-    showUnreadOnly,
+    showUnreadOnly: false,
   });
+  const controls = useInboxMailboxControls(unfilteredResults);
   const emptyIsLoading = getEmptyIsLoading({
     debouncedSearchTerm,
     isLoading,
@@ -86,7 +84,9 @@ export function InboxScreen({ searchMode = false }: { searchMode?: boolean }) {
     });
   }
   function renderThread({ item }: LegendListRenderItemProps<MailThread>) {
-    return <ThreadRow thread={item} onOpen={() => openThread(item.id)} />;
+    return (
+      <InboxThreadRow controls={controls} thread={item} onOpen={openThread} />
+    );
   }
   function loadNextPage() {
     if (!isSearching) loadMore();
@@ -100,24 +100,49 @@ export function InboxScreen({ searchMode = false }: { searchMode?: boolean }) {
         searchMode={searchMode}
         onSearchChange={setSearchTerm}
       />
-      <InboxThreadList
+      <MailboxThreadList
         accountFilter={accountFilter}
         accounts={accounts}
-        data={results}
+        bulkActions={controls.bulkActions}
+        data={controls.threads}
         emptyIsLoading={emptyIsLoading}
+        filter={controls.filter}
         footerIsLoading={footerIsLoading}
         isRefreshing={isRefreshing}
+        mailbox="inbox"
         primary={colors.primary}
         refreshError={refreshError}
         renderThread={renderThread}
         searchTerm={isSearching ? searchTerm.trim() : undefined}
-        showUnreadOnly={showUnreadOnly}
+        selectedCount={controls.selectedCount}
+        selectionMode={controls.selectionMode}
         onAccountChange={setAccountFilter}
         onEndReached={loadNextPage}
+        onFilterChange={controls.changeFilter}
         onRefresh={() => void refresh()}
-        onUnreadChange={setShowUnreadOnly}
+        onToggleSelection={controls.toggleSelectionMode}
       />
     </>
+  );
+}
+
+function InboxThreadRow({
+  controls,
+  onOpen,
+  thread,
+}: {
+  controls: ReturnType<typeof useInboxMailboxControls>;
+  onOpen: (threadId: string) => void;
+  thread: MailThread;
+}) {
+  return (
+    <ThreadRow
+      selected={controls.selectedIds.has(thread.id)}
+      selectionMode={controls.selectionMode}
+      thread={thread}
+      onOpen={() => onOpen(thread.id)}
+      onSelect={() => controls.toggleThreadSelection(thread.id)}
+    />
   );
 }
 
@@ -152,25 +177,22 @@ function FocusedSearchBar({
   onSearchClose: () => void;
 }) {
   return (
-    <Stack.Screen
-      options={{
-        headerSearchBarOptions: {
-          barTintColor: colors.paper,
-          hideNavigationBar: true,
-          hideWhenScrolling: false,
-          onCancelButtonPress: () => {
-            onSearchChange("");
-            onSearchClose();
-          },
-          onChangeText: (event) => onSearchChange(event.nativeEvent.text),
-          placeholder: "Search mail",
-          placement: "automatic",
-          ref: nativeSearchBarRef,
-          textColor: colors.foreground,
-          tintColor: colors.primary,
-        },
-        headerShown: false,
+    <Stack.SearchBar
+      ref={nativeSearchBarRef}
+      autoFocus
+      barTintColor={colors.paper}
+      hideNavigationBar={true}
+      hideWhenScrolling={false}
+      onCancelButtonPress={() => {
+        onSearchChange("");
+        onSearchClose();
       }}
+      onChangeText={(event) => onSearchChange(event.nativeEvent.text)}
+      onOpen={focusNativeSearch}
+      placeholder="Search mail"
+      placement="automatic"
+      textColor={colors.foreground}
+      tintColor={colors.primary}
     />
   );
 }
@@ -181,103 +203,6 @@ function useInboxColors() {
     paper: useColor("paper"),
     primary: useColor("primary"),
   };
-}
-
-function InboxThreadList({
-  accountFilter,
-  accounts,
-  data,
-  emptyIsLoading,
-  footerIsLoading,
-  isRefreshing,
-  onAccountChange,
-  onEndReached,
-  onRefresh,
-  primary,
-  refreshError,
-  renderThread,
-  searchTerm,
-  showUnreadOnly,
-  onUnreadChange,
-}: {
-  accountFilter: MailAccountFilter;
-  accounts: MobileMailAccount[];
-  data: MailThread[];
-  emptyIsLoading: boolean;
-  footerIsLoading: boolean;
-  isRefreshing: boolean;
-  onAccountChange: (value: MailAccountFilter) => void;
-  onEndReached: () => void;
-  onRefresh: () => void;
-  primary: string;
-  refreshError: string | undefined;
-  renderThread: (
-    info: LegendListRenderItemProps<MailThread>,
-  ) => React.ReactElement;
-  searchTerm: string | undefined;
-  showUnreadOnly: boolean;
-  onUnreadChange: (value: boolean) => void;
-}) {
-  const paper = useColor("paper");
-  const transition = useInboxFilterTransition(data, showUnreadOnly);
-  const feedback = getInboxListFeedback({
-    emptyIsLoading,
-    footerIsLoading,
-    resultCount: transition.data.length,
-  });
-  return (
-    <View className="bg-paper flex-1">
-      <InboxHeader
-        accountFilter={accountFilter}
-        accounts={accounts}
-        onAccountChange={onAccountChange}
-        refreshError={refreshError}
-        showUnreadOnly={showUnreadOnly}
-        onUnreadChange={onUnreadChange}
-      />
-      <Animated.View style={{ flex: 1, opacity: transition.opacity }}>
-        <LegendList
-          contentContainerStyle={{ paddingBottom: 24, paddingTop: 12 }}
-          data={transition.data}
-          estimatedItemSize={109}
-          keyExtractor={threadKey}
-          maintainVisibleContentPosition={true}
-          recycleItems={true}
-          renderItem={renderThread}
-          contentInsetAdjustmentBehavior="automatic"
-          keyboardDismissMode="on-drag"
-          style={{ backgroundColor: paper, flex: 1 }}
-          refreshControl={
-            <RefreshControl
-              refreshing={isRefreshing}
-              tintColor={primary}
-              onRefresh={onRefresh}
-            />
-          }
-          onEndReached={onEndReached}
-          onEndReachedThreshold={0.6}
-          ListEmptyComponent={
-            <EmptyInbox
-              isLoading={feedback.emptyIsLoading}
-              primary={primary}
-              searchTerm={searchTerm}
-              showUnreadOnly={transition.showUnreadOnly}
-            />
-          }
-          ListFooterComponent={
-            <InboxFooter
-              isLoading={feedback.footerIsLoading}
-              primary={primary}
-            />
-          }
-        />
-      </Animated.View>
-    </View>
-  );
-}
-
-function threadKey(thread: MailThread) {
-  return thread.id;
 }
 
 function getSelectedAccountId(accountFilter: MailAccountFilter) {

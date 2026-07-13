@@ -1,0 +1,207 @@
+import { Pressable, Text, View } from "react-native";
+import { Check, Pin } from "lucide-react-native";
+
+import type { MailThread } from "@rodge-mail/features/mail";
+
+import { useColor } from "~/hooks/use-color";
+import { formatMessageTime } from "../lib/mail-format";
+import {
+  getSenderInitials,
+  getThreadRowAccessibilityLabel,
+  isThreadUnread,
+} from "./thread-row-presentation";
+
+export function FallbackThreadSummary({
+  mailbox,
+  onOpen,
+  onPin,
+  selected,
+  selectionMode,
+  shadowColor,
+  thread,
+}: {
+  mailbox: "archive" | "inbox";
+  onOpen: () => void;
+  onPin: () => void;
+  selected: boolean;
+  selectionMode: boolean;
+  shadowColor: string;
+  thread: MailThread;
+}) {
+  return (
+    <Pressable
+      accessibilityHint="Opens this email thread"
+      accessibilityLabel={getThreadRowAccessibilityLabel(thread)}
+      accessibilityRole="button"
+      className="bg-paper border-paper-border min-h-[94px] flex-row gap-3 rounded-xl border px-4 py-3"
+      onPress={onOpen}
+      style={({ pressed }) => ({
+        elevation: pressed ? 0 : 1,
+        shadowColor,
+        shadowOffset: { height: 1, width: 0 },
+        shadowOpacity: pressed ? 0.04 : 0.08,
+        shadowRadius: 2,
+        transform: [{ translateY: pressed ? 1 : 0 }],
+      })}
+    >
+      <SenderAvatar
+        selected={selected}
+        selectionMode={selectionMode}
+        thread={thread}
+      />
+      <ThreadText thread={thread} />
+      <ThreadPinSlot
+        mailbox={mailbox}
+        onPin={onPin}
+        selectionMode={selectionMode}
+        thread={thread}
+      />
+    </Pressable>
+  );
+}
+
+function SenderAvatar({
+  selected,
+  selectionMode,
+  thread,
+}: {
+  selected: boolean;
+  selectionMode: boolean;
+  thread: MailThread;
+}) {
+  return (
+    <View className="bg-paper-deep border-paper-border relative size-10 items-center justify-center rounded-lg border">
+      <Text className="text-foreground text-xs font-semibold">
+        {getSenderInitials(thread.sender.name)}
+      </Text>
+      <AvatarIndicator
+        isUnread={isThreadUnread(thread)}
+        selected={selected}
+        selectionMode={selectionMode}
+      />
+    </View>
+  );
+}
+
+function ThreadText({ thread }: { thread: MailThread }) {
+  return (
+    <View className="min-w-0 flex-1 gap-1">
+      <View className="flex-row items-center gap-2">
+        <Text
+          className={
+            thread.isRead
+              ? "text-foreground min-w-0 flex-1 text-sm"
+              : "text-foreground min-w-0 flex-1 text-sm font-bold"
+          }
+          numberOfLines={1}
+        >
+          {thread.sender.name}
+        </Text>
+        <Text className="text-muted-foreground text-xs">
+          {formatMessageTime(thread.receivedAt)}
+        </Text>
+      </View>
+      <Text
+        className={
+          thread.isRead
+            ? "text-foreground text-sm"
+            : "text-foreground text-sm font-semibold"
+        }
+        numberOfLines={1}
+      >
+        {thread.subject}
+      </Text>
+      <Text
+        className="text-muted-foreground text-[13px] leading-[18px]"
+        numberOfLines={1}
+      >
+        {thread.preview}
+      </Text>
+    </View>
+  );
+}
+
+function AvatarIndicator({
+  isUnread,
+  selected,
+  selectionMode,
+}: {
+  isUnread: boolean;
+  selected: boolean;
+  selectionMode: boolean;
+}) {
+  if (selectionMode) return <SelectionIndicator selected={selected} />;
+  return (
+    <View
+      accessibilityElementsHidden
+      className={`border-paper absolute -top-1 -right-1 size-2.5 rounded-full border ${isUnread ? "bg-brass" : "bg-transparent"}`}
+      importantForAccessibility="no-hide-descendants"
+    />
+  );
+}
+
+function SelectionIndicator({ selected }: { selected: boolean }) {
+  const primaryForeground = useColor("primary-foreground");
+  return (
+    <View
+      className={`border-paper absolute -top-1 -right-1 size-4 items-center justify-center rounded-full border ${selected ? "bg-primary" : "bg-paper-deep"}`}
+    >
+      <SelectedCheck color={primaryForeground} selected={selected} />
+    </View>
+  );
+}
+
+function SelectedCheck({
+  color,
+  selected,
+}: {
+  color: string;
+  selected: boolean;
+}) {
+  if (!selected) return null;
+  return <Check color={color} size={11} />;
+}
+
+function ThreadPinSlot({
+  mailbox,
+  onPin,
+  selectionMode,
+  thread,
+}: {
+  mailbox: "archive" | "inbox";
+  onPin: () => void;
+  selectionMode: boolean;
+  thread: MailThread;
+}) {
+  if (mailbox === "archive" || selectionMode) return null;
+  return <ThreadPinAction thread={thread} onPin={onPin} />;
+}
+
+function ThreadPinAction({
+  onPin,
+  thread,
+}: {
+  onPin: () => void;
+  thread: MailThread;
+}) {
+  const foreground = useColor("foreground");
+  const mutedForeground = useColor("muted-foreground");
+  return (
+    <Pressable
+      accessibilityLabel={thread.isPinned ? "Unpin thread" : "Pin thread"}
+      accessibilityRole="button"
+      className="size-11 items-center justify-center rounded-lg"
+      hitSlop={4}
+      onPress={(event) => {
+        event.stopPropagation();
+        onPin();
+      }}
+    >
+      <Pin
+        color={thread.isPinned ? foreground : mutedForeground}
+        fill={thread.isPinned ? foreground : "transparent"}
+        size={17}
+      />
+    </Pressable>
+  );
+}

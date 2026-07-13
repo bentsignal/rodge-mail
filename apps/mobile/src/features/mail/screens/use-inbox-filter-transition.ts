@@ -1,19 +1,19 @@
 import { useEffect, useEffectEvent, useState } from "react";
 import { Animated } from "react-native";
 
-interface FilterSnapshot<T> {
+interface FilterSnapshot<T, TFilter> {
   data: T[];
-  showUnreadOnly: boolean;
+  filter: TFilter;
 }
 
-export function useInboxFilterTransition<T>(
+export function useInboxFilterTransition<T, TFilter extends string>(
   data: T[],
-  showUnreadOnly: boolean,
+  filter: TFilter,
 ) {
   const [opacity] = useState(() => new Animated.Value(1));
-  const [rendered, setRendered] = useState<FilterSnapshot<T>>({
+  const [rendered, setRendered] = useState<FilterSnapshot<T, TFilter>>({
     data,
-    showUnreadOnly,
+    filter,
   });
 
   const transitionToLatestFilter = useEffectEvent(() => {
@@ -24,7 +24,7 @@ export function useInboxFilterTransition<T>(
       useNativeDriver: true,
     }).start(({ finished }) => {
       if (!finished) return;
-      setRendered({ data, showUnreadOnly });
+      setRendered({ data, filter });
       Animated.timing(opacity, {
         duration: 140,
         toValue: 1,
@@ -35,14 +35,14 @@ export function useInboxFilterTransition<T>(
 
   // eslint-disable-next-line no-restricted-syntax -- The previous filter stays mounted until its native fade-out completes.
   useEffect(() => {
-    if (rendered.showUnreadOnly === showUnreadOnly) return;
+    if (rendered.filter === filter) return;
     transitionToLatestFilter();
-  }, [rendered.showUnreadOnly, showUnreadOnly]);
+  }, [filter, rendered.filter]);
 
-  const isCurrentFilter = rendered.showUnreadOnly === showUnreadOnly;
+  const isCurrentFilter = rendered.filter === filter;
   return {
     data: isCurrentFilter ? data : rendered.data,
+    filter: isCurrentFilter ? filter : rendered.filter,
     opacity,
-    showUnreadOnly: isCurrentFilter ? showUnreadOnly : rendered.showUnreadOnly,
   };
 }

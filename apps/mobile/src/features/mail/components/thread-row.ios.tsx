@@ -1,72 +1,51 @@
-import {
-  Button,
-  Host,
-  HStack,
-  Image,
-  List,
-  Spacer,
-  SwipeActions,
-  Text,
-  VStack,
-  ZStack,
-} from "@expo/ui/swift-ui";
+import { Button, Host, List, SwipeActions } from "@expo/ui/swift-ui";
 import {
   accessibilityElement,
   accessibilityHint,
   accessibilityLabel,
   background,
   buttonStyle,
-  font,
-  foregroundStyle,
   frame,
-  lineLimit,
   listRowBackground,
   listRowInsets,
   listRowSeparator,
   listStyle,
-  padding,
   scrollContentBackground,
   scrollDisabled,
   scrollIndicators,
-  shapes,
   tint,
 } from "@expo/ui/swift-ui/modifiers";
 
 import type { MailThread } from "@rodge-mail/features/mail";
 
+import type { NativeThreadRowColors } from "./thread-row-summary.ios";
+import type { ThreadRowProps } from "./thread-row-types";
 import { useResolvedMobileColorScheme } from "~/features/theme/mobile-theme";
 import { useColor } from "~/hooks/use-color";
-import { formatMessageTime } from "../lib/mail-format";
 import { useMailStore } from "../store";
 import {
   getPinAction,
   getReadAction,
-  getSenderInitials,
   getThreadRowAccessibilityLabel,
   getThreadRowNativeKey,
-  isThreadUnread,
 } from "./thread-row-presentation";
+import { NativeThreadSummary } from "./thread-row-summary.ios";
 
 const rowHeight = 100;
 
-export function ThreadRow({
-  thread,
-  onOpen,
-}: {
-  thread: MailThread;
-  onOpen: () => void;
-}) {
-  const togglePin = useMailStore((store) => store.togglePin);
-  const toggleRead = useMailStore((store) => store.toggleRead);
-  const archiveThread = useMailStore((store) => store.archiveThread);
+export function ThreadRow(props: ThreadRowProps) {
+  const {
+    mailbox = "inbox",
+    selected = false,
+    selectionMode = false,
+    thread,
+  } = props;
   const colorScheme = useResolvedMobileColorScheme();
   const colors = useThreadRowColors();
-  const pinAction = getPinAction(thread);
-  const readAction = getReadAction(thread);
 
   return (
     <Host
-      key={getThreadRowNativeKey(thread)}
+      key={getNativeKey(thread, mailbox, selectionMode, selected)}
       colorScheme={colorScheme}
       seedColor={colors.primary}
       style={{
@@ -86,188 +65,168 @@ export function ThreadRow({
           background(colors.paper),
         ]}
       >
-        <SwipeActions
-          modifiers={[
-            listRowInsets({ bottom: 0, leading: 0, top: 0, trailing: 0 }),
-            listRowSeparator("hidden"),
-            listRowBackground(colors.paper),
-          ]}
-        >
-          <Button
-            modifiers={[
-              buttonStyle("plain"),
-              frame({ height: rowHeight, maxWidth: Infinity }),
-              accessibilityElement("ignore"),
-              accessibilityLabel(getThreadRowAccessibilityLabel(thread)),
-              accessibilityHint("Opens this email thread"),
-            ]}
-            onPress={onOpen}
-          >
-            <ThreadSummary colors={colors} thread={thread} />
-          </Button>
-          <SwipeActions.Actions edge="leading">
-            <Button
-              label={pinAction.label}
-              modifiers={[tint(colors.primary)]}
-              systemImage={pinAction.systemImage}
-              onPress={() => void togglePin(thread.id, thread.isPinned)}
-            />
-          </SwipeActions.Actions>
-          <SwipeActions.Actions edge="trailing">
-            <Button
-              label="Archive"
-              modifiers={[tint(colors.brass)]}
-              systemImage="archivebox"
-              onPress={() => void archiveThread(thread.id)}
-            />
-            <Button
-              label={readAction.label}
-              modifiers={[tint(thread.isRead ? colors.muted : colors.forest)]}
-              systemImage={readAction.systemImage}
-              onPress={() => void toggleRead(thread.id, thread.isRead)}
-            />
-          </SwipeActions.Actions>
-        </SwipeActions>
+        <NativeRowContent colors={colors} props={props} />
       </List>
     </Host>
   );
 }
 
-function ThreadSummary({
+function NativeRowContent({
   colors,
-  thread,
+  props,
 }: {
-  colors: ThreadRowColors;
-  thread: MailThread;
+  colors: NativeThreadRowColors;
+  props: ThreadRowProps;
 }) {
-  const isUnread = isThreadUnread(thread);
-  const senderWeight = isUnread ? "bold" : "medium";
-  const subjectWeight = isUnread ? "semibold" : "regular";
+  const mailbox = props.mailbox ?? "inbox";
+  if (props.selectionMode) {
+    return <NativeThreadButton colors={colors} props={props} />;
+  }
+  if (mailbox === "archive") {
+    return <ArchiveSwipeRow colors={colors} props={props} />;
+  }
+  return <InboxSwipeRow colors={colors} props={props} />;
+}
 
+function NativeThreadButton({
+  colors,
+  props,
+}: {
+  colors: NativeThreadRowColors;
+  props: ThreadRowProps;
+}) {
+  const {
+    mailbox = "inbox",
+    onOpen,
+    onSelect,
+    selected = false,
+    selectionMode = false,
+    thread,
+  } = props;
   return (
-    <HStack
-      alignment="center"
-      spacing={10}
+    <Button
       modifiers={[
-        frame({ height: rowHeight, maxWidth: Infinity, alignment: "leading" }),
-        padding({ leading: 12, trailing: 12 }),
+        buttonStyle("plain"),
+        frame({ height: rowHeight, maxWidth: Infinity }),
+        accessibilityElement("ignore"),
+        accessibilityLabel(getNativeAccessibilityLabel(props)),
+        accessibilityHint(
+          selectionMode ? "Toggles selection" : "Opens this email thread",
+        ),
+        ...rowModifiers(colors.paper),
       ]}
+      onPress={selectionMode ? onSelect : onOpen}
     >
-      <SenderAvatar colors={colors} thread={thread} />
-      <VStack
-        alignment="leading"
-        spacing={4}
-        modifiers={[frame({ maxWidth: Infinity, alignment: "leading" })]}
-      >
-        <HStack spacing={7} modifiers={[frame({ maxWidth: Infinity })]}>
-          <Text
-            modifiers={[
-              font({ size: 15, weight: senderWeight }),
-              foregroundStyle(colors.foreground),
-              lineLimit(1),
-            ]}
-          >
-            {thread.sender.name}
-          </Text>
-          <Spacer />
-          <PinIndicator color={colors.brass} isPinned={thread.isPinned} />
-          <Text
-            modifiers={[
-              font({ size: 12, weight: thread.isRead ? "regular" : "medium" }),
-              foregroundStyle(colors.mutedForeground),
-              lineLimit(1),
-            ]}
-          >
-            {formatMessageTime(thread.receivedAt)}
-          </Text>
-        </HStack>
-        <Text
-          modifiers={[
-            font({ size: 14, weight: subjectWeight }),
-            foregroundStyle(colors.foreground),
-            lineLimit(1),
-          ]}
-        >
-          {thread.subject}
-        </Text>
-        <Text
-          modifiers={[
-            font({ size: 13 }),
-            foregroundStyle(colors.mutedForeground),
-            lineLimit(1),
-          ]}
-        >
-          {thread.preview}
-        </Text>
-      </VStack>
-    </HStack>
+      <NativeThreadSummary
+        colors={colors}
+        mailbox={mailbox}
+        selected={selected}
+        selectionMode={selectionMode}
+        thread={thread}
+      />
+    </Button>
   );
 }
 
-function SenderAvatar({
+function InboxSwipeRow({
   colors,
-  thread,
+  props,
 }: {
-  colors: ThreadRowColors;
-  thread: MailThread;
+  colors: NativeThreadRowColors;
+  props: ThreadRowProps;
 }) {
-  const isUnread = isThreadUnread(thread);
+  const togglePin = useMailStore((store) => store.togglePin);
+  const toggleRead = useMailStore((store) => store.toggleRead);
+  const archiveThread = useMailStore((store) => store.archiveThread);
+  const pinAction = getPinAction(props.thread);
+  const readAction = getReadAction(props.thread);
   return (
-    <ZStack
-      alignment="topTrailing"
-      modifiers={[frame({ height: 40, width: 40 })]}
-    >
-      <Text
-        modifiers={[
-          frame({ height: 40, width: 40 }),
-          font({ size: 13, weight: "semibold" }),
-          foregroundStyle(colors.foreground),
-          background(
-            colors.paperDeep,
-            shapes.roundedRectangle({
-              cornerRadius: 11,
-              roundedCornerStyle: "continuous",
-            }),
-          ),
-        ]}
-      >
-        {getSenderInitials(thread.sender.name)}
-      </Text>
-      <UnreadIndicator colors={colors} isUnread={isUnread} />
-    </ZStack>
+    <SwipeActions modifiers={rowModifiers(colors.paper)}>
+      <NativeThreadButton colors={colors} props={props} />
+      <SwipeActions.Actions edge="leading">
+        <Button
+          label={pinAction.label}
+          modifiers={[tint(colors.primary)]}
+          systemImage={pinAction.systemImage}
+          onPress={() => void togglePin(props.thread.id, props.thread.isPinned)}
+        />
+      </SwipeActions.Actions>
+      <SwipeActions.Actions edge="trailing">
+        <Button
+          label="Archive"
+          modifiers={[tint(colors.brass)]}
+          systemImage="archivebox"
+          onPress={() => void archiveThread(props.thread.id)}
+        />
+        <Button
+          label={readAction.label}
+          modifiers={[tint(props.thread.isRead ? colors.muted : colors.forest)]}
+          systemImage={readAction.systemImage}
+          onPress={() => void toggleRead(props.thread.id, props.thread.isRead)}
+        />
+      </SwipeActions.Actions>
+    </SwipeActions>
   );
 }
 
-function UnreadIndicator({
+function ArchiveSwipeRow({
   colors,
-  isUnread,
+  props,
 }: {
-  colors: ThreadRowColors;
-  isUnread: boolean;
+  colors: NativeThreadRowColors;
+  props: ThreadRowProps;
 }) {
   return (
-    <Image
-      color={isUnread ? colors.brass : "transparent"}
-      size={8}
-      systemName="circle.fill"
-    />
+    <SwipeActions modifiers={rowModifiers(colors.paper)}>
+      <NativeThreadButton colors={colors} props={props} />
+      <SwipeActions.Actions edge="leading">
+        <Button
+          label="Restore"
+          modifiers={[tint(colors.forest)]}
+          systemImage="arrow.uturn.backward"
+          onPress={props.onRestore}
+        />
+      </SwipeActions.Actions>
+      <SwipeActions.Actions edge="trailing">
+        <Button
+          label="Delete"
+          modifiers={[tint(colors.destructive)]}
+          role="destructive"
+          systemImage="trash"
+          onPress={props.onDelete}
+        />
+      </SwipeActions.Actions>
+    </SwipeActions>
   );
 }
 
-function PinIndicator({
-  color,
-  isPinned,
-}: {
-  color: string;
-  isPinned: boolean;
-}) {
-  if (!isPinned) return null;
-  return <Image color={color} size={12} systemName="pin.fill" />;
+function getNativeAccessibilityLabel(props: ThreadRowProps) {
+  const label = getThreadRowAccessibilityLabel(props.thread);
+  if (!props.selectionMode) return label;
+  return `${props.selected ? "Selected" : "Not selected"}, ${label}`;
+}
+
+function getNativeKey(
+  thread: MailThread,
+  mailbox: "archive" | "inbox",
+  selectionMode: boolean,
+  selected: boolean,
+) {
+  return `${getThreadRowNativeKey(thread)}:${mailbox}:${selectionMode ? "selecting" : "opening"}:${selected ? "selected" : "unselected"}`;
+}
+
+function rowModifiers(paper: string) {
+  return [
+    listRowInsets({ bottom: 0, leading: 0, top: 0, trailing: 0 }),
+    listRowSeparator("hidden"),
+    listRowBackground(paper),
+  ];
 }
 
 function useThreadRowColors() {
   return {
     brass: useColor("brass"),
+    destructive: useColor("destructive"),
     foreground: useColor("foreground"),
     forest: useColor("forest-raised"),
     muted: useColor("muted"),
@@ -277,5 +236,3 @@ function useThreadRowColors() {
     primary: useColor("primary"),
   };
 }
-
-type ThreadRowColors = ReturnType<typeof useThreadRowColors>;

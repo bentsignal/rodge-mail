@@ -2,7 +2,7 @@ import { Stack } from "expo-router";
 
 import { useColor } from "~/hooks/use-color";
 
-export default function SettingsLayout() {
+export default function ArchiveLayout() {
   const backgroundColor = useColor("background");
   const foreground = useColor("foreground");
 
@@ -10,19 +10,15 @@ export default function SettingsLayout() {
     <Stack
       screenOptions={{
         contentStyle: { backgroundColor },
-        headerLargeStyle: { backgroundColor },
-        headerLargeTitleStyle: { color: foreground },
+        headerBackButtonDisplayMode: "minimal",
         headerStyle: { backgroundColor },
         headerShadowVisible: false,
         headerTintColor: foreground,
         headerTitleStyle: { color: foreground },
       }}
     >
-      <Stack.Screen
-        name="index"
-        options={{ headerLargeTitle: true, title: "Settings" }}
-      />
-      <Stack.Screen name="archive" options={{ headerShown: false }} />
+      <Stack.Screen name="index" options={{ headerTitle: "" }} />
+      <Stack.Screen name="thread/[id]" options={{ title: "Message" }} />
     </Stack>
   );
 }

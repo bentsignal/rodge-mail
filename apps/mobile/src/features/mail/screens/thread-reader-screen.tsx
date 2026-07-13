@@ -1,9 +1,9 @@
 import type { LayoutChangeEvent } from "react-native";
-import { useEffect, useRef, useState } from "react";
-import { Alert, Pressable, ScrollView, Text, View } from "react-native";
+import { useEffect, useRef } from "react";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useMutation, useQuery } from "convex/react";
-import { Archive, Pin, Reply } from "lucide-react-native";
+import { Reply } from "lucide-react-native";
 
 import type { MailThread } from "@rodge-mail/features/mail";
 import { api } from "@rodge-mail/convex/api";
@@ -16,8 +16,14 @@ import { toConvexId } from "../lib/convex-id";
 import { toMailThreadDetail } from "../lib/convex-mail";
 import { formatMessageTime } from "../lib/mail-format";
 import { ThreadMessageBody } from "./thread-message-body";
+import { ThreadReaderFooter } from "./thread-reader-footer";
+import { useThreadReaderActions } from "./use-thread-reader-actions";
 
-export function ThreadReaderScreen() {
+export function ThreadReaderScreen({
+  mailbox = "inbox",
+}: {
+  mailbox?: "archive" | "inbox";
+}) {
   const { id, messageId } = useLocalSearchParams<{
     id: string;
     messageId?: string | string[];
@@ -38,6 +44,7 @@ export function ThreadReaderScreen() {
   return (
     <ThreadReader
       accountAddress={thread.account.address}
+      mailbox={mailbox}
       targetMessageId={firstParam(messageId)}
       thread={toMailThreadDetail(thread)}
     />
@@ -46,40 +53,19 @@ export function ThreadReaderScreen() {
 
 function ThreadReader({
   accountAddress,
+  mailbox,
   targetMessageId,
   thread,
 }: {
   accountAddress: string;
+  mailbox: "archive" | "inbox";
   targetMessageId?: string;
   thread: MailThread;
 }) {
   const router = useRouter();
-  const archiveThread = useMutation(api.mail.mutations.archiveThread);
-  const setThreadPinned = useMutation(api.mail.mutations.setThreadPinned);
   const foreground = useColor("foreground");
   const scrollViewRef = useRef<ScrollView>(null);
-  const [pinOverride, setPinOverride] = useState<boolean>();
-  const isPinned = pinOverride ?? thread.isPinned;
-  async function togglePin() {
-    const nextIsPinned = !isPinned;
-    setPinOverride(nextIsPinned);
-    try {
-      await setThreadPinned({
-        threadId: toConvexId<"threads">(thread.id),
-        isPinned: nextIsPinned,
-      });
-    } catch {
-      setPinOverride(undefined);
-    }
-  }
-  async function archive() {
-    try {
-      await archiveThread({ threadId: toConvexId<"threads">(thread.id) });
-      router.back();
-    } catch {
-      Alert.alert("Couldn’t archive this thread", "Please try again.");
-    }
-  }
+  const actions = useThreadReaderActions(thread);
   function reply() {
     const latestMessage = thread.messages.at(-1);
     if (!latestMessage) return;
@@ -125,10 +111,13 @@ function ThreadReader({
               }
             />
           ))}
-          <ThreadFooterActions
-            isPinned={isPinned}
-            onArchive={() => void archive()}
-            onPin={() => void togglePin()}
+          <ThreadReaderFooter
+            isPinned={actions.isPinned}
+            mailbox={mailbox}
+            onArchive={() => void actions.archive()}
+            onDelete={actions.confirmPermanentDelete}
+            onPin={() => void actions.togglePin()}
+            onRestore={() => void actions.restore()}
           />
         </ScrollView>
       </PostalPaperBackground>
@@ -152,60 +141,6 @@ function ThreadReplyAction({
       onPress={onReply}
     >
       <Reply color={color} size={20} />
-    </Pressable>
-  );
-}
-
-function ThreadFooterActions({
-  isPinned,
-  onArchive,
-  onPin,
-}: {
-  isPinned: boolean;
-  onArchive: () => void;
-  onPin: () => void;
-}) {
-  const foreground = useColor("foreground");
-  return (
-    <View className="mt-1 flex-row gap-2">
-      <ThreadFooterButton
-        icon={
-          <Pin
-            color={foreground}
-            fill={isPinned ? foreground : "transparent"}
-            size={18}
-          />
-        }
-        label={isPinned ? "Unpin" : "Pin"}
-        onPress={onPin}
-      />
-      <ThreadFooterButton
-        icon={<Archive color={foreground} size={18} />}
-        label="Archive"
-        onPress={onArchive}
-      />
-    </View>
-  );
-}
-
-function ThreadFooterButton({
-  icon,
-  label,
-  onPress,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      accessibilityLabel={`${label} thread`}
-      accessibilityRole="button"
-      className="border-paper-border bg-paper flex-1 flex-row items-center justify-center gap-2 rounded-xl border px-3 py-3 active:opacity-70"
-      onPress={onPress}
-    >
-      {icon}
-      <Text className="text-foreground text-sm font-semibold">{label}</Text>
     </Pressable>
   );
 }
