@@ -5,7 +5,6 @@ import { cn } from "@rodge-mail/std/cn";
 
 import { useLiveMail } from "../live-data";
 import { withUnreadSearch } from "../mail-route-search";
-import { getMailboxBadgeCount } from "../mailbox-badge-count";
 import { useMailStore } from "../store";
 import { useMailboxNavigation } from "../use-mailbox-navigation";
 import {
@@ -33,20 +32,7 @@ export function InboxPane() {
 
 function InboxHeader() {
   const openComposer = useMailStore((store) => store.openComposer);
-  const accountFilter = useMailStore((store) => store.accountFilter);
-  const {
-    inboxMessages,
-    isLoadingInbox,
-    isLoadingUnreadCounts,
-    mailMode,
-    unreadCounts,
-  } = useLiveMail();
-  const count = getMailboxBadgeCount({
-    accountFilter,
-    archivedCount: inboxMessages.length,
-    mailMode,
-    unreadCounts,
-  });
+  const { mailMode } = useLiveMail();
 
   return (
     <header className="mail-paper shrink-0 border-b border-[var(--mail-seam)] px-4 pt-5 pb-4 shadow-[0_2px_6px_rgba(55,40,19,0.08)] sm:px-5 dark:shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
@@ -57,13 +43,6 @@ function InboxHeader() {
             <h1 className="font-serif text-[32px] leading-none font-semibold tracking-[-0.04em] sm:text-[34px]">
               {getMailboxTitle(mailMode)}
             </h1>
-            <InboxCount
-              count={count}
-              isLoading={
-                mailMode === "archive" ? isLoadingInbox : isLoadingUnreadCounts
-              }
-              label={mailMode === "archive" ? "messages" : "unread"}
-            />
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -128,36 +107,6 @@ function UnreadFilterButton() {
       Unread
     </button>
   );
-}
-
-function InboxCount({
-  count,
-  isLoading,
-  label,
-}: {
-  count: number;
-  isLoading: boolean;
-  label: "messages" | "unread";
-}) {
-  return (
-    <span
-      aria-label={isLoading ? `Loading ${label}` : `${count} ${label}`}
-      className="mail-raised mb-0.5 flex min-w-8 items-center justify-center rounded-[7px] border px-2 py-1 font-mono text-xs font-semibold text-[var(--mail-ink-soft)] tabular-nums"
-    >
-      <InboxCountValue count={count} isLoading={isLoading} />
-    </span>
-  );
-}
-
-function InboxCountValue({
-  count,
-  isLoading,
-}: {
-  count: number;
-  isLoading: boolean;
-}) {
-  if (isLoading) return "··";
-  return count;
 }
 
 export function SearchInput() {

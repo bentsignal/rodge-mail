@@ -1,15 +1,13 @@
 import type { MenuAction } from "@expo/ui/community/menu";
 import { Pressable, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Button, Host } from "@expo/ui";
 import { MenuView } from "@expo/ui/community/menu";
-import { ListFilter } from "lucide-react-native";
+import { Check, ListChecks, ListFilter } from "lucide-react-native";
 
 import type { MailAccountFilter } from "@rodge-mail/features/mail";
 
 import type { MobileMailAccount } from "../lib/convex-mail";
 import type { MailboxFilter } from "./mailbox-controls";
-import { useResolvedMobileColorScheme } from "~/features/theme/mobile-theme";
 import { useColor } from "~/hooks/use-color";
 import { AccountFilter } from "../components/account-filter";
 import { InboxSyncStatus } from "./inbox-sync-status";
@@ -46,9 +44,6 @@ export function InboxHeader({
     value: string;
   };
 }) {
-  const colorScheme = useResolvedMobileColorScheme();
-  const primary = useColor("primary");
-
   return (
     <SafeAreaView
       className="bg-paper"
@@ -65,25 +60,52 @@ export function InboxHeader({
             onArchiveSelect={onArchiveSelect}
           />
           <MailboxFilterMenu filter={filter} onChange={onFilterChange} />
-          <Host
-            colorScheme={colorScheme}
-            matchContents
-            seedColor={primary}
-            style={{ height: 44, width: 64 }}
-          >
-            <Button
-              label={selectionMode ? "Done" : "Select"}
-              style={{ height: 44, width: 64 }}
-              testID="mailbox-select-button"
-              variant="text"
-              onPress={onToggleSelection}
-            />
-          </Host>
+          <SelectionButton
+            selectionMode={selectionMode}
+            onPress={onToggleSelection}
+          />
         </View>
         <InboxSyncStatus accounts={accounts} error={refreshError} />
       </View>
     </SafeAreaView>
   );
+}
+
+function SelectionButton({
+  onPress,
+  selectionMode,
+}: {
+  onPress: () => void;
+  selectionMode: boolean;
+}) {
+  const mutedForeground = useColor("muted-foreground");
+  const primary = useColor("primary");
+
+  return (
+    <Pressable
+      accessibilityLabel={selectionMode ? "Done selecting" : "Select messages"}
+      accessibilityRole="button"
+      className="bg-paper-deep border-paper-border size-11 items-center justify-center rounded-xl border"
+      testID="mailbox-select-button"
+      onPress={onPress}
+    >
+      <SelectionButtonIcon
+        color={selectionMode ? primary : mutedForeground}
+        selectionMode={selectionMode}
+      />
+    </Pressable>
+  );
+}
+
+function SelectionButtonIcon({
+  color,
+  selectionMode,
+}: {
+  color: string;
+  selectionMode: boolean;
+}) {
+  if (selectionMode) return <Check color={color} size={19} strokeWidth={2.5} />;
+  return <ListChecks color={color} size={18} />;
 }
 
 function MailboxFilterMenu({
