@@ -2,6 +2,7 @@ import { dirname, join } from "node:path";
 import type { Session, UtilityProcess } from "electron";
 import { net, utilityProcess } from "electron";
 
+import { synchronizeEmbeddedResponseCookies } from "./embedded-web-cookies";
 import {
   isRedirectStatus,
   rewriteEmbeddedRedirect,
@@ -120,6 +121,11 @@ export function routeEmbeddedWebOrigin(
       method: request.method,
       redirect: "manual",
     });
+    await synchronizeEmbeddedResponseCookies(
+      appSession.cookies,
+      webAppUrl,
+      response.headers,
+    );
 
     const location = response.headers.get("location");
     if (!location || !isRedirectStatus(response.status)) return response;
