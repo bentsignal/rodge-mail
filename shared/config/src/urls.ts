@@ -4,15 +4,9 @@ import {
 } from "./overrides";
 import { normalizeWorktreeId } from "./worktrees";
 
-const CONVEX = {
-  production: {
-    cloud: "https://colorful-ostrich-734.convex.cloud",
-    site: "https://colorful-ostrich-734.convex.site",
-  },
-  development: {
-    cloud: "https://dazzling-dog-633.convex.cloud",
-    site: "https://dazzling-dog-633.convex.site",
-  },
+const DEVELOPMENT_CONVEX = {
+  cloud: "https://dazzling-dog-633.convex.cloud",
+  site: "https://dazzling-dog-633.convex.site",
 } as const;
 
 interface UrlOptions {
@@ -20,28 +14,25 @@ interface UrlOptions {
   worktreeId?: string;
 }
 
-function webUrl(options: UrlOptions & { effectiveWorktreeId?: string }) {
-  if (options.nodeEnv === "production") {
-    return "https://rodge-mail.vercel.app";
-  }
+function webUrl(options: { effectiveWorktreeId?: string }) {
   const prefix = normalizeWorktreeId(options.effectiveWorktreeId);
   const host = [prefix, "www.rodge-mail", "local"].filter(Boolean).join(".");
   return `https://${host}`;
 }
 
 export function createUrls(options: UrlOptions = {}) {
-  const tier = options.nodeEnv === "production" ? "production" : "development";
+  if (options.nodeEnv === "production") {
+    throw new Error("Rodge Mail production URLs are not configured");
+  }
   const effectiveWorktreeId = options.worktreeId ?? overrideWorktreeId;
   const effectiveConvexCloudUrl =
-    tier === "production"
-      ? CONVEX.production.cloud
-      : (overrideConvexCloudUrl ?? CONVEX.development.cloud);
+    overrideConvexCloudUrl ?? DEVELOPMENT_CONVEX.cloud;
 
   return {
-    web: webUrl({ ...options, effectiveWorktreeId }),
+    web: webUrl({ effectiveWorktreeId }),
     convex: {
       cloud: effectiveConvexCloudUrl,
-      site: CONVEX[tier].site,
+      site: DEVELOPMENT_CONVEX.site,
     },
   } as const;
 }

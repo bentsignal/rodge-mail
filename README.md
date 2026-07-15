@@ -30,8 +30,8 @@ pnpm run readiness:dev
 ```
 
 `readiness:dev` checks the Portless web and Expo origins, development Convex
-auth, and the installed macOS desktop app. The separate `readiness` command is
-reserved for the intentionally deferred production deployment.
+auth, and the installed macOS desktop app. Production URLs and deployment are
+intentionally not configured.
 
 Local provider credentials and Convex deployment values belong in ignored env
 files. Never commit mailbox credentials, OAuth secrets, app passwords, or mail

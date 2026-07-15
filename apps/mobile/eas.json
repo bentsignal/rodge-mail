@@ -30,15 +30,7 @@
       "android": {
         "buildType": "apk"
       }
-    },
-    "production": {
-      "extends": "base",
-      "env": {
-        "NODE_ENV": "production"
-      }
     }
   },
-  "submit": {
-    "production": {}
-  }
+  "submit": {}
 }

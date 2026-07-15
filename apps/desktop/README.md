@@ -22,7 +22,7 @@ Use `pnpm --filter @rodge-mail/desktop dev` only when the web dev server is
 already running separately. Development accepts HTTPS URLs and loopback HTTP
 URLs. Packaged builds intercept only the baked
 `https://www.rodge-mail.local` origin, continue to use the Convex development
-deployment, and do not require Vercel or Portless at runtime.
+deployment, and do not require Portless or a hosted web app at runtime.
 
 Desktop development completes authentication in the system browser. The
 Electron renderer creates a five-minute request and keeps a PKCE verifier in its

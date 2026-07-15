@@ -20,7 +20,7 @@ Environment:
 | Pinning | Pass | Pinned and then unpinned the open Gmail attachment message. The reader action changed from `Pin message` to `Unpin message`, then returned to `Pin message` after the server update settled. |
 | Context menu | Pass | Right-clicking a message exposed only `Pin message` and `Remove from Rodge`; the menu dismissed cleanly without invoking either action. |
 | Pagination | Pass | Scrolling the message list loaded successive pages. The visible count advanced from 30 to 60 and then 90 messages while the reader remained usable. |
-| Search and debounce | Pass | Search for `Vercel` returned Vercel messages. Rapidly replacing `Ama` with `Amazon` produced only the final Amazon result set. Clearing search restored the normal 30-message page. |
+| Search and debounce | Pass | Search for deployment-related messages returned matching results. Rapidly replacing `Ama` with `Amazon` produced only the final Amazon result set. Clearing search restored the normal 30-message page. |
 | Composer | Pass | New message opened as a sized desktop modal with visible From, To, Cc, Bcc, Subject, body, attachment, and disabled Send controls. The From selector listed Gmail, iCloud, and Microsoft 365. Closed without editing or sending. |
 | Settings | Pass | Settings opened in a scrollable modal. Account/key sections remained reachable at the tested window size. No credential or account mutations were performed. |
 | Theme switching | Pass | Switched System → Light → Dark → System. Selection state and app colors updated each time; light and dark layouts remained legible and aligned. Restored System before closing settings. |
