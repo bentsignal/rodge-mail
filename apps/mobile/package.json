@@ -27,6 +27,7 @@
     "@rodge-mail/config": "workspace:*",
     "@rodge-mail/convex": "workspace:*",
     "@rodge-mail/features": "workspace:*",
+    "@rodge-mail/std": "workspace:*",
     "@rodge-mail/tailwind-config": "workspace:*",
     "better-auth": "catalog:",
     "convex": "catalog:",

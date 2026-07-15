@@ -4,7 +4,7 @@ import { CheckCircle2, Circle, Pin } from "lucide-react-native";
 import type { MailThread } from "@rodge-mail/features/mail";
 
 import { useColor } from "~/hooks/use-color";
-import { formatMessageTime } from "../lib/mail-format";
+import { formatInboxMessageTime } from "../lib/mail-format";
 import {
   getSenderInitials,
   getThreadRowAccessibilityLabel,
@@ -83,7 +83,7 @@ function ThreadText({ thread }: { thread: MailThread }) {
           {thread.sender.name}
         </Text>
         <Text className="text-muted-foreground text-xs">
-          {formatMessageTime(thread.receivedAt)}
+          {formatInboxMessageTime(thread.receivedAt)}
         </Text>
       </View>
       <Text

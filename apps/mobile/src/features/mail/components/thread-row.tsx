@@ -14,6 +14,7 @@ import type { MailThread } from "@rodge-mail/features/mail";
 import type { ThreadRowProps } from "./thread-row-types";
 import { useColor } from "~/hooks/use-color";
 import { useMailStore } from "../store";
+import { runAfterSwipeAnimation } from "./thread-row-presentation";
 import { FallbackThreadSummary } from "./thread-row-summary-fallback";
 
 export function ThreadRow(props: ThreadRowProps) {
@@ -95,7 +96,7 @@ function ThreadLeftAction({
         label="Restore"
         onPress={() => {
           close();
-          onRestore?.();
+          runAfterSwipeAnimation(() => onRestore?.());
         }}
       >
         <ArchiveRestore color={foreground} size={19} />
@@ -107,7 +108,7 @@ function ThreadLeftAction({
       label={thread.isPinned ? "Unpin" : "Pin"}
       onPress={() => {
         close();
-        onPin();
+        runAfterSwipeAnimation(onPin);
       }}
     >
       <Pin
@@ -143,7 +144,7 @@ function ThreadRightActions({
         label="Delete"
         onPress={() => {
           close();
-          onDelete?.();
+          runAfterSwipeAnimation(() => onDelete?.());
         }}
       >
         <Trash2 color={destructiveForeground} size={19} />
@@ -156,7 +157,9 @@ function ThreadRightActions({
         label={thread.isRead ? "Unread" : "Read"}
         onPress={() => {
           close();
-          void toggleRead(thread.id, thread.isRead);
+          runAfterSwipeAnimation(
+            () => void toggleRead(thread.id, thread.isRead),
+          );
         }}
       >
         <ReadIcon isRead={thread.isRead} color={foreground} />
@@ -165,7 +168,7 @@ function ThreadRightActions({
         label="Archive"
         onPress={() => {
           close();
-          void archiveThread(thread.id);
+          runAfterSwipeAnimation(() => void archiveThread(thread.id));
         }}
       >
         <Archive color={foreground} size={19} />

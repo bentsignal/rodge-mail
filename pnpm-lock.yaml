@@ -253,6 +253,9 @@ importers:
       '@rodge-mail/features':
         specifier: workspace:*
         version: link:../../shared/features
+      '@rodge-mail/std':
+        specifier: workspace:*
+        version: link:../../shared/std
       '@rodge-mail/tailwind-config':
         specifier: workspace:*
         version: link:../../tooling/tailwind

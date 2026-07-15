@@ -12,7 +12,7 @@ import {
 
 import type { MailThread } from "@rodge-mail/features/mail";
 
-import { formatMessageTime } from "../lib/mail-format";
+import { formatInboxMessageTime } from "../lib/mail-format";
 import { getSenderInitials, isThreadUnread } from "./thread-row-presentation";
 
 const rowHeight = 100;
@@ -79,7 +79,7 @@ export function NativeThreadSummary({
               lineLimit(1),
             ]}
           >
-            {formatMessageTime(thread.receivedAt)}
+            {formatInboxMessageTime(thread.receivedAt)}
           </Text>
         </HStack>
         <Text
