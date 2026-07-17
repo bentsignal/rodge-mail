@@ -3,7 +3,7 @@ import type { Session, UtilityProcess } from "electron";
 import { net, utilityProcess } from "electron";
 
 import {
-  createEmbeddedRequestCookieHeader,
+  createEmbeddedRequestHeaders,
   synchronizeEmbeddedResponseCookies,
 } from "./embedded-web-cookies";
 import {
@@ -112,14 +112,11 @@ export function routeEmbeddedWebOrigin(
       `${requestUrl.pathname}${requestUrl.search}`,
       localOrigin,
     );
-    const headers = new Headers(request.headers);
-    headers.set("x-forwarded-host", webAppUrl.host);
-    headers.set("x-forwarded-proto", "https");
-    const requestCookies = createEmbeddedRequestCookieHeader(
+    const headers = createEmbeddedRequestHeaders(
+      request.headers,
+      webAppUrl,
       await appSession.cookies.get({ url: webAppUrl.href }),
     );
-    if (requestCookies) headers.set("cookie", requestCookies);
-    else headers.delete("cookie");
     const response = await fetch(localUrl.href, {
       body:
         request.method === "GET" || request.method === "HEAD"

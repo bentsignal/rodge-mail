@@ -24,7 +24,8 @@ URLs. Packaged builds intercept only the baked
 `https://www.rodge-mail.local` origin, continue to use the Convex development
 deployment, and do not require Portless or a hosted web app at runtime.
 The embedded transport synchronizes response cookies into Electron's cookie
-store and forwards stored cookies back to the bundled server on each request.
+store, forwards stored cookies back to the bundled server on each request, and
+preserves same-origin request semantics for server-function CSRF validation.
 
 Desktop authentication is always completed in the system browser. The
 Electron renderer creates a five-minute request and keeps a PKCE verifier in its

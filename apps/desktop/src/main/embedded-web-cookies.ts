@@ -16,6 +16,22 @@ export function createEmbeddedRequestCookieHeader(
   return cookies.map((cookie) => `${cookie.name}=${cookie.value}`).join("; ");
 }
 
+export function createEmbeddedRequestHeaders(
+  source: Headers,
+  webAppUrl: URL,
+  cookies: EmbeddedRequestCookie[],
+) {
+  const headers = new Headers(source);
+  headers.set("sec-fetch-site", "same-origin");
+  headers.set("x-forwarded-host", webAppUrl.host);
+  headers.set("x-forwarded-proto", "https");
+
+  const cookieHeader = createEmbeddedRequestCookieHeader(cookies);
+  if (cookieHeader) headers.set("cookie", cookieHeader);
+  else headers.delete("cookie");
+  return headers;
+}
+
 function splitCookies(cookieHeader: string) {
   return cookieHeader.split(/,(?=\s*[^;,=\s]+=[^;,]*)/g).map((cookie) => {
     return cookie.trim();

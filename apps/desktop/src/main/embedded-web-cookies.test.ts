@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   createEmbeddedRequestCookieHeader,
+  createEmbeddedRequestHeaders,
   parseEmbeddedCookie,
   readSetCookieHeaders,
   synchronizeEmbeddedResponseCookies,
@@ -19,6 +20,20 @@ void test("forwards stored cookies to the embedded web runtime", () => {
     "theme=dark; __Secure-better-auth.session_token=token.signature",
   );
   assert.equal(createEmbeddedRequestCookieHeader([]), "");
+});
+
+void test("marks trusted embedded requests as same-origin for CSRF validation", () => {
+  const headers = createEmbeddedRequestHeaders(
+    new Headers({ origin: webAppUrl.origin }),
+    webAppUrl,
+    [{ name: "session", value: "token" }],
+  );
+
+  assert.equal(headers.get("origin"), webAppUrl.origin);
+  assert.equal(headers.get("sec-fetch-site"), "same-origin");
+  assert.equal(headers.get("x-forwarded-host"), webAppUrl.host);
+  assert.equal(headers.get("x-forwarded-proto"), "https");
+  assert.equal(headers.get("cookie"), "session=token");
 });
 
 void test("parses Better Auth challenge cookies for the trusted app origin", () => {
