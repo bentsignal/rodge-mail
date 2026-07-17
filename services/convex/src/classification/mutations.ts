@@ -107,11 +107,6 @@ export const setSpamState = authedMutation({
       updatedAt: Date.now(),
     });
     await reconcileEmbeddingSelection(ctx, message._id);
-    await resolveNewMailNotification(ctx, {
-      important,
-      messageId: message._id,
-      ownerId: ctx.ownerId,
-    });
   },
 });
 
