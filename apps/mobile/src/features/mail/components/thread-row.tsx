@@ -11,6 +11,7 @@ import {
 
 import type { MailThread } from "@rodge-mail/features/mail";
 
+import type { MobileMailbox } from "../store";
 import type { ThreadRowProps } from "./thread-row-types";
 import { useColor } from "~/hooks/use-color";
 import { useMailStore } from "../store";
@@ -38,7 +39,7 @@ export function ThreadRow(props: ThreadRowProps) {
     <ReanimatedSwipeable
       key={thread.id}
       containerStyle={{ marginBottom: -1, marginHorizontal: 14 }}
-      enabled={!selectionMode}
+      enabled={!selectionMode && mailbox !== "spam"}
       enableTrackpadTwoFingerGesture
       friction={1.6}
       leftThreshold={48}
@@ -84,12 +85,13 @@ function ThreadLeftAction({
   thread,
 }: {
   close: () => void;
-  mailbox: "archive" | "inbox";
+  mailbox: MobileMailbox;
   onPin: () => void;
   onRestore?: () => void;
   thread: MailThread;
 }) {
   const foreground = useColor("primary-foreground");
+  if (mailbox === "spam") return null;
   if (mailbox === "archive") {
     return (
       <SwipeAction
@@ -127,7 +129,7 @@ function ThreadRightActions({
   thread,
 }: {
   close: () => void;
-  mailbox: "archive" | "inbox";
+  mailbox: MobileMailbox;
   onDelete?: () => void;
   thread: MailThread;
 }) {
@@ -136,6 +138,7 @@ function ThreadRightActions({
   const foreground = useColor("primary-foreground");
   const destructive = useColor("destructive");
   const destructiveForeground = useColor("destructive-foreground");
+  if (mailbox === "spam") return null;
   if (mailbox === "archive") {
     return (
       <SwipeAction

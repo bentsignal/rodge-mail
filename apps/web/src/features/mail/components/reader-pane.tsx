@@ -1,9 +1,13 @@
+import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { MailOpen, Reply } from "lucide-react";
+import { useMutation } from "convex/react";
+import { Code2, MailOpen, Reply, Sparkles } from "lucide-react";
 
+import { api } from "@rodge-mail/convex/api";
 import { cn } from "@rodge-mail/std/cn";
 
 import type { MailThreadDetail, ThreadMessageDetail } from "../types";
+import type { ReaderViewMode } from "./reader-message";
 import { useLiveMail } from "../live-data";
 import { useMailStore } from "../store";
 import { ReaderMessage } from "./reader-message";
@@ -55,6 +59,7 @@ function ReaderContent() {
     togglePinned,
     toggleRead,
   } = useLiveMail();
+  const setSpamState = useMutation(api.classification.mutations.setSpamState);
 
   if (!selectedThread) return null;
   const selectedMessage = getSelectedMessage(selectedThread, selectedMessageId);
@@ -65,12 +70,22 @@ function ReaderContent() {
         closeMobileReader={() => {
           closeMobileReader();
           void navigate({
-            to: mailMode === "archive" ? "/archive" : "/",
+            to:
+              mailMode === "archive"
+                ? "/archive"
+                : mailMode === "spam"
+                  ? "/spam"
+                  : "/",
             search: (previous) => previous,
           });
         }}
         archiveThread={archiveThread}
         mailMode={mailMode}
+        markNotSpam={async (message) => {
+          await setSpamState({ messageId: message._id, isSpam: false });
+          closeMobileReader();
+          await navigate({ to: "/spam", search: (previous) => previous });
+        }}
         permanentlyDeleteArchivedThread={permanentlyDeleteArchivedThread}
         replyToSelectedThread={replyToSelectedThread}
         restoreArchivedThread={restoreArchivedThread}
@@ -96,6 +111,7 @@ function ReaderArticle({
   selectedMessage: ThreadMessageDetail | undefined;
   selectedThread: MailThreadDetail;
 }) {
+  const [viewMode, setViewMode] = useState<ReaderViewMode>("clean");
   return (
     <div className="mail-scrollbar min-h-0 flex-1 overflow-y-auto">
       <article className="relative z-[1] mx-auto w-full max-w-[840px] px-6 pt-8 pb-28 sm:px-10 sm:pt-10 xl:px-12 xl:pt-12">
@@ -104,8 +120,14 @@ function ReaderArticle({
         </h1>
         <div className="mt-8 h-px bg-[var(--mail-seam)] sm:mt-10" />
 
+        <ReaderViewSwitch onChange={setViewMode} value={viewMode} />
+
         {selectedThread.messages.map((message) => (
-          <ReaderMessage key={message._id} message={message} />
+          <ReaderMessage
+            key={message._id}
+            message={message}
+            viewMode={viewMode}
+          />
         ))}
 
         <button
@@ -118,6 +140,64 @@ function ReaderArticle({
         </button>
       </article>
     </div>
+  );
+}
+
+function ReaderViewSwitch({
+  onChange,
+  value,
+}: {
+  onChange: (value: ReaderViewMode) => void;
+  value: ReaderViewMode;
+}) {
+  return (
+    <div
+      aria-label="Message view"
+      className="mail-inset mt-5 inline-flex rounded-[10px] border p-1"
+      role="group"
+    >
+      <ReaderViewButton
+        icon={Sparkles}
+        label="Clean"
+        onClick={() => onChange("clean")}
+        selected={value === "clean"}
+      />
+      <ReaderViewButton
+        icon={Code2}
+        label="Original"
+        onClick={() => onChange("original")}
+        selected={value === "original"}
+      />
+    </div>
+  );
+}
+
+function ReaderViewButton({
+  icon: Icon,
+  label,
+  onClick,
+  selected,
+}: {
+  icon: typeof Sparkles;
+  label: string;
+  onClick: () => void;
+  selected: boolean;
+}) {
+  return (
+    <button
+      aria-pressed={selected}
+      className={cn(
+        "flex h-8 items-center gap-1.5 rounded-[7px] px-3 font-mono text-[9px] font-semibold tracking-[0.08em] uppercase transition",
+        selected
+          ? "text-foreground bg-[var(--mail-paper)] shadow-[var(--mail-shadow-raised)]"
+          : "hover:text-foreground text-[var(--mail-ink-soft)]",
+      )}
+      onClick={onClick}
+      type="button"
+    >
+      <Icon className="size-3" />
+      {label}
+    </button>
   );
 }
 

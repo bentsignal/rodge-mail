@@ -211,6 +211,8 @@ export const vMessageClassification = v.object({
   confidence: v.number(),
   reason: v.string(),
   summary: v.string(),
+  cleanedMarkdown: v.optional(v.string()),
+  isSpam: v.optional(v.boolean()),
   shouldEmbed: v.boolean(),
   source: vClassificationSource,
   promptVersion: v.string(),
@@ -222,8 +224,33 @@ export const vMessageClassification = v.object({
   signals: v.optional(v.array(vClassificationSignal)),
   model: v.optional(v.string()),
   error: v.optional(v.string()),
+  generateCleanViewAfterClassification: v.optional(v.boolean()),
   recoveryAttemptedAt: v.optional(v.number()),
   classifiedAt: v.optional(v.number()),
+  createdAt: v.number(),
+  updatedAt: v.number(),
+});
+
+export const vCleanViewStatus = v.union(
+  v.literal("pending"),
+  v.literal("running"),
+  v.literal("ready"),
+  v.literal("failed"),
+);
+
+export const vMessageCleanView = v.object({
+  ownerId: v.string(),
+  messageId: v.id("messages"),
+  status: vCleanViewStatus,
+  promptVersion: v.string(),
+  outputSchemaVersion: v.string(),
+  jobKey: v.string(),
+  inputHash: v.string(),
+  summary: v.optional(v.string()),
+  cleanedMarkdown: v.optional(v.string()),
+  model: v.optional(v.string()),
+  error: v.optional(v.string()),
+  generatedAt: v.optional(v.number()),
   createdAt: v.number(),
   updatedAt: v.number(),
 });

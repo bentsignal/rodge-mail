@@ -20,6 +20,7 @@ import {
 
 import type { MailThread } from "@rodge-mail/features/mail";
 
+import type { MobileMailbox } from "../store";
 import type { NativeThreadRowColors } from "./thread-row-summary.ios";
 import type { ThreadRowProps } from "./thread-row-types";
 import { useResolvedMobileColorScheme } from "~/features/theme/mobile-theme";
@@ -97,6 +98,9 @@ function NativeRowContent({
   }
   if (mailbox === "archive") {
     return <ArchiveSwipeRow colors={colors} props={props} />;
+  }
+  if (mailbox === "spam") {
+    return <NativeThreadButton colors={colors} props={props} />;
   }
   return <InboxSwipeRow colors={colors} props={props} />;
 }
@@ -238,7 +242,7 @@ function getNativeAccessibilityLabel(props: ThreadRowProps) {
   return `${props.selected ? "Selected" : "Not selected"}, ${label}`;
 }
 
-function getNativeKey(thread: MailThread, mailbox: "archive" | "inbox") {
+function getNativeKey(thread: MailThread, mailbox: MobileMailbox) {
   return `${getThreadRowNativeKey(thread)}:${mailbox}`;
 }
 

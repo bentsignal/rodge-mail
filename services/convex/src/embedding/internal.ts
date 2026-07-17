@@ -81,13 +81,14 @@ export const beginAttempt = internalMutation({
       return { ready: false };
     }
 
+    const attempt = job.attempt + 1;
     await ctx.db.patch(job._id, {
       status: "running",
-      attempt: job.attempt + 1,
+      attempt,
       nextAttemptAt: undefined,
       updatedAt: Date.now(),
     });
-    return { ready: true };
+    return { ready: true, attempt };
   },
 });
 

@@ -15,6 +15,7 @@
       "extends": "base",
       "distribution": "internal",
       "env": {
+        "EXPO_PUBLIC_RUNTIME_ENVIRONMENT": "development",
         "NODE_ENV": "development"
       }
     },

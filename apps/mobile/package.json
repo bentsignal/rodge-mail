@@ -21,6 +21,7 @@
     "@better-auth/passkey": "1.6.11",
     "@convex-dev/better-auth": "catalog:",
     "@expo-google-fonts/roboto": "^0.4.2",
+    "@expo/dom-webview": "~56.0.6",
     "@expo/metro-runtime": "~56.0.16",
     "@expo/ui": "~56.0.21",
     "@legendapp/list": "catalog:",

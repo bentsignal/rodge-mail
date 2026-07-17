@@ -30,10 +30,16 @@ export interface MailAttachment {
 export interface MailMessage {
   attachments: MailAttachment[];
   body: string[];
+  cleanedBody?: string;
+  cleanError?: string;
+  cleanStatus?: "pending" | "running" | "ready" | "failed";
   cc: MailAddress[];
   from: MailAddress;
   id: string;
   internetMessageId?: string;
+  isSpam?: boolean;
+  originalHtml?: string;
+  overview?: string;
   replyTo?: MailAddress[];
   sentAt: string;
   to: MailAddress[];

@@ -27,7 +27,12 @@ export const runEmbedding = internalAction({
 
     try {
       const text = embeddingText(normalizeMail(input.message, input.content));
-      const vector = await createEmbedding(text, args.jobKey);
+      const vector = await createEmbedding({
+        ctx,
+        ownerId: input.message.ownerId,
+        input: text,
+        jobKey: `${args.jobKey}:${attempt.attempt}:${Date.now()}`,
+      });
       await ctx.runMutation(internal.embedding.internal.complete, {
         ...args,
         vector,

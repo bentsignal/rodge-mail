@@ -12,6 +12,7 @@ import {
 
 import type { MailThread } from "@rodge-mail/features/mail";
 
+import type { MobileMailbox } from "../store";
 import { formatInboxMessageTime } from "../lib/mail-format";
 import { getSenderInitials, isThreadUnread } from "./thread-row-presentation";
 
@@ -36,7 +37,7 @@ export function NativeThreadSummary({
   thread,
 }: {
   colors: NativeThreadRowColors;
-  mailbox: "archive" | "inbox";
+  mailbox: MobileMailbox;
   modifiers?: ViewModifier[];
   thread: MailThread;
 }) {
@@ -145,13 +146,8 @@ function AvatarIndicator({
   colors: NativeThreadRowColors;
   isUnread: boolean;
 }) {
-  return (
-    <Image
-      color={isUnread ? colors.brass : "transparent"}
-      size={8}
-      systemName="circle.fill"
-    />
-  );
+  if (!isUnread) return null;
+  return <Image color={colors.brass} size={8} systemName="circle.fill" />;
 }
 
 function PinIndicator({

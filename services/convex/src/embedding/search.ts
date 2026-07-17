@@ -67,10 +67,12 @@ export const semanticSearch = authedAction({
     });
     if (!limited.ok)
       throw new ConvexError("Semantic search rate limit exceeded");
-    const vector = await createEmbedding(
-      searchPlan.lexicalQuery,
-      `search:${ctx.ownerId}:${stableHash(searchPlan.lexicalQuery)}`,
-    );
+    const vector = await createEmbedding({
+      ctx,
+      ownerId: ctx.ownerId,
+      input: searchPlan.lexicalQuery,
+      jobKey: `search:${ctx.ownerId}:${stableHash(searchPlan.lexicalQuery)}:${Date.now()}`,
+    });
     const matches = await ctx.vectorSearch(
       "messageEmbeddings",
       "search_vector",

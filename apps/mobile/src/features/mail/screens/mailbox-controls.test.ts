@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   filterMailboxThreads,
   getFilterLabel,
+  getMailboxSearchPlaceholder,
+  parseMobileMailbox,
   toggleSelectedThread,
 } from "./mailbox-controls";
 
@@ -23,6 +25,19 @@ function makeThread(id: string, isRead: boolean) {
 }
 
 describe("mailbox controls", () => {
+  it("preserves supported mailbox routes", () => {
+    expect(parseMobileMailbox("archive")).toBe("archive");
+    expect(parseMobileMailbox("spam")).toBe("spam");
+    expect(parseMobileMailbox("unknown")).toBe("inbox");
+    expect(parseMobileMailbox(undefined)).toBe("inbox");
+  });
+
+  it("uses mailbox-specific search language", () => {
+    expect(getMailboxSearchPlaceholder("archive")).toBe("Search archive");
+    expect(getMailboxSearchPlaceholder("spam")).toBe("Search spam");
+    expect(getMailboxSearchPlaceholder("inbox")).toBeUndefined();
+  });
+
   it("filters unread mail without reordering all mail", () => {
     expect(filterMailboxThreads(threads, "all")).toBe(threads);
     expect(filterMailboxThreads(threads, "unread").map(({ id }) => id)).toEqual(

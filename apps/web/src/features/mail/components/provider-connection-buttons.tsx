@@ -47,8 +47,10 @@ const PROVIDERS = [
 
 export function AddAccountButton({
   accounts,
+  appearance = "rail",
 }: {
   accounts: MailAccountView[];
+  appearance?: "manager" | "rail";
 }) {
   const connectGmail = useAction(api.accounts.actions.connectGmail);
   const connectMicrosoft = useAction(api.accounts.actions.connectMicrosoft);
@@ -94,11 +96,21 @@ export function AddAccountButton({
         <Dialog.Trigger asChild>
           <button
             aria-label="Add account"
-            className="mt-3 flex h-11 w-full items-center justify-center gap-2.5 rounded-lg border border-dashed border-white/25 px-3 text-xs font-semibold text-[var(--mail-chassis-foreground)]/72 transition-colors hover:border-[var(--mail-brass)] hover:bg-white/[0.06] hover:text-[var(--mail-chassis-foreground)] xl:justify-start"
+            className={
+              appearance === "manager"
+                ? "mail-raised flex h-9 shrink-0 items-center justify-center gap-2 rounded-[9px] border px-3 text-xs font-semibold transition-colors hover:border-[var(--mail-brass)]"
+                : "mt-3 flex h-11 w-full items-center justify-center gap-2.5 rounded-lg border border-dashed border-white/25 px-3 text-xs font-semibold text-[var(--mail-chassis-foreground)]/72 transition-colors hover:border-[var(--mail-brass)] hover:bg-white/[0.06] hover:text-[var(--mail-chassis-foreground)] xl:justify-start"
+            }
             type="button"
           >
             <Plus className="size-4" />
-            <span className="hidden xl:inline">Add account</span>
+            <span
+              className={
+                appearance === "manager" ? "inline" : "hidden xl:inline"
+              }
+            >
+              Add account
+            </span>
           </button>
         </Dialog.Trigger>
         <Dialog.Content className="mail-dialog mail-workspace max-w-[460px] gap-0 overflow-hidden rounded-[18px] border p-0">

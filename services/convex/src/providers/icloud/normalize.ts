@@ -9,6 +9,7 @@ import type {
 import { simpleParser } from "mailparser";
 
 import type { NormalizedMessage } from "../types";
+import { sanitizeEmailHtml } from "../../mail/html";
 import {
   createAttachmentId,
   createRemoteMessageId,
@@ -35,6 +36,11 @@ export async function normalizeMessage(
     message.uid,
   );
   const plainText = parsed.text?.slice(0, MAX_TEXT_LENGTH);
+  const sanitizedHtml = sanitizeEmailHtml(
+    typeof parsed.html === "string"
+      ? parsed.html.slice(0, MAX_TEXT_LENGTH)
+      : undefined,
+  );
   const snippet = collapseWhitespace(plainText ?? parsed.subject ?? "").slice(
     0,
     500,
@@ -61,6 +67,7 @@ export async function normalizeMessage(
     subject: parsed.subject ?? message.envelope?.subject ?? "(no subject)",
     snippet,
     plainText,
+    sanitizedHtml,
     headers: parsed.headerLines.slice(0, 500).map((header) => ({
       name: header.key,
       value: header.line.slice(header.line.indexOf(":") + 1).trim(),

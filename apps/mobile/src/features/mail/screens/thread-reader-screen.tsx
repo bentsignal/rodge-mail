@@ -1,20 +1,23 @@
 import type { LayoutChangeEvent } from "react-native";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useMutation, useQuery } from "convex/react";
-import { Reply } from "lucide-react-native";
+import { Code2, Reply, Sparkles } from "lucide-react-native";
 
 import type { MailThread } from "@rodge-mail/features/mail";
 import { api } from "@rodge-mail/convex/api";
 import { getReplyAddress } from "@rodge-mail/features/mail";
 
+import type { MobileMailbox } from "../store";
+import type { MessageViewMode } from "./thread-message-body";
 import { PostalPaperBackground } from "~/features/theme/postal-surface";
 import { postalDisplayFont } from "~/features/theme/postal-typography";
 import { useColor } from "~/hooks/use-color";
 import { toConvexId } from "../lib/convex-id";
 import { toMailThreadDetail } from "../lib/convex-mail";
 import { formatMessageTime } from "../lib/mail-format";
+import { parseMobileMailbox } from "./mailbox-controls";
 import { ThreadMessageBody } from "./thread-message-body";
 import { ThreadReaderFooter } from "./thread-reader-footer";
 import { useThreadReaderActions } from "./use-thread-reader-actions";
@@ -29,7 +32,7 @@ export function ThreadReaderScreen() {
     mailbox?: string | string[];
     messageId?: string | string[];
   }>();
-  const mailbox = firstParam(mailboxParam) === "archive" ? "archive" : "inbox";
+  const mailbox = parseMobileMailbox(firstParam(mailboxParam));
   const threadId = id ? toConvexId<"threads">(id) : undefined;
   const queryArgs = threadId ? { threadId } : "skip";
   const thread = useQuery(api.mail.queries.getThread, queryArgs);
@@ -60,13 +63,14 @@ function ThreadReader({
   thread,
 }: {
   accountAddress: string;
-  mailbox: "archive" | "inbox";
+  mailbox: MobileMailbox;
   targetMessageId?: string;
   thread: MailThread;
 }) {
   const router = useRouter();
   const foreground = useColor("foreground");
   const scrollViewRef = useRef<ScrollView>(null);
+  const [viewMode, setViewMode] = useState<MessageViewMode>("clean");
   const actions = useThreadReaderActions(thread);
   function reply() {
     const latestMessage = thread.messages.at(-1);
@@ -102,10 +106,12 @@ function ThreadReader({
           contentInsetAdjustmentBehavior="automatic"
         >
           <ThreadHeader thread={thread} />
+          <MessageViewSwitch onChange={setViewMode} value={viewMode} />
           {thread.messages.map((message) => (
             <ThreadMessageBody
               key={message.id}
               message={message}
+              viewMode={viewMode}
               onLayout={
                 message.id === targetMessageId
                   ? (event) => scrollToMessage(scrollViewRef.current, event)
@@ -124,6 +130,68 @@ function ThreadReader({
         </ScrollView>
       </PostalPaperBackground>
     </>
+  );
+}
+
+function MessageViewSwitch({
+  onChange,
+  value,
+}: {
+  onChange: (value: MessageViewMode) => void;
+  value: MessageViewMode;
+}) {
+  const foreground = useColor("foreground");
+  const muted = useColor("muted-foreground");
+  return (
+    <View
+      accessibilityLabel="Message view"
+      className="bg-well border-well-border mx-1 flex-row self-start rounded-xl border p-1"
+    >
+      <MessageViewButton
+        color={value === "clean" ? foreground : muted}
+        icon={Sparkles}
+        label="Clean"
+        onPress={() => onChange("clean")}
+        selected={value === "clean"}
+      />
+      <MessageViewButton
+        color={value === "original" ? foreground : muted}
+        icon={Code2}
+        label="Original"
+        onPress={() => onChange("original")}
+        selected={value === "original"}
+      />
+    </View>
+  );
+}
+
+function MessageViewButton({
+  color,
+  icon: Icon,
+  label,
+  onPress,
+  selected,
+}: {
+  color: string;
+  icon: typeof Sparkles;
+  label: string;
+  onPress: () => void;
+  selected: boolean;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected }}
+      className={
+        selected
+          ? "bg-paper flex-row items-center gap-1.5 rounded-lg px-3 py-2"
+          : "flex-row items-center gap-1.5 rounded-lg px-3 py-2"
+      }
+      onPress={onPress}
+    >
+      <Icon color={color} size={14} />
+      <Text className="text-foreground text-xs font-semibold">{label}</Text>
+    </Pressable>
   );
 }
 

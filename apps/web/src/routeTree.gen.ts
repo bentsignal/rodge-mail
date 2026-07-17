@@ -16,9 +16,11 @@ import { Route as AuthedRouteImport } from './app/_authed'
 import { Route as AuthedIndexRouteImport } from './app/_authed/index'
 import { Route as AuthDesktopCompleteRouteImport } from './app/auth.desktop-complete'
 import { Route as AuthCallbackRouteImport } from './app/auth.callback'
+import { Route as AuthedSpamRouteImport } from './app/_authed.spam'
 import { Route as AuthedArchiveRouteImport } from './app/_authed.archive'
 import { Route as ApiAuthSplatRouteImport } from './app/api.auth.$'
 import { Route as AuthedMessagesMessageIdRouteImport } from './app/_authed.messages.$messageId'
+import { Route as AuthedSpamMessagesMessageIdRouteImport } from './app/_authed.spam.messages.$messageId'
 import { Route as AuthedArchiveMessagesMessageIdRouteImport } from './app/_authed.archive.messages.$messageId'
 
 const ProviderCompleteRoute = ProviderCompleteRouteImport.update({
@@ -55,6 +57,11 @@ const AuthCallbackRoute = AuthCallbackRouteImport.update({
   path: '/auth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthedSpamRoute = AuthedSpamRouteImport.update({
+  id: '/spam',
+  path: '/spam',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedArchiveRoute = AuthedArchiveRouteImport.update({
   id: '/archive',
   path: '/archive',
@@ -70,6 +77,12 @@ const AuthedMessagesMessageIdRoute = AuthedMessagesMessageIdRouteImport.update({
   path: '/messages/$messageId',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedSpamMessagesMessageIdRoute =
+  AuthedSpamMessagesMessageIdRouteImport.update({
+    id: '/messages/$messageId',
+    path: '/messages/$messageId',
+    getParentRoute: () => AuthedSpamRoute,
+  } as any)
 const AuthedArchiveMessagesMessageIdRoute =
   AuthedArchiveMessagesMessageIdRouteImport.update({
     id: '/messages/$messageId',
@@ -83,23 +96,27 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/provider-complete': typeof ProviderCompleteRoute
   '/archive': typeof AuthedArchiveRouteWithChildren
+  '/spam': typeof AuthedSpamRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/desktop-complete': typeof AuthDesktopCompleteRoute
   '/messages/$messageId': typeof AuthedMessagesMessageIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/archive/messages/$messageId': typeof AuthedArchiveMessagesMessageIdRoute
+  '/spam/messages/$messageId': typeof AuthedSpamMessagesMessageIdRoute
 }
 export interface FileRoutesByTo {
   '/desktop-auth': typeof DesktopAuthRoute
   '/login': typeof LoginRoute
   '/provider-complete': typeof ProviderCompleteRoute
   '/archive': typeof AuthedArchiveRouteWithChildren
+  '/spam': typeof AuthedSpamRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/desktop-complete': typeof AuthDesktopCompleteRoute
   '/': typeof AuthedIndexRoute
   '/messages/$messageId': typeof AuthedMessagesMessageIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/archive/messages/$messageId': typeof AuthedArchiveMessagesMessageIdRoute
+  '/spam/messages/$messageId': typeof AuthedSpamMessagesMessageIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -108,12 +125,14 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/provider-complete': typeof ProviderCompleteRoute
   '/_authed/archive': typeof AuthedArchiveRouteWithChildren
+  '/_authed/spam': typeof AuthedSpamRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/desktop-complete': typeof AuthDesktopCompleteRoute
   '/_authed/': typeof AuthedIndexRoute
   '/_authed/messages/$messageId': typeof AuthedMessagesMessageIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/_authed/archive/messages/$messageId': typeof AuthedArchiveMessagesMessageIdRoute
+  '/_authed/spam/messages/$messageId': typeof AuthedSpamMessagesMessageIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -123,23 +142,27 @@ export interface FileRouteTypes {
     | '/login'
     | '/provider-complete'
     | '/archive'
+    | '/spam'
     | '/auth/callback'
     | '/auth/desktop-complete'
     | '/messages/$messageId'
     | '/api/auth/$'
     | '/archive/messages/$messageId'
+    | '/spam/messages/$messageId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/desktop-auth'
     | '/login'
     | '/provider-complete'
     | '/archive'
+    | '/spam'
     | '/auth/callback'
     | '/auth/desktop-complete'
     | '/'
     | '/messages/$messageId'
     | '/api/auth/$'
     | '/archive/messages/$messageId'
+    | '/spam/messages/$messageId'
   id:
     | '__root__'
     | '/_authed'
@@ -147,12 +170,14 @@ export interface FileRouteTypes {
     | '/login'
     | '/provider-complete'
     | '/_authed/archive'
+    | '/_authed/spam'
     | '/auth/callback'
     | '/auth/desktop-complete'
     | '/_authed/'
     | '/_authed/messages/$messageId'
     | '/api/auth/$'
     | '/_authed/archive/messages/$messageId'
+    | '/_authed/spam/messages/$messageId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -216,6 +241,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authed/spam': {
+      id: '/_authed/spam'
+      path: '/spam'
+      fullPath: '/spam'
+      preLoaderRoute: typeof AuthedSpamRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/archive': {
       id: '/_authed/archive'
       path: '/archive'
@@ -236,6 +268,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/messages/$messageId'
       preLoaderRoute: typeof AuthedMessagesMessageIdRouteImport
       parentRoute: typeof AuthedRoute
+    }
+    '/_authed/spam/messages/$messageId': {
+      id: '/_authed/spam/messages/$messageId'
+      path: '/messages/$messageId'
+      fullPath: '/spam/messages/$messageId'
+      preLoaderRoute: typeof AuthedSpamMessagesMessageIdRouteImport
+      parentRoute: typeof AuthedSpamRoute
     }
     '/_authed/archive/messages/$messageId': {
       id: '/_authed/archive/messages/$messageId'
@@ -259,14 +298,28 @@ const AuthedArchiveRouteWithChildren = AuthedArchiveRoute._addFileChildren(
   AuthedArchiveRouteChildren,
 )
 
+interface AuthedSpamRouteChildren {
+  AuthedSpamMessagesMessageIdRoute: typeof AuthedSpamMessagesMessageIdRoute
+}
+
+const AuthedSpamRouteChildren: AuthedSpamRouteChildren = {
+  AuthedSpamMessagesMessageIdRoute: AuthedSpamMessagesMessageIdRoute,
+}
+
+const AuthedSpamRouteWithChildren = AuthedSpamRoute._addFileChildren(
+  AuthedSpamRouteChildren,
+)
+
 interface AuthedRouteChildren {
   AuthedArchiveRoute: typeof AuthedArchiveRouteWithChildren
+  AuthedSpamRoute: typeof AuthedSpamRouteWithChildren
   AuthedIndexRoute: typeof AuthedIndexRoute
   AuthedMessagesMessageIdRoute: typeof AuthedMessagesMessageIdRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedArchiveRoute: AuthedArchiveRouteWithChildren,
+  AuthedSpamRoute: AuthedSpamRouteWithChildren,
   AuthedIndexRoute: AuthedIndexRoute,
   AuthedMessagesMessageIdRoute: AuthedMessagesMessageIdRoute,
 }

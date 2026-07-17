@@ -184,7 +184,7 @@ function EmptyThreadList({
   canSeedDemo: boolean;
   isSearch: boolean;
   isSeedingDemo: boolean;
-  mailMode: "archive" | "inbox";
+  mailMode: "archive" | "inbox" | "spam";
   seedDemoMail: () => Promise<void>;
   unreadOnly: boolean;
 }) {
@@ -243,10 +243,12 @@ function getEmptyDescription(
   isSearch: boolean,
   canSeedDemo: boolean,
   unreadOnly: boolean,
-  mailMode: "archive" | "inbox",
+  mailMode: "archive" | "inbox" | "spam",
 ) {
   if (isSearch) return "Try a sender, subject, or phrase from the message.";
   if (mailMode === "archive") return "Conversations you archive appear here.";
+  if (mailMode === "spam")
+    return "High-confidence junk is kept here for review.";
   if (unreadOnly) return "Everything in this mailbox has been read.";
   if (canSeedDemo) {
     return "This development mailbox is empty. Add the safe demo set to exercise the live Convex path.";

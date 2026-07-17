@@ -17,7 +17,7 @@ import { useThreadActions } from "./use-thread-actions";
 export function useLiveMailActions(
   accounts: MailAccountView[],
   selectedThread: MailThreadDetail | undefined,
-  mailMode: "archive" | "inbox",
+  mailMode: "archive" | "inbox" | "spam",
   unreadSession?: {
     forget: (threadId: InboxMessage["threadId"]) => void;
     preserve: (message: InboxMessage) => void;
@@ -67,7 +67,7 @@ function useArchiveActions({
 }: {
   clearSelection: () => void;
   forgetUnreadThread?: (threadId: InboxMessage["threadId"]) => void;
-  mailMode: "archive" | "inbox";
+  mailMode: "archive" | "inbox" | "spam";
   navigate: NavigateFn;
 }) {
   const archive = useMutation(api.mail.mutations.archiveThread);
@@ -86,7 +86,12 @@ function useArchiveActions({
       forgetUnreadThread?.(message.threadId);
       clearSelection();
       await navigate({
-        to: mailMode === "archive" ? "/archive" : "/",
+        to:
+          mailMode === "archive"
+            ? "/archive"
+            : mailMode === "spam"
+              ? "/spam"
+              : "/",
         search: (previous) => previous,
       });
       toast.success("Archived in Rodge. Your provider copy is unchanged.");

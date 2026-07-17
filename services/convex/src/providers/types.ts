@@ -36,6 +36,7 @@ export interface NormalizedMessage {
   subject: string;
   snippet: string;
   plainText?: string;
+  sanitizedHtml?: string;
   headers: { name: string; value: string }[];
   remoteLabelIds: string[];
   sentAt?: number;

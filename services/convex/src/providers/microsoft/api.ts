@@ -6,13 +6,14 @@ import type {
   NormalizedMessage,
   OutboxPayload,
 } from "../types";
+import { emailHtmlToPlainText, sanitizeEmailHtml } from "../../mail/html";
 
 const GRAPH_ROOT = "https://graph.microsoft.com/v1.0";
 const INITIAL_SYNC_LOOKBACK_DAYS = 90;
 const MAX_DELTA_PAGES = 100;
 const SIMPLE_ATTACHMENT_LIMIT_BYTES = 3 * 1024 * 1024;
 const GRAPH_PREFERENCES =
-  'IdType="ImmutableId", outlook.body-content-type="text", odata.maxpagesize=200';
+  'IdType="ImmutableId", outlook.body-content-type="html", odata.maxpagesize=200';
 const MESSAGE_SELECT = [
   "id",
   "conversationId",
@@ -424,6 +425,7 @@ function normalizeMessage(message: GraphMessage): NormalizedMessage {
       : [],
   );
   const attachments = (message.attachments ?? []).flatMap(normalizeAttachment);
+  const html = message.body?.content?.length ? message.body.content : undefined;
   return {
     remoteMessageId: message.id,
     remoteThreadId: message.conversationId ?? message.id,
@@ -435,7 +437,8 @@ function normalizeMessage(message: GraphMessage): NormalizedMessage {
     bcc: normalizeAddresses(message.bccRecipients) ?? [],
     subject: nonemptyString(message.subject, "(no subject)"),
     snippet: message.bodyPreview ?? "",
-    plainText: message.body?.content?.length ? message.body.content : undefined,
+    plainText: html ? emailHtmlToPlainText(html) : undefined,
+    sanitizedHtml: sanitizeEmailHtml(html),
     headers,
     remoteLabelIds: message.parentFolderId ? [message.parentFolderId] : [],
     sentAt: parseDate(message.sentDateTime),

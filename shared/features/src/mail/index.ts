@@ -8,7 +8,11 @@ export {
   parseRecipientList,
 } from "./recipients";
 export { getReplyAddress } from "./reply";
-export { mergeSearchResults } from "./search";
+export {
+  getStrongSemanticMessageIds,
+  mergeSearchResults,
+  SEMANTIC_SEARCH_MIN_SCORE,
+} from "./search";
 export { sortPinnedMailRows } from "./order";
 export { dedupeThreadRows } from "./thread-rows";
 export type {
