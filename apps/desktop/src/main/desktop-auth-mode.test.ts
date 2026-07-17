@@ -1,9 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import {
-  resolveDesktopAuthMode,
-} from "@rodge-mail/config/desktop";
+import { resolveDesktopAuthMode } from "@rodge-mail/config/desktop";
 
 const electronUserAgent =
   "Mozilla/5.0 AppleWebKit/537.36 Electron/43.1.0 Safari/537.36";

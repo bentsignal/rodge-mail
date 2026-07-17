@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
-import { desktopAuthRequestSearchSchema } from "~/features/auth/lib/desktop-auth-contracts";
+import {
+  createDesktopAuthCallbackUrl,
+  desktopAuthRequestSearchSchema,
+} from "~/features/auth/lib/desktop-auth-contracts";
 import {
   authorizeDesktopAuth,
   createDesktopDeepLink,
@@ -15,15 +18,18 @@ export const Route = createFileRoute("/desktop-auth")({
     throw redirect({
       to: "/login",
       search: {
-        redirect_uri: `/desktop-auth?request_id=${encodeURIComponent(search.request_id)}`,
+        redirect_uri: createDesktopAuthRedirectUrl(search),
       },
     });
   },
 });
 
 function DesktopAuth() {
-  const requestId = Route.useSearch({
-    select: (search) => search.request_id,
+  const { callbackUrl, requestId } = Route.useSearch({
+    select: (search) => ({
+      callbackUrl: search.callback_url,
+      requestId: search.request_id,
+    }),
   });
   const [status, setStatus] = useState<
     | { kind: "authorized"; deepLink: string }
@@ -35,15 +41,32 @@ function DesktopAuth() {
     setStatus({ kind: "authorizing" });
     try {
       const authorizationCode = await authorizeDesktopAuth(requestId);
-      const deepLink = createDesktopDeepLink(requestId, authorizationCode);
-      setStatus({ deepLink, kind: "authorized" });
-      window.location.assign(deepLink);
+      const destination = callbackUrl
+        ? createDesktopAuthCallbackUrl(
+            callbackUrl,
+            requestId,
+            authorizationCode,
+          )
+        : createDesktopDeepLink(requestId, authorizationCode);
+      setStatus({ deepLink: destination, kind: "authorized" });
+      window.location.assign(destination);
     } catch {
       setStatus({ kind: "error" });
     }
   }
 
   return <DesktopAuthStatus authorize={authorize} status={status} />;
+}
+
+function createDesktopAuthRedirectUrl(search: {
+  callback_url?: string;
+  request_id: string;
+}) {
+  const parameters = new URLSearchParams({ request_id: search.request_id });
+  if (search.callback_url) {
+    parameters.set("callback_url", search.callback_url);
+  }
+  return `/desktop-auth?${parameters.toString()}`;
 }
 
 function DesktopAuthStatus({

@@ -2,7 +2,10 @@ import { dirname, join } from "node:path";
 import type { Session, UtilityProcess } from "electron";
 import { net, utilityProcess } from "electron";
 
-import { synchronizeEmbeddedResponseCookies } from "./embedded-web-cookies";
+import {
+  createEmbeddedRequestCookieHeader,
+  synchronizeEmbeddedResponseCookies,
+} from "./embedded-web-cookies";
 import {
   isRedirectStatus,
   rewriteEmbeddedRedirect,
@@ -112,6 +115,11 @@ export function routeEmbeddedWebOrigin(
     const headers = new Headers(request.headers);
     headers.set("x-forwarded-host", webAppUrl.host);
     headers.set("x-forwarded-proto", "https");
+    const requestCookies = createEmbeddedRequestCookieHeader(
+      await appSession.cookies.get({ url: webAppUrl.href }),
+    );
+    if (requestCookies) headers.set("cookie", requestCookies);
+    else headers.delete("cookie");
     const response = await fetch(localUrl.href, {
       body:
         request.method === "GET" || request.method === "HEAD"

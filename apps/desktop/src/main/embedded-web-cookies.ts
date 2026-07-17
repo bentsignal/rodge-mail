@@ -1,8 +1,19 @@
 import type { CookiesSetDetails } from "electron";
 
+interface EmbeddedRequestCookie {
+  name: string;
+  value: string;
+}
+
 interface EmbeddedCookieStore {
   remove(url: string, name: string): Promise<void>;
   set(details: CookiesSetDetails): Promise<void>;
+}
+
+export function createEmbeddedRequestCookieHeader(
+  cookies: EmbeddedRequestCookie[],
+) {
+  return cookies.map((cookie) => `${cookie.name}=${cookie.value}`).join("; ");
 }
 
 function splitCookies(cookieHeader: string) {

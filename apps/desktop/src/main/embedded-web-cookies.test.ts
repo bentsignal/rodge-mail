@@ -2,12 +2,24 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  createEmbeddedRequestCookieHeader,
   parseEmbeddedCookie,
   readSetCookieHeaders,
   synchronizeEmbeddedResponseCookies,
 } from "./embedded-web-cookies.ts";
 
 const webAppUrl = new URL("https://www.rodge-mail.local");
+
+void test("forwards stored cookies to the embedded web runtime", () => {
+  assert.equal(
+    createEmbeddedRequestCookieHeader([
+      { name: "theme", value: "dark" },
+      { name: "__Secure-better-auth.session_token", value: "token.signature" },
+    ]),
+    "theme=dark; __Secure-better-auth.session_token=token.signature",
+  );
+  assert.equal(createEmbeddedRequestCookieHeader([]), "");
+});
 
 void test("parses Better Auth challenge cookies for the trusted app origin", () => {
   assert.deepEqual(

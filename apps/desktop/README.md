@@ -23,16 +23,19 @@ already running separately. Development accepts HTTPS URLs and loopback HTTP
 URLs. Packaged builds intercept only the baked
 `https://www.rodge-mail.local` origin, continue to use the Convex development
 deployment, and do not require Portless or a hosted web app at runtime.
+The embedded transport synchronizes response cookies into Electron's cookie
+store and forwards stored cookies back to the bundled server on each request.
 
 Desktop authentication is always completed in the system browser. The
 Electron renderer creates a five-minute request and keeps a PKCE verifier in its
 own `sessionStorage`; only the request ID and verifier hash leave the app. After
 normal web authentication, the browser authorizes that request and opens a
-`rodge-mail://` callback containing the request ID and a fresh one-time
-authorization code. Electron exchanges that code with the verifier in a POST
-body, atomically consumes the request, and receives a new HTTP-only Better Auth
-session cookie. The server stores only hashes of the verifier and authorization
-code. Cancellation, expiry, a mismatched factor, and replay all fail closed.
+random-port callback bound exclusively to `127.0.0.1`. The callback contains
+the request ID and a fresh one-time authorization code. Electron exchanges that
+code with the verifier in a POST body, atomically consumes the request, and
+receives a new HTTP-only Better Auth session cookie. The server stores only
+hashes of the verifier and authorization code. Cancellation, expiry, a
+mismatched factor, and replay all fail closed.
 
 Local development uses the Portless origin for both Electron and the system
 browser. A development packaged app therefore needs the Portless web runtime
@@ -48,7 +51,8 @@ verifier locally, open the same browser authorization page, receive the
 one-time authorization code through its own callback transport, and exchange
 the code for a Better Auth session without implementing WebAuthn itself.
 
-The preload currently exposes no API. Keep it that way until a native feature needs a small, typed `contextBridge` contract.
+The preload exposes only the non-secret loopback callback URL through document
+metadata. Do not expose Node.js or Electron APIs to web content.
 
 Authentication uses the passkeys and password managers available to the system
 browser; Electron never invokes WebAuthn directly.
@@ -96,10 +100,10 @@ Quit the development shell before opening a packaged build, and quit the
 packaged build before returning to `pnpm dev:desktop`; both intentionally share
 the app's single-instance identity.
 
-The `rodge-mail://` protocol is registered in packaged builds and attempted in
-the Electron development shell. macOS reliably resolves custom protocols only
-when they are declared in a packaged app's Info.plist, so use a packaged
-development-profile build for end-to-end macOS callback acceptance. Both
+The `rodge-mail://` protocol remains registered for ordinary deep links in
+packaged builds and attempted in the Electron development shell. Desktop
+authentication uses the loopback callback because not every macOS browser
+reliably launches a custom protocol. Both
 `rodge-mail:///inbox/thread-id` and `rodge-mail://inbox/thread-id` translate to
 paths on the configured hosted origin.
 

@@ -31,10 +31,3 @@ export const convex = new ConvexReactClient(urls.convex.cloud, {
   expectAuth: true,
   unsavedChangesWarning: false,
 });
-
-function runtimeEnvironment() {
-  if (process.env.EXPO_PUBLIC_RUNTIME_ENVIRONMENT === "development") {
-    return "development";
-  }
-  return __DEV__ ? "development" : "production";
-}
