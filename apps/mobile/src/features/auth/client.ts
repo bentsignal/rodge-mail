@@ -9,7 +9,7 @@ import { ConvexReactClient } from "convex/react";
 import { createUrls } from "@rodge-mail/config/urls";
 
 const urls = createUrls({
-  nodeEnv: __DEV__ ? "development" : "production",
+  nodeEnv: "development",
 });
 
 export const authClient = createAuthClient({

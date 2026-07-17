@@ -1,9 +1,12 @@
 import type { ConfigContext, ExpoConfig } from "expo/config";
 
 export default ({ config }: ConfigContext): ExpoConfig => {
-  const isDevelopmentBuild =
-    process.env.EAS_BUILD_PROFILE?.startsWith("development") ??
-    process.env.NODE_ENV !== "production";
+  const buildProfile = process.env.EAS_BUILD_PROFILE;
+  if (buildProfile && !buildProfile.startsWith("development")) {
+    throw new Error(
+      `Rodge Mail only has development builds configured; received EAS profile "${buildProfile}"`,
+    );
+  }
 
   return {
     ...config,
@@ -21,17 +24,13 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     assetBundlePatterns: ["**/*"],
     extra: {
       ...config.extra,
+      deploymentEnvironment: "development",
       eas: {
         projectId: "4273bb9c-b86a-419b-8b0a-ac4180f0b9bd",
       },
     },
     ios: {
-      associatedDomains: [
-        ...(isDevelopmentBuild
-          ? ["webcredentials:rodge-mail.local?mode=developer"]
-          : []),
-        "webcredentials:rodge-mail.vercel.app",
-      ],
+      associatedDomains: ["webcredentials:rodge-mail.local?mode=developer"],
       bundleIdentifier: "com.bentsignal.rodgemail",
       supportsTablet: true,
       icon: "./assets/rounded-icon.png",

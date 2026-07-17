@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   getPinAction,
@@ -7,7 +7,10 @@ import {
   getThreadRowAccessibilityLabel,
   getThreadRowNativeKey,
   isThreadUnread,
+  runAfterSwipeAnimation,
 } from "./thread-row-presentation";
+
+afterEach(() => vi.useRealTimers());
 
 const thread = {
   isPinned: false,
@@ -47,14 +50,24 @@ describe("thread row presentation", () => {
     expect(isThreadUnread({ isRead: true })).toBe(false);
   });
 
-  it("remounts native actions when their source state changes", () => {
+  it("refreshes native actions after thread state changes", () => {
     const base = { id: "thread-1", isPinned: false, isRead: true };
+    const pinned = { ...base, isPinned: true };
+    const unread = { ...base, isRead: false };
     expect(getThreadRowNativeKey(base)).toBe("thread-1:unpinned:read");
-    expect(getThreadRowNativeKey({ ...base, isPinned: true })).not.toBe(
-      getThreadRowNativeKey(base),
-    );
-    expect(getThreadRowNativeKey({ ...base, isRead: false })).not.toBe(
-      getThreadRowNativeKey(base),
-    );
+    expect(getThreadRowNativeKey(pinned)).not.toBe(getThreadRowNativeKey(base));
+    expect(getThreadRowNativeKey(unread)).not.toBe(getThreadRowNativeKey(base));
+  });
+
+  it("applies swipe state after the native close animation", () => {
+    vi.useFakeTimers();
+    const action = vi.fn();
+
+    runAfterSwipeAnimation(action);
+    vi.advanceTimersByTime(299);
+    expect(action).not.toHaveBeenCalled();
+
+    vi.advanceTimersByTime(1);
+    expect(action).toHaveBeenCalledOnce();
   });
 });

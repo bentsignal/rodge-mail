@@ -1,9 +1,14 @@
 import type { MailAccountFilter, MailThread } from "@rodge-mail/features/mail";
 import { sortPinnedMailRows } from "@rodge-mail/features/mail";
+import { formatRelativeTime } from "@rodge-mail/std/relative-time";
+
+export function formatInboxMessageTime(value: string, now = Date.now()) {
+  return formatRelativeTime(new Date(value).getTime(), now);
+}
 
 export function formatMessageTime(value: string) {
   const date = new Date(value);
-  const now = new Date("2026-07-09T16:00:00.000Z");
+  const now = new Date();
   const sameDay = date.toDateString() === now.toDateString();
 
   return sameDay

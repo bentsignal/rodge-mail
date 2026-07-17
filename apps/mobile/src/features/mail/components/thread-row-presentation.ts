@@ -41,3 +41,7 @@ export function getThreadRowNativeKey(
 ) {
   return `${thread.id}:${thread.isPinned ? "pinned" : "unpinned"}:${thread.isRead ? "read" : "unread"}`;
 }
+
+export function runAfterSwipeAnimation(action: () => void) {
+  setTimeout(action, 300);
+}

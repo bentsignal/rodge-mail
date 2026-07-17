@@ -30,6 +30,7 @@ import {
   getReadAction,
   getThreadRowAccessibilityLabel,
   getThreadRowNativeKey,
+  runAfterSwipeAnimation,
 } from "./thread-row-presentation";
 import { NativeThreadSummary } from "./thread-row-summary.ios";
 
@@ -169,7 +170,11 @@ function InboxSwipeRow({
           label={pinAction.label}
           modifiers={[tint(colors.primary)]}
           systemImage={pinAction.systemImage}
-          onPress={() => void togglePin(props.thread.id, props.thread.isPinned)}
+          onPress={() =>
+            runAfterSwipeAnimation(
+              () => void togglePin(props.thread.id, props.thread.isPinned),
+            )
+          }
         />
       </SwipeActions.Actions>
       <SwipeActions.Actions edge="trailing">
@@ -177,13 +182,19 @@ function InboxSwipeRow({
           label="Archive"
           modifiers={[tint(colors.brass)]}
           systemImage="archivebox"
-          onPress={() => void archiveThread(props.thread.id)}
+          onPress={() =>
+            runAfterSwipeAnimation(() => void archiveThread(props.thread.id))
+          }
         />
         <Button
           label={readAction.label}
           modifiers={[tint(props.thread.isRead ? colors.muted : colors.forest)]}
           systemImage={readAction.systemImage}
-          onPress={() => void toggleRead(props.thread.id, props.thread.isRead)}
+          onPress={() =>
+            runAfterSwipeAnimation(
+              () => void toggleRead(props.thread.id, props.thread.isRead),
+            )
+          }
         />
       </SwipeActions.Actions>
     </SwipeActions>

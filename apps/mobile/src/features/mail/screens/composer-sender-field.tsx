@@ -54,6 +54,7 @@ function SenderPicker({
         From
       </Text>
       <MenuView
+        key={selectedAccountId}
         actions={accounts.map((account) => ({
           id: account.id,
           state:
