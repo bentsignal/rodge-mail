@@ -1,6 +1,6 @@
 # Rodge Mail desktop
 
-This package is a hardened Electron shell for Rodge Mail. Packaged builds bundle the TanStack Start output and run it in an Electron utility process, while the renderer keeps the stable `https://www.rodge-mail.local` origin required by desktop passkeys. It exposes no Node.js APIs to web content.
+This package is a hardened Electron shell for Rodge Mail. Packaged builds bundle the TanStack Start output and run it in an Electron utility process. It exposes no Node.js APIs to web content.
 
 ## Development
 
@@ -24,7 +24,7 @@ URLs. Packaged builds intercept only the baked
 `https://www.rodge-mail.local` origin, continue to use the Convex development
 deployment, and do not require Portless or a hosted web app at runtime.
 
-Desktop development completes authentication in the system browser. The
+Desktop authentication is always completed in the system browser. The
 Electron renderer creates a five-minute request and keeps a PKCE verifier in its
 own `sessionStorage`; only the request ID and verifier hash leave the app. After
 normal web authentication, the browser authorizes that request and opens a
@@ -35,30 +35,23 @@ session cookie. The server stores only hashes of the verifier and authorization
 code. Cancellation, expiry, a mismatched factor, and replay all fail closed.
 
 Local development uses the Portless origin for both Electron and the system
-browser. A packaged app's embedded `www.rodge-mail.local` origin is visible only
-inside Electron. Until a real hosted authentication origin exists, packaged
-builds perform the same Better Auth passkey sign-in and email-code registration
-directly in that embedded renderer. This makes a fresh install usable without
-Portless, but available passkeys and user-verification UI depend on the
-platform authenticator and password managers exposed to Electron on that Mac or
-Windows machine. A passkey stored only in a browser extension may not be
-available inside the packaged app, so another registered passkey or account
-registration may be required.
+browser. A development packaged app therefore needs the Portless web runtime
+available at `https://www.rodge-mail.local` while signing in. A future
+standalone release can instead build the web bundle with
+`VITE_DESKTOP_BROWSER_AUTH_URL` set to a hosted HTTPS origin and configure the
+matching Convex deployment with `DESKTOP_BROWSER_AUTH_URL`. Both values must be
+origin-only HTTPS URLs.
 
-The intended long-term packaged flow remains browser-first. Build the web
-bundle with `VITE_DESKTOP_BROWSER_AUTH_URL` set to a hosted HTTPS origin that is
-different from the embedded origin, and configure the matching Convex
-deployment with `DESKTOP_BROWSER_AUTH_URL`. Both values must be origin-only
-HTTPS URLs. Packaged builds then use the same PKCE browser handoff as desktop
-development.
+The begin, authorize, exchange, and cancel endpoints form a client-neutral
+handoff boundary. A future TUI or other non-browser client can retain the PKCE
+verifier locally, open the same browser authorization page, receive the
+one-time authorization code through its own callback transport, and exchange
+the code for a Better Auth session without implementing WebAuthn itself.
 
 The preload currently exposes no API. Keep it that way until a native feature needs a small, typed `contextBridge` contract.
 
-On macOS, the signing identity must belong to Apple team `39K6A9FP99`, matching
-the keychain access group in `resources/entitlements.mac.plist`. Direct packaged
-authentication can use Electron's Touch ID credential store when the build has
-the matching entitlement. Once a hosted browser-first origin is configured,
-authentication instead uses authenticators available to the system browser.
+Authentication uses the passkeys and password managers available to the system
+browser; Electron never invokes WebAuthn directly.
 
 ## Packaging
 

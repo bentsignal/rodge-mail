@@ -37,8 +37,6 @@ export function usesDesktopBrowserAuth() {
   }
   return (
     resolveDesktopAuthMode({
-      browserAuthUrl: env.VITE_DESKTOP_BROWSER_AUTH_URL,
-      currentOrigin: window.location.origin,
       userAgent: navigator.userAgent,
     }) === "browser-handoff"
   );

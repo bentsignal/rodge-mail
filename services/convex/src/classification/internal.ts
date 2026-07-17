@@ -11,7 +11,6 @@ import {
   vClassificationSignal,
   vClassificationSource,
 } from "../mail/validators";
-import { resolveNewMailNotification } from "../notifications/internal";
 import {
   CLASSIFICATION_OUTPUT_SCHEMA_VERSION,
   CLASSIFICATION_PROMPT_VERSION,
@@ -177,11 +176,6 @@ export const complete = internalMutation({
     });
 
     await reconcileEmbeddingSelection(ctx, message._id);
-    await resolveNewMailNotification(ctx, {
-      important: isImportantMessage(args.importance),
-      messageId: message._id,
-      ownerId: message.ownerId,
-    });
     return true;
   },
 });

@@ -28,8 +28,8 @@ Convex creates one staged delivery record per newly inserted incoming inbox
 message only during incremental sync and only when the provider timestamp is
 within the last 24 hours. Initial imports, full repair/reconciliation runs,
 manual syncs, backfills, and historical messages discovered incrementally do
-not notify. Classification advances only mail meeting the shared normalized
-importance threshold to Expo delivery. The delivery is claimed before the Expo
-request, preventing sync retries from duplicating a send. Push tickets and
-bounded receipt polling distinguish Expo acceptance from device delivery, and
-`DeviceNotRegistered` tokens are disabled automatically.
+not notify. Fresh inbox mail does not wait for or depend on AI importance
+classification. The delivery is claimed before the Expo request, preventing
+sync retries from duplicating a send. Push tickets and bounded receipt polling
+distinguish Expo acceptance from device delivery, and `DeviceNotRegistered`
+tokens are disabled automatically.

@@ -9,7 +9,6 @@ import {
   getClassificationForMessage,
 } from "../mail/helpers";
 import { vClassificationCategory } from "../mail/validators";
-import { resolveNewMailNotification } from "../notifications/internal";
 import { authedMutation } from "../utils";
 import {
   CLASSIFICATION_OUTPUT_SCHEMA_VERSION,
@@ -67,11 +66,6 @@ export const setManualOverride = authedMutation({
       });
     }
     await reconcileEmbeddingSelection(ctx, message._id);
-    await resolveNewMailNotification(ctx, {
-      important: isImportantMessage(values.importance),
-      messageId: message._id,
-      ownerId: ctx.ownerId,
-    });
   },
 });
 

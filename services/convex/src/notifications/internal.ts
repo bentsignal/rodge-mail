@@ -27,50 +27,13 @@ export async function queueNewMailNotification(
   const deliveryId = await ctx.db.insert("notificationDeliveries", {
     ownerId: args.ownerId,
     messageId: args.messageId,
-    status: "queued",
+    status: "ready",
     tokenCount: 0,
     createdAt: now,
     updatedAt: now,
   });
+  await ctx.scheduler.runAfter(0, SEND_NEW_MAIL, { deliveryId });
   return { deliveryId, queued: true };
-}
-
-export async function resolveNewMailNotification(
-  ctx: MutationCtx,
-  args: {
-    important: boolean;
-    messageId: Id<"messages">;
-    ownerId: string;
-  },
-) {
-  const delivery = await ctx.db
-    .query("notificationDeliveries")
-    .withIndex("by_message", (q) => q.eq("messageId", args.messageId))
-    .unique();
-  if (!delivery || delivery.ownerId !== args.ownerId) return false;
-  if (delivery.status !== "queued") return false;
-  const now = Date.now();
-  const message = await ctx.db.get(args.messageId);
-  const fresh =
-    message?.ownerId === args.ownerId &&
-    isNotificationDeliveryFresh({
-      deliveryCreatedAt: delivery.createdAt,
-      messageReceivedAt: message.receivedAt,
-      now,
-    });
-  if (!args.important || !fresh) {
-    await ctx.db.patch(delivery._id, {
-      status: "skipped",
-      updatedAt: now,
-    });
-    return true;
-  }
-  await ctx.db.patch(delivery._id, {
-    status: "ready",
-    updatedAt: now,
-  });
-  await ctx.scheduler.runAfter(0, SEND_NEW_MAIL, { deliveryId: delivery._id });
-  return true;
 }
 
 export const getDeliveryInput = internalQuery({

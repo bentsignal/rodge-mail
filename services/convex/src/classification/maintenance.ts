@@ -4,7 +4,6 @@ import { ConvexError, v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import { internalMutation } from "../_generated/server";
 import { reconcileEmbeddingSelection } from "../embedding/internal";
-import { resolveNewMailNotification } from "../notifications/internal";
 import {
   nextBackfillRemaining,
   RECENT_BACKFILL_LIMIT,
@@ -126,11 +125,6 @@ export const recoverStaleJobs = internalMutation({
       if (plan === "discard") {
         await ctx.db.delete(classification._id);
         await reconcileEmbeddingSelection(ctx, classification.messageId);
-        await resolveNewMailNotification(ctx, {
-          important: false,
-          messageId: classification.messageId,
-          ownerId: classification.ownerId,
-        });
         discarded += 1;
         continue;
       }
