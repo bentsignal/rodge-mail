@@ -5,7 +5,6 @@ import * as Dialog from "@rodge-mail/ui-web/dialog";
 
 import { AppearanceSettings } from "~/features/theme/components/theme-toggle";
 import { useAuthStore } from "../store";
-import { AgentAccessSettings } from "./agent-access-settings";
 import { SignOutLink } from "./sign-out-link";
 
 export function PasskeyManagementButton({
@@ -14,7 +13,6 @@ export function PasskeyManagementButton({
   compact?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [settingsSession, setSettingsSession] = useState(0);
   const addPasskey = useAuthStore((store) => store.addAuthenticatedPasskey);
   const isLoading = useAuthStore((store) => store.isLoading);
 
@@ -26,7 +24,6 @@ export function PasskeyManagementButton({
 
   function changeOpen(nextOpen: boolean) {
     setIsOpen(nextOpen);
-    if (!nextOpen) setSettingsSession((session) => session + 1);
   }
 
   return (
@@ -56,9 +53,6 @@ export function PasskeyManagementButton({
         </div>
         <div className="mail-paper p-6">
           <AppearanceSettings />
-        </div>
-        <div className="mail-paper border-t border-[var(--mail-seam)] p-6">
-          <AgentAccessSettings key={settingsSession} />
         </div>
         <div className="mail-paper border-t border-[var(--mail-seam)] p-6">
           <div className="flex items-center gap-3">

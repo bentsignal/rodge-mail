@@ -1,22 +1,23 @@
 {
-  "name": "@rodge-mail/mcp",
+  "name": "@rodge-mail/cli",
   "version": "0.1.0",
-  "description": "Read-only local MCP adapter for Rodge Mail.",
+  "description": "Local command-line client for Rodge Mail.",
   "private": true,
   "type": "module",
+  "bin": {
+    "rodge": "./src/index.ts"
+  },
   "scripts": {
     "clean": "git clean -xdf .cache .turbo dist node_modules",
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "lint": "eslint --flag unstable_native_nodejs_ts_config",
-    "start": "tsx src/index.ts",
+    "start": "node --experimental-strip-types src/index.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "1.29.0",
     "@rodge-mail/agent-contract": "workspace:*",
-    "tsx": "^4.21.0",
-    "zod": "catalog:"
+    "convex": "catalog:"
   },
   "devDependencies": {
     "@rodge-mail/eslint-config": "workspace:*",

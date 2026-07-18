@@ -70,7 +70,7 @@ const HYDRATE_SEMANTIC = makeFunctionReference<
 
 export const searchMail = internalAction({
   args: {
-    credentialId: v.id("agentCredentials"),
+    credentialId: v.optional(v.id("agentCredentials")),
     ownerId: v.string(),
     accountAccess: vAgentAccountAccess,
     accountId: v.optional(v.string()),
@@ -92,7 +92,7 @@ export const searchMail = internalAction({
     }
     try {
       const limited = await rateLimiter.limit(ctx, "agentSemanticSearch", {
-        key: `${args.ownerId}:${args.credentialId}`,
+        key: `${args.ownerId}:${args.credentialId ?? "cli"}`,
       });
       if (!limited.ok) return publicSearchResult(lexical, "unavailable");
       const vector = await createEmbedding({

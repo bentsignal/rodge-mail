@@ -23,6 +23,10 @@ this Mac and other devices on the same Wi-Fi network:
 - Web: `https://www.rodge-mail.local`
 - Expo/Metro: `https://mobile.rodge-mail.local`
 
+The local `rodge` CLI uses the web origin for browser-handoff authentication,
+so keep the web development server and Portless proxy running when signing in.
+See `apps/cli/README.md` for commands and URL overrides.
+
 For desktop-only iteration, use `pnpm dev:desktop`. This starts the web/Vite
 runtime and Electron development shell together without starting Expo. The
 renderer receives Vite HMR updates. An app launched from
