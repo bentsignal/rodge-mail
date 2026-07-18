@@ -15,6 +15,7 @@ import { PostalSurface } from "~/features/theme/postal-surface";
 import { useColor } from "~/hooks/use-color";
 import { MobileEmailBody } from "../components/mobile-email-body";
 import { toConvexId } from "../lib/convex-id";
+import { createOriginalHtmlDocument } from "../lib/original-html-document";
 import { MessageOverview } from "./clean-view-overview";
 
 export type MessageViewMode = "clean" | "original";
@@ -160,7 +161,7 @@ function OriginalHtml({ html }: { html: string }) {
   const background = "#ffffff";
   const foreground = "#18181b";
   const [height, setHeight] = useState(420);
-  const document = createHtmlDocument({ background, foreground, html });
+  const document = createOriginalHtmlDocument({ background, foreground, html });
   return (
     <WebView
       automaticallyAdjustContentInsets={false}
@@ -178,22 +179,10 @@ function OriginalHtml({ html }: { html: string }) {
       source={{
         uri: `data:text/html;charset=utf-8,${encodeURIComponent(document)}`,
       }}
-      style={{ backgroundColor: background, height }}
+      style={{ alignSelf: "stretch", backgroundColor: background, height }}
       useExpoModulesBridge={false}
     />
   );
-}
-
-function createHtmlDocument({
-  background,
-  foreground,
-  html,
-}: {
-  background: string;
-  foreground: string;
-  html: string;
-}) {
-  return `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"><style>html,body{margin:0;padding:0;background:${background};color:${foreground};font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:16px;line-height:1.55;overflow-wrap:anywhere}img,table{max-width:100%!important;height:auto}a{color:#9a6b16}</style></head><body>${html}<script>new ResizeObserver(()=>window.ReactNativeWebView.postMessage(String(document.documentElement.scrollHeight+8))).observe(document.body)</script></body></html>`;
 }
 
 function getUsableOriginalHtml(html: string | undefined) {
