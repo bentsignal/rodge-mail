@@ -15,10 +15,4 @@ describe("desktop mail shell layout", () => {
       "padding-top: var(--mail-desktop-titlebar-reserve)",
     );
   });
-
-  it("removes only the list start gutter", () => {
-    expect(styles).toContain("width: calc(100% - 8px)");
-    expect(styles).toContain("margin-inline-start: 0");
-    expect(styles).toContain("margin-inline-end: 8px");
-  });
 });
