@@ -58,5 +58,3 @@ dist/
 
 # tanstack
 .tanstack
-# Unused root artifact inherited from the source repository
-/favicon.ico
