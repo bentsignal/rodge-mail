@@ -22,7 +22,10 @@ import { authedAction } from "../utils";
 const OAUTH_STATE_LIFETIME_MS = 10 * 60 * 1000;
 
 export const connectGmail = authedAction({
-  args: { returnPath: v.optional(v.string()) },
+  args: {
+    loginHint: v.optional(v.string()),
+    returnPath: v.optional(v.string()),
+  },
   handler: async (ctx, args): Promise<{ authorizationUrl: string }> => {
     const returnPath = normalizeReturnPath(args.returnPath);
     const state = randomBase64Url(32);
@@ -48,13 +51,17 @@ export const connectGmail = authedAction({
         ...getGoogleOAuthConfig(),
         state,
         codeChallenge,
+        loginHint: args.loginHint,
       }),
     };
   },
 });
 
 export const connectMicrosoft = authedAction({
-  args: { returnPath: v.optional(v.string()) },
+  args: {
+    loginHint: v.optional(v.string()),
+    returnPath: v.optional(v.string()),
+  },
   handler: async (ctx, args): Promise<{ authorizationUrl: string }> => {
     const returnPath = normalizeReturnPath(args.returnPath);
     const state = randomBase64Url(32);
@@ -80,6 +87,7 @@ export const connectMicrosoft = authedAction({
         ...getMicrosoftOAuthConfig(),
         state,
         codeChallenge,
+        loginHint: args.loginHint,
       }),
     };
   },

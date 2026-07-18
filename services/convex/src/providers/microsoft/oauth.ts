@@ -42,9 +42,11 @@ export function buildMicrosoftAuthorizationUrl({
   state,
   codeChallenge,
   tenant,
+  loginHint,
 }: ReturnType<typeof getMicrosoftOAuthConfig> & {
   state: string;
   codeChallenge: string;
+  loginHint?: string;
 }) {
   const params = new URLSearchParams({
     client_id: clientId,
@@ -57,6 +59,7 @@ export function buildMicrosoftAuthorizationUrl({
     code_challenge: codeChallenge,
     code_challenge_method: "S256",
   });
+  if (loginHint?.trim()) params.set("login_hint", loginHint.trim());
   return `${authorityRoot(tenant)}/oauth2/v2.0/authorize?${params.toString()}`;
 }
 
