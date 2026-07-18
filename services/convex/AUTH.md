@@ -37,13 +37,14 @@ code, and creates a normal authenticated session. It neither replaces nor adds
 a passkey. Users can add another passkey later from Settings. Both email sign-in
 endpoints are rate limited to three requests per minute.
 
-Desktop browser authentication uses a five-minute, PKCE-bound handoff stored in
+Non-browser authentication uses a five-minute, PKCE-bound handoff stored in
 Better Auth's verification table. The system-browser URL contains a random
-request ID. After explicit browser approval, the `rodge-mail://` callback adds a
-fresh one-time authorization code. The verifier remains in Electron session
-storage, and both factors are submitted in the final POST. The server stores
-only their hashes and atomically consumes the verification record before a
-separate desktop session is issued, preventing interception and replay.
+request ID. After explicit browser approval, desktop uses a `rodge-mail://`
+callback and the CLI uses a random-port loopback callback. Both return a fresh
+one-time authorization code. The verifier remains in the initiating client,
+and both factors are submitted in the final POST. The server stores only their
+hashes and atomically consumes the verification record before a separate
+client session is issued, preventing interception and replay.
 
 Android also requires `https://<PASSKEY_RP_ID>/.well-known/assetlinks.json`
 with the package `com.bentsignal.rodgemail` and each signing certificate's raw

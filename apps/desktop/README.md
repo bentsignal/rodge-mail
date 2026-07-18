@@ -47,10 +47,10 @@ matching Convex deployment with `DESKTOP_BROWSER_AUTH_URL`. Both values must be
 origin-only HTTPS URLs.
 
 The begin, authorize, exchange, and cancel endpoints form a client-neutral
-handoff boundary. A future TUI or other non-browser client can retain the PKCE
-verifier locally, open the same browser authorization page, receive the
-one-time authorization code through its own callback transport, and exchange
-the code for a Better Auth session without implementing WebAuthn itself.
+handoff boundary. The Rodge Mail CLI retains the PKCE verifier locally, opens
+the same browser authorization page, receives the one-time authorization code
+through its own loopback callback, and exchanges the code for a Better Auth
+session without implementing WebAuthn itself.
 
 The preload exposes only the non-secret loopback callback URL through document
 metadata. Do not expose Node.js or Electron APIs to web content.

@@ -117,7 +117,7 @@ function DesktopAuthStatus({
     return (
       <AuthPage
         action={{ label: "Continue", onClick: authorize }}
-        detail="Continue only if you started this sign-in in the Rodge Mail desktop app."
+        detail="Continue only if you started this sign-in from a Rodge Mail app or command."
         title="Sign in to Rodge Mail?"
       />
     );
@@ -133,13 +133,13 @@ function DesktopAuthStatus({
           },
         }}
         detail="If Rodge Mail did not reopen automatically, open it now to finish the secure exchange."
-        title="Finish in Rodge Mail"
+        title="Return to Rodge Mail"
       />
     );
   }
   return (
     <AuthPage
-      detail="Rodge Mail will reopen when this is done."
+      detail="Return to the app or terminal when this is done."
       title="Finishing sign-in"
     />
   );
