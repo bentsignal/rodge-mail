@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./auth-session": "./src/auth-session.ts",
     "./cn": "./src/cn.ts",
     "./relative-time": "./src/relative-time.ts",
     "./use-debounced-input": "./src/use-debounced-input.ts",

@@ -38,13 +38,14 @@ function showStartupError(error: unknown) {
   dialog.showErrorBox("Rodge Mail could not start", message);
 }
 
-function focusMainWindow() {
+function focusMainWindow(stealFocus = false) {
   if (!mainWindow || mainWindow.isDestroyed()) return;
   if (mainWindow.isMinimized()) mainWindow.restore();
+  if (stealFocus && process.platform === "darwin") app.focus({ steal: true });
   mainWindow.focus();
 }
 
-function navigateDeepLink(candidate: string) {
+function navigateDeepLink(candidate: string, stealFocus = false) {
   if (!webAppUrl || !mainWindow || mainWindow.isDestroyed()) {
     pendingDeepLink = candidate;
     return;
@@ -53,7 +54,7 @@ function navigateDeepLink(candidate: string) {
   const destination = translateDeepLink(candidate, webAppUrl);
   if (!destination) return;
   void mainWindow.loadURL(destination.href).catch(showStartupError);
-  focusMainWindow();
+  focusMainWindow(stealFocus);
 }
 
 async function createMainWindow() {
@@ -126,7 +127,7 @@ async function start() {
       const callback = new URL(`${APP_PROTOCOL}://auth/desktop-complete`);
       callback.searchParams.set("authorization_code", authorizationCode);
       callback.searchParams.set("request_id", requestId);
-      navigateDeepLink(callback.href);
+      navigateDeepLink(callback.href, true);
     },
   );
   if (!app.isPackaged) {

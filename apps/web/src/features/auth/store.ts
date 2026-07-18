@@ -2,10 +2,12 @@ import { useState } from "react";
 import { useRouteContext } from "@tanstack/react-router";
 import { createStore } from "rostra";
 
+import { completeAuthSession } from "@rodge-mail/std/auth-session";
 import { useLoading } from "@rodge-mail/std/use-loading";
 import { toast } from "@rodge-mail/ui-web/toast";
 
 import { authClient } from "./lib/client";
+import { rememberDesktopAuthAfterSignIn } from "./lib/desktop-auto-authorize";
 import {
   beginDesktopAuth,
   cancelDesktopAuth,
@@ -198,10 +200,17 @@ function normalizeRegistrationVerification(details: RegistrationVerification) {
 }
 
 async function authenticateWithPasskey(redirectUri: string | undefined) {
-  const result = await authClient.signIn.passkey();
-  if (result.error) {
-    throw new Error(result.error.message ?? "Passkey sign-in failed");
-  }
+  rememberDesktopAuthAfterSignIn({
+    origin: window.location.origin,
+    redirectUri,
+    storage: sessionStorage,
+  });
+  await completeAuthSession({
+    authenticate: async () => await authClient.signIn.passkey(),
+    confirmSession: async () => await authClient.getSession(),
+    fallbackMessage: "Passkey sign-in failed",
+    refreshSession: () => authClient.$store.notify("$sessionSignal"),
+  });
   window.location.replace(getSafeAppRedirect(redirectUri));
   return true;
 }

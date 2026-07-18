@@ -6,9 +6,9 @@ import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
-import { useConvexAuth } from "convex/react";
 
 import { authClient, convex } from "~/features/auth/client";
+import { useStableAuthState } from "~/features/auth/use-stable-auth-state";
 import { MailStore } from "~/features/mail/store";
 import { useMobileNotifications } from "~/features/notifications/mobile-notifications";
 import { useResolvedMobileColorScheme } from "~/features/theme/mobile-theme";
@@ -44,7 +44,7 @@ function AppShell({ readiness }: { readiness: ReturnType<typeof useInitApp> }) {
   const backgroundColor = useColor("background");
   const colorScheme = useResolvedMobileColorScheme();
   const liquidGlassIsAvailable = isLiquidGlassAvailable();
-  const { isAuthenticated } = useConvexAuth();
+  const { isAuthenticated } = useStableAuthState();
   useMobileNotifications(isAuthenticated);
 
   // eslint-disable-next-line no-restricted-syntax -- Native splash visibility must follow asynchronous font and system-color initialization.

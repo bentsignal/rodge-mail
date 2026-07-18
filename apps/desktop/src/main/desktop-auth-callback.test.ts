@@ -45,7 +45,7 @@ void test("listens on loopback and forwards an approved callback", async () => {
     assert.equal(callbackUrl.hostname, "127.0.0.1");
     assert.equal(response.status, 200);
     assert.deepEqual(received, { authorizationCode, requestId });
-    assert.match(await response.text(), /Rodge Mail is open/u);
+    assert.match(await response.text(), /Sign-in successful/u);
   } finally {
     await runtime.close();
   }

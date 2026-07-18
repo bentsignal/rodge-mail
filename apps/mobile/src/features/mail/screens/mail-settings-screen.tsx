@@ -16,6 +16,7 @@ import { api } from "@rodge-mail/convex/api";
 import { useColor } from "~/hooks/use-color";
 import roundedIcon from "../../../../assets/rounded-icon.png";
 import { authClient } from "../../auth/client";
+import { retryTransientPasskeyAssociation } from "../../auth/native-passkey-operation";
 import {
   registerForNewMailNotifications,
   scheduleLocalNotificationPreview,
@@ -184,9 +185,12 @@ function AddPasskeyButton() {
   async function addPasskey() {
     setIsLoading(true);
     setMessage(undefined);
-    const result = await authClient.passkey.addPasskey({
-      authenticatorAttachment: "platform",
-    });
+    const result = await retryTransientPasskeyAssociation(
+      async () =>
+        await authClient.passkey.addPasskey({
+          authenticatorAttachment: "platform",
+        }),
+    );
     setIsLoading(false);
     if (result.error) {
       setMessage(result.error.message ?? "Could not add this passkey.");

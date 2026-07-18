@@ -4,6 +4,7 @@ import {
   isDesktopRuntimeUserAgent,
   resolveDesktopAuthMode,
 } from "@rodge-mail/config/desktop";
+import { completeAuthSession } from "@rodge-mail/std/auth-session";
 
 import { env } from "~/env";
 import { authClient } from "./client";
@@ -106,17 +107,29 @@ async function performDesktopAuthExchange(
     throw new Error("Desktop sign-in expired. Start again.");
   }
 
-  const result = await authClient.$fetch<{ success: boolean }>(
-    "/desktop-auth/exchange",
-    {
-      body: { authorizationCode, codeVerifier: pending.verifier, requestId },
-      method: "POST",
-    },
-  );
-  clearPendingDesktopAuth();
-  if (result.error) {
-    throw new Error(result.error.message ?? "Desktop sign-in expired");
+  try {
+    await completeAuthSession({
+      authenticate: async () =>
+        await authClient.$fetch<{ success: boolean }>(
+          "/desktop-auth/exchange",
+          {
+            body: {
+              authorizationCode,
+              codeVerifier: pending.verifier,
+              requestId,
+            },
+            method: "POST",
+          },
+        ),
+      confirmSession: async () => await authClient.getSession(),
+      fallbackMessage: "Desktop sign-in expired",
+      refreshSession: () => authClient.$store.notify("$sessionSignal"),
+    });
+  } catch (error) {
+    clearPendingDesktopAuth();
+    throw error;
   }
+  clearPendingDesktopAuth();
 }
 
 export async function cancelDesktopAuth() {

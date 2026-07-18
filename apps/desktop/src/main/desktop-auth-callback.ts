@@ -111,5 +111,5 @@ const successPage = `<!doctype html>
       h1 { font-family: Georgia, serif; }
     </style>
   </head>
-  <body><main><h1>Rodge Mail is open</h1><p>You can close this tab.</p></main></body>
+  <body><main><h1>Sign-in successful</h1><p>You're signed in to Rodge Mail. The desktop app is open, so you can close this tab.</p></main></body>
 </html>`;

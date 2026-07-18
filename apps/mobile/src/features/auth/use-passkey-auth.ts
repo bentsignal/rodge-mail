@@ -1,7 +1,10 @@
 import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
 
+import { completeAuthSession } from "@rodge-mail/std/auth-session";
+
 import { authClient } from "./client";
+import { retryTransientPasskeyAssociation } from "./native-passkey-operation";
 import { completeRecoverySignIn } from "./passkey-recovery-client";
 
 type AuthOperation = "request-code" | "sign-in" | "verify";
@@ -42,11 +45,16 @@ export function usePasskeyAuth() {
     setOperation("sign-in");
     setMessage(undefined);
     try {
-      const result = await authClient.signIn.passkey();
+      await completeAuthSession({
+        authenticate: async () =>
+          await retryTransientPasskeyAssociation(
+            async () => await authClient.signIn.passkey(),
+          ),
+        confirmSession: async () => await authClient.getSession(),
+        fallbackMessage: "Passkey sign-in failed",
+        refreshSession: () => authClient.$store.notify("$sessionSignal"),
+      });
       setOperation(undefined);
-      if (result.error) {
-        setMessage(result.error.message ?? "Passkey sign-in failed");
-      }
     } catch (error) {
       finishWithError(error);
     }
@@ -124,9 +132,12 @@ function createRegistrationActions(state: AuthActionState) {
         return;
       }
       didVerify = true;
-      const passkey = await authClient.passkey.addPasskey({
-        authenticatorAttachment: "platform",
-      });
+      const passkey = await retryTransientPasskeyAssociation(
+        async () =>
+          await authClient.passkey.addPasskey({
+            authenticatorAttachment: "platform",
+          }),
+      );
       state.setOperation(undefined);
       if (passkey.error) {
         await signOutAfterFailedPasskey();

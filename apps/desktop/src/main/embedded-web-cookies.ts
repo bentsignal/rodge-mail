@@ -22,6 +22,7 @@ export function createEmbeddedRequestHeaders(
   cookies: EmbeddedRequestCookie[],
 ) {
   const headers = new Headers(source);
+  if (!headers.has("origin")) headers.set("origin", webAppUrl.origin);
   headers.set("sec-fetch-site", "same-origin");
   headers.set("x-forwarded-host", webAppUrl.host);
   headers.set("x-forwarded-proto", "https");

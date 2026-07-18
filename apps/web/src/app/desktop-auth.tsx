@@ -1,14 +1,19 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
 import {
   createDesktopAuthCallbackUrl,
   desktopAuthRequestSearchSchema,
 } from "~/features/auth/lib/desktop-auth-contracts";
+import { consumeDesktopAuthAfterSignIn } from "~/features/auth/lib/desktop-auto-authorize";
 import {
   authorizeDesktopAuth,
   createDesktopDeepLink,
 } from "~/features/auth/lib/desktop-handoff";
+
+type DesktopAuthStatus =
+  | { kind: "authorized"; deepLink: string }
+  | { kind: "authorizing" | "error" | "ready" };
 
 export const Route = createFileRoute("/desktop-auth")({
   component: DesktopAuth,
@@ -31,31 +36,55 @@ function DesktopAuth() {
       requestId: search.request_id,
     }),
   });
-  const [status, setStatus] = useState<
-    | { kind: "authorized"; deepLink: string }
-    | { kind: "authorizing" | "error" | "ready" }
-  >({ kind: "ready" });
+  const [autoAuthorize] = useState(() =>
+    consumeDesktopAuthAfterSignIn({
+      requestId,
+      storage: sessionStorage,
+    }),
+  );
+  const [status, setStatus] = useState<DesktopAuthStatus>({
+    kind: autoAuthorize ? "authorizing" : "ready",
+  });
+  const authorization = useRef<Promise<DesktopAuthStatus>>(undefined);
+
+  // This resumes the desktop request only after the user explicitly completed its browser sign-in.
+  // eslint-disable-next-line no-restricted-syntax
+  useEffect(() => {
+    if (!autoAuthorize) return;
+    let active = true;
+    authorization.current ??= finishAuthorization(callbackUrl, requestId);
+    void authorization.current.then((nextStatus) => {
+      if (active) setStatus(nextStatus);
+    });
+    return () => {
+      active = false;
+    };
+  }, [autoAuthorize, callbackUrl, requestId]);
 
   async function authorize() {
     if (status.kind !== "ready") return;
     setStatus({ kind: "authorizing" });
-    try {
-      const authorizationCode = await authorizeDesktopAuth(requestId);
-      const destination = callbackUrl
-        ? createDesktopAuthCallbackUrl(
-            callbackUrl,
-            requestId,
-            authorizationCode,
-          )
-        : createDesktopDeepLink(requestId, authorizationCode);
-      setStatus({ deepLink: destination, kind: "authorized" });
-      window.location.assign(destination);
-    } catch {
-      setStatus({ kind: "error" });
-    }
+    authorization.current ??= finishAuthorization(callbackUrl, requestId);
+    setStatus(await authorization.current);
   }
 
   return <DesktopAuthStatus authorize={authorize} status={status} />;
+}
+
+async function finishAuthorization(
+  callbackUrl: string | undefined,
+  requestId: string,
+) {
+  try {
+    const authorizationCode = await authorizeDesktopAuth(requestId);
+    const destination = callbackUrl
+      ? createDesktopAuthCallbackUrl(callbackUrl, requestId, authorizationCode)
+      : createDesktopDeepLink(requestId, authorizationCode);
+    window.location.assign(destination);
+    return { deepLink: destination, kind: "authorized" } as const;
+  } catch {
+    return { kind: "error" } as const;
+  }
 }
 
 function createDesktopAuthRedirectUrl(search: {
@@ -74,9 +103,7 @@ function DesktopAuthStatus({
   status,
 }: {
   authorize: () => Promise<void>;
-  status:
-    | { kind: "authorized"; deepLink: string }
-    | { kind: "authorizing" | "error" | "ready" };
+  status: DesktopAuthStatus;
 }) {
   if (status.kind === "error") {
     return (
