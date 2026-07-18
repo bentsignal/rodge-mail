@@ -5,6 +5,7 @@ import { ChevronDown } from "lucide-react-native";
 
 import type { MailAccount, MailAccountFilter } from "@rodge-mail/features/mail";
 
+import type { MobileMailbox } from "../store";
 import { useColor } from "~/hooks/use-color";
 
 export function AccountFilter({
@@ -13,12 +14,14 @@ export function AccountFilter({
   mailbox,
   onChange,
   onArchiveSelect,
+  onSpamSelect,
 }: {
   accounts: MailAccount[];
-  mailbox: "archive" | "inbox";
+  mailbox: MobileMailbox;
   value: MailAccountFilter;
   onChange: (value: MailAccountFilter) => void;
   onArchiveSelect: () => void;
+  onSpamSelect: () => void;
 }) {
   const mutedForeground = useColor("muted-foreground");
   const selectedAccount =
@@ -28,9 +31,11 @@ export function AccountFilter({
   const selectedLabel =
     mailbox === "archive"
       ? "Archive"
-      : selectedAccount
-        ? getAccountLabel(selectedAccount)
-        : "All Inboxes";
+      : mailbox === "spam"
+        ? "Spam"
+        : selectedAccount
+          ? getAccountLabel(selectedAccount)
+          : "All Inboxes";
   const actions = [
     {
       id: "all",
@@ -50,6 +55,12 @@ export function AccountFilter({
       state: selectionState(mailbox === "archive"),
       title: "Archive",
     },
+    {
+      id: spamMailboxId,
+      image: "exclamationmark.shield" as const,
+      state: selectionState(mailbox === "spam"),
+      title: "Spam",
+    },
   ] satisfies MenuAction[];
 
   return (
@@ -62,6 +73,7 @@ export function AccountFilter({
         onPressAction={(event) => {
           const nextValue = event.nativeEvent.event;
           if (nextValue === archiveMailboxId) onArchiveSelect();
+          else if (nextValue === spamMailboxId) onSpamSelect();
           else onChange(nextValue);
         }}
       >
@@ -85,6 +97,7 @@ export function AccountFilter({
 }
 
 const archiveMailboxId = "__archive__";
+const spamMailboxId = "__spam__";
 
 function selectionState(selected: boolean) {
   return selected ? ("on" as const) : ("off" as const);

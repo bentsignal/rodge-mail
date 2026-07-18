@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
+import { ShieldCheck } from "lucide-react-native";
 
+import type { MobileMailbox } from "../store";
 import type { MailboxFilter } from "./mailbox-controls";
+import { useColor } from "~/hooks/use-color";
+import { getEmptyMailboxCopy } from "./mailbox-empty-state";
 
 export function EmptyInbox({
   isLoading,
@@ -12,41 +16,13 @@ export function EmptyInbox({
 }: {
   filter: MailboxFilter;
   isLoading: boolean;
-  mailbox?: "archive" | "inbox";
+  mailbox?: MobileMailbox;
   primary: string;
   searchTerm?: string;
 }) {
   if (isLoading) return <DelayedInboxLoader color={primary} />;
-  if (searchTerm) {
-    return (
-      <InboxMessage
-        detail={`Nothing matched “${searchTerm}”. Try a sender or a shorter subject.`}
-        title="No matching mail"
-      />
-    );
-  }
-  if (filter === "unread") {
-    return (
-      <InboxMessage
-        detail="Everything in this view has been read."
-        title="No unread messages"
-      />
-    );
-  }
-  if (mailbox === "archive") {
-    return (
-      <InboxMessage
-        detail="Conversations you archive stay here for 30 days."
-        title="Archive is empty"
-      />
-    );
-  }
-  return (
-    <InboxMessage
-      detail="New mail will appear here in the order it arrives."
-      title="You are caught up"
-    />
-  );
+  const copy = getEmptyMailboxCopy({ filter, mailbox, searchTerm });
+  return <InboxMessage {...copy} mailbox={mailbox} />;
 }
 
 export function InboxFooter({
@@ -81,13 +57,38 @@ function DelayedInboxLoader({ color }: { color: string }) {
   );
 }
 
-function InboxMessage({ detail, title }: { detail: string; title: string }) {
+function InboxMessage({
+  detail,
+  mailbox,
+  title,
+}: {
+  detail: string;
+  mailbox: MobileMailbox;
+  title: string;
+}) {
+  const brass = useColor("brass");
   return (
     <View className="items-center px-8 py-24">
+      <SpamEmptyIcon color={brass} mailbox={mailbox} />
       <Text className="text-foreground text-lg font-bold">{title}</Text>
       <Text className="text-muted-foreground mt-2 text-center leading-5">
         {detail}
       </Text>
+    </View>
+  );
+}
+
+function SpamEmptyIcon({
+  color,
+  mailbox,
+}: {
+  color: string;
+  mailbox: MobileMailbox;
+}) {
+  if (mailbox !== "spam") return null;
+  return (
+    <View className="bg-paper-deep border-paper-border mb-4 size-12 items-center justify-center rounded-2xl border">
+      <ShieldCheck color={color} size={22} />
     </View>
   );
 }

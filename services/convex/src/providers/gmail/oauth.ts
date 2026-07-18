@@ -36,9 +36,11 @@ export function buildGoogleAuthorizationUrl({
   redirectUri,
   state,
   codeChallenge,
+  loginHint,
 }: ReturnType<typeof getGoogleOAuthConfig> & {
   state: string;
   codeChallenge: string;
+  loginHint?: string;
 }) {
   const params = new URLSearchParams({
     client_id: clientId,
@@ -52,6 +54,7 @@ export function buildGoogleAuthorizationUrl({
     code_challenge: codeChallenge,
     code_challenge_method: "S256",
   });
+  if (loginHint?.trim()) params.set("login_hint", loginHint.trim());
   return `${GOOGLE_AUTHORIZATION_ENDPOINT}?${params.toString()}`;
 }
 

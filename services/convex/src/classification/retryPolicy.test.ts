@@ -1,11 +1,15 @@
 import { describe, expect, it } from "vitest";
 
+import {
+  CLASSIFICATION_OUTPUT_SCHEMA_VERSION,
+  CLASSIFICATION_PROMPT_VERSION,
+} from "./constants";
 import { isRetryableRuleFallback } from "./retryPolicy";
 
 const fallback = {
   error: "OpenAI response did not include structured output text",
-  outputSchemaVersion: "classification-v2",
-  promptVersion: "importance-mail-v2",
+  outputSchemaVersion: CLASSIFICATION_OUTPUT_SCHEMA_VERSION,
+  promptVersion: CLASSIFICATION_PROMPT_VERSION,
   recoveryAttemptedAt: undefined,
   source: "rules",
   status: "classified",

@@ -33,6 +33,33 @@ describe("getVisibleInboxThreads", () => {
       }),
     ).toEqual([{ id: "unread", isRead: false }]);
   });
+
+  it("keeps the prior search results while the next query starts", () => {
+    const previousSearchThreads = [{ id: "previous", isRead: false }];
+
+    expect(
+      getVisibleInboxThreads({
+        inboxThreads,
+        isSearching: true,
+        searchIsPending: true,
+        searchThreads: [],
+        settledSearchThreads: previousSearchThreads,
+        showUnreadOnly: false,
+      }),
+    ).toBe(previousSearchThreads);
+  });
+
+  it("keeps the inbox visible while the first search query starts", () => {
+    expect(
+      getVisibleInboxThreads({
+        inboxThreads,
+        isSearching: true,
+        searchIsPending: true,
+        searchThreads: [],
+        showUnreadOnly: false,
+      }),
+    ).toBe(inboxThreads);
+  });
 });
 
 describe("getInboxListFeedback", () => {

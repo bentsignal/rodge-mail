@@ -7,6 +7,7 @@ import { internalAction } from "../_generated/server";
 import { classificationRequestKey } from "./jobHelpers";
 import { normalizeMail } from "./normalize";
 import {
+  AiDailyLimitError,
   classifyWithModel,
   configuredClassificationModel,
   isAiConfigured,
@@ -43,6 +44,8 @@ export const runClassification = internalAction({
 
     try {
       const result = await classifyWithModel({
+        ctx,
+        ownerId: input.message.ownerId,
         mail,
         signals,
         jobKey: classificationRequestKey(
@@ -60,6 +63,16 @@ export const runClassification = internalAction({
       });
     } catch (error) {
       const message = errorMessage(error);
+      if (error instanceof AiDailyLimitError) {
+        await completeWithFallback({
+          ctx,
+          args,
+          fallback,
+          signals,
+          error: message,
+        });
+        return null;
+      }
       const terminal = await ctx.runMutation(
         internal.classification.internal.recordFailure,
         { ...args, error: message },

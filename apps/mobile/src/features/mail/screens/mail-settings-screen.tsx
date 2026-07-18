@@ -52,7 +52,7 @@ export function MailSettingsScreen() {
       <SettingsSection title="Mail accounts">
         <AccountLabelSettings accounts={accounts} />
       </SettingsSection>
-      <SettingsSection title="Add or reconnect">
+      <SettingsSection title="Add account">
         <AccountConnections />
       </SettingsSection>
       <SettingsSection title="Notifications">

@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
-import { desktopAuthRequestSearchSchema } from "~/features/auth/lib/desktop-auth-contracts";
+import {
+  createDesktopAuthCallbackUrl,
+  desktopAuthRequestSearchSchema,
+} from "~/features/auth/lib/desktop-auth-contracts";
 import {
   authorizeDesktopAuth,
   createDesktopDeepLink,
@@ -15,34 +18,55 @@ export const Route = createFileRoute("/desktop-auth")({
     throw redirect({
       to: "/login",
       search: {
-        redirect_uri: `/desktop-auth?request_id=${encodeURIComponent(search.request_id)}`,
+        redirect_uri: createDesktopAuthRedirectUrl(search),
       },
     });
   },
 });
 
 function DesktopAuth() {
-  const requestId = Route.useSearch({
-    select: (search) => search.request_id,
+  const { callbackUrl, requestId } = Route.useSearch({
+    select: (search) => ({
+      callbackUrl: search.callback_url,
+      requestId: search.request_id,
+    }),
   });
-  const [status, setStatus] = useState<"authorizing" | "error" | "ready">(
-    "ready",
-  );
+  const [status, setStatus] = useState<
+    | { kind: "authorized"; deepLink: string }
+    | { kind: "authorizing" | "error" | "ready" }
+  >({ kind: "ready" });
 
   async function authorize() {
-    if (status !== "ready") return;
-    setStatus("authorizing");
+    if (status.kind !== "ready") return;
+    setStatus({ kind: "authorizing" });
     try {
       const authorizationCode = await authorizeDesktopAuth(requestId);
-      window.location.assign(
-        createDesktopDeepLink(requestId, authorizationCode),
-      );
+      const destination = callbackUrl
+        ? createDesktopAuthCallbackUrl(
+            callbackUrl,
+            requestId,
+            authorizationCode,
+          )
+        : createDesktopDeepLink(requestId, authorizationCode);
+      setStatus({ deepLink: destination, kind: "authorized" });
+      window.location.assign(destination);
     } catch {
-      setStatus("error");
+      setStatus({ kind: "error" });
     }
   }
 
   return <DesktopAuthStatus authorize={authorize} status={status} />;
+}
+
+function createDesktopAuthRedirectUrl(search: {
+  callback_url?: string;
+  request_id: string;
+}) {
+  const parameters = new URLSearchParams({ request_id: search.request_id });
+  if (search.callback_url) {
+    parameters.set("callback_url", search.callback_url);
+  }
+  return `/desktop-auth?${parameters.toString()}`;
 }
 
 function DesktopAuthStatus({
@@ -50,9 +74,11 @@ function DesktopAuthStatus({
   status,
 }: {
   authorize: () => Promise<void>;
-  status: "authorizing" | "error" | "ready";
+  status:
+    | { kind: "authorized"; deepLink: string }
+    | { kind: "authorizing" | "error" | "ready" };
 }) {
-  if (status === "error") {
+  if (status.kind === "error") {
     return (
       <AuthPage
         detail="This request has expired. Return to Rodge Mail and start again."
@@ -60,12 +86,27 @@ function DesktopAuthStatus({
       />
     );
   }
-  if (status === "ready") {
+  if (status.kind === "ready") {
     return (
       <AuthPage
         action={{ label: "Continue", onClick: authorize }}
         detail="Continue only if you started this sign-in in the Rodge Mail desktop app."
         title="Sign in to Rodge Mail?"
+      />
+    );
+  }
+  if (status.kind === "authorized") {
+    return (
+      <AuthPage
+        action={{
+          label: "Open Rodge Mail",
+          onClick: () => {
+            window.location.assign(status.deepLink);
+            return Promise.resolve();
+          },
+        }}
+        detail="If Rodge Mail did not reopen automatically, open it now to finish the secure exchange."
+        title="Finish in Rodge Mail"
       />
     );
   }

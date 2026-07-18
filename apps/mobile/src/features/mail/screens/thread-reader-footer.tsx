@@ -1,6 +1,7 @@
 import { Pressable, Text, View } from "react-native";
 import { Archive, ArchiveRestore, Pin, Trash2 } from "lucide-react-native";
 
+import type { MobileMailbox } from "../store";
 import { useColor } from "~/hooks/use-color";
 
 export function ThreadReaderFooter({
@@ -12,7 +13,7 @@ export function ThreadReaderFooter({
   onRestore,
 }: {
   isPinned: boolean;
-  mailbox: "archive" | "inbox";
+  mailbox: MobileMailbox;
   onArchive: () => void;
   onDelete: () => void;
   onPin: () => void;
@@ -21,6 +22,7 @@ export function ThreadReaderFooter({
   if (mailbox === "archive") {
     return <ArchiveFooter onDelete={onDelete} onRestore={onRestore} />;
   }
+  if (mailbox === "spam") return null;
   return (
     <InboxFooter isPinned={isPinned} onArchive={onArchive} onPin={onPin} />
   );

@@ -2,7 +2,6 @@ import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 
 import type { Doc } from "../_generated/dataModel";
-import type { AuthedQueryCtx } from "../utils";
 import { authedQuery } from "../utils";
 import {
   ensureOwnedAccount,
@@ -10,24 +9,18 @@ import {
   ensureOwnedThread,
   toMessageDetail,
   toMessageListItem,
-  toThreadListItem,
 } from "./helpers";
+import {
+  enrichMessagePage,
+  enrichThreadPage,
+  getVisibleUnreadCountSummary,
+} from "./queryEnrichment";
 import { emptyMessagePage, matchesMailSearch, parseMailSearch } from "./search";
 import { matchesUnreadScope } from "./unread";
-import { getUnreadCountSummary } from "./unreadCounts";
 
 export const getUnreadCounts = authedQuery({
   args: {},
-  handler: async (ctx) => {
-    const threads = await ctx.db
-      .query("threads")
-      .withIndex("by_owner_unread", (q) =>
-        q.eq("ownerId", ctx.ownerId).gt("unreadCount", 0),
-      )
-      .filter((q) => q.neq(q.field("inInbox"), false))
-      .collect();
-    return getUnreadCountSummary(threads);
-  },
+  handler: async (ctx) => await getVisibleUnreadCountSummary(ctx),
 });
 
 export const listInbox = authedQuery({
@@ -142,7 +135,7 @@ export const getMessagesByIds = authedQuery({
     const messages = await Promise.all(
       messageIds.map(async (messageId) => await ctx.db.get(messageId)),
     );
-    return await Promise.all(
+    const items = await Promise.all(
       messages
         .filter(
           (message): message is Doc<"messages"> =>
@@ -152,6 +145,7 @@ export const getMessagesByIds = authedQuery({
         )
         .map(async (message) => await toMessageListItem(ctx, message)),
     );
+    return items.filter((message) => message.classification?.isSpam !== true);
   },
 });
 
@@ -175,6 +169,32 @@ export const getThread = authedQuery({
         messages.map(async (message) => {
           return await toMessageDetail(ctx, message);
         }),
+      ),
+    };
+  },
+});
+
+export const listSpam = authedQuery({
+  args: { paginationOpts: paginationOptsValidator },
+  handler: async (ctx, args) => {
+    const classifications = await ctx.db
+      .query("messageClassifications")
+      .withIndex("by_owner_spam_updated", (q) =>
+        q.eq("ownerId", ctx.ownerId).eq("isSpam", true),
+      )
+      .order("desc")
+      .paginate(args.paginationOpts);
+    const page = await Promise.all(
+      classifications.page.map(async (classification) => {
+        const message = await ctx.db.get(classification.messageId);
+        if (!message?.inInbox || message.ownerId !== ctx.ownerId) return null;
+        return await toMessageListItem(ctx, message);
+      }),
+    );
+    return {
+      ...classifications,
+      page: page.filter((message): message is NonNullable<typeof message> =>
+        Boolean(message),
       ),
     };
   },
@@ -278,38 +298,6 @@ export const searchHeaders = authedQuery({
       ),
     };
 
-    return await enrichPage(ctx, filtered);
+    return await enrichMessagePage(ctx, filtered);
   },
 });
-
-async function enrichPage<T extends { page: Doc<"messages">[] }>(
-  ctx: AuthedQueryCtx,
-  results: T,
-) {
-  return {
-    ...results,
-    page: await Promise.all(
-      results.page.map(async (message) => {
-        return await toMessageListItem(ctx, message);
-      }),
-    ),
-  };
-}
-
-async function enrichThreadPage<T extends { page: Doc<"threads">[] }>(
-  ctx: AuthedQueryCtx,
-  results: T,
-  pinnedOnly = false,
-) {
-  const { page, ...pagination } = results;
-  const items = await Promise.all(
-    page.map(async (thread) => await toThreadListItem(ctx, thread)),
-  );
-  return {
-    ...pagination,
-    page: items.filter(
-      (item): item is NonNullable<typeof item> =>
-        item !== null && (!pinnedOnly || item.isPinned),
-    ),
-  };
-}

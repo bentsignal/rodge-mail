@@ -33,6 +33,7 @@
     "@types/mailparser": "^3.4.6",
     "@types/node": "^22.19.1",
     "@types/nodemailer": "^8.0.1",
+    "@types/sanitize-html": "^2.16.1",
     "eslint": "catalog:",
     "prettier": "catalog:",
     "typescript": "catalog:",
@@ -43,6 +44,7 @@
     "@better-auth/expo": "catalog:",
     "@better-auth/passkey": "1.6.11",
     "@better-auth/utils": "0.4.0",
+    "@convex-dev/aggregate": "^0.2.1",
     "@convex-dev/better-auth": "catalog:",
     "@convex-dev/rate-limiter": "^0.3.2",
     "@rodge-mail/agent-contract": "workspace:*",
@@ -55,6 +57,7 @@
     "imapflow": "^1.4.6",
     "mailparser": "^3.9.14",
     "nodemailer": "^9.0.3",
+    "sanitize-html": "^2.17.6",
     "zod": "catalog:"
   },
   "peerDependencies": {

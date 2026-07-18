@@ -95,12 +95,14 @@ export const searchMail = internalAction({
         key: `${args.ownerId}:${args.credentialId}`,
       });
       if (!limited.ok) return publicSearchResult(lexical, "unavailable");
-      const vector = await createEmbedding(
-        lexical.searchPlan.lexicalQuery,
-        `agent-search:${args.ownerId}:${stableHash(
+      const vector = await createEmbedding({
+        ctx,
+        ownerId: args.ownerId,
+        input: lexical.searchPlan.lexicalQuery,
+        jobKey: `agent-search:${args.ownerId}:${stableHash(
           lexical.searchPlan.lexicalQuery,
-        )}`,
-      );
+        )}:${Date.now()}`,
+      });
       const matches = await scopedVectorSearch(ctx, {
         accountId: lexical.selectedAccountId,
         allowedAccountIds: lexical.allowedAccountIds,

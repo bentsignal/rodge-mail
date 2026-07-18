@@ -41,7 +41,15 @@ function AccountLabelForms({ accounts }: { accounts: MailAccountView[] }) {
   );
 }
 
-function AccountLabelForm({ account }: { account: MailAccountView }) {
+export function AccountLabelForm({
+  account,
+  embedded = false,
+  showIdentity = true,
+}: {
+  account: MailAccountView;
+  embedded?: boolean;
+  showIdentity?: boolean;
+}) {
   const setDisplayLabel = useMutation(api.accounts.mutations.setDisplayLabel);
   const [label, setLabel] = useState(account.displayLabel ?? "");
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
@@ -64,7 +72,11 @@ function AccountLabelForm({ account }: { account: MailAccountView }) {
 
   return (
     <form
-      className="mail-well rounded-xl border p-3"
+      className={
+        embedded
+          ? "border-t border-[var(--mail-seam)] pt-3"
+          : "mail-well rounded-xl border p-3"
+      }
       onSubmit={(event) => void save(event)}
     >
       <label
@@ -93,10 +105,32 @@ function AccountLabelForm({ account }: { account: MailAccountView }) {
           <SaveButtonContent status={saveStatus} />
         </button>
       </div>
-      <p className="mail-label mt-2 truncate text-xs">
-        {getAccountIdentity(account.provider, identity, account.address)}
-      </p>
+      <AccountIdentity
+        address={account.address}
+        identity={identity}
+        provider={account.provider}
+        visible={showIdentity}
+      />
     </form>
+  );
+}
+
+function AccountIdentity({
+  address,
+  identity,
+  provider,
+  visible,
+}: {
+  address: string;
+  identity: string | undefined;
+  provider: MailAccountView["provider"];
+  visible: boolean;
+}) {
+  if (!visible) return null;
+  return (
+    <p className="mail-label mt-2 truncate text-xs">
+      {getAccountIdentity(provider, identity, address)}
+    </p>
   );
 }
 

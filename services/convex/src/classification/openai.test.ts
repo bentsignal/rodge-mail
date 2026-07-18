@@ -1,14 +1,18 @@
 import { describe, expect, it } from "vitest";
 
-import { classificationRequest, parseClassification } from "./openai";
+import {
+  classificationRequest,
+  parseClassification,
+  parseCleanView,
+} from "./openai";
 
 const classification = {
-  schemaVersion: "classification-v2",
+  schemaVersion: "classification-v4",
   category: "action_required",
   importance: 0.92,
   confidence: 0.88,
   reason: "A reply is requested before a deadline.",
-  summary: "Review and reply before Friday.",
+  isSpam: false,
 };
 
 describe("classification model output", () => {
@@ -31,7 +35,7 @@ describe("classification model output", () => {
         [],
       ),
     ).toMatchObject({
-      max_output_tokens: 1_200,
+      max_output_tokens: 1_000,
       reasoning: { effort: "minimal" },
     });
   });
@@ -50,7 +54,7 @@ describe("classification model output", () => {
     ).not.toHaveProperty("bucket");
   });
 
-  it.each(["category", "importance", "reason", "summary"])(
+  it.each(["category", "importance", "reason", "isSpam"])(
     "rejects output missing %s",
     (field) => {
       const incomplete = Object.fromEntries(
@@ -61,4 +65,22 @@ describe("classification model output", () => {
       );
     },
   );
+});
+
+describe("clean view model output", () => {
+  it("validates summary and cleaned markdown independently", () => {
+    expect(
+      parseCleanView(
+        JSON.stringify({
+          schemaVersion: "clean-view-v1",
+          summary: "Review and reply before Friday.",
+          cleanedMarkdown:
+            "Please review the proposal and reply before Friday.",
+        }),
+      ),
+    ).toMatchObject({
+      summary: "Review and reply before Friday.",
+      cleanedMarkdown: "Please review the proposal and reply before Friday.",
+    });
+  });
 });

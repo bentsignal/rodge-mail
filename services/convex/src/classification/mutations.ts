@@ -9,15 +9,14 @@ import {
   getClassificationForMessage,
 } from "../mail/helpers";
 import { vClassificationCategory } from "../mail/validators";
-import { resolveNewMailNotification } from "../notifications/internal";
 import { authedMutation } from "../utils";
 import {
   CLASSIFICATION_OUTPUT_SCHEMA_VERSION,
   CLASSIFICATION_PROMPT_VERSION,
 } from "./constants";
 import { isImportantMessage } from "./importance";
-import { queueClassificationForMessage } from "./internal";
 import { assertProbability } from "./jobHelpers";
+import { queueClassificationForMessage } from "./queue";
 
 export const setManualOverride = authedMutation({
   args: {
@@ -42,6 +41,8 @@ export const setManualOverride = authedMutation({
         0,
         280,
       ),
+      cleanedMarkdown: existing?.cleanedMarkdown,
+      isSpam: false,
       shouldEmbed: message.inInbox && isImportantMessage(args.importance),
       source: "manual" as const,
       promptVersion: "manual-v1",
@@ -67,11 +68,6 @@ export const setManualOverride = authedMutation({
       });
     }
     await reconcileEmbeddingSelection(ctx, message._id);
-    await resolveNewMailNotification(ctx, {
-      important: isImportantMessage(values.importance),
-      messageId: message._id,
-      ownerId: ctx.ownerId,
-    });
   },
 });
 
@@ -87,6 +83,30 @@ export const clearManualOverride = authedMutation({
       promptVersion: CLASSIFICATION_PROMPT_VERSION,
       replaceManual: true,
     });
+  },
+});
+
+export const setSpamState = authedMutation({
+  args: { messageId: v.id("messages"), isSpam: v.boolean() },
+  handler: async (ctx, args) => {
+    const message = await ensureOwnedMessage(ctx, ctx.ownerId, args.messageId);
+    const existing = await getClassificationForMessage(ctx, message._id);
+    if (!existing) {
+      await queueClassificationForMessage(ctx, {
+        ownerId: ctx.ownerId,
+        messageId: message._id,
+        promptVersion: CLASSIFICATION_PROMPT_VERSION,
+        replaceManual: false,
+      });
+      return;
+    }
+    const important = !args.isSpam && isImportantMessage(existing.importance);
+    await ctx.db.patch(existing._id, {
+      isSpam: args.isSpam,
+      shouldEmbed: message.inInbox && important,
+      updatedAt: Date.now(),
+    });
+    await reconcileEmbeddingSelection(ctx, message._id);
   },
 });
 

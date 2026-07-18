@@ -6,6 +6,7 @@ import { useAction, usePaginatedQuery } from "convex/react";
 
 import { api } from "@rodge-mail/convex/api";
 import {
+  getStrongSemanticMessageIds,
   mergeSearchResults,
   readCachedAccountPage,
 } from "@rodge-mail/features/mail";
@@ -17,7 +18,11 @@ import {
   useStableMailboxResults,
 } from "./mailbox-page-transition";
 
-export { getIsLoadingInbox, getIsSearchingInbox } from "./mailbox-page-state";
+export {
+  getCanInitializeSearchSelection,
+  getIsLoadingInbox,
+  getIsSearchingInbox,
+} from "./mailbox-page-state";
 
 export function useMailboxPage({
   accountId,
@@ -81,11 +86,7 @@ export function useMailboxPage({
         (message) => message._id,
       )
     : lexicalResults;
-  const isPending = getMailboxTransitionPending(
-    activePage.status,
-    isSearching,
-    semantic.isLoading,
-  );
+  const isPending = getMailboxTransitionPending(activePage.status);
   const stablePage = useStableMailboxResults({
     accountId,
     candidateResults,
@@ -101,11 +102,7 @@ export function useMailboxPage({
     hasCachedPage: stablePage.hasStablePage,
     isSemanticSearching: semantic.isLoading,
     results: stablePage.results,
-    status: getSmartSearchStatus(
-      activePage.status,
-      isSearching,
-      semantic.isLoading,
-    ),
+    status: activePage.status,
   };
 }
 
@@ -162,14 +159,6 @@ function useSettledMailboxPage({
   });
 }
 
-function getSmartSearchStatus(
-  status: string,
-  isSearching: boolean,
-  semanticIsLoading: boolean,
-) {
-  return isSearching && semanticIsLoading ? "LoadingFirstPage" : status;
-}
-
 function getVisibleResults(
   status: string,
   results: InboxMessage[],
@@ -202,7 +191,7 @@ function useSemanticMailSearch({
       .then((matches) => {
         if (!active) return;
         setResult({
-          ids: matches.map((match) => match.messageId),
+          ids: getStrongSemanticMessageIds(matches),
           scopeKey,
         });
       })

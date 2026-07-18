@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  createDesktopAuthCallbackUrl,
   createDesktopAuthDeepLink,
   desktopAuthCompleteSearchSchema,
   desktopAuthRequestSearchSchema,
@@ -14,6 +15,31 @@ describe("desktop auth route contracts", () => {
     expect(
       desktopAuthRequestSearchSchema.parse({ request_id: requestId }),
     ).toEqual({ request_id: requestId });
+  });
+
+  it("accepts only a fixed loopback callback URL", () => {
+    const callbackUrl = "http://127.0.0.1:43123/auth/desktop-complete";
+    expect(
+      desktopAuthRequestSearchSchema.parse({
+        callback_url: callbackUrl,
+        request_id: requestId,
+      }),
+    ).toEqual({ callback_url: callbackUrl, request_id: requestId });
+
+    for (const invalidCallback of [
+      "https://127.0.0.1:43123/auth/desktop-complete",
+      "http://localhost:43123/auth/desktop-complete",
+      "http://127.0.0.1/auth/desktop-complete",
+      "http://127.0.0.1:43123/other",
+      "http://127.0.0.1:43123/auth/desktop-complete?extra=true",
+    ]) {
+      expect(
+        desktopAuthRequestSearchSchema.safeParse({
+          callback_url: invalidCallback,
+          request_id: requestId,
+        }).success,
+      ).toBe(false);
+    }
   });
 
   it.each([
@@ -52,6 +78,23 @@ describe("desktop auth route contracts", () => {
     );
     expect(deepLink.searchParams.get("request_id")).toBe(requestId);
     expect(deepLink.searchParams.get("authorization_code")).toBe(
+      authorizationCode,
+    );
+  });
+
+  it("encodes an approved callback for the native loopback listener", () => {
+    const callback = new URL(
+      createDesktopAuthCallbackUrl(
+        "http://127.0.0.1:43123/auth/desktop-complete",
+        requestId,
+        authorizationCode,
+      ),
+    );
+
+    expect(callback.origin).toBe("http://127.0.0.1:43123");
+    expect(callback.pathname).toBe("/auth/desktop-complete");
+    expect(callback.searchParams.get("request_id")).toBe(requestId);
+    expect(callback.searchParams.get("authorization_code")).toBe(
       authorizationCode,
     );
   });

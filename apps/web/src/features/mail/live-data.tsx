@@ -1,29 +1,30 @@
 import { createContext, use, useEffect, useState } from "react";
-// eslint-disable-next-line no-restricted-imports -- Mail has intentional loading states and a selection-dependent thread query.
-import { useQuery } from "@tanstack/react-query";
-import { convexQuery } from "@convex-dev/react-query";
-
-import { api } from "@rodge-mail/convex/api";
 
 import type { LiveMailContextValue } from "./live-data-types";
 import type { MailAccountFilter } from "./store";
-import type { InboxMessage, MailAccountDocument } from "./types";
+import type { InboxMessage } from "./types";
 import type { UnreadSessionSnapshot } from "./unread-session";
-import { env } from "~/env";
 import { useArchiveLiveMailValue } from "./archive-live-data";
 import { MAIL_PAGE_SIZE } from "./constants";
 import { useLiveMailActions } from "./live-data-actions";
 import { useAccountsQuery, useUnreadCountQuery } from "./live-data-query-hooks";
+import {
+  canSeedDemoMail,
+  throwQueryError,
+  useThreadQuery,
+} from "./live-data-support";
 import {
   sortInboxMessages,
   toAccountView,
   toUnreadCountRecord,
 } from "./live-data-utils";
 import {
+  getCanInitializeSearchSelection,
   getIsLoadingInbox,
   getIsSearchingInbox,
   useMailboxPage,
 } from "./mailbox-page";
+import { useSpamLiveMailValue } from "./spam-live-data";
 import { useMailStore } from "./store";
 import {
   forgetUnreadSessionMessage,
@@ -74,6 +75,19 @@ export function ArchiveLiveMailProvider({
   );
 }
 
+export function SpamLiveMailProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const value = useSpamLiveMailValue();
+  return (
+    <LiveMailContext.Provider value={value}>
+      {children}
+    </LiveMailContext.Provider>
+  );
+}
+
 export function useLiveMail() {
   const context = use(LiveMailContext);
   if (!context) {
@@ -103,6 +117,9 @@ function useLiveMailValue({
   const setInitialSelection = useMailStore(
     (store) => store.setInitialSelection,
   );
+  const setMailboxSelection = useMailStore(
+    (store) => store.setMailboxSelection,
+  );
   const unreadSession = useUnreadViewSession({
     accountFilter,
     searchQuery,
@@ -122,14 +139,34 @@ function useLiveMailValue({
     unreadOnly,
   });
   const firstMessage = queryState.inboxMessages[0];
+  const canInitializeSelection = getCanInitializeSearchSelection({
+    debouncedSearchQuery,
+    isSearchingInbox: queryState.isSearchingInbox,
+    searchQuery,
+  });
+  const selectedMessageIsVisible = queryState.inboxMessages.some(
+    (message) => message._id === selectedMessageId,
+  );
   // eslint-disable-next-line no-restricted-syntax -- The live query's first result initializes stable local selection once per view.
   useEffect(() => {
-    if (!firstMessage) return;
-    setInitialSelection({
+    if (!firstMessage || !canInitializeSelection) return;
+    const nextSelection = {
       messageId: firstMessage._id,
       threadId: firstMessage.threadId,
-    });
-  }, [firstMessage, setInitialSelection]);
+    };
+    if (selectedMessageId === undefined) setInitialSelection(nextSelection);
+    else if (debouncedSearchQuery && !selectedMessageIsVisible) {
+      setMailboxSelection(nextSelection);
+    }
+  }, [
+    canInitializeSelection,
+    debouncedSearchQuery,
+    firstMessage,
+    selectedMessageId,
+    selectedMessageIsVisible,
+    setInitialSelection,
+    setMailboxSelection,
+  ]);
   useUnreadSelectionSync({
     inboxMessages: queryState.inboxMessages,
     isLoadingInbox: queryState.isLoadingInbox,
@@ -213,7 +250,6 @@ function useLiveMailQueries({
     isSearchingInbox: getIsSearchingInbox({
       debouncedSearchQuery,
       pageStatus: activePage.status,
-      searchQuery,
     }),
     isLoadingThread: effectiveThreadId !== undefined && threadQuery.isPending,
     loadMore: () => activePage.loadMore(MAIL_PAGE_SIZE),
@@ -261,22 +297,4 @@ function useUnreadViewSession({
     messages: getUnreadSessionMessages(snapshot, scopeKey, unreadOnly),
     preserve,
   };
-}
-
-function canSeedDemoMail(accounts: MailAccountDocument[] | undefined) {
-  return env.VITE_NODE_ENV === "development" && accounts?.length === 0;
-}
-
-function useThreadQuery(threadId: InboxMessage["threadId"] | undefined) {
-  return useQuery({
-    ...convexQuery(
-      api.mail.queries.getThread,
-      threadId ? { threadId } : "skip",
-    ),
-    select: (thread) => thread,
-  });
-}
-
-function throwQueryError(error: Error | null) {
-  if (error) throw error;
 }

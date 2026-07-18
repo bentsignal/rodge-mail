@@ -5,11 +5,11 @@ import * as ContextMenu from "@rodge-mail/ui-web/context-menu";
 
 import type { MailRouteSearch } from "../mail-route-search";
 import type { MailAccountFilter } from "../store";
-import type { InboxMessage, MailAccountView } from "../types";
+import type { InboxMessage } from "../types";
 import { QuickLink } from "~/components/quick-link";
 import { useLiveMail } from "../live-data";
 import { useMailStore } from "../store";
-import { getUnreadThreadRowClass } from "../thread-row-presentation";
+import { getThreadRowAccessibilityLabel } from "../thread-row-presentation";
 import { ThreadRowContent } from "./thread-row-content";
 
 export function ThreadRow({
@@ -20,14 +20,12 @@ export function ThreadRow({
   position: number;
 }) {
   const {
-    accounts,
     markMessageRead,
     archiveThread,
     mailMode,
     selectedThreadId,
     togglePinned,
   } = useLiveMail();
-  const account = accounts.find((item) => item._id === message.accountId);
   const accountFilter = useMailStore((store) => store.accountFilter);
   const bulkSelectedThreadIds = useMailStore(
     (store) => store.bulkSelectedThreadIds,
@@ -54,7 +52,6 @@ export function ThreadRow({
         aria-setsize={-1}
         className={cn(
           "mail-thread-row group relative overflow-hidden border-b border-[var(--mail-seam)] bg-[var(--mail-paper)] transition-[background-color,border-color,box-shadow] duration-150",
-          getUnreadThreadRowClass(message.isRead, rowIsSelected),
           rowIsSelected
             ? "z-[1] border-y border-[var(--mail-border-strong)] bg-[var(--mail-selected)] shadow-[var(--warm-shadow-raised)]"
             : "hover:bg-[var(--mail-row-hover)]",
@@ -62,7 +59,6 @@ export function ThreadRow({
       >
         <SelectedMarker selected={rowIsSelected} />
         <ThreadRowTarget
-          account={account}
           accountFilter={accountFilter}
           bulkSelectionIsActive={bulkSelectionIsActive}
           isBulkSelected={isBulkSelected}
@@ -88,7 +84,6 @@ export function ThreadRow({
 }
 
 function ThreadRowTarget({
-  account,
   accountFilter,
   bulkSelectionIsActive,
   isBulkSelected,
@@ -100,11 +95,10 @@ function ThreadRowTarget({
   toggleBulkThread,
   unreadOnly,
 }: {
-  account: MailAccountView | undefined;
   accountFilter: MailAccountFilter;
   bulkSelectionIsActive: boolean;
   isBulkSelected: boolean;
-  mailMode: "archive" | "inbox";
+  mailMode: "archive" | "inbox" | "spam";
   markMessageRead: (message: InboxMessage) => void;
   message: InboxMessage;
   preview: string;
@@ -122,7 +116,6 @@ function ThreadRowTarget({
         type="button"
       >
         <ThreadRowContent
-          account={account}
           isBulkSelected={isBulkSelected}
           message={message}
           preview={preview}
@@ -139,10 +132,10 @@ function ThreadRowTarget({
         mailMode={mailMode}
         message={message}
         onClick={() => markMessageRead(message)}
+        senderName={senderName}
         unreadOnly={unreadOnly}
       >
         <ThreadRowContent
-          account={account}
           isBulkSelected={false}
           message={message}
           preview={preview}
@@ -172,7 +165,7 @@ function InboxThreadActions({
   togglePinned,
 }: {
   archiveThread: (message: Pick<InboxMessage, "threadId">) => Promise<void>;
-  mailMode: "archive" | "inbox";
+  mailMode: "archive" | "inbox" | "spam";
   message: InboxMessage;
   pinLabel: string;
   togglePinned: (message: InboxMessage) => Promise<void>;
@@ -197,13 +190,15 @@ function ThreadLink({
   mailMode,
   message,
   onClick,
+  senderName,
   unreadOnly,
 }: {
   accountFilter: MailAccountFilter;
   children: React.ReactNode;
-  mailMode: "archive" | "inbox";
+  mailMode: "archive" | "inbox" | "spam";
   message: InboxMessage;
   onClick: () => void;
+  senderName: string;
   unreadOnly: boolean;
 }) {
   const search = {
@@ -211,6 +206,11 @@ function ThreadLink({
     unread: unreadOnly ? true : undefined,
   } satisfies MailRouteSearch;
   const props = {
+    "aria-label": getThreadRowAccessibilityLabel({
+      isRead: message.isRead,
+      senderName,
+      subject: message.subject,
+    }),
     children,
     className: "block w-full px-4 py-3.5 text-left",
     onClick,
@@ -220,6 +220,9 @@ function ThreadLink({
   };
   if (mailMode === "archive") {
     return <QuickLink {...props} to="/archive/messages/$messageId" />;
+  }
+  if (mailMode === "spam") {
+    return <QuickLink {...props} to="/spam/messages/$messageId" />;
   }
   return <QuickLink {...props} to="/messages/$messageId" />;
 }

@@ -37,8 +37,6 @@ export function usesDesktopBrowserAuth() {
   }
   return (
     resolveDesktopAuthMode({
-      browserAuthUrl: env.VITE_DESKTOP_BROWSER_AUTH_URL,
-      currentOrigin: window.location.origin,
       userAgent: navigator.userAgent,
     }) === "browser-handoff"
   );
@@ -68,6 +66,8 @@ export async function beginDesktopAuth() {
 
   const browserUrl = new URL("/desktop-auth", getDesktopBrowserAuthOrigin());
   browserUrl.searchParams.set("request_id", requestId);
+  const callbackUrl = getDesktopAuthCallbackUrl();
+  if (callbackUrl) browserUrl.searchParams.set("callback_url", callbackUrl);
   window.open(browserUrl, "_blank", "noopener,noreferrer");
   return pending;
 }
@@ -155,6 +155,10 @@ export function createDesktopDeepLink(
   authorizationCode: string,
 ) {
   return createDesktopAuthDeepLink(requestId, authorizationCode);
+}
+
+function getDesktopAuthCallbackUrl() {
+  return document.documentElement.dataset.desktopAuthCallbackUrl;
 }
 
 function getDesktopBrowserAuthOrigin() {

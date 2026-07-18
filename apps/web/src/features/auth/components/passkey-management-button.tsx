@@ -3,13 +3,16 @@ import { Fingerprint, Loader, Settings } from "lucide-react";
 
 import * as Dialog from "@rodge-mail/ui-web/dialog";
 
-import { AccountLabelSettings } from "~/features/mail/components/account-label-settings";
 import { AppearanceSettings } from "~/features/theme/components/theme-toggle";
 import { useAuthStore } from "../store";
 import { AgentAccessSettings } from "./agent-access-settings";
 import { SignOutLink } from "./sign-out-link";
 
-export function PasskeyManagementButton() {
+export function PasskeyManagementButton({
+  compact = false,
+}: {
+  compact?: boolean;
+}) {
   const [isOpen, setIsOpen] = useState(false);
   const [settingsSession, setSettingsSession] = useState(0);
   const addPasskey = useAuthStore((store) => store.addAuthenticatedPasskey);
@@ -31,7 +34,11 @@ export function PasskeyManagementButton() {
       <Dialog.Trigger asChild>
         <button
           aria-label="Settings"
-          className="flex h-11 w-full items-center justify-center gap-2.5 rounded-lg border border-transparent px-3 text-[var(--mail-chassis-foreground)]/72 transition-colors hover:border-white/10 hover:bg-white/[0.07] hover:text-[var(--mail-chassis-foreground)] xl:justify-start"
+          className={
+            compact
+              ? "flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-transparent px-2 text-[var(--mail-chassis-foreground)]/68 transition-colors hover:border-white/10 hover:bg-white/[0.07] hover:text-[var(--mail-chassis-foreground)]"
+              : "flex h-11 w-full items-center justify-center gap-2.5 rounded-lg border border-transparent px-3 text-[var(--mail-chassis-foreground)]/72 transition-colors hover:border-white/10 hover:bg-white/[0.07] hover:text-[var(--mail-chassis-foreground)] xl:justify-start"
+          }
           type="button"
         >
           <Settings className="size-4" />
@@ -44,14 +51,11 @@ export function PasskeyManagementButton() {
             Settings
           </Dialog.Title>
           <Dialog.Description className="mt-2 text-xs leading-5 text-[var(--mail-chassis-foreground)]/70">
-            Appearance and account controls for Rodge Mail.
+            Appearance and security controls for Rodge Mail.
           </Dialog.Description>
         </div>
         <div className="mail-paper p-6">
           <AppearanceSettings />
-        </div>
-        <div className="mail-paper border-t border-[var(--mail-seam)] p-6">
-          <AccountLabelSettings />
         </div>
         <div className="mail-paper border-t border-[var(--mail-seam)] p-6">
           <AgentAccessSettings key={settingsSession} />

@@ -12,7 +12,8 @@ import {
   internalQuery,
 } from "../_generated/server";
 import { CLASSIFICATION_PROMPT_VERSION } from "../classification/constants";
-import { queueClassificationForMessage } from "../classification/internal";
+import { queueClassificationForMessage } from "../classification/queue";
+import { shouldRequestAutomaticCleanView } from "../cleanView/policy";
 import { reconcileEmbeddingSelection } from "../embedding/internal";
 import { isProviderMessageArchived } from "../mail/archive";
 import { createMessageSearchText } from "../mail/search";
@@ -65,6 +66,7 @@ const vNormalizedMessage = v.object({
   subject: v.string(),
   snippet: v.string(),
   plainText: v.optional(v.string()),
+  sanitizedHtml: v.optional(v.string()),
   headers: v.array(vMessageHeader),
   remoteLabelIds: v.array(v.string()),
   sentAt: v.optional(v.number()),
@@ -1201,9 +1203,10 @@ export const upsertProviderMessage = internalMutation({
       }),
       headers: message.headers,
       remoteLabelIds: message.remoteLabelIds,
-      bodyState: message.plainText
-        ? ("available" as const)
-        : ("remote" as const),
+      bodyState:
+        message.plainText || message.sanitizedHtml
+          ? ("available" as const)
+          : ("remote" as const),
       sentAt: message.sentAt,
       receivedAt: message.receivedAt,
       hasAttachments: message.hasAttachments,
@@ -1227,6 +1230,7 @@ export const upsertProviderMessage = internalMutation({
       args.ownerId,
       messageId,
       message.plainText,
+      message.sanitizedHtml,
       now,
     );
     await reconcileAttachments(
@@ -1242,6 +1246,13 @@ export const upsertProviderMessage = internalMutation({
         messageId,
         promptVersion: CLASSIFICATION_PROMPT_VERSION,
         replaceManual: false,
+        generateCleanView: shouldRequestAutomaticCleanView({
+          messageExists: existing !== null,
+          direction: message.direction,
+          inInbox,
+        })
+          ? true
+          : undefined,
       });
     }
     await reconcileEmbeddingSelection(ctx, messageId);
@@ -1303,33 +1314,44 @@ export const deleteProviderMessage = internalMutation({
       )
       .unique();
     if (!message) return;
-    const [contents, attachments, classifications, embeddingJobs, embeddings] =
-      await Promise.all([
-        ctx.db
-          .query("messageContents")
-          .withIndex("by_message", (q) => q.eq("messageId", message._id))
-          .collect(),
-        ctx.db
-          .query("attachments")
-          .withIndex("by_message", (q) => q.eq("messageId", message._id))
-          .collect(),
-        ctx.db
-          .query("messageClassifications")
-          .withIndex("by_message", (q) => q.eq("messageId", message._id))
-          .collect(),
-        ctx.db
-          .query("messageEmbeddingJobs")
-          .withIndex("by_message", (q) => q.eq("messageId", message._id))
-          .collect(),
-        ctx.db
-          .query("messageEmbeddings")
-          .withIndex("by_message", (q) => q.eq("messageId", message._id))
-          .collect(),
-      ]);
+    const [
+      contents,
+      attachments,
+      classifications,
+      cleanViews,
+      embeddingJobs,
+      embeddings,
+    ] = await Promise.all([
+      ctx.db
+        .query("messageContents")
+        .withIndex("by_message", (q) => q.eq("messageId", message._id))
+        .collect(),
+      ctx.db
+        .query("attachments")
+        .withIndex("by_message", (q) => q.eq("messageId", message._id))
+        .collect(),
+      ctx.db
+        .query("messageClassifications")
+        .withIndex("by_message", (q) => q.eq("messageId", message._id))
+        .collect(),
+      ctx.db
+        .query("messageCleanViews")
+        .withIndex("by_message", (q) => q.eq("messageId", message._id))
+        .collect(),
+      ctx.db
+        .query("messageEmbeddingJobs")
+        .withIndex("by_message", (q) => q.eq("messageId", message._id))
+        .collect(),
+      ctx.db
+        .query("messageEmbeddings")
+        .withIndex("by_message", (q) => q.eq("messageId", message._id))
+        .collect(),
+    ]);
     for (const row of [
       ...contents,
       ...attachments,
       ...classifications,
+      ...cleanViews,
       ...embeddingJobs,
       ...embeddings,
     ]) {
@@ -1629,6 +1651,7 @@ async function upsertMessageContent(
   ownerId: string,
   messageId: Id<"messages">,
   plainText: string | undefined,
+  sanitizedHtml: string | undefined,
   now: number,
 ) {
   const existing = await ctx.db
@@ -1638,6 +1661,7 @@ async function upsertMessageContent(
   if (existing) {
     await ctx.db.patch(existing._id, {
       plainText,
+      sanitizedHtml,
       truncated: false,
       updatedAt: now,
     });
@@ -1646,6 +1670,7 @@ async function upsertMessageContent(
       ownerId,
       messageId,
       plainText,
+      sanitizedHtml,
       truncated: false,
       createdAt: now,
       updatedAt: now,

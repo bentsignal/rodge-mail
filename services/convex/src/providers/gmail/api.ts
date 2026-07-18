@@ -6,6 +6,7 @@ import type {
   NormalizedMessage,
   OutboxPayload,
 } from "../types";
+import { sanitizeEmailHtml } from "../../mail/html";
 
 const API_ROOT = "https://gmail.googleapis.com/gmail/v1/users/me";
 const INITIAL_MESSAGE_LIMIT = 200;
@@ -310,6 +311,7 @@ function normalizeMessage(message: GmailMessage): NormalizedMessage {
   const attachments = collectAttachments(message.payload);
   const receivedAt = Number(message.internalDate ?? Date.now());
   const sentAt = parseDate(headerValue(headers, "Date"));
+  const html = findMimeText(message.payload, "text/html");
 
   return {
     remoteMessageId: message.id,
@@ -323,6 +325,7 @@ function normalizeMessage(message: GmailMessage): NormalizedMessage {
     subject: headerValue(headers, "Subject") || "(no subject)",
     snippet: message.snippet ?? "",
     plainText: findPlainText(message.payload),
+    sanitizedHtml: sanitizeEmailHtml(html),
     headers,
     remoteLabelIds: labels,
     sentAt,

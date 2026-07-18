@@ -65,7 +65,8 @@ function MailLayout() {
       const messageMatch = state.matches.find(
         (match) =>
           match.routeId === "/_authed/messages/$messageId" ||
-          match.routeId === "/_authed/archive/messages/$messageId",
+          match.routeId === "/_authed/archive/messages/$messageId" ||
+          match.routeId === "/_authed/spam/messages/$messageId",
       );
       return isThreadSelection(messageMatch?.loaderData)
         ? messageMatch.loaderData

@@ -1,4 +1,15 @@
-export function getUnreadThreadRowClass(isRead: boolean, isSelected: boolean) {
-  if (isRead || isSelected) return undefined;
-  return "mail-thread-row-unread";
+export function getThreadRowAccessibilityLabel({
+  isRead,
+  senderName,
+  subject,
+}: {
+  isRead: boolean;
+  senderName: string;
+  subject: string;
+}) {
+  return `${senderName}, ${subject}, ${isRead ? "read" : "unread"}`;
+}
+
+export function isThreadUnread(isRead: boolean) {
+  return !isRead;
 }

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  getAccountReconnectMessage,
   getMobileProviderReturnPath,
   getProviderConnectionMessage,
   getProviderConnectionResult,
@@ -43,5 +44,17 @@ describe("mobile provider connection", () => {
     expect(getProviderConnectionMessage("microsoft", "connected")).toBe(
       "Microsoft 365 connected. Initial sync is running.",
     );
+  });
+
+  it("names the account after a reconnect attempt", () => {
+    expect(getAccountReconnectMessage("person@gmail.com", "connected")).toBe(
+      "person@gmail.com reconnected. Mail sync is running.",
+    );
+    expect(getAccountReconnectMessage("person@gmail.com", "error")).toBe(
+      "Could not reconnect person@gmail.com. Try again.",
+    );
+    expect(
+      getAccountReconnectMessage("person@gmail.com", "cancelled"),
+    ).toBeUndefined();
   });
 });

@@ -20,14 +20,21 @@ export function getIsLoadingInbox({
 export function getIsSearchingInbox({
   debouncedSearchQuery,
   pageStatus,
-  searchQuery,
 }: {
   debouncedSearchQuery: string;
   pageStatus: string;
+}) {
+  return debouncedSearchQuery.length > 0 && pageStatus === "LoadingFirstPage";
+}
+
+export function getCanInitializeSearchSelection({
+  debouncedSearchQuery,
+  isSearchingInbox,
+  searchQuery,
+}: {
+  debouncedSearchQuery: string;
+  isSearchingInbox: boolean;
   searchQuery: string;
 }) {
-  return (
-    searchQuery.trim() !== debouncedSearchQuery ||
-    (debouncedSearchQuery.length > 0 && pageStatus === "LoadingFirstPage")
-  );
+  return searchQuery.trim() === debouncedSearchQuery && !isSearchingInbox;
 }

@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { getIsLoadingInbox, getIsSearchingInbox } from "./mailbox-page-state";
+import {
+  getCanInitializeSearchSelection,
+  getIsLoadingInbox,
+  getIsSearchingInbox,
+} from "./mailbox-page-state";
 
 describe("mailbox page state", () => {
   it("shows initial inbox loading only when there is no cached mail", () => {
@@ -33,14 +37,13 @@ describe("mailbox page state", () => {
     ).toBe(false);
   });
 
-  it("tracks the debounce interval as active search work", () => {
+  it("does not change list feedback during the debounce interval", () => {
     expect(
       getIsSearchingInbox({
         debouncedSearchQuery: "inv",
         pageStatus: "Exhausted",
-        searchQuery: "invoice",
       }),
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it("tracks a first search page until its results settle", () => {
@@ -48,15 +51,37 @@ describe("mailbox page state", () => {
       getIsSearchingInbox({
         debouncedSearchQuery: "invoice",
         pageStatus: "LoadingFirstPage",
-        searchQuery: "invoice",
       }),
     ).toBe(true);
     expect(
       getIsSearchingInbox({
         debouncedSearchQuery: "invoice",
         pageStatus: "CanLoadMore",
-        searchQuery: "invoice",
       }),
     ).toBe(false);
+  });
+
+  it("initializes the reader only from a settled search result set", () => {
+    expect(
+      getCanInitializeSearchSelection({
+        debouncedSearchQuery: "space",
+        isSearchingInbox: false,
+        searchQuery: "spacex",
+      }),
+    ).toBe(false);
+    expect(
+      getCanInitializeSearchSelection({
+        debouncedSearchQuery: "spacex",
+        isSearchingInbox: true,
+        searchQuery: "spacex",
+      }),
+    ).toBe(false);
+    expect(
+      getCanInitializeSearchSelection({
+        debouncedSearchQuery: "spacex",
+        isSearchingInbox: false,
+        searchQuery: "spacex",
+      }),
+    ).toBe(true);
   });
 });

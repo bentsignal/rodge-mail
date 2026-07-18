@@ -1,13 +1,13 @@
 import { join } from "node:path";
 import { app, BrowserWindow, dialog, nativeTheme, session } from "electron";
 
-import { addPackagedDesktopRuntimeUserAgent } from "@rodge-mail/config/desktop";
-
+import type { DesktopAuthCallbackRuntime } from "./desktop-auth-callback";
 import {
   APP_PROTOCOL,
   MACOS_WEBAUTHN_KEYCHAIN_ACCESS_GROUP,
 } from "../shared/constants";
 import { resolveWebAppUrl, translateDeepLink } from "../shared/urls";
+import { startDesktopAuthCallback } from "./desktop-auth-callback";
 import {
   routeEmbeddedWebOrigin,
   startEmbeddedWebRuntime,
@@ -21,6 +21,7 @@ import { getPlatformWindowOptions } from "./window-options";
 let mainWindow: BrowserWindow | undefined;
 let pendingDeepLink: string | undefined;
 let webAppUrl: URL | undefined;
+let desktopAuthCallbackRuntime: DesktopAuthCallbackRuntime | undefined;
 let embeddedWebRuntime:
   | Awaited<ReturnType<typeof startEmbeddedWebRuntime>>
   | undefined;
@@ -56,7 +57,7 @@ function navigateDeepLink(candidate: string) {
 }
 
 async function createMainWindow() {
-  if (!webAppUrl) return;
+  if (!webAppUrl || !desktopAuthCallbackRuntime) return;
 
   const window = new BrowserWindow({
     ...getPlatformWindowOptions(),
@@ -73,15 +74,13 @@ async function createMainWindow() {
       sandbox: true,
       webSecurity: true,
       preload: join(import.meta.dirname, "../preload/index.mjs"),
+      additionalArguments: [
+        `--rodge-auth-callback-url=${desktopAuthCallbackRuntime.url}`,
+      ],
     },
   });
 
   mainWindow = window;
-  if (app.isPackaged) {
-    window.webContents.setUserAgent(
-      addPackagedDesktopRuntimeUserAgent(window.webContents.getUserAgent()),
-    );
-  }
   secureWindow(window, webAppUrl);
   window.once("ready-to-show", () => window.show());
   window.on("closed", () => {
@@ -122,6 +121,14 @@ async function start() {
     );
   }
   secureSession(session.defaultSession, resolvedWebAppUrl);
+  desktopAuthCallbackRuntime = await startDesktopAuthCallback(
+    ({ authorizationCode, requestId }) => {
+      const callback = new URL(`${APP_PROTOCOL}://auth/desktop-complete`);
+      callback.searchParams.set("authorization_code", authorizationCode);
+      callback.searchParams.set("request_id", requestId);
+      navigateDeepLink(callback.href);
+    },
+  );
   if (!app.isPackaged) {
     await waitForWebAppReady(resolvedWebAppUrl, async () => {
       const response = await session.defaultSession.fetch(
@@ -161,7 +168,10 @@ function registerProtocolClient() {
 }
 
 function registerAppEvents() {
-  app.on("before-quit", () => stopEmbeddedWebRuntime(embeddedWebRuntime));
+  app.on("before-quit", () => {
+    stopEmbeddedWebRuntime(embeddedWebRuntime);
+    void desktopAuthCallbackRuntime?.close().catch(() => undefined);
+  });
   app.on("open-url", (event, url) => {
     event.preventDefault();
     navigateDeepLink(url);

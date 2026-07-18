@@ -3,17 +3,16 @@
 New-mail notification deduplication remains keyed by message in
 `notificationDeliveries`. Sync policy stages a delivery before any Expo work
 begins; full, manual, reconciliation, backfill, and stale imports remain
-suppressed. The staged delivery is resolved after message classification. Only
-mail meeting the shared normalized importance threshold (currently `0.6`)
-advances to Expo delivery; other mail is skipped. Delivery does not depend on
-an inbox UI bucket.
+suppressed. Every fresh incoming inbox message advances to Expo delivery when
+the user's resolved notification preference is enabled. AI importance
+classification does not suppress a setting labeled `New mail`.
 
 Expo accepts at most 100 messages per request, so a delivery is split into
 bounded batches. Every returned push ticket is persisted in
 `notificationPushTickets` with its originating token. Delivery statuses mean:
 
-- `queued`: waiting for importance classification.
-- `ready`: important mail waiting for the send action.
+- `queued`: legacy staged delivery waiting to be resolved.
+- `ready`: fresh mail waiting for the send action.
 - `sending`: claimed by the send action.
 - `accepted`: every active token was accepted by Expo and receipts are pending.
 - `sent`: every accepted ticket has a successful delivery receipt.

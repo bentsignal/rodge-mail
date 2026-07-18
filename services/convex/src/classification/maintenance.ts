@@ -4,7 +4,6 @@ import { ConvexError, v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import { internalMutation } from "../_generated/server";
 import { reconcileEmbeddingSelection } from "../embedding/internal";
-import { resolveNewMailNotification } from "../notifications/internal";
 import {
   nextBackfillRemaining,
   RECENT_BACKFILL_LIMIT,
@@ -13,8 +12,8 @@ import {
   recentBackfillBounds,
 } from "./backfill";
 import { CLASSIFICATION_PROMPT_VERSION } from "./constants";
-import { queueClassificationForMessage } from "./internal";
 import { requiredClassificationMetadata } from "./pending";
+import { queueClassificationForMessage } from "./queue";
 import { classificationRecoveryPlan } from "./stale";
 
 const METADATA_MIGRATION_BATCH_SIZE = 200;
@@ -126,11 +125,6 @@ export const recoverStaleJobs = internalMutation({
       if (plan === "discard") {
         await ctx.db.delete(classification._id);
         await reconcileEmbeddingSelection(ctx, classification.messageId);
-        await resolveNewMailNotification(ctx, {
-          important: false,
-          messageId: classification.messageId,
-          ownerId: classification.ownerId,
-        });
         discarded += 1;
         continue;
       }

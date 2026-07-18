@@ -30,3 +30,16 @@ export function getProviderConnectionMessage(
   }
   return undefined;
 }
+
+export function getAccountReconnectMessage(
+  address: string,
+  result: "cancelled" | "connected" | "error",
+) {
+  if (result === "connected") {
+    return `${address} reconnected. Mail sync is running.`;
+  }
+  if (result === "error") {
+    return `Could not reconnect ${address}. Try again.`;
+  }
+  return undefined;
+}
