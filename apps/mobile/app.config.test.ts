@@ -16,13 +16,13 @@ afterEach(() => {
 });
 
 describe("mobile development configuration", () => {
-  it("only associates passkeys with the local development relying party", () => {
+  it("associates passkeys with the public Convex relying party", () => {
     process.env.EAS_BUILD_PROFILE = "development";
 
     const config = createExpoConfig({ config: {} } as ConfigContext);
 
     expect(config.ios?.associatedDomains).toEqual([
-      "webcredentials:rodge-mail.local?mode=developer",
+      "webcredentials:dazzling-dog-633.convex.site",
     ]);
     expect(config.extra?.deploymentEnvironment).toBe("development");
     expect(JSON.stringify(config).toLowerCase()).not.toContain("vercel");

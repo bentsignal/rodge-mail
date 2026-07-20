@@ -29,6 +29,7 @@ export function TemporaryIosSearchBar({
         placeholderTextColor={mutedForeground}
         returnKeyType="search"
         selectionColor={foreground}
+        style={{ letterSpacing: 0 }}
         defaultValue={value}
         onChangeText={onChange}
       />

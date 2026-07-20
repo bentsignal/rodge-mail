@@ -6,6 +6,7 @@ import { emailOTPClient } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
 import { ConvexReactClient } from "convex/react";
 
+import { nativeAuthBasePath } from "@rodge-mail/config/auth";
 import { createUrls } from "@rodge-mail/config/urls";
 
 const urls = createUrls({
@@ -14,6 +15,7 @@ const urls = createUrls({
 
 export const authClient = createAuthClient({
   baseURL: urls.convex.site,
+  basePath: nativeAuthBasePath,
   plugins: [
     expoClient({
       cookiePrefix: "better-auth",

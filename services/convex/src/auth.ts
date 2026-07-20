@@ -7,6 +7,8 @@ import { convex, crossDomain } from "@convex-dev/better-auth/plugins";
 import { betterAuth } from "better-auth/minimal";
 import { emailOTP } from "better-auth/plugins";
 
+import { nativeAuthBasePath } from "@rodge-mail/config/auth";
+
 import type { DataModel } from "./_generated/dataModel";
 import { components, internal } from "./_generated/api";
 import { primaryAuthConfig } from "./auth.config";
@@ -21,43 +23,13 @@ import { urls } from "./urls";
 const authFunctions: AuthFunctions = internal.auth;
 const androidPasskeyOrigins = getAndroidPasskeyOrigins();
 const desktopBrowserAuthOrigin = getDesktopBrowserAuthOrigin();
-const passkeyRpOrigin = `https://${env.PASSKEY_RP_ID}`;
-const passkeyOrigins = [
-  ...new Set([urls.web, passkeyRpOrigin, ...androidPasskeyOrigins]),
-];
-const trustedOrigins = [
-  ...new Set(
-    env.ENVIRONMENT === "production"
-      ? [
-          urls.web,
-          passkeyRpOrigin,
-          ...(desktopBrowserAuthOrigin ? [desktopBrowserAuthOrigin] : []),
-          "rodge-mail://",
-          ...androidPasskeyOrigins,
-        ]
-      : [
-          urls.web,
-          passkeyRpOrigin,
-          ...(desktopBrowserAuthOrigin ? [desktopBrowserAuthOrigin] : []),
-          "https://*.rodge-mail.local",
-          "https://*.www.rodge-mail.local",
-          "rodge-mail://",
-          ...androidPasskeyOrigins,
-        ],
-  ),
-];
-export const authCorsAllowedOrigins =
-  env.ENVIRONMENT === "production"
-    ? [
-        passkeyRpOrigin,
-        ...(desktopBrowserAuthOrigin ? [desktopBrowserAuthOrigin] : []),
-      ]
-    : [
-        passkeyRpOrigin,
-        ...(desktopBrowserAuthOrigin ? [desktopBrowserAuthOrigin] : []),
-        "*.rodge-mail.local",
-        "*.www.rodge-mail.local",
-      ];
+const nativePasskeyRpId = new URL(urls.convex.site).hostname;
+
+export const authCorsAllowedOrigins = getAuthCorsAllowedOrigins(
+  env.PASSKEY_RP_ID,
+);
+export const nativeAuthCorsAllowedOrigins =
+  getAuthCorsAllowedOrigins(nativePasskeyRpId);
 
 export const authComponent = createClient<DataModel, typeof authSchema>(
   components.betterAuth,
@@ -68,9 +40,16 @@ export const authComponent = createClient<DataModel, typeof authSchema>(
   },
 );
 
-export function createAuthOptions(ctx: GenericCtx<DataModel>) {
+export function createAuthOptions(
+  ctx: GenericCtx<DataModel>,
+  options: { basePath?: string; passkeyRpId?: string } = {},
+) {
+  const passkeyRpId = options.passkeyRpId ?? env.PASSKEY_RP_ID;
+  const { passkeyOrigins, trustedOrigins } = getAuthOrigins(passkeyRpId);
+
   return {
     appName: "Rodge Mail",
+    ...(options.basePath ? { basePath: options.basePath } : {}),
     baseURL: urls.convex.site,
     database: authComponent.adapter(ctx),
     secret: env.BETTER_AUTH_SECRET,
@@ -108,7 +87,7 @@ export function createAuthOptions(ctx: GenericCtx<DataModel>) {
       }),
       passkey({
         origin: passkeyOrigins,
-        rpID: env.PASSKEY_RP_ID,
+        rpID: passkeyRpId,
         rpName: "Rodge Mail",
         authenticatorSelection: {
           residentKey: "required",
@@ -117,13 +96,27 @@ export function createAuthOptions(ctx: GenericCtx<DataModel>) {
       }),
       expo(),
       crossDomain({ siteUrl: urls.web }),
-      convex({ authConfig: primaryAuthConfig }),
+      convex({
+        authConfig: primaryAuthConfig,
+        ...(options.basePath
+          ? { options: { basePath: options.basePath } }
+          : {}),
+      }),
     ],
   } satisfies BetterAuthOptions;
 }
 
 export function createAuth(ctx: GenericCtx<DataModel>) {
   return betterAuth(createAuthOptions(ctx));
+}
+
+export function createNativeAuth(ctx: GenericCtx<DataModel>) {
+  return betterAuth(
+    createAuthOptions(ctx, {
+      basePath: nativeAuthBasePath,
+      passkeyRpId: nativePasskeyRpId,
+    }),
+  );
 }
 
 export const { onCreate, onUpdate, onDelete } = authComponent.triggersApi();
@@ -135,6 +128,51 @@ function getAndroidPasskeyOrigins() {
     .filter((origin) =>
       /^android:apk-key-hash:[A-Za-z0-9+/]+={0,2}$/u.test(origin),
     );
+}
+
+function getAuthOrigins(passkeyRpId: string) {
+  const passkeyRpOrigin = `https://${passkeyRpId}`;
+  const passkeyOrigins = [
+    ...new Set([urls.web, passkeyRpOrigin, ...androidPasskeyOrigins]),
+  ];
+  const trustedOrigins = [
+    ...new Set(
+      env.ENVIRONMENT === "production"
+        ? [
+            urls.web,
+            passkeyRpOrigin,
+            ...(desktopBrowserAuthOrigin ? [desktopBrowserAuthOrigin] : []),
+            "rodge-mail://",
+            ...androidPasskeyOrigins,
+          ]
+        : [
+            urls.web,
+            passkeyRpOrigin,
+            ...(desktopBrowserAuthOrigin ? [desktopBrowserAuthOrigin] : []),
+            "https://*.rodge-mail.local",
+            "https://*.www.rodge-mail.local",
+            "rodge-mail://",
+            ...androidPasskeyOrigins,
+          ],
+    ),
+  ];
+
+  return { passkeyOrigins, trustedOrigins };
+}
+
+function getAuthCorsAllowedOrigins(passkeyRpId: string) {
+  const passkeyRpOrigin = `https://${passkeyRpId}`;
+  return env.ENVIRONMENT === "production"
+    ? [
+        passkeyRpOrigin,
+        ...(desktopBrowserAuthOrigin ? [desktopBrowserAuthOrigin] : []),
+      ]
+    : [
+        passkeyRpOrigin,
+        ...(desktopBrowserAuthOrigin ? [desktopBrowserAuthOrigin] : []),
+        "*.rodge-mail.local",
+        "*.www.rodge-mail.local",
+      ];
 }
 
 function getDesktopBrowserAuthOrigin() {

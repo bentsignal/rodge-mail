@@ -6,7 +6,8 @@ component. Configure these variables on each Convex deployment:
 - `BETTER_AUTH_SECRET`: a random Better Auth signing secret.
 - `AUTH_EMAIL_FROM`: a verified Resend sender, such as
   `Rodge Mail <auth@example.com>`.
-- `PASSKEY_RP_ID`: the WebAuthn relying-party domain, without a scheme or path.
+- `PASSKEY_RP_ID`: the browser WebAuthn relying-party domain, without a scheme
+  or path. Local web development keeps its `.local` relying party.
 - `RESEND_API_KEY`: the Resend API key used for registration verification codes.
 - `DESKTOP_BROWSER_AUTH_URL`: optional origin-only HTTPS URL for the public web
   app that handles packaged desktop authentication. It must match the web
@@ -18,7 +19,16 @@ component. Configure these variables on each Convex deployment:
 
 `CONVEX_CLOUD_URL` and `CONVEX_SITE_URL` are supplied by Convex. The auth
 server uses `CONVEX_SITE_URL` as its base URL rather than the placeholder URLs
-in shared app configuration.
+in shared app configuration. Native clients use a separate `/api/mobile-auth`
+base path whose relying party is the public Convex site hostname. The Convex
+HTTP router serves its Apple app-site association at
+`https://<CONVEX_SITE_URL>/.well-known/apple-app-site-association`, so a
+standalone mobile build never depends on a workstation-hosted server. Browser
+clients continue using `/api/auth` and `PASSKEY_RP_ID`.
+
+Passkeys are cryptographically scoped to their relying-party ID. Changing
+`PASSKEY_RP_ID` requires users to authenticate through account recovery and
+register a new passkey; credentials created for the previous ID cannot migrate.
 
 Registration verifies the email address with a single-use, five-minute Better
 Auth email OTP before issuing passkey registration options. OTP verification

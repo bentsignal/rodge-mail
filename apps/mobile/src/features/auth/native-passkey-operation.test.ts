@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { retryTransientPasskeyAssociation } from "./native-passkey-operation";
+import {
+  getPasskeySignInErrorMessage,
+  incompatiblePasskeyMessage,
+  retryTransientPasskeyAssociation,
+} from "./native-passkey-operation";
 
 const associationError = {
   error: {
@@ -50,5 +54,23 @@ describe("native passkey association retry", () => {
       retryTransientPasskeyAssociation(operation, () => Promise.resolve()),
     ).resolves.toBe(cancellation);
     expect(operation).toHaveBeenCalledOnce();
+  });
+});
+
+describe("native passkey sign-in errors", () => {
+  it("explains how to replace a passkey from the former relying party", () => {
+    const error = new Error(
+      "ERR_GET_PASSKEY: The operation couldn’t be completed. (com.apple.AuthenticationServices.AuthorizationError error 1001.)",
+    );
+
+    expect(getPasskeySignInErrorMessage(error)).toBe(
+      incompatiblePasskeyMessage,
+    );
+  });
+
+  it("preserves other native passkey errors", () => {
+    expect(getPasskeySignInErrorMessage(new Error("Passkey unavailable"))).toBe(
+      "Passkey unavailable",
+    );
   });
 });

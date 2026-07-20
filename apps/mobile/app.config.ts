@@ -30,7 +30,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       },
     },
     ios: {
-      associatedDomains: ["webcredentials:rodge-mail.local?mode=developer"],
+      associatedDomains: ["webcredentials:dazzling-dog-633.convex.site"],
       bundleIdentifier: "com.bentsignal.rodgemail",
       supportsTablet: true,
       icon: "./assets/rounded-icon.png",

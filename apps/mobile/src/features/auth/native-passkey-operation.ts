@@ -3,6 +3,11 @@ interface PasskeyOperationResult {
 }
 
 const associationFailure = "unable to verify webcredentials association";
+const authorizationCanceled =
+  /AuthenticationServices\.AuthorizationError(?:,| error)\s*1001/i;
+
+export const incompatiblePasskeyMessage =
+  "No compatible passkey was selected. Passkeys from the earlier local development domain cannot be reused here. Sign in with email, then add a new passkey in Settings.";
 
 export async function retryTransientPasskeyAssociation<
   Result extends PasskeyOperationResult,
@@ -19,6 +24,14 @@ export async function retryTransientPasskeyAssociation<
 
   await wait();
   return await operation();
+}
+
+export function getPasskeySignInErrorMessage(error: unknown) {
+  const message = getErrorMessage(error);
+  if (message && authorizationCanceled.test(message)) {
+    return incompatiblePasskeyMessage;
+  }
+  return message ?? "Authentication did not complete.";
 }
 
 function isTransientAssociationFailure(error: unknown) {

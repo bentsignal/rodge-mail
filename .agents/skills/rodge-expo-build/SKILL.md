@@ -22,7 +22,8 @@ Use XcodeBuildMCP after installing the local EAS simulator artifact to launch th
 - iOS bundle identifier: `com.bentsignal.rodgemail`
 - Android package: `com.bentsignal.rodgemail`
 - Simulator profile: `development:client:sim`
-- Physical-device profile: `development:client`
+- Standalone physical-device profile: `development`
+- Development-client physical-device profile: `development:client`
 
 ## Standard checks
 
@@ -62,51 +63,31 @@ Confirm the paired device:
 xcrun devicectl list devices
 ```
 
-Build the local EAS development `.ipa` that will provide the Xcode archive:
+Build a standalone local EAS development `.ipa` with its JavaScript bundle
+embedded:
 
 ```bash
 cd apps/mobile
-pnpm exec eas build --local --platform ios --profile development:client --output ./build/rodge-mail-development-client-eas.ipa
+pnpm exec eas build --local --platform ios --profile development --output ./build/rodge-mail-development.ipa
 ```
 
-Do not install this ad hoc-signed EAS IPA when testing local passkeys. Complete
-the development-signing re-export below and install only that result.
-
-### Local passkeys and development signing
-
-EAS internal-distribution iOS builds use an ad hoc distribution profile. Apple
-does not allow that profile to use the Associated Domains `developer` alternate
-mode required by the private `rodge-mail.local` passkey relying party. For
-physical-device passkey testing, keep EAS as the builder, then re-export the
-EAS-created Xcode archive with an Apple Development profile. Do not rebuild the
-app from the generated native project.
-
-The development profile must:
-
-- target `com.bentsignal.rodgemail`;
-- include the test iPhone UDID;
-- include the Associated Domains capability;
-- match an Apple Development certificate available in the local keychain.
-
-Create or refresh it with the authenticated Apple tooling, then export the
-newest EAS-created `RodgeMail.xcarchive` with method `debugging`, signing style
-`manual`, signing certificate `Apple Development`, and that profile. Verify the
-result before installation:
+Verify the embedded provisioning profile and app entitlement before
+installation:
 
 ```bash
 security cms -D -i Payload/RodgeMail.app/embedded.mobileprovision
 codesign -d --entitlements :- Payload/RodgeMail.app
 ```
 
-Both outputs must show `get-task-allow` as `true`, and the app entitlement must
-contain `webcredentials:rodge-mail.local?mode=developer`. The iPhone must also
-have Settings > Developer > Associated Domains Development enabled. This export
-step changes signing only; the binary must still come from the local EAS build.
+The app entitlement must contain
+`webcredentials:dazzling-dog-633.convex.site`. That public domain serves its
+Apple app-site association from Convex, so the installed standalone app does
+not require Metro, Portless, or access to the development machine.
 
-Install only the verified development-signed re-export:
+Install the verified IPA:
 
 ```bash
-xcrun devicectl device install app --device <device-uuid> ./build/rodge-mail-development-signed-client.ipa
+xcrun devicectl device install app --device <device-uuid> ./build/rodge-mail-development.ipa
 ```
 
 For every other signing or provisioning issue, use EAS credentials, Expo

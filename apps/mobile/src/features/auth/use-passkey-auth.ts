@@ -4,7 +4,10 @@ import { useState } from "react";
 import { completeAuthSession } from "@rodge-mail/std/auth-session";
 
 import { authClient } from "./client";
-import { retryTransientPasskeyAssociation } from "./native-passkey-operation";
+import {
+  getPasskeySignInErrorMessage,
+  retryTransientPasskeyAssociation,
+} from "./native-passkey-operation";
 import { completeRecoverySignIn } from "./passkey-recovery-client";
 
 type AuthOperation = "request-code" | "sign-in" | "verify";
@@ -56,13 +59,9 @@ export function usePasskeyAuth() {
       });
       setOperation(undefined);
     } catch (error) {
-      finishWithError(error);
+      setOperation(undefined);
+      setMessage(getPasskeySignInErrorMessage(error));
     }
-  }
-
-  function finishWithError(error: unknown) {
-    setOperation(undefined);
-    setMessage(getErrorMessage(error));
   }
 
   function show(nextView: AuthView) {
