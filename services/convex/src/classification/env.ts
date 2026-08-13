@@ -6,6 +6,10 @@ export function classificationModelOverride() {
   return process.env.AI_CLASSIFICATION_MODEL;
 }
 
+export function cleanViewModelOverride() {
+  return process.env.AI_CLEAN_VIEW_MODEL;
+}
+
 export function embeddingModelOverride() {
   return process.env.AI_EMBEDDING_MODEL;
 }

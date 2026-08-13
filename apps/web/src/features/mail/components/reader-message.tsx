@@ -4,12 +4,14 @@ import type {
   EmailTextBlock,
   EmailTextInline,
 } from "@rodge-mail/features/mail";
-import { parseEmailText } from "@rodge-mail/features/mail";
+import {
+  parseEmailText,
+  prepareEmailHtmlForDisplay,
+} from "@rodge-mail/features/mail";
 
 import type { ThreadMessageDetail } from "../types";
 import { formatFullDate, getInitials } from "../format";
 import { ReaderAttachments } from "./reader-attachments";
-import { MessageOverview } from "./reader-clean-view";
 
 export type ReaderViewMode = "clean" | "original";
 
@@ -44,8 +46,6 @@ export function ReaderMessage({
         </div>
       </header>
 
-      <MessageOverview message={message} />
-
       <div className="text-foreground mt-7 space-y-5 font-serif text-[17px] leading-[1.75] tracking-[-0.008em] sm:pl-[52px] sm:text-[18px]">
         <ReaderMessageContent
           message={message}
@@ -74,7 +74,9 @@ function ReaderMessageContent({
       <OriginalHtml html={html} title={`Original email from ${senderName}`} />
     );
   }
-  const body = parseEmailText(getReaderBody(message, viewMode));
+  const body = parseEmailText(getReaderBody(message, viewMode), {
+    markdown: viewMode === "clean",
+  });
   return (
     <>
       <OriginalUnavailableNotice viewMode={viewMode} />
@@ -108,7 +110,7 @@ function OriginalHtml({ html, title }: { html: string; title: string }) {
       ref={frameRef}
       referrerPolicy="no-referrer"
       sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin"
-      srcDoc={html}
+      srcDoc={prepareEmailHtmlForDisplay(html)}
       title={title}
     />
   );
@@ -130,6 +132,13 @@ function EmailMessageBody({
 }
 
 function EmailBlock({ block }: { block: EmailTextBlock }) {
+  if (block.type === "heading") {
+    return (
+      <h3 className={getHeadingClassName(block.level)}>
+        <EmailInlineContent content={block.content} />
+      </h3>
+    );
+  }
   if (block.type === "paragraph") {
     return (
       <p className="whitespace-pre-line">
@@ -162,6 +171,12 @@ function EmailBlock({ block }: { block: EmailTextBlock }) {
   );
 }
 
+function getHeadingClassName(level: number) {
+  if (level === 1) return "text-2xl font-semibold leading-tight";
+  if (level === 2) return "text-xl font-semibold leading-snug";
+  return "text-lg font-semibold leading-snug";
+}
+
 function EmailListItems({ items }: { items: EmailTextInline[][] }) {
   return items.map((item, index) => (
     <li className="pl-1 whitespace-pre-line" key={index}>
@@ -178,6 +193,15 @@ function EmailInlineContent({ content }: { content: EmailTextInline[] }) {
 
 function EmailInline({ token }: { token: EmailTextInline }) {
   if (token.type === "text") return <span>{token.value}</span>;
+  if (token.type === "strong") return <strong>{token.value}</strong>;
+  if (token.type === "emphasis") return <em>{token.value}</em>;
+  if (token.type === "code") {
+    return (
+      <code className="mail-inset rounded px-1 py-0.5 font-mono text-[0.82em]">
+        {token.value}
+      </code>
+    );
+  }
   if (token.href.toLowerCase().startsWith("mailto:")) {
     return (
       <a

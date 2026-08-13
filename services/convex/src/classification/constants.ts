@@ -1,8 +1,9 @@
 export const CLASSIFICATION_PROMPT_VERSION = "mail-screen-v5";
 export const CLASSIFICATION_OUTPUT_SCHEMA_VERSION = "classification-v4";
-export const CLEAN_VIEW_PROMPT_VERSION = "clean-view-v1";
-export const CLEAN_VIEW_OUTPUT_SCHEMA_VERSION = "clean-view-v1";
+export const CLEAN_VIEW_PROMPT_VERSION = "clean-view-v3";
+export const CLEAN_VIEW_OUTPUT_SCHEMA_VERSION = "clean-view-v2";
 export const DEFAULT_CLASSIFICATION_MODEL = "gpt-5-nano";
+export const DEFAULT_CLEAN_VIEW_MODEL = "gpt-5.6-luna";
 export const DEFAULT_EMBEDDING_MODEL = "text-embedding-3-small";
 export const EMBEDDING_DIMENSIONS = 512;
 export const MAX_JOB_ATTEMPTS = 3;
@@ -41,4 +42,8 @@ export interface CleanViewResult {
   schemaVersion: typeof CLEAN_VIEW_OUTPUT_SCHEMA_VERSION;
   summary: string;
   cleanedMarkdown: string;
+  code: {
+    label: string;
+    value: string;
+  } | null;
 }

@@ -21,8 +21,13 @@ export function canQueueCleanView(
     | Pick<Doc<"messageCleanViews">, "generatedAt" | "status">
     | null
     | undefined,
+  force = false,
 ) {
   if (!cleanView) return true;
+  if (cleanView.status === "pending" || cleanView.status === "running") {
+    return false;
+  }
+  if (force) return true;
   if (cleanView.generatedAt !== undefined) return false;
   return cleanView.status === "failed";
 }

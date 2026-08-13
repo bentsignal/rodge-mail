@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   CheckCheck,
   MailOpen,
+  MailX,
   Pin,
   Reply,
   ShieldCheck,
@@ -16,6 +17,10 @@ import { cn } from "@rodge-mail/std/cn";
 import * as Dialog from "@rodge-mail/ui-web/dialog";
 
 import type { ThreadMessageDetail } from "../types";
+import {
+  getUnsubscribeDialogMessage,
+  ReaderUnsubscribeDialog,
+} from "./reader-unsubscribe-dialog";
 
 interface ReaderToolbarProps {
   archiveThread: (message: ThreadMessageDetail) => Promise<void>;
@@ -30,10 +35,12 @@ interface ReaderToolbarProps {
   selectedMessage: ThreadMessageDetail | undefined;
   togglePinned: (message: ThreadMessageDetail) => Promise<void>;
   toggleRead: (message: ThreadMessageDetail) => Promise<void>;
+  unsubscribe: (message: ThreadMessageDetail) => Promise<void>;
 }
 
 export function ReaderToolbar(props: ReaderToolbarProps) {
   const [deleteIsOpen, setDeleteIsOpen] = useState(false);
+  const [unsubscribeIsOpen, setUnsubscribeIsOpen] = useState(false);
   return (
     <>
       <header className="mail-reader-toolbar mail-paper-soft relative z-[3] flex h-16 shrink-0 items-center gap-1 border-b border-[var(--mail-seam)] px-4 sm:px-6">
@@ -47,6 +54,7 @@ export function ReaderToolbar(props: ReaderToolbarProps) {
         <ReaderModeActions
           {...props}
           requestDelete={() => setDeleteIsOpen(true)}
+          requestUnsubscribe={() => setUnsubscribeIsOpen(true)}
         />
         <button
           className="mail-brass-button ml-auto flex h-11 items-center gap-2 rounded-lg px-4 text-xs font-bold transition-colors"
@@ -61,6 +69,14 @@ export function ReaderToolbar(props: ReaderToolbarProps) {
         message={getDeleteMessage(deleteIsOpen, props.selectedMessage)}
         onOpenChange={setDeleteIsOpen}
         permanentlyDelete={props.permanentlyDeleteArchivedThread}
+      />
+      <ReaderUnsubscribeDialog
+        message={getUnsubscribeDialogMessage(
+          unsubscribeIsOpen,
+          props.selectedMessage,
+        )}
+        onOpenChange={setUnsubscribeIsOpen}
+        unsubscribe={props.unsubscribe}
       />
     </>
   );
@@ -83,7 +99,11 @@ function ReaderModeActions({
   selectedMessage,
   togglePinned,
   toggleRead,
-}: ReaderToolbarProps & { requestDelete: () => void }) {
+  requestUnsubscribe,
+}: ReaderToolbarProps & {
+  requestDelete: () => void;
+  requestUnsubscribe: () => void;
+}) {
   if (mailMode === "spam") {
     return (
       <ReaderIconButton
@@ -117,6 +137,10 @@ function ReaderModeActions({
   }
   return (
     <>
+      <UnsubscribeReaderAction
+        message={selectedMessage}
+        requestUnsubscribe={requestUnsubscribe}
+      />
       <PinReaderAction message={selectedMessage} togglePinned={togglePinned} />
       <ReadReaderAction message={selectedMessage} toggleRead={toggleRead} />
       <ArchiveReaderAction
@@ -124,6 +148,23 @@ function ReaderModeActions({
         message={selectedMessage}
       />
     </>
+  );
+}
+
+function UnsubscribeReaderAction({
+  message,
+  requestUnsubscribe,
+}: {
+  message: ThreadMessageDetail | undefined;
+  requestUnsubscribe: () => void;
+}) {
+  if (!message?.mailingList) return null;
+  return (
+    <ReaderIconButton
+      icon={MailX}
+      label={`Unsubscribe from ${message.mailingList.displayName}`}
+      onClick={requestUnsubscribe}
+    />
   );
 }
 

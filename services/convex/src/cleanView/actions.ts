@@ -3,7 +3,11 @@ import { v } from "convex/values";
 import { internal } from "../_generated/api";
 import { internalAction } from "../_generated/server";
 import { normalizeMail } from "../classification/normalize";
-import { generateCleanView, isAiConfigured } from "../classification/openai";
+import {
+  configuredCleanViewModel,
+  generateCleanView,
+  isAiConfigured,
+} from "../classification/openai";
 
 export const run = internalAction({
   args: { messageId: v.id("messages"), jobKey: v.string() },
@@ -34,6 +38,8 @@ export const run = internalAction({
         ...args,
         summary: result.summary,
         cleanedMarkdown: result.cleanedMarkdown,
+        code: result.code ?? undefined,
+        model: configuredCleanViewModel(),
       });
     } catch (error) {
       await ctx.runMutation(internal.cleanView.internal.fail, {

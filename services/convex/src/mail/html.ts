@@ -1,5 +1,7 @@
 import sanitizeHtml from "sanitize-html";
 
+import { prepareEmailHtmlForDisplay } from "@rodge-mail/features/mail";
+
 const BLOCKED_TAGS = [
   "applet",
   "audio",
@@ -24,40 +26,42 @@ const BLOCKED_TAGS = [
 export function sanitizeEmailHtml(html: string | undefined) {
   const source = html?.trim();
   if (!source) return undefined;
-  return sanitizeHtml(source, {
-    allowedAttributes: {
-      "*": [
-        "align",
-        "aria-label",
-        "class",
-        "dir",
-        "height",
-        "lang",
-        "role",
-        "style",
-        "title",
-        "width",
-      ],
-      a: ["href", "name", "rel", "target"],
-      img: ["alt", "border", "height", "src", "title", "width"],
-      table: ["border", "cellpadding", "cellspacing", "height", "width"],
-      td: ["colspan", "height", "rowspan", "valign", "width"],
-      th: ["colspan", "height", "rowspan", "scope", "valign", "width"],
-    },
-    allowedSchemes: ["data", "http", "https", "mailto"],
-    allowedSchemesByTag: { img: ["cid", "data", "http", "https"] },
-    allowedTags: sanitizeHtml.defaults.allowedTags
-      .filter((tag) => !BLOCKED_TAGS.includes(tag))
-      .concat(["center", "font", "img"]),
-    disallowedTagsMode: "discard",
-    enforceHtmlBoundary: true,
-    transformTags: {
-      a: sanitizeHtml.simpleTransform("a", {
-        rel: "noreferrer noopener",
-        target: "_blank",
-      }),
-    },
-  });
+  return prepareEmailHtmlForDisplay(
+    sanitizeHtml(source, {
+      allowedAttributes: {
+        "*": [
+          "align",
+          "aria-label",
+          "class",
+          "dir",
+          "height",
+          "lang",
+          "role",
+          "style",
+          "title",
+          "width",
+        ],
+        a: ["href", "name", "rel", "target"],
+        img: ["alt", "border", "height", "src", "title", "width"],
+        table: ["border", "cellpadding", "cellspacing", "height", "width"],
+        td: ["colspan", "height", "rowspan", "valign", "width"],
+        th: ["colspan", "height", "rowspan", "scope", "valign", "width"],
+      },
+      allowedSchemes: ["data", "http", "https", "mailto"],
+      allowedSchemesByTag: { img: ["cid", "data", "http", "https"] },
+      allowedTags: sanitizeHtml.defaults.allowedTags
+        .filter((tag) => !BLOCKED_TAGS.includes(tag))
+        .concat(["center", "font", "img"]),
+      disallowedTagsMode: "discard",
+      enforceHtmlBoundary: true,
+      transformTags: {
+        a: sanitizeHtml.simpleTransform("a", {
+          rel: "noreferrer noopener",
+          target: "_blank",
+        }),
+      },
+    }),
+  );
 }
 
 export function emailHtmlToPlainText(html: string) {

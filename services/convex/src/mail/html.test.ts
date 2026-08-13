@@ -23,4 +23,12 @@ describe("email HTML", () => {
       ),
     ).toBe("Hello Shawn,\n• First update\n• Second update");
   });
+
+  it("upgrades insecure image sources for iOS-compatible rendering", () => {
+    expect(
+      sanitizeEmailHtml(
+        '<a href="http://example.com"><img src="http://images.example.com/barcode.jpg"></a>',
+      ),
+    ).toContain('<img src="https://images.example.com/barcode.jpg" />');
+  });
 });

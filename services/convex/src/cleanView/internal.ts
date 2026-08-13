@@ -3,7 +3,6 @@ import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { internalMutation, internalQuery } from "../_generated/server";
-import { configuredClassificationModel } from "../classification/openai";
 
 export const getJobInput = internalQuery({
   args: { messageId: v.id("messages"), jobKey: v.string() },
@@ -45,6 +44,13 @@ export const complete = internalMutation({
     jobKey: v.string(),
     summary: v.string(),
     cleanedMarkdown: v.string(),
+    code: v.optional(
+      v.object({
+        label: v.string(),
+        value: v.string(),
+      }),
+    ),
+    model: v.string(),
   },
   handler: async (ctx, args) => {
     const cleanView = await findCleanView(ctx, args.messageId);
@@ -56,7 +62,8 @@ export const complete = internalMutation({
       status: "ready",
       summary: args.summary.slice(0, 280),
       cleanedMarkdown: args.cleanedMarkdown.slice(0, 24_000),
-      model: configuredClassificationModel(),
+      code: args.code,
+      model: args.model,
       error: undefined,
       generatedAt: now,
       updatedAt: now,

@@ -26,6 +26,10 @@ import {
   vMessageHeader,
   vSyncReason,
 } from "../mail/validators";
+import {
+  findMatchingSuppression,
+  suppressMessageAsSpam,
+} from "../mailingLists/suppression";
 import { queueNewMailNotification } from "../notifications/internal";
 import { shouldNotifyForProviderMessage } from "../notifications/policy";
 import { GmailAdapter, GmailApiError } from "../providers/gmail/api";
@@ -1240,7 +1244,14 @@ export const upsertProviderMessage = internalMutation({
       message.attachments,
       now,
     );
-    if (inInbox) {
+    const storedMessage = await ctx.db.get(messageId);
+    const suppression =
+      inInbox && storedMessage
+        ? await findMatchingSuppression(ctx, storedMessage)
+        : null;
+    if (suppression && storedMessage) {
+      await suppressMessageAsSpam(ctx, storedMessage, suppression._id, now);
+    } else if (inInbox) {
       await queueClassificationForMessage(ctx, {
         ownerId: args.ownerId,
         messageId,
@@ -1261,7 +1272,8 @@ export const upsertProviderMessage = internalMutation({
       args.notifyNewMail &&
       !existing &&
       message.direction === "incoming" &&
-      message.inInbox
+      inInbox &&
+      !suppression
     ) {
       await queueNewMailNotification(ctx, {
         ownerId: args.ownerId,

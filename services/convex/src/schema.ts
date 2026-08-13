@@ -22,6 +22,7 @@ import {
   vSyncRun,
   vThread,
 } from "./mail/validators";
+import { vMailingListSuppression } from "./mailingLists/validators";
 import {
   vAccountNotificationPreference,
   vMobilePushToken,
@@ -114,6 +115,10 @@ export default defineSchema(
     messageCleanViews: defineTable(vMessageCleanView)
       .index("by_message", ["messageId"])
       .index("by_owner_status", ["ownerId", "status"]),
+    mailingListSuppressions: defineTable(vMailingListSuppression)
+      .index("by_account_list", ["accountId", "listId"])
+      .index("by_account_sender", ["accountId", "senderAddress"])
+      .index("by_owner_updated", ["ownerId", "updatedAt"]),
     aiUsage: defineTable(vAiUsage)
       .index("by_request_key", ["requestKey"])
       .index("by_owner_created", ["ownerId", "createdAt"]),

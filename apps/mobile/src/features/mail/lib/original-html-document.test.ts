@@ -50,4 +50,20 @@ describe("createOriginalHtmlDocument", () => {
     );
     expect(document).toContain("document.documentElement.scrollHeight*scale+8");
   });
+
+  it("upgrades remote images and resolves inline content IDs", () => {
+    const document = createOriginalHtmlDocument({
+      background: "#fff",
+      foreground: "#111",
+      html: '<img src="http://images.example.com/barcode"><img src="cid:logo@mail">',
+      inlineImageUrls: {
+        "<logo@mail>": "https://files.example.com/logo",
+      },
+    });
+
+    expect(document).toContain(
+      '<img src="https://images.example.com/barcode"><img src="https://files.example.com/logo">',
+    );
+    expect(document).toContain('image.addEventListener("load",fit)');
+  });
 });

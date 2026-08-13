@@ -1,6 +1,5 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { AppState, Platform } from "react-native";
-import Constants from "expo-constants";
 import * as Crypto from "expo-crypto";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
@@ -11,6 +10,11 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "@rodge-mail/convex/api";
 
 import type { NotificationSetupState } from "./notification-setup";
+import { getExpoProjectId } from "./expo-project-id";
+import {
+  getNotificationPermission,
+  prepareNotificationPermissions,
+} from "./notification-permissions";
 import {
   createNotificationResponseResolver,
   MOBILE_THREAD_ROUTE,
@@ -22,6 +26,7 @@ import {
 
 const installationIdKey = "rodge-mail.notification-installation-id";
 const pushTokenKey = "rodge-mail.expo-push-token";
+const registrationRetryDelayMs = 30_000;
 const setupStateListeners = new Set<() => void>();
 let notificationSetupSnapshot: NotificationSetupState | undefined;
 const resolveNotificationResponse = createNotificationResponseResolver();
@@ -58,9 +63,25 @@ export function useMobileNotifications(isAuthenticated: boolean) {
   // eslint-disable-next-line no-restricted-syntax -- Registration synchronizes native permission/token state with the signed-in owner.
   useEffect(() => {
     if (!isAuthenticated || !registrationEnabled) return;
+    let active = true;
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
 
-    function restoreRegistration() {
-      void getNotificationPermission().then((permission) => {
+    function scheduleRetry() {
+      if (!active || AppState.currentState !== "active") return;
+      if (retryTimer) clearTimeout(retryTimer);
+      retryTimer = setTimeout(
+        () => void restoreRegistration(),
+        registrationRetryDelayMs,
+      );
+    }
+
+    async function restoreRegistration(
+      devicePushToken?: Notifications.DevicePushToken,
+    ) {
+      if (retryTimer) clearTimeout(retryTimer);
+      retryTimer = undefined;
+      try {
+        const permission = await getNotificationPermission();
         if (
           !shouldRestoreNotificationRegistration({
             isDevice: Device.isDevice,
@@ -70,17 +91,30 @@ export function useMobileNotifications(isAuthenticated: boolean) {
         ) {
           return;
         }
-        void registerForNewMailNotifications(registerPushToken, {
+        await registerForNewMailNotifications(registerPushToken, {
+          devicePushToken,
           requestPermission: false,
-        }).catch(() => undefined);
-      });
+        });
+      } catch {
+        scheduleRetry();
+      }
     }
 
-    restoreRegistration();
+    void restoreRegistration();
     const subscription = AppState.addEventListener("change", (state) => {
-      if (state === "active") restoreRegistration();
+      if (state === "active") void restoreRegistration();
     });
-    return () => subscription.remove();
+    const tokenSubscription = Notifications.addPushTokenListener(
+      (devicePushToken) => {
+        void restoreRegistration(devicePushToken);
+      },
+    );
+    return () => {
+      active = false;
+      if (retryTimer) clearTimeout(retryTimer);
+      subscription.remove();
+      tokenSubscription.remove();
+    };
   }, [isAuthenticated, registerPushToken, registrationEnabled]);
 
   // eslint-disable-next-line no-restricted-syntax -- Notification response subscriptions bridge native lifecycle events into Expo Router.
@@ -123,7 +157,10 @@ export async function registerForNewMailNotifications(
     platform: "android" | "ios";
     token: string;
   }) => Promise<unknown>,
-  options: { requestPermission?: boolean } = {},
+  options: {
+    devicePushToken?: Notifications.DevicePushToken;
+    requestPermission?: boolean;
+  } = {},
 ) {
   const permissionGranted = await prepareNotificationPermissions(
     options.requestPermission ?? true,
@@ -133,18 +170,56 @@ export async function registerForNewMailNotifications(
   }
   if (!Device.isDevice) return { kind: "simulator" as const };
 
-  const projectId = Constants.easConfig?.projectId;
+  return await completePushTokenRegistration(registerPushToken, options);
+}
+
+async function completePushTokenRegistration(
+  registerPushToken: (args: {
+    deviceId: string;
+    platform: "android" | "ios";
+    token: string;
+  }) => Promise<unknown>,
+  options: { devicePushToken?: Notifications.DevicePushToken },
+) {
+  const projectId = getExpoProjectId();
   if (!projectId) throw new Error("Expo project ID is unavailable");
-  const pushToken = await Notifications.getExpoPushTokenAsync({ projectId });
   const deviceId = await getInstallationId();
-  await registerPushToken({
-    deviceId,
-    platform: Platform.OS === "android" ? "android" : "ios",
-    token: pushToken.data,
+  const platform = Platform.OS === "android" ? "android" : "ios";
+  const storedToken = await SecureStore.getItemAsync(pushTokenKey);
+
+  if (storedToken) {
+    await registerPushToken({ deviceId, platform, token: storedToken });
+  }
+
+  const token = await getPushToken(projectId, {
+    devicePushToken: options.devicePushToken,
+    storedToken,
   });
-  await SecureStore.setItemAsync(pushTokenKey, pushToken.data);
+  if (token !== storedToken) {
+    await registerPushToken({ deviceId, platform, token });
+    await SecureStore.setItemAsync(pushTokenKey, token);
+  }
   void refreshNotificationSetupState();
-  return { kind: "registered" as const, token: pushToken.data };
+  return { kind: "registered" as const, token };
+}
+
+async function getPushToken(
+  projectId: string,
+  options: {
+    devicePushToken: Notifications.DevicePushToken | undefined;
+    storedToken: string | null;
+  },
+) {
+  try {
+    const pushToken = await Notifications.getExpoPushTokenAsync({
+      projectId,
+      devicePushToken: options.devicePushToken,
+    });
+    return pushToken.data;
+  } catch (error) {
+    if (options.storedToken) return options.storedToken;
+    throw error;
+  }
 }
 
 export async function unregisterCurrentPushToken(
@@ -157,20 +232,6 @@ export async function unregisterCurrentPushToken(
   void refreshNotificationSetupState();
 }
 
-async function prepareNotificationPermissions(requestPermission = true) {
-  if (Platform.OS === "android") {
-    await Notifications.setNotificationChannelAsync("new-mail", {
-      name: "New mail",
-      importance: Notifications.AndroidImportance.DEFAULT,
-    });
-  }
-  const current = await Notifications.getPermissionsAsync();
-  if (current.status === Notifications.PermissionStatus.GRANTED) return true;
-  if (!requestPermission) return false;
-  const requested = await Notifications.requestPermissionsAsync();
-  return requested.status === Notifications.PermissionStatus.GRANTED;
-}
-
 export async function getNotificationSetupState() {
   const [permission, token] = await Promise.all([
     getNotificationPermission(),
@@ -181,17 +242,6 @@ export async function getNotificationSetupState() {
     isDevice: Device.isDevice,
     permission,
   });
-}
-
-async function getNotificationPermission() {
-  const permission = await Notifications.getPermissionsAsync();
-  if (permission.status === Notifications.PermissionStatus.GRANTED) {
-    return "granted" as const;
-  }
-  if (permission.status === Notifications.PermissionStatus.DENIED) {
-    return "denied" as const;
-  }
-  return "undetermined" as const;
 }
 
 export async function scheduleLocalNotificationPreview(

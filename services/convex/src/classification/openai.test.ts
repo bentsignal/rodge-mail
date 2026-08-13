@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   classificationRequest,
+  cleanViewRequest,
   parseClassification,
   parseCleanView,
 } from "./openai";
@@ -68,19 +69,68 @@ describe("classification model output", () => {
 });
 
 describe("clean view model output", () => {
-  it("validates summary and cleaned markdown independently", () => {
+  it("uses the dedicated clean-view model and supported reasoning effort", () => {
+    expect(
+      cleanViewRequest({
+        direction: "incoming",
+        from: { address: "locker@example.com" },
+        to: [{ address: "owner@example.com" }],
+        cc: [],
+        subject: "Package ready",
+        snippet: "Use code 482913",
+        body: "Use code 482913",
+        headers: [],
+        hasAttachments: false,
+        isPinned: false,
+        bodyWasTruncated: false,
+      }),
+    ).toMatchObject({
+      model: "gpt-5.6-luna",
+      max_output_tokens: 2_000,
+      reasoning: { effort: "low" },
+    });
+  });
+
+  it("validates concise content and an extracted action code", () => {
     expect(
       parseCleanView(
         JSON.stringify({
-          schemaVersion: "clean-view-v1",
-          summary: "Review and reply before Friday.",
-          cleanedMarkdown:
-            "Please review the proposal and reply before Friday.",
+          schemaVersion: "clean-view-v2",
+          summary: "Your package is ready for pickup.",
+          cleanedMarkdown: "Pick it up from the lobby locker by Friday.",
+          code: { label: "Pickup code", value: "482913" },
         }),
       ),
     ).toMatchObject({
-      summary: "Review and reply before Friday.",
-      cleanedMarkdown: "Please review the proposal and reply before Friday.",
+      summary: "Your package is ready for pickup.",
+      cleanedMarkdown: "Pick it up from the lobby locker by Friday.",
+      code: { label: "Pickup code", value: "482913" },
     });
+  });
+
+  it("accepts clean views without an actionable code", () => {
+    expect(
+      parseCleanView(
+        JSON.stringify({
+          schemaVersion: "clean-view-v2",
+          summary: "Review and reply before Friday.",
+          cleanedMarkdown: "The proposal needs your approval by Friday.",
+          code: null,
+        }),
+      ),
+    ).toHaveProperty("code", null);
+  });
+
+  it("rejects ambiguous or incomplete code output", () => {
+    expect(() =>
+      parseCleanView(
+        JSON.stringify({
+          schemaVersion: "clean-view-v2",
+          summary: "Your package shipped.",
+          cleanedMarkdown: "It arrives Friday.",
+          code: { label: "Tracking number" },
+        }),
+      ),
+    ).toThrow("Model returned an invalid clean view");
   });
 });

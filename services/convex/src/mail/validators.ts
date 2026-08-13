@@ -248,6 +248,12 @@ export const vMessageCleanView = v.object({
   inputHash: v.string(),
   summary: v.optional(v.string()),
   cleanedMarkdown: v.optional(v.string()),
+  code: v.optional(
+    v.object({
+      label: v.string(),
+      value: v.string(),
+    }),
+  ),
   model: v.optional(v.string()),
   error: v.optional(v.string()),
   generatedAt: v.optional(v.number()),

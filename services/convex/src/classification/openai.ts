@@ -7,11 +7,13 @@ import {
 } from "../aiUsage/pricing";
 import {
   DEFAULT_CLASSIFICATION_MODEL,
+  DEFAULT_CLEAN_VIEW_MODEL,
   DEFAULT_EMBEDDING_MODEL,
   EMBEDDING_DIMENSIONS,
 } from "./constants";
 import {
   classificationModelOverride,
+  cleanViewModelOverride,
   embeddingModelOverride,
   openAiApiKey,
 } from "./env";
@@ -29,10 +31,14 @@ export { AiDailyLimitError } from "./openaiTransport";
 const RESPONSES_URL = "https://api.openai.com/v1/responses";
 const EMBEDDINGS_URL = "https://api.openai.com/v1/embeddings";
 const CLASSIFICATION_MAX_OUTPUT_TOKENS = 1_000;
-const CLEAN_VIEW_MAX_OUTPUT_TOKENS = 6_000;
+const CLEAN_VIEW_MAX_OUTPUT_TOKENS = 2_000;
 
 export function configuredClassificationModel() {
   return classificationModelOverride() ?? DEFAULT_CLASSIFICATION_MODEL;
+}
+
+export function configuredCleanViewModel() {
+  return cleanViewModelOverride() ?? DEFAULT_CLEAN_VIEW_MODEL;
 }
 
 export function configuredEmbeddingModel() {
@@ -82,9 +88,9 @@ export async function generateCleanView(args: {
     body: request,
     requestKey: args.jobKey,
     kind: "clean_view",
-    model: configuredClassificationModel(),
+    model: configuredCleanViewModel(),
     reservedCostUsd: reserveResponseCostUsd({
-      model: configuredClassificationModel(),
+      model: configuredCleanViewModel(),
       inputCharacters: utf8ByteLength(JSON.stringify(request)),
       maxOutputTokens: CLEAN_VIEW_MAX_OUTPUT_TOKENS,
     }),
@@ -133,7 +139,7 @@ export function classificationRequest(
 export function cleanViewRequest(mail: NormalizedMail) {
   return buildCleanViewRequest({
     mail,
-    model: configuredClassificationModel(),
+    model: configuredCleanViewModel(),
     maxOutputTokens: CLEAN_VIEW_MAX_OUTPUT_TOKENS,
   });
 }

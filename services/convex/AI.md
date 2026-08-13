@@ -13,10 +13,12 @@ deployment:
 ```sh
 pnpm --filter @rodge-mail/convex exec convex env set OPENAI_API_KEY
 pnpm --filter @rodge-mail/convex exec convex env set AI_CLASSIFICATION_MODEL gpt-5-mini
+pnpm --filter @rodge-mail/convex exec convex env set AI_CLEAN_VIEW_MODEL gpt-5.6-luna
 pnpm --filter @rodge-mail/convex exec convex env set AI_EMBEDDING_MODEL text-embedding-3-small
 ```
 
-The model variables are optional and use the values above by default. The API
+The model variables are optional. Classification defaults to `gpt-5-nano`,
+while clean-view generation defaults to `gpt-5.6-luna`. The API
 key is optional for local fixture work: classification falls back to
 deterministic rules, while embedding and semantic search report that AI is not
 configured. Never put the API key in a client environment variable.

@@ -79,8 +79,10 @@ security cms -D -i Payload/RodgeMail.app/embedded.mobileprovision
 codesign -d --entitlements :- Payload/RodgeMail.app
 ```
 
-The app entitlement must contain
-`webcredentials:dazzling-dog-633.convex.site`. That public domain serves its
+Do not install an IPA unless both the profile and signed app contain an
+`aps-environment` entitlement and the signed app contains
+`webcredentials:dazzling-dog-633.convex.site`. Confirm that EAS reports push
+notifications as configured during the build. That public domain serves its
 Apple app-site association from Convex, so the installed standalone app does
 not require Metro, Portless, or access to the development machine.
 
@@ -89,6 +91,26 @@ Install the verified IPA:
 ```bash
 xcrun devicectl device install app --device <device-uuid> ./build/rodge-mail-development.ipa
 ```
+
+Launch the installed app, keep the authenticated session active, and complete
+the notification acceptance gate for every physical-iPhone build:
+
+1. Confirm iOS notification permission is authorized and Rodge Mail's `New
+   mail` setting reports the device as ready. A denied permission is a device
+   blocker, not a successful build result.
+2. Inspect the active Convex deployment's `mobilePushTokens` table and confirm
+   the current installation registered an enabled token after launch. Do not
+   print or report the token value.
+3. Trigger one remote notification through the real Convex → Expo → APNs path.
+   A local notification preview does not satisfy this gate.
+4. Confirm the delivery has a nonzero token count and its Expo push receipt
+   reaches `delivered`. Treat missing tokens, `skipped` delivery, failed
+   tickets, and missing receipts as blockers to diagnose before handoff.
+
+When the phone is reachable only through Tailscale, verify CoreDevice
+availability separately. Tailscale ping success does not prove that Apple's
+trusted developer connection or service discovery is available; use USB or the
+same local network when CoreDevice reports the phone as unavailable.
 
 For every other signing or provisioning issue, use EAS credentials, Expo
 config, and EAS profiles. Never patch generated Xcode signing settings as the
@@ -114,4 +136,6 @@ Always report:
 - Artifact path and type (`.app` archive, `.ipa`, or `.apk`)
 - Simulator or physical-device identifier used for installation
 - Whether Metro used `https://mobile.rodge-mail.local`
+- `aps-environment` value and APNs credential readiness
+- Whether the Convex token registration and remote receipt gates passed
 - Exact signing, provisioning, passkey, or device blocker

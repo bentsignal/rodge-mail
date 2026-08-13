@@ -73,4 +73,16 @@ describe("automatic clean view policy", () => {
       canQueueCleanView({ status: "pending", generatedAt: undefined }),
     ).toBe(false);
   });
+
+  it("allows an explicit regeneration without duplicating active jobs", () => {
+    expect(canQueueCleanView({ status: "ready", generatedAt: 1 }, true)).toBe(
+      true,
+    );
+    expect(canQueueCleanView({ status: "failed", generatedAt: 1 }, true)).toBe(
+      true,
+    );
+    expect(canQueueCleanView({ status: "running", generatedAt: 1 }, true)).toBe(
+      false,
+    );
+  });
 });

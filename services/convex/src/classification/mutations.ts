@@ -9,6 +9,7 @@ import {
   getClassificationForMessage,
 } from "../mail/helpers";
 import { vClassificationCategory } from "../mail/validators";
+import { disableMatchingSuppression } from "../mailingLists/suppression";
 import { authedMutation } from "../utils";
 import {
   CLASSIFICATION_OUTPUT_SCHEMA_VERSION,
@@ -91,6 +92,9 @@ export const setSpamState = authedMutation({
   handler: async (ctx, args) => {
     const message = await ensureOwnedMessage(ctx, ctx.ownerId, args.messageId);
     const existing = await getClassificationForMessage(ctx, message._id);
+    if (!args.isSpam) {
+      await disableMatchingSuppression(ctx, message, existing?.category);
+    }
     if (!existing) {
       await queueClassificationForMessage(ctx, {
         ownerId: ctx.ownerId,

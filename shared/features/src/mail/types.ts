@@ -19,8 +19,10 @@ export interface MailAccount {
 }
 
 export interface MailAttachment {
+  contentId?: string;
   contentType?: string;
   id: string;
+  isInline?: boolean;
   name: string;
   size: string;
   status: "available" | "error" | "remote";
@@ -31,6 +33,10 @@ export interface MailMessage {
   attachments: MailAttachment[];
   body: string[];
   cleanedBody?: string;
+  cleanCode?: {
+    label: string;
+    value: string;
+  };
   cleanError?: string;
   cleanStatus?: "pending" | "running" | "ready" | "failed";
   cc: MailAddress[];
@@ -38,8 +44,11 @@ export interface MailMessage {
   id: string;
   internetMessageId?: string;
   isSpam?: boolean;
+  mailingList?: {
+    displayName: string;
+    remoteMethod: "one_click" | "email" | "none";
+  };
   originalHtml?: string;
-  overview?: string;
   replyTo?: MailAddress[];
   sentAt: string;
   to: MailAddress[];

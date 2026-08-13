@@ -7,13 +7,15 @@ import type {
 import { parseEmailText } from "@rodge-mail/features/mail";
 
 export function MobileEmailBody({
+  markdown = false,
   messageId,
   source,
 }: {
+  markdown?: boolean;
   messageId: string;
   source: string | readonly string[] | undefined;
 }) {
-  const blocks = parseEmailText(source);
+  const blocks = parseEmailText(source, { markdown });
   if (blocks.length === 0) {
     return (
       <Text className="text-muted-foreground text-[16px] leading-7">
@@ -30,6 +32,19 @@ export function MobileEmailBody({
 }
 
 function MobileEmailBlock({ block }: { block: EmailTextBlock }) {
+  if (block.type === "heading") {
+    return (
+      <Text
+        className={getHeadingClassName(block.level)}
+        selectable
+        suppressHighlighting
+      >
+        {block.content.map((token, index) => (
+          <MobileInlineToken key={`${token.type}-${index}`} token={token} />
+        ))}
+      </Text>
+    );
+  }
   if (block.type === "paragraph") {
     return <MobileInlineText content={block.content} />;
   }
@@ -56,6 +71,12 @@ function MobileEmailBlock({ block }: { block: EmailTextBlock }) {
       ))}
     </View>
   );
+}
+
+function getHeadingClassName(level: number) {
+  if (level === 1) return "text-foreground text-[22px] leading-8 font-bold";
+  if (level === 2) return "text-foreground text-[19px] leading-7 font-bold";
+  return "text-foreground text-[17px] leading-7 font-bold";
 }
 
 function getListMarker(
@@ -89,6 +110,15 @@ function getTextClassName(muted: boolean) {
 
 function MobileInlineToken({ token }: { token: EmailTextInline }) {
   if (token.type === "text") return token.value;
+  if (token.type === "strong") {
+    return <Text className="font-bold">{token.value}</Text>;
+  }
+  if (token.type === "emphasis") {
+    return <Text className="italic">{token.value}</Text>;
+  }
+  if (token.type === "code") {
+    return <Text className="bg-well font-mono text-[14px]">{token.value}</Text>;
+  }
   return (
     <Text
       accessibilityHint={token.href}

@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useMutation, useQuery } from "convex/react";
-import { Code2, Reply, Sparkles } from "lucide-react-native";
+import { Reply } from "lucide-react-native";
 
 import type { MailThread } from "@rodge-mail/features/mail";
 import { api } from "@rodge-mail/convex/api";
@@ -17,7 +17,9 @@ import { useColor } from "~/hooks/use-color";
 import { toConvexId } from "../lib/convex-id";
 import { toMailThreadDetail } from "../lib/convex-mail";
 import { formatMessageTime } from "../lib/mail-format";
+import { CleanViewCodeCard } from "./clean-view-code-card";
 import { parseMobileMailbox } from "./mailbox-controls";
+import { MessageViewToolbar } from "./message-view-toolbar";
 import { ThreadMessageBody } from "./thread-message-body";
 import { ThreadReaderFooter } from "./thread-reader-footer";
 import { useThreadReaderActions } from "./use-thread-reader-actions";
@@ -72,6 +74,7 @@ function ThreadReader({
   const scrollViewRef = useRef<ScrollView>(null);
   const [viewMode, setViewMode] = useState<MessageViewMode>("clean");
   const actions = useThreadReaderActions(thread);
+  const activeMessage = getActiveMessage(thread, targetMessageId);
   function reply() {
     const latestMessage = thread.messages.at(-1);
     if (!latestMessage) return;
@@ -106,7 +109,15 @@ function ThreadReader({
           contentInsetAdjustmentBehavior="automatic"
         >
           <ThreadHeader thread={thread} />
-          <MessageViewSwitch onChange={setViewMode} value={viewMode} />
+          <MessageViewToolbar
+            message={activeMessage}
+            onChange={setViewMode}
+            value={viewMode}
+          />
+          <CleanViewCodeCard
+            code={activeMessage?.cleanCode}
+            viewMode={viewMode}
+          />
           {thread.messages.map((message) => (
             <ThreadMessageBody
               key={message.id}
@@ -126,6 +137,8 @@ function ThreadReader({
             onDelete={actions.confirmPermanentDelete}
             onPin={() => void actions.togglePin()}
             onRestore={() => void actions.restore()}
+            onUnsubscribe={() => actions.confirmUnsubscribe(activeMessage)}
+            unsubscribeName={activeMessage?.mailingList?.displayName}
           />
         </ScrollView>
       </PostalPaperBackground>
@@ -133,66 +146,14 @@ function ThreadReader({
   );
 }
 
-function MessageViewSwitch({
-  onChange,
-  value,
-}: {
-  onChange: (value: MessageViewMode) => void;
-  value: MessageViewMode;
-}) {
-  const foreground = useColor("foreground");
-  const muted = useColor("muted-foreground");
-  return (
-    <View
-      accessibilityLabel="Message view"
-      className="bg-well border-well-border mx-1 flex-row self-start rounded-xl border p-1"
-    >
-      <MessageViewButton
-        color={value === "clean" ? foreground : muted}
-        icon={Sparkles}
-        label="Clean"
-        onPress={() => onChange("clean")}
-        selected={value === "clean"}
-      />
-      <MessageViewButton
-        color={value === "original" ? foreground : muted}
-        icon={Code2}
-        label="Original"
-        onPress={() => onChange("original")}
-        selected={value === "original"}
-      />
-    </View>
-  );
-}
-
-function MessageViewButton({
-  color,
-  icon: Icon,
-  label,
-  onPress,
-  selected,
-}: {
-  color: string;
-  icon: typeof Sparkles;
-  label: string;
-  onPress: () => void;
-  selected: boolean;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
-      className={
-        selected
-          ? "bg-paper flex-row items-center gap-1.5 rounded-lg px-3 py-2"
-          : "flex-row items-center gap-1.5 rounded-lg px-3 py-2"
-      }
-      onPress={onPress}
-    >
-      <Icon color={color} size={14} />
-      <Text className="text-foreground text-xs font-semibold">{label}</Text>
-    </Pressable>
-  );
+function getActiveMessage(thread: MailThread, targetMessageId?: string) {
+  if (targetMessageId) {
+    const target = thread.messages.find(
+      (message) => message.id === targetMessageId,
+    );
+    if (target) return target;
+  }
+  return thread.messages.at(-1);
 }
 
 function ThreadReplyAction({

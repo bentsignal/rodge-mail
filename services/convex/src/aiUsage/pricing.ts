@@ -69,6 +69,27 @@ export function canReserveDailyUsage(
 }
 
 function pricingForModel(model: string) {
+  if (model === "gpt-5.6-luna" || model.startsWith("gpt-5.6-luna-")) {
+    return {
+      inputPerMillion: 1,
+      cachedInputPerMillion: 0.1,
+      outputPerMillion: 6,
+    };
+  }
+  if (model === "gpt-5.4-mini" || model.startsWith("gpt-5.4-mini-")) {
+    return {
+      inputPerMillion: 0.75,
+      cachedInputPerMillion: 0.075,
+      outputPerMillion: 4.5,
+    };
+  }
+  if (model === "gpt-5-mini" || model.startsWith("gpt-5-mini-")) {
+    return {
+      inputPerMillion: 0.25,
+      cachedInputPerMillion: 0.025,
+      outputPerMillion: 2,
+    };
+  }
   if (model === "gpt-5-nano" || model.startsWith("gpt-5-nano-")) {
     return {
       inputPerMillion: 0.05,

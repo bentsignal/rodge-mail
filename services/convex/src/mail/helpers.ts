@@ -2,6 +2,7 @@ import { ConvexError } from "convex/values";
 
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
+import { getMailingListInfo } from "../mailingLists/policy";
 import { getThreadRowFlags } from "./threadState";
 
 type ReadCtx = Pick<QueryCtx, "db"> | Pick<MutationCtx, "db">;
@@ -93,6 +94,19 @@ export async function toMessageListItem(
       provider: account.provider,
     },
     classification,
+    mailingList: getMailingListPresentation(message, classification?.category),
+  };
+}
+
+function getMailingListPresentation(
+  message: Doc<"messages">,
+  category: string | undefined,
+) {
+  const info = getMailingListInfo(message, category);
+  if (!info) return undefined;
+  return {
+    displayName: info.displayName,
+    remoteMethod: info.remoteMethod,
   };
 }
 

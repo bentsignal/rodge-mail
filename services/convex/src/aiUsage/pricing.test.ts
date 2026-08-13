@@ -28,6 +28,16 @@ describe("AI usage pricing", () => {
     ).toBeGreaterThan(0.0024);
   });
 
+  it("prices the clean-view Luna model", () => {
+    expect(
+      calculateModelCostUsd("gpt-5.6-luna", {
+        inputTokens: 1_000_000,
+        cachedInputTokens: 200_000,
+        outputTokens: 100_000,
+      }),
+    ).toBeCloseTo(1.42);
+  });
+
   it("rejects models without explicit pricing", () => {
     expect(() =>
       calculateModelCostUsd("unpriced-model", { inputTokens: 1 }),

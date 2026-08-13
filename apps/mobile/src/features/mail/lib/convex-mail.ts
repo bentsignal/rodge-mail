@@ -91,9 +91,7 @@ function toMailMessage(item: ThreadMessage) {
   return {
     attachments: item.attachments.map(toMailAttachment),
     body: toParagraphs(item.content?.plainText, item.snippet),
-    cleanedBody: item.cleanView?.cleanedMarkdown,
-    cleanError: item.cleanView?.error,
-    cleanStatus: item.cleanView?.status,
+    ...toCleanView(item.cleanView),
     cc: item.cc.map((address) => ({
       address: address.address,
       name: getAddressName(address),
@@ -105,8 +103,8 @@ function toMailMessage(item: ThreadMessage) {
     id: item._id,
     internetMessageId: item.internetMessageId,
     isSpam: item.classification?.isSpam,
+    mailingList: item.mailingList,
     originalHtml: item.content?.sanitizedHtml,
-    overview: item.cleanView?.summary,
     replyTo: item.replyTo?.map((address) => ({
       address: address.address,
       name: getAddressName(address),
@@ -119,10 +117,21 @@ function toMailMessage(item: ThreadMessage) {
   };
 }
 
+function toCleanView(cleanView: ThreadMessage["cleanView"]) {
+  return {
+    cleanedBody: cleanView?.cleanedMarkdown,
+    cleanCode: cleanView?.code,
+    cleanError: cleanView?.error,
+    cleanStatus: cleanView?.status,
+  };
+}
+
 function toMailAttachment(attachment: ThreadMessage["attachments"][number]) {
   return {
+    contentId: attachment.contentId,
     contentType: attachment.contentType,
     id: attachment._id,
+    isInline: attachment.isInline,
     name: attachment.fileName,
     size: formatByteSize(attachment.size),
     status: attachment.status,

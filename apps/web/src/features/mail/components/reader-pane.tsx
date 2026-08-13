@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
-import { Code2, MailOpen, Reply, Sparkles } from "lucide-react";
+import { Code2, LoaderCircle, RefreshCw, Reply, Sparkles } from "lucide-react";
 
 import { api } from "@rodge-mail/convex/api";
 import { cn } from "@rodge-mail/std/cn";
@@ -10,6 +10,9 @@ import type { MailThreadDetail, ThreadMessageDetail } from "../types";
 import type { ReaderViewMode } from "./reader-message";
 import { useLiveMail } from "../live-data";
 import { useMailStore } from "../store";
+import { useUnsubscribe } from "../use-unsubscribe";
+import { CleanViewCodeCard } from "./reader-clean-view-code-card";
+import { EmptyReader, ReaderSkeleton } from "./reader-empty-states";
 import { ReaderMessage } from "./reader-message";
 import { ReaderToolbar } from "./reader-toolbar";
 
@@ -60,6 +63,7 @@ function ReaderContent() {
     toggleRead,
   } = useLiveMail();
   const setSpamState = useMutation(api.classification.mutations.setSpamState);
+  const unsubscribe = useUnsubscribe();
 
   if (!selectedThread) return null;
   const selectedMessage = getSelectedMessage(selectedThread, selectedMessageId);
@@ -92,6 +96,7 @@ function ReaderContent() {
         selectedMessage={selectedMessage}
         togglePinned={togglePinned}
         toggleRead={toggleRead}
+        unsubscribe={unsubscribe}
       />
       <ReaderArticle
         replyToSelectedThread={replyToSelectedThread}
@@ -120,7 +125,14 @@ function ReaderArticle({
         </h1>
         <div className="mt-8 h-px bg-[var(--mail-seam)] sm:mt-10" />
 
-        <ReaderViewSwitch onChange={setViewMode} value={viewMode} />
+        <div className="mt-5 flex items-center justify-between gap-3">
+          <ReaderViewSwitch onChange={setViewMode} value={viewMode} />
+          <RegenerateCleanViewButton message={selectedMessage} />
+        </div>
+        <CleanViewCodeCard
+          code={selectedMessage?.cleanView?.code}
+          viewMode={viewMode}
+        />
 
         {selectedThread.messages.map((message) => (
           <ReaderMessage
@@ -153,7 +165,7 @@ function ReaderViewSwitch({
   return (
     <div
       aria-label="Message view"
-      className="mail-inset mt-5 inline-flex rounded-[10px] border p-1"
+      className="mail-inset inline-flex rounded-[10px] border p-1"
       role="group"
     >
       <ReaderViewButton
@@ -170,6 +182,55 @@ function ReaderViewSwitch({
       />
     </div>
   );
+}
+
+function RegenerateCleanViewButton({
+  message,
+}: {
+  message: ThreadMessageDetail | undefined;
+}) {
+  const generate = useMutation(api.cleanView.mutations.generate);
+  if (!message) return null;
+  const state = getCleanViewActionState(message);
+  const isPreparing = state === "preparing";
+  return (
+    <button
+      aria-label={cleanViewActionAccessibilityLabel(state)}
+      className="inline-flex h-9 items-center gap-1.5 rounded-lg px-2.5 font-mono text-[9px] font-semibold tracking-[0.08em] text-[var(--mail-ink-soft)] uppercase transition hover:text-[var(--mail-ink)] disabled:cursor-wait disabled:opacity-60"
+      disabled={isPreparing}
+      onClick={() => void generate({ messageId: message._id })}
+      type="button"
+    >
+      <CleanViewActionIcon isPreparing={isPreparing} />
+      {cleanViewActionLabel(state)}
+    </button>
+  );
+}
+
+type CleanViewActionState = "empty" | "preparing" | "ready";
+
+function getCleanViewActionState(message: ThreadMessageDetail) {
+  const status = message.cleanView?.status;
+  if (status === "pending" || status === "running") return "preparing";
+  if (status === "ready") return "ready";
+  if (message.cleanView?.cleanedMarkdown?.trim()) return "ready";
+  return "empty";
+}
+
+function cleanViewActionAccessibilityLabel(state: CleanViewActionState) {
+  if (state === "ready") return "Regenerate clean version";
+  return "Generate clean version";
+}
+
+function cleanViewActionLabel(state: CleanViewActionState) {
+  if (state === "preparing") return "Working";
+  if (state === "ready") return "Redo";
+  return "Generate";
+}
+
+function CleanViewActionIcon({ isPreparing }: { isPreparing: boolean }) {
+  if (isPreparing) return <LoaderCircle className="size-3.5 animate-spin" />;
+  return <RefreshCw className="size-3.5" />;
 }
 
 function ReaderViewButton({
@@ -198,42 +259,6 @@ function ReaderViewButton({
       <Icon className="size-3" />
       {label}
     </button>
-  );
-}
-
-function ReaderSkeleton() {
-  return (
-    <div aria-label="Loading thread" className="animate-pulse">
-      <div className="border-border/70 h-[68px] border-b" />
-      <div className="mx-auto max-w-[780px] space-y-5 px-9 pt-12">
-        <div className="h-2.5 w-32 rounded-full bg-[var(--mail-paper-deep)]" />
-        <div className="h-10 w-4/5 rounded-xl bg-[var(--mail-paper-soft)] shadow-[var(--mail-shadow-inset)]" />
-        <div className="mt-9 h-px bg-[var(--mail-seam)]" />
-        <div className="mt-8 flex gap-3">
-          <div className="size-10 rounded-[11px] bg-[var(--mail-avatar)] shadow-[var(--mail-shadow-raised)]" />
-          <div className="flex-1 space-y-2">
-            <div className="h-3 w-36 rounded-full bg-[var(--mail-paper-deep)]" />
-            <div className="h-2.5 w-64 rounded-full bg-[var(--mail-paper-soft)]" />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function EmptyReader() {
-  return (
-    <div className="mail-label flex flex-1 flex-col items-center justify-center px-8 text-center">
-      <span className="mail-inset mb-5 flex size-14 items-center justify-center rounded-[13px] border">
-        <MailOpen className="size-5" strokeWidth={1.5} />
-      </span>
-      <p className="text-foreground font-serif text-xl font-semibold">
-        Select a message
-      </p>
-      <p className="mt-1.5 max-w-xs text-sm leading-6">
-        The message will open here.
-      </p>
-    </div>
   );
 }
 

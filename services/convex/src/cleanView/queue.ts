@@ -20,6 +20,7 @@ export async function queueCleanViewForMessage(
   args: {
     ownerId: string;
     messageId: Id<"messages">;
+    force?: boolean;
   },
 ) {
   const [message, content, existing] = await Promise.all([
@@ -36,7 +37,7 @@ export async function queueCleanViewForMessage(
   if (!message || message.ownerId !== args.ownerId) {
     throw new ConvexError("Message not found");
   }
-  if (!canQueueCleanView(existing)) {
+  if (!canQueueCleanView(existing, args.force)) {
     return { queued: false };
   }
 
@@ -51,9 +52,10 @@ export async function queueCleanViewForMessage(
     inputHash,
     summary: existing?.summary,
     cleanedMarkdown: existing?.cleanedMarkdown,
+    code: existing?.code,
     model: existing?.model,
     error: undefined,
-    generatedAt: existing?.generatedAt,
+    generatedAt: retainedGeneratedAt(existing?.generatedAt, args.force),
     updatedAt: now,
   };
   if (existing) {
@@ -71,4 +73,11 @@ export async function queueCleanViewForMessage(
     jobKey,
   });
   return { queued: true };
+}
+
+function retainedGeneratedAt(
+  generatedAt: number | undefined,
+  force: boolean | undefined,
+) {
+  return force ? undefined : generatedAt;
 }

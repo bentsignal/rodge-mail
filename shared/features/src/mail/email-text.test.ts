@@ -60,6 +60,69 @@ describe("email text structure", () => {
   });
 });
 
+describe("clean-view markdown", () => {
+  it("renders headings and inline emphasis without exposing markers", () => {
+    expect(
+      parseEmailText(
+        "## Pickup details\n\nShow **482913** at the *front desk* with `photo ID`.",
+        { markdown: true },
+      ),
+    ).toEqual([
+      {
+        content: [{ type: "text", value: "Pickup details" }],
+        level: 2,
+        type: "heading",
+      },
+      {
+        content: [
+          { type: "text", value: "Show " },
+          { type: "strong", value: "482913" },
+          { type: "text", value: " at the " },
+          { type: "emphasis", value: "front desk" },
+          { type: "text", value: " with " },
+          { type: "code", value: "photo ID" },
+          { type: "text", value: "." },
+        ],
+        type: "paragraph",
+      },
+    ]);
+  });
+
+  it("uses markdown link labels and rejects unsafe markdown links", () => {
+    expect(
+      parseEmailText(
+        "Open [pickup details](https://example.com/pickup) or [unsafe](javascript:alert).",
+        { markdown: true },
+      ),
+    ).toEqual([
+      {
+        content: [
+          { type: "text", value: "Open " },
+          {
+            display: "pickup details",
+            href: "https://example.com/pickup",
+            type: "link",
+          },
+          {
+            type: "text",
+            value: " or [unsafe](javascript:alert).",
+          },
+        ],
+        type: "paragraph",
+      },
+    ]);
+  });
+
+  it("leaves markdown markers literal outside clean-view mode", () => {
+    expect(parseEmailText("Use **literal** markers.")).toEqual([
+      {
+        content: [{ type: "text", value: "Use **literal** markers." }],
+        type: "paragraph",
+      },
+    ]);
+  });
+});
+
 describe("safe email text content", () => {
   it("decodes common visible entities without interpreting markup", () => {
     expect(

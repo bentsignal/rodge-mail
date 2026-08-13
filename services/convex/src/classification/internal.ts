@@ -13,6 +13,10 @@ import {
   vClassificationSource,
 } from "../mail/validators";
 import {
+  findMatchingSuppression,
+  suppressMessageAsSpam,
+} from "../mailingLists/suppression";
+import {
   CLASSIFICATION_OUTPUT_SCHEMA_VERSION,
   CLASSIFICATION_PROMPT_VERSION,
   MAX_JOB_ATTEMPTS,
@@ -179,6 +183,15 @@ export const complete = internalMutation({
       updatedAt: now,
     });
 
+    const suppression = await findMatchingSuppression(
+      ctx,
+      message,
+      args.category,
+    );
+    if (suppression) {
+      await suppressMessageAsSpam(ctx, message, suppression._id, now);
+      return true;
+    }
     await reconcileEmbeddingSelection(ctx, message._id);
     if (
       shouldAutoGenerateCleanView({
