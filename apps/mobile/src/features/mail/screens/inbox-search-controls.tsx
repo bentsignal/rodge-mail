@@ -1,8 +1,12 @@
-import { Stack } from "expo-router";
+import { Stack, useFocusEffect } from "expo-router";
 
 import type { MobileMailbox } from "../store";
 import { useColor } from "~/hooks/use-color";
-import { nativeSearchBarRef } from "../native-search-controller";
+import {
+  blurNativeSearch,
+  focusNativeSearch,
+  nativeSearchBarRef,
+} from "../native-search-controller";
 import { getMailboxSearchPlaceholder } from "./mailbox-controls";
 
 export function InboxSearchControls({
@@ -39,26 +43,30 @@ function FocusedSearchBar({
   const paper = useColor("paper");
   const primary = useColor("primary");
 
+  useFocusEffect(() => {
+    const frame = requestAnimationFrame(focusNativeSearch);
+    return () => {
+      cancelAnimationFrame(frame);
+      blurNativeSearch();
+    };
+  });
+
   return (
-    <Stack.Screen
-      options={{
-        headerSearchBarOptions: {
-          barTintColor: paper,
-          hideNavigationBar: true,
-          hideWhenScrolling: false,
-          onCancelButtonPress: () => {
-            onSearchChange("");
-            onSearchClose();
-          },
-          onChangeText: (event) => onSearchChange(event.nativeEvent.text),
-          placeholder,
-          placement: "automatic",
-          ref: nativeSearchBarRef,
-          textColor: foreground,
-          tintColor: primary,
-        },
-        headerShown: false,
+    <Stack.SearchBar
+      barTintColor={paper}
+      hideNavigationBar
+      hideWhenScrolling={false}
+      obscureBackground={false}
+      onCancelButtonPress={() => {
+        onSearchChange("");
+        onSearchClose();
       }}
+      onChangeText={(event) => onSearchChange(event.nativeEvent.text)}
+      placeholder={placeholder}
+      placement="automatic"
+      ref={nativeSearchBarRef}
+      textColor={foreground}
+      tintColor={primary}
     />
   );
 }
