@@ -23,16 +23,11 @@ export function SpamMailbox({
   onArchiveSelect,
   primary,
   searchTerm,
-  temporarySearch,
 }: {
   onAccountChange: (value: MailAccountFilter) => void;
   onArchiveSelect: () => void;
   primary: string;
   searchTerm: string;
-  temporarySearch?: {
-    onChange: (value: string) => void;
-    value: string;
-  };
 }) {
   const router = useRouter();
   const accounts = useMailStore((store) => store.accounts);
@@ -87,7 +82,6 @@ export function SpamMailbox({
       selectedCount={0}
       selectionEnabled={false}
       selectionMode={false}
-      temporarySearch={temporarySearch}
       onAccountChange={onAccountChange}
       onArchiveSelect={onArchiveSelect}
       onEndReached={loadMore}

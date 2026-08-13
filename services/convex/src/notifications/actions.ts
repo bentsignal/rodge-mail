@@ -21,6 +21,7 @@ interface DeliveryInput {
   message: Doc<"messages">;
   preference: NotificationPreferenceValues;
   tokens: Doc<"mobilePushTokens">[];
+  unsubscribeAvailable: boolean;
 }
 
 interface PushTicketOutcome {
@@ -131,6 +132,7 @@ async function deliverNewMail(
   const notification = buildNewMailPush(
     input.message,
     input.preference.includePreview,
+    input.unsubscribeAvailable,
   );
   const batches = chunk(input.tokens, EXPO_PUSH_BATCH_SIZE);
   const outcomes = (

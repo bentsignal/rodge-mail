@@ -1,0 +1,30 @@
+diff --git a/apple/ExpoModulesJSI.podspec b/apple/ExpoModulesJSI.podspec
+index 09231ec7bbe3be95f3c3eeb6f0bd000b7ad0e58c..c66464f7f05c38f3012b4a17dc3be898f6dfdd36 100644
+--- a/apple/ExpoModulesJSI.podspec
++++ b/apple/ExpoModulesJSI.podspec
+@@ -63,7 +63,7 @@ Pod::Spec.new do |s|
+ 
+   s.script_phase = {
+     :name => "Build #{s.name} xcframework",
+-    :script => '"${PODS_TARGET_SRCROOT}/scripts/build-xcframework.sh"',
++    :script => '"${PODS_TARGET_SRCROOT}/scripts/build-xcframework.sh" 2>&1',
+     :execution_position => :before_headers,
+     # Ensure the script runs on every build so its internal
+     # hash-based caching can decide whether to rebuild.
+diff --git a/apple/scripts/build-xcframework.sh b/apple/scripts/build-xcframework.sh
+index 56bcb4ced0c25da2aaa170e3d2657ae2e4798ca7..9421d0dc851bc6d0fb298405b4cd4cf866aae7de 100755
+--- a/apple/scripts/build-xcframework.sh
++++ b/apple/scripts/build-xcframework.sh
+@@ -228,8 +228,11 @@ build_slice() {
+     SKIP_INSTALL=NO \
+     DEBUG_INFORMATION_FORMAT=dwarf-with-dsym \
+     COMPILER_INDEX_STORE_ENABLE=NO \
++    SWIFT_SUPPRESS_WARNINGS=YES \
++    GCC_WARN_INHIBIT_ALL_WARNINGS=YES \
++    CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER=NO \
+     SWIFT_COMPILATION_MODE=wholemodule \
+-  )
++  ) 2>&1
+ 
+   local product_path="${BUILD_PRODUCTS_PATH}/${build_dir_name}"
+   local framework_src="${product_path}/PackageFrameworks/${PACKAGE_NAME}.framework"

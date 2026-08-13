@@ -6,6 +6,9 @@ interface NewMailMessage {
   subject: string;
 }
 
+export const NEW_MAIL_CATEGORY = "new-mail-actions";
+export const NEW_MAIL_MAILING_LIST_CATEGORY = "new-mail-list-actions";
+
 export const MOBILE_THREAD_ROUTE = "/(tabs)/(inbox)/thread/[id]";
 
 export function isExpoPushToken(token: string) {
@@ -15,6 +18,7 @@ export function isExpoPushToken(token: string) {
 export function buildNewMailPush(
   message: NewMailMessage,
   includePreview: boolean,
+  unsubscribeAvailable = false,
 ) {
   const sender = firstNonempty(message.from.name, message.from.address);
   return {
@@ -23,6 +27,9 @@ export function buildNewMailPush(
       ? firstNonempty(message.subject, message.snippet, "New message")
       : "New message",
     sound: "default" as const,
+    categoryId: unsubscribeAvailable
+      ? NEW_MAIL_MAILING_LIST_CATEGORY
+      : NEW_MAIL_CATEGORY,
     data: {
       messageId: message._id,
       route: MOBILE_THREAD_ROUTE,

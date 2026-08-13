@@ -23,16 +23,11 @@ interface ArchiveMailboxProps {
   onSpamSelect: () => void;
   primary: string;
   searchTerm: string;
-  temporarySearch?: {
-    onChange: (value: string) => void;
-    value: string;
-  };
 }
 
 export function ArchiveMailbox({
   primary,
   searchTerm,
-  temporarySearch,
   onAccountChange,
   onSpamSelect,
 }: ArchiveMailboxProps) {
@@ -118,7 +113,6 @@ export function ArchiveMailbox({
       searchTerm={isSearching ? normalizedSearchTerm : undefined}
       selectedCount={actions.selectedIds.size}
       selectionMode={actions.selectionMode}
-      temporarySearch={temporarySearch}
       onAccountChange={onAccountChange}
       onArchiveSelect={() => undefined}
       onEndReached={loadMore}

@@ -17,8 +17,9 @@
     },
     "patchedDependencies": {
       "@better-auth/passkey@1.6.11": "patches/@better-auth__passkey@1.6.11.patch",
-      "expo-modules-jsi@56.0.12": "patches/expo-modules-jsi@56.0.12.patch",
-      "expo-better-auth-passkey@1.4.3": "patches/expo-better-auth-passkey@1.4.3.patch"
+      "expo-better-auth-passkey@1.4.3": "patches/expo-better-auth-passkey@1.4.3.patch",
+      "react-native-screens@4.26.2": "patches/react-native-screens@4.26.2.patch",
+      "expo-modules-jsi@57.0.4": "patches/expo-modules-jsi@57.0.4.patch"
     }
   },
   "scripts": {

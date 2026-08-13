@@ -49,31 +49,14 @@ If Expo's generated native project includes equivalent scene lifecycle support, 
 
 Commit where we added this stuff: 2a1a3dfadda7dd973ae7d860342bfdc09f5b3167
 
-## ExpoModulesJSI Swift Compiler Patch
+## ExpoModulesJSI Xcode 27 Archive Patch
 
-The repo also currently patches `expo-modules-jsi@56.0.8` through pnpm:
-
-- `patches/expo-modules-jsi@56.0.8.patch`
-- registered in `pnpm-lock.yaml` under `patchedDependencies`
-
-This patch is separate from the scene lifecycle shim. It exists because local EAS iOS builds with the Xcode beta / iOS 27 SDK hit two ExpoModulesJSI-specific issues.
-
-The first issue was a Swift compiler failure. The failing code passed a ternary expression directly into a C++ interop initializer:
-
-```swift
-set == nil ? nil : setter
-```
-
-The patch rewrites that as an explicit `if set == nil { ... } else { ... }` initializer call. The behavior is intended to be equivalent; it only gives the newer Swift compiler a clearer type boundary.
-
-The second issue affected physical-device archives. Xcode 27 beta treated diagnostics emitted by ExpoModulesJSI's nested xcframework build script as a `PhaseScriptExecution` archive failure even though the script exited successfully:
+The app now patches `expo-modules-jsi@57.0.4` only for its nested xcframework build script. Xcode 27 beta 5 can classify diagnostics emitted on stderr by that nested `xcodebuild` as a failed archive phase even when the command exits successfully:
 
 ```text
 the following command failed with exit code 0 but produced no further output
 ```
 
-The patch redirects the ExpoModulesJSI CocoaPods script phase stderr into stdout and suppresses Swift/Clang warnings only for the nested `xcodebuild` that creates the ExpoModulesJSI xcframework. This is intentionally scoped to ExpoModulesJSI rather than all app or pod builds.
+The patch redirects the CocoaPods phase and nested build's stderr into stdout, and suppresses warnings only inside that nested ExpoModulesJSI build. The older SDK 56 Swift source rewrite is no longer needed. Remove this narrow patch once ExpoModulesJSI archives cleanly with the stable Xcode 27 toolchain.
 
-As of June 10, 2026, `expo-modules-jsi@56.0.8` was the latest stable SDK 56 package checked, so there was no stable package update available to replace the patch.
-
-Remove this patch once Expo ships a stable SDK 56 patch release, or a later SDK upgrade, where ExpoModulesJSI builds cleanly with the Xcode beta / iOS 27 SDK without the local Swift rewrite or nested build warning suppression. Before removing it, delete the `patchedDependencies` entry, run a fresh install, and verify both a clean local iOS simulator build and a local physical-device `development:client` archive.
+Keep the scene lifecycle shim independent until Expo's generated app delegate supplies equivalent lifecycle support.

@@ -1,6 +1,5 @@
 import { NativeTabs } from "expo-router/unstable-native-tabs";
 
-import { useTemporaryIos27Search } from "~/features/mail/mobile-search-preference";
 import {
   blurNativeSearch,
   focusNativeSearch,
@@ -10,7 +9,6 @@ import { useColor } from "~/hooks/use-color";
 export default function TabLayout() {
   const backgroundColor = useColor("background");
   const primary = useColor("primary");
-  const temporaryIos27Search = useTemporaryIos27Search();
 
   return (
     <NativeTabs
@@ -43,7 +41,6 @@ export default function TabLayout() {
           blur: blurNativeSearch,
           focus: focusNativeSearch,
         }}
-        hidden={temporaryIos27Search}
         role="search"
       >
         <NativeTabs.Trigger.Label>Search</NativeTabs.Trigger.Label>

@@ -3,7 +3,6 @@ import { AppState, Platform } from "react-native";
 import * as Crypto from "expo-crypto";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
-import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { useMutation, useQuery } from "convex/react";
 
@@ -11,25 +10,23 @@ import { api } from "@rodge-mail/convex/api";
 
 import type { NotificationSetupState } from "./notification-setup";
 import { getExpoProjectId } from "./expo-project-id";
+import { NEW_MAIL_CATEGORY } from "./notification-actions";
 import {
   getNotificationPermission,
   prepareNotificationPermissions,
 } from "./notification-permissions";
-import {
-  createNotificationResponseResolver,
-  MOBILE_THREAD_ROUTE,
-} from "./notification-routing";
+import { MOBILE_THREAD_ROUTE } from "./notification-routing";
 import {
   resolveNotificationSetupState,
   shouldRestoreNotificationRegistration,
 } from "./notification-setup";
+import { useNotificationActions } from "./use-notification-actions";
 
 const installationIdKey = "rodge-mail.notification-installation-id";
 const pushTokenKey = "rodge-mail.expo-push-token";
 const registrationRetryDelayMs = 30_000;
 const setupStateListeners = new Set<() => void>();
 let notificationSetupSnapshot: NotificationSetupState | undefined;
-const resolveNotificationResponse = createNotificationResponseResolver();
 
 Notifications.setNotificationHandler({
   handleNotification: () =>
@@ -42,6 +39,7 @@ Notifications.setNotificationHandler({
 });
 
 export function useMobileNotifications(isAuthenticated: boolean) {
+  useNotificationActions(isAuthenticated);
   const registerPushToken = useMutation(
     api.notifications.mutations.registerPushToken,
   );
@@ -53,7 +51,6 @@ export function useMobileNotifications(isAuthenticated: boolean) {
     api.notifications.queries.listAccountPreferences,
     isAuthenticated ? {} : "skip",
   );
-  const router = useRouter();
   const registrationEnabled =
     preferences?.newMailEnabled === true ||
     accountPreferences?.some(
@@ -116,30 +113,6 @@ export function useMobileNotifications(isAuthenticated: boolean) {
       tokenSubscription.remove();
     };
   }, [isAuthenticated, registerPushToken, registrationEnabled]);
-
-  // eslint-disable-next-line no-restricted-syntax -- Notification response subscriptions bridge native lifecycle events into Expo Router.
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    function openResponse(response: Notifications.NotificationResponse) {
-      const target = resolveNotificationResponse(
-        response.notification.request.identifier,
-        response.notification.request.content.data,
-      );
-      if (!target) return;
-      router.push({
-        pathname: MOBILE_THREAD_ROUTE,
-        params: { id: target.threadId, messageId: target.messageId },
-      });
-    }
-    const subscription =
-      Notifications.addNotificationResponseReceivedListener(openResponse);
-    void Notifications.getLastNotificationResponseAsync().then((response) => {
-      if (!response) return;
-      openResponse(response);
-      void Notifications.clearLastNotificationResponseAsync();
-    });
-    return () => subscription.remove();
-  }, [isAuthenticated, router]);
 }
 
 export function useNotificationSetupState() {
@@ -257,6 +230,7 @@ export async function scheduleLocalNotificationPreview(
       title: "Rodge Mail",
       body: "Simulator notification preview",
       sound: "default",
+      categoryIdentifier: NEW_MAIL_CATEGORY,
       data: { messageId, route: MOBILE_THREAD_ROUTE, threadId },
     },
     trigger: null,

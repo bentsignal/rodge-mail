@@ -2,7 +2,6 @@ import { useState } from "react";
 import {
   ActivityIndicator,
   Image,
-  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -28,7 +27,6 @@ import { useMailStore } from "../store";
 import { AccountConnections } from "./account-connections";
 import { AccountLabelSettings } from "./account-label-settings";
 import { SettingsSection } from "./settings-section";
-import { TemporaryIos27SearchSetting } from "./temporary-ios27-search-setting";
 
 export function MailSettingsScreen() {
   const accounts = useMailStore((store) => store.accounts);
@@ -49,7 +47,6 @@ export function MailSettingsScreen() {
       <SettingsSection title="Appearance">
         <MobileAppearanceSettings />
       </SettingsSection>
-      <IosCompatibilitySettings />
       <SettingsSection title="Mail accounts">
         <AccountLabelSettings accounts={accounts} />
       </SettingsSection>
@@ -65,15 +62,6 @@ export function MailSettingsScreen() {
       </SettingsSection>
       <DevelopmentTools />
     </ScrollView>
-  );
-}
-
-function IosCompatibilitySettings() {
-  if (Platform.OS !== "ios") return null;
-  return (
-    <SettingsSection title="Compatibility">
-      <TemporaryIos27SearchSetting />
-    </SettingsSection>
   );
 }
 

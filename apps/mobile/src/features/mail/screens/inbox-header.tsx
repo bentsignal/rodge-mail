@@ -12,11 +12,7 @@ import type { MailboxFilter } from "./mailbox-controls";
 import { useColor } from "~/hooks/use-color";
 import { AccountFilter } from "../components/account-filter";
 import { InboxSyncStatus } from "./inbox-sync-status";
-import {
-  getFilterLabel,
-  getMailboxSearchPlaceholder,
-} from "./mailbox-controls";
-import { TemporaryIosSearchBar } from "./temporary-ios-search-bar";
+import { getFilterLabel } from "./mailbox-controls";
 
 export function InboxHeader({
   accountFilter,
@@ -32,7 +28,6 @@ export function InboxHeader({
   refreshError,
   selectionEnabled = true,
   selectionMode,
-  temporarySearch,
 }: {
   accountFilter: MailAccountFilter;
   accounts: MobileMailAccount[];
@@ -47,10 +42,6 @@ export function InboxHeader({
   refreshError: string | undefined;
   selectionEnabled?: boolean;
   selectionMode: boolean;
-  temporarySearch?: {
-    onChange: (value: string) => void;
-    value: string;
-  };
 }) {
   return (
     <SafeAreaView
@@ -58,7 +49,6 @@ export function InboxHeader({
       edges={includeTopSafeArea ? ["top"] : []}
     >
       <View className="border-paper-border gap-2 border-b px-4 py-2">
-        <TemporarySearchSlot mailbox={mailbox} search={temporarySearch} />
         <View className="min-h-11 flex-row items-center gap-2">
           <AccountFilter
             accounts={accounts}
@@ -160,23 +150,6 @@ function MailboxFilterMenu({
         <ActiveFilterDot filter={filter} />
       </Pressable>
     </MenuView>
-  );
-}
-
-function TemporarySearchSlot({
-  mailbox,
-  search,
-}: {
-  mailbox: MobileMailbox;
-  search: React.ComponentProps<typeof TemporaryIosSearchBar> | undefined;
-}) {
-  if (!search) return null;
-  return (
-    <TemporaryIosSearchBar
-      key={mailbox}
-      {...search}
-      placeholder={getMailboxSearchPlaceholder(mailbox)}
-    />
   );
 }
 

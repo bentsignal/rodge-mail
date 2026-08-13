@@ -54,10 +54,6 @@ interface MailboxThreadListProps {
   selectedCount: number;
   selectionMode: boolean;
   selectionEnabled?: boolean;
-  temporarySearch?: {
-    onChange: (value: string) => void;
-    value: string;
-  };
 }
 
 export function MailboxThreadList({
@@ -86,7 +82,6 @@ export function MailboxThreadList({
   selectedCount,
   selectionMode,
   selectionEnabled = true,
-  temporarySearch,
 }: MailboxThreadListProps) {
   const paper = useColor("paper");
   const transition = useInboxFilterTransition(data, filter);
@@ -120,7 +115,6 @@ export function MailboxThreadList({
         refreshError={refreshError}
         selectionEnabled={selectionEnabled}
         selectionMode={selectionMode}
-        temporarySearch={temporarySearch}
       />
       <MailboxRows
         feedback={feedback}
@@ -139,7 +133,6 @@ export function MailboxThreadList({
           refreshError,
           selectionMode,
           selectionEnabled,
-          temporarySearch,
         }}
         mailbox={mailbox}
         listVersion={`${accountFilter}:${filter}:${selectionMode}:${selectedCount}`}

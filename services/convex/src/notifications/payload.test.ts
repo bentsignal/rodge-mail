@@ -4,6 +4,8 @@ import {
   buildNewMailPush,
   isExpoPushToken,
   MOBILE_THREAD_ROUTE,
+  NEW_MAIL_CATEGORY,
+  NEW_MAIL_MAILING_LIST_CATEGORY,
 } from "./payload";
 
 describe("new-mail notification payloads", () => {
@@ -20,6 +22,7 @@ describe("new-mail notification payloads", () => {
       title: "Sarah",
       body: "Launch plan",
       sound: "default",
+      categoryId: NEW_MAIL_CATEGORY,
       data: {
         messageId: "message-1",
         route: MOBILE_THREAD_ROUTE,
@@ -30,6 +33,15 @@ describe("new-mail notification payloads", () => {
 
   it("supports privacy-preserving previews", () => {
     expect(buildNewMailPush(message, false).body).toBe("New message");
+  });
+
+  it("exposes unsubscribe only for recognized mailing-list messages", () => {
+    expect(buildNewMailPush(message, true, true).categoryId).toBe(
+      NEW_MAIL_MAILING_LIST_CATEGORY,
+    );
+    expect(buildNewMailPush(message, true, false).categoryId).toBe(
+      NEW_MAIL_CATEGORY,
+    );
   });
 
   it("accepts only Expo push token formats", () => {

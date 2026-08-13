@@ -13,7 +13,6 @@ import { useDebouncedValue } from "~/hooks/use-debounced-value";
 import { useSemanticMailSearch } from "../hooks/use-semantic-mail-search";
 import { toConvexId } from "../lib/convex-id";
 import { toMailThreads } from "../lib/convex-mail";
-import { useTemporaryIos27Search } from "../mobile-search-preference";
 import { useMailStore } from "../store";
 import { ArchiveMailbox } from "./archive-screen";
 import {
@@ -37,7 +36,6 @@ export function InboxScreen({ searchMode = false }: { searchMode?: boolean }) {
   const setAccountFilter = useMailStore((store) => store.setAccountFilter);
   const setMailbox = useMailStore((store) => store.setMailbox);
   const [searchTerm, setSearchTerm] = useState("");
-  const showTemporarySearch = useTemporaryIos27Search() && !searchMode;
   const primary = useColor("primary");
 
   function selectInbox(value: MailAccountFilter) {
@@ -68,11 +66,9 @@ export function InboxScreen({ searchMode = false }: { searchMode?: boolean }) {
         mailbox={mailbox}
         primary={primary}
         searchTerm={searchTerm}
-        showTemporarySearch={showTemporarySearch}
         onAccountChange={selectInbox}
         onArchiveSelect={selectArchive}
         onSpamSelect={selectSpam}
-        onSearchChange={setSearchTerm}
       />
     </>
   );
@@ -82,31 +78,22 @@ function ActiveMailbox({
   mailbox,
   onAccountChange,
   onArchiveSelect,
-  onSearchChange,
   onSpamSelect,
   primary,
   searchTerm,
-  showTemporarySearch,
 }: {
   mailbox: MobileMailbox;
   onAccountChange: (value: MailAccountFilter) => void;
   onArchiveSelect: () => void;
-  onSearchChange: (value: string) => void;
   onSpamSelect: () => void;
   primary: string;
   searchTerm: string;
-  showTemporarySearch: boolean;
 }) {
   if (mailbox === "archive") {
     return (
       <ArchiveMailbox
         primary={primary}
         searchTerm={searchTerm}
-        temporarySearch={
-          showTemporarySearch
-            ? { value: searchTerm, onChange: onSearchChange }
-            : undefined
-        }
         onAccountChange={onAccountChange}
         onSpamSelect={onSpamSelect}
       />
@@ -117,11 +104,6 @@ function ActiveMailbox({
       <SpamMailbox
         primary={primary}
         searchTerm={searchTerm}
-        temporarySearch={
-          showTemporarySearch
-            ? { value: searchTerm, onChange: onSearchChange }
-            : undefined
-        }
         onAccountChange={onAccountChange}
         onArchiveSelect={onArchiveSelect}
       />
@@ -130,11 +112,9 @@ function ActiveMailbox({
   return (
     <InboxMailbox
       searchTerm={searchTerm}
-      showTemporarySearch={showTemporarySearch}
       onAccountChange={onAccountChange}
       onArchiveSelect={onArchiveSelect}
       onSpamSelect={onSpamSelect}
-      onSearchChange={onSearchChange}
     />
   );
 }
@@ -142,19 +122,15 @@ function ActiveMailbox({
 interface InboxMailboxProps {
   onAccountChange: (value: MailAccountFilter) => void;
   onArchiveSelect: () => void;
-  onSearchChange: (value: string) => void;
   onSpamSelect: () => void;
   searchTerm: string;
-  showTemporarySearch: boolean;
 }
 
 function InboxMailbox({
   onAccountChange,
   onArchiveSelect,
-  onSearchChange,
   onSpamSelect,
   searchTerm,
-  showTemporarySearch,
 }: InboxMailboxProps) {
   const router = useRouter();
   const threads = useMailStore((store) => store.threads);
@@ -229,11 +205,6 @@ function InboxMailbox({
       searchTerm={isSearching ? searchTerm.trim() : undefined}
       selectedCount={controls.selectedCount}
       selectionMode={controls.selectionMode}
-      temporarySearch={
-        showTemporarySearch
-          ? { value: searchTerm, onChange: onSearchChange }
-          : undefined
-      }
       onAccountChange={onAccountChange}
       onArchiveSelect={onArchiveSelect}
       onEndReached={loadNextPage}

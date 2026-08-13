@@ -4,6 +4,7 @@ import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { internalMutation, internalQuery } from "../_generated/server";
+import { getMailingListInfo } from "../mailingLists/policy";
 import { isNotificationDeliveryFresh } from "./policy";
 import { resolveNotificationPreferences } from "./preferences";
 
@@ -43,22 +44,29 @@ export const getDeliveryInput = internalQuery({
     if (delivery?.status !== "ready") return null;
     const message = await ctx.db.get(delivery.messageId);
     if (message?.ownerId !== delivery.ownerId) return null;
-    const [globalPreference, accountPreference, tokens] = await Promise.all([
-      ctx.db
-        .query("notificationPreferences")
-        .withIndex("by_owner", (q) => q.eq("ownerId", delivery.ownerId))
-        .unique(),
-      ctx.db
-        .query("accountNotificationPreferences")
-        .withIndex("by_owner_account", (q) =>
-          q.eq("ownerId", delivery.ownerId).eq("accountId", message.accountId),
-        )
-        .unique(),
-      ctx.db
-        .query("mobilePushTokens")
-        .withIndex("by_owner", (q) => q.eq("ownerId", delivery.ownerId))
-        .collect(),
-    ]);
+    const [globalPreference, accountPreference, classification, tokens] =
+      await Promise.all([
+        ctx.db
+          .query("notificationPreferences")
+          .withIndex("by_owner", (q) => q.eq("ownerId", delivery.ownerId))
+          .unique(),
+        ctx.db
+          .query("accountNotificationPreferences")
+          .withIndex("by_owner_account", (q) =>
+            q
+              .eq("ownerId", delivery.ownerId)
+              .eq("accountId", message.accountId),
+          )
+          .unique(),
+        ctx.db
+          .query("messageClassifications")
+          .withIndex("by_message", (q) => q.eq("messageId", message._id))
+          .first(),
+        ctx.db
+          .query("mobilePushTokens")
+          .withIndex("by_owner", (q) => q.eq("ownerId", delivery.ownerId))
+          .collect(),
+      ]);
     return {
       delivery,
       message,
@@ -66,6 +74,8 @@ export const getDeliveryInput = internalQuery({
         globalPreference,
         accountPreference,
       ),
+      unsubscribeAvailable:
+        getMailingListInfo(message, classification?.category) !== undefined,
       tokens: tokens.filter((token) => token.enabled),
     };
   },
