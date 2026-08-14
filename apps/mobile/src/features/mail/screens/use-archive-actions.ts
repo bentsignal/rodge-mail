@@ -7,13 +7,14 @@ import { api } from "@rodge-mail/convex/api";
 import type { MailboxFilter } from "./mailbox-controls";
 import type { MailboxBulkAction } from "./mailbox-thread-list";
 import { toConvexId } from "../lib/convex-id";
+import { optimisticallyDeleteArchivedThread } from "./archive-optimistic";
 import { toggleSelectedThread } from "./mailbox-controls";
 
 export function useArchiveActions() {
   const restore = useMutation(api.mail.archiveMutations.restoreArchivedThread);
   const permanentlyDelete = useMutation(
     api.mail.archiveMutations.permanentlyDeleteArchivedThread,
-  );
+  ).withOptimisticUpdate(optimisticallyDeleteArchivedThread);
   const [filter, setFilter] = useState<MailboxFilter>("all");
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState(() => new Set<string>());

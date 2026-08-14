@@ -34,9 +34,13 @@ export function ThreadReaderScreen() {
     mailbox?: string | string[];
     messageId?: string | string[];
   }>();
+  const [departingReader, setDepartingReader] = useState<{
+    accountAddress: string;
+    thread: MailThread;
+  }>();
   const mailbox = parseMobileMailbox(firstParam(mailboxParam));
   const threadId = id ? toConvexId<"threads">(id) : undefined;
-  const queryArgs = threadId ? { threadId } : "skip";
+  const queryArgs = threadId && !departingReader ? { threadId } : "skip";
   const thread = useQuery(api.mail.queries.getThread, queryArgs);
   const setThreadRead = useMutation(api.mail.mutations.setThreadRead);
 
@@ -46,14 +50,32 @@ export function ThreadReaderScreen() {
     void setThreadRead({ threadId, isRead: true }).catch(() => undefined);
   }, [setThreadRead, thread, threadId]);
 
+  if (departingReader) {
+    return (
+      <ThreadReader
+        accountAddress={departingReader.accountAddress}
+        mailbox={mailbox}
+        targetMessageId={firstParam(messageId)}
+        thread={departingReader.thread}
+        onPermanentDeleteStart={() => undefined}
+      />
+    );
+  }
   if (thread === undefined && threadId) return <ThreadLoading />;
   if (!thread) return <ThreadNotFound />;
+  const mailThread = toMailThreadDetail(thread);
   return (
     <ThreadReader
       accountAddress={thread.account.address}
       mailbox={mailbox}
       targetMessageId={firstParam(messageId)}
-      thread={toMailThreadDetail(thread)}
+      thread={mailThread}
+      onPermanentDeleteStart={() =>
+        setDepartingReader({
+          accountAddress: thread.account.address,
+          thread: mailThread,
+        })
+      }
     />
   );
 }
@@ -61,11 +83,13 @@ export function ThreadReaderScreen() {
 function ThreadReader({
   accountAddress,
   mailbox,
+  onPermanentDeleteStart,
   targetMessageId,
   thread,
 }: {
   accountAddress: string;
   mailbox: MobileMailbox;
+  onPermanentDeleteStart: () => void;
   targetMessageId?: string;
   thread: MailThread;
 }) {
@@ -73,7 +97,7 @@ function ThreadReader({
   const foreground = useColor("foreground");
   const scrollViewRef = useRef<ScrollView>(null);
   const [viewMode, setViewMode] = useState<MessageViewMode>("clean");
-  const actions = useThreadReaderActions(thread);
+  const actions = useThreadReaderActions(thread, onPermanentDeleteStart);
   const activeMessage = getActiveMessage(thread, targetMessageId);
   function reply() {
     const latestMessage = thread.messages.at(-1);

@@ -7,8 +7,12 @@ import type { MailMessage, MailThread } from "@rodge-mail/features/mail";
 import { api } from "@rodge-mail/convex/api";
 
 import { toConvexId } from "../lib/convex-id";
+import { optimisticallyDeleteArchivedThread } from "./archive-optimistic";
 
-export function useThreadReaderActions(thread: MailThread) {
+export function useThreadReaderActions(
+  thread: MailThread,
+  beforePermanentDelete: () => void,
+) {
   const router = useRouter();
   const archiveThread = useMutation(api.mail.mutations.archiveThread);
   const restoreArchivedThread = useMutation(
@@ -16,7 +20,7 @@ export function useThreadReaderActions(thread: MailThread) {
   );
   const permanentlyDeleteArchivedThread = useMutation(
     api.mail.archiveMutations.permanentlyDeleteArchivedThread,
-  );
+  ).withOptimisticUpdate(optimisticallyDeleteArchivedThread);
   const setThreadPinned = useMutation(api.mail.mutations.setThreadPinned);
   const confirmUnsubscribe = useUnsubscribeAction();
   const [pinOverride, setPinOverride] = useState<boolean>();
@@ -67,11 +71,12 @@ export function useThreadReaderActions(thread: MailThread) {
     );
   }
   async function permanentlyDelete() {
+    beforePermanentDelete();
+    router.back();
     try {
       await permanentlyDeleteArchivedThread({
         threadId: toConvexId<"threads">(thread.id),
       });
-      router.back();
     } catch {
       Alert.alert("Couldn’t delete this thread", "Please try again.");
     }
