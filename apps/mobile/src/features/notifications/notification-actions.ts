@@ -12,6 +12,18 @@ export type MailNotificationAction =
   | typeof DELETE_NOTIFICATION_ACTION
   | typeof UNSUBSCRIBE_NOTIFICATION_ACTION;
 
+export function createMailNotificationAction(
+  identifier: MailNotificationAction,
+  buttonTitle: string,
+  isDestructive = false,
+) {
+  return {
+    identifier,
+    buttonTitle,
+    options: { isDestructive, opensAppToForeground: false },
+  };
+}
+
 export function getMailNotificationAction(actionIdentifier: string) {
   if (actionIdentifier === PIN_NOTIFICATION_ACTION) {
     return PIN_NOTIFICATION_ACTION;

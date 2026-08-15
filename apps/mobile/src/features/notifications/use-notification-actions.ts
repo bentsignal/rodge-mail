@@ -9,6 +9,7 @@ import { api } from "@rodge-mail/convex/api";
 import type { MailNotificationAction } from "./notification-actions";
 import { toConvexId } from "../mail/lib/convex-id";
 import {
+  createMailNotificationAction,
   DELETE_NOTIFICATION_ACTION,
   getMailNotificationAction,
   MARK_READ_NOTIFICATION_ACTION,
@@ -108,9 +109,9 @@ async function handleLastNotificationResponse(
 
 async function registerMailNotificationCategories() {
   const commonActions = [
-    notificationAction(PIN_NOTIFICATION_ACTION, "Pin"),
-    notificationAction(MARK_READ_NOTIFICATION_ACTION, "Mark Read"),
-    notificationAction(DELETE_NOTIFICATION_ACTION, "Delete", true),
+    createMailNotificationAction(PIN_NOTIFICATION_ACTION, "Pin"),
+    createMailNotificationAction(MARK_READ_NOTIFICATION_ACTION, "Mark Read"),
+    createMailNotificationAction(DELETE_NOTIFICATION_ACTION, "Delete", true),
   ];
   await Promise.all([
     Notifications.setNotificationCategoryAsync(
@@ -119,21 +120,13 @@ async function registerMailNotificationCategories() {
     ),
     Notifications.setNotificationCategoryAsync(NEW_MAIL_MAILING_LIST_CATEGORY, [
       ...commonActions,
-      notificationAction(UNSUBSCRIBE_NOTIFICATION_ACTION, "Unsubscribe", true),
+      createMailNotificationAction(
+        UNSUBSCRIBE_NOTIFICATION_ACTION,
+        "Unsubscribe",
+        true,
+      ),
     ]),
   ]);
-}
-
-function notificationAction(
-  identifier: string,
-  buttonTitle: string,
-  isDestructive = false,
-) {
-  return {
-    identifier,
-    buttonTitle,
-    options: { isDestructive, opensAppToForeground: true },
-  };
 }
 
 async function executeMailNotificationAction(
