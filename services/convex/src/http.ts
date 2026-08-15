@@ -8,6 +8,7 @@ import {
   createNativeAuth,
   nativeAuthCorsAllowedOrigins,
 } from "./auth";
+import { performQuickAction } from "./notifications/http";
 import { oauthCallback as gmailOAuthCallback } from "./providers/gmail/http";
 import { oauthCallback as microsoftOAuthCallback } from "./providers/microsoft/http";
 import { urls } from "./urls";
@@ -49,6 +50,12 @@ authComponent.registerRoutes(http, createNativeAuth, {
   cors: {
     allowedOrigins: [...new Set(nativeAuthCorsAllowedOrigins)],
   },
+});
+
+http.route({
+  path: "/notifications/quick-action",
+  method: "POST",
+  handler: performQuickAction,
 });
 
 http.route({

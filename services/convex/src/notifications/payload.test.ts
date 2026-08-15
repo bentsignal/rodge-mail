@@ -18,13 +18,23 @@ describe("new-mail notification payloads", () => {
   };
 
   it("targets the canonical mobile inbox thread route", () => {
-    expect(buildNewMailPush(message, true)).toEqual({
+    expect(
+      buildNewMailPush(message, true, false, {
+        deliveryId: "delivery-1",
+        token: "quick-action-token",
+        url: "https://example.convex.site/notifications/quick-action",
+      }),
+    ).toEqual({
       title: "Sarah",
       body: "Launch plan",
       sound: "default",
       categoryId: NEW_MAIL_CATEGORY,
       data: {
         messageId: "message-1",
+        quickActionDeliveryId: "delivery-1",
+        quickActionToken: "quick-action-token",
+        quickActionUrl:
+          "https://example.convex.site/notifications/quick-action",
         route: MOBILE_THREAD_ROUTE,
         threadId: "thread-1",
       },

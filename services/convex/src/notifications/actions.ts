@@ -13,6 +13,7 @@ import {
   parseExpoPushTickets,
 } from "./expo";
 import { buildNewMailPush } from "./payload";
+import { createQuickActionCapability } from "./quickActionCapability";
 
 const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
 const EXPO_RECEIPTS_URL = "https://exp.host/--/api/v2/push/getReceipts";
@@ -129,10 +130,12 @@ async function deliverNewMail(
     return;
   }
 
+  const quickAction = await createQuickActionCapability(ctx, deliveryId);
   const notification = buildNewMailPush(
     input.message,
     input.preference.includePreview,
     input.unsubscribeAvailable,
+    quickAction,
   );
   const batches = chunk(input.tokens, EXPO_PUSH_BATCH_SIZE);
   const outcomes = (

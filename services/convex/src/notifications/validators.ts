@@ -45,6 +45,12 @@ export const vNotificationFailureKind = v.union(
   v.literal("transient"),
 );
 
+export const vNotificationQuickAction = v.union(
+  v.literal("pin"),
+  v.literal("mark-read"),
+  v.literal("archive"),
+);
+
 export const vNotificationDelivery = v.object({
   ownerId: v.string(),
   messageId: v.id("messages"),
@@ -55,6 +61,10 @@ export const vNotificationDelivery = v.object({
   failedCount: v.optional(v.number()),
   failureKind: v.optional(vNotificationFailureKind),
   error: v.optional(v.string()),
+  quickActionTokenHash: v.optional(v.string()),
+  quickActionExpiresAt: v.optional(v.number()),
+  quickAction: v.optional(vNotificationQuickAction),
+  quickActionAt: v.optional(v.number()),
   createdAt: v.number(),
   updatedAt: v.number(),
 });

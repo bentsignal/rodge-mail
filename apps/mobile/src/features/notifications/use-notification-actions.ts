@@ -9,15 +9,20 @@ import { api } from "@rodge-mail/convex/api";
 import type { MailNotificationAction } from "./notification-actions";
 import { toConvexId } from "../mail/lib/convex-id";
 import {
+  ARCHIVE_NOTIFICATION_ACTION,
   createMailNotificationAction,
-  DELETE_NOTIFICATION_ACTION,
   getMailNotificationAction,
+  isSilentMailNotificationAction,
   MARK_READ_NOTIFICATION_ACTION,
   NEW_MAIL_CATEGORY,
   NEW_MAIL_MAILING_LIST_CATEGORY,
   PIN_NOTIFICATION_ACTION,
   UNSUBSCRIBE_NOTIFICATION_ACTION,
 } from "./notification-actions";
+import {
+  getNotificationQuickActionRequest,
+  performNotificationQuickAction,
+} from "./notification-quick-action";
 import {
   createNotificationResponseResolver,
   MOBILE_THREAD_ROUTE,
@@ -28,9 +33,7 @@ const resolveNotificationResponse = createNotificationResponseResolver();
 export function useNotificationActions(isAuthenticated: boolean) {
   const setThreadPinned = useMutation(api.mail.mutations.setThreadPinned);
   const setThreadRead = useMutation(api.mail.mutations.setThreadRead);
-  const removeThreadFromRodge = useMutation(
-    api.mail.mutations.removeThreadFromRodge,
-  );
+  const archiveThread = useMutation(api.mail.mutations.archiveThread);
   const unsubscribe = useAction(api.mailingLists.actions.unsubscribe);
   const router = useRouter();
 
@@ -47,6 +50,11 @@ export function useNotificationActions(isAuthenticated: boolean) {
     ) {
       const action = getMailNotificationAction(response.actionIdentifier);
       if (!isSupportedResponse(response.actionIdentifier, action)) return;
+      if (action && isSilentMailNotificationAction(action)) {
+        await Notifications.dismissNotificationAsync(
+          response.notification.request.identifier,
+        ).catch(() => undefined);
+      }
       const target = resolveNotificationResponse(
         response.notification.request.identifier,
         response.notification.request.content.data,
@@ -59,15 +67,22 @@ export function useNotificationActions(isAuthenticated: boolean) {
         });
         return;
       }
-      await executeMailNotificationAction(action, target, {
-        removeThreadFromRodge,
-        setThreadPinned,
-        setThreadRead,
-        unsubscribe,
-      });
-      await Notifications.dismissNotificationAsync(
-        response.notification.request.identifier,
+      await executeMailNotificationAction(
+        action,
+        target,
+        {
+          archiveThread,
+          setThreadPinned,
+          setThreadRead,
+          unsubscribe,
+        },
+        response.notification.request.content.data ?? {},
       );
+      if (!isSilentMailNotificationAction(action)) {
+        await Notifications.dismissNotificationAsync(
+          response.notification.request.identifier,
+        ).catch(() => undefined);
+      }
     }
     const subscription = Notifications.addNotificationResponseReceivedListener(
       (response) => {
@@ -78,7 +93,7 @@ export function useNotificationActions(isAuthenticated: boolean) {
     return () => subscription.remove();
   }, [
     isAuthenticated,
-    removeThreadFromRodge,
+    archiveThread,
     router,
     setThreadPinned,
     setThreadRead,
@@ -109,9 +124,15 @@ async function handleLastNotificationResponse(
 
 async function registerMailNotificationCategories() {
   const commonActions = [
-    createMailNotificationAction(PIN_NOTIFICATION_ACTION, "Pin"),
-    createMailNotificationAction(MARK_READ_NOTIFICATION_ACTION, "Mark Read"),
-    createMailNotificationAction(DELETE_NOTIFICATION_ACTION, "Delete", true),
+    createMailNotificationAction(PIN_NOTIFICATION_ACTION, "Pin", {
+      opensAppToForeground: false,
+    }),
+    createMailNotificationAction(MARK_READ_NOTIFICATION_ACTION, "Mark Read", {
+      opensAppToForeground: false,
+    }),
+    createMailNotificationAction(ARCHIVE_NOTIFICATION_ACTION, "Archive", {
+      opensAppToForeground: false,
+    }),
   ];
   await Promise.all([
     Notifications.setNotificationCategoryAsync(
@@ -123,7 +144,7 @@ async function registerMailNotificationCategories() {
       createMailNotificationAction(
         UNSUBSCRIBE_NOTIFICATION_ACTION,
         "Unsubscribe",
-        true,
+        { isDestructive: true },
       ),
     ]),
   ]);
@@ -133,9 +154,7 @@ async function executeMailNotificationAction(
   action: MailNotificationAction,
   target: { messageId: string; threadId: string },
   handlers: {
-    removeThreadFromRodge: (args: {
-      threadId: Id<"threads">;
-    }) => Promise<unknown>;
+    archiveThread: (args: { threadId: Id<"threads"> }) => Promise<unknown>;
     setThreadPinned: (args: {
       isPinned: boolean;
       threadId: Id<"threads">;
@@ -146,7 +165,15 @@ async function executeMailNotificationAction(
     }) => Promise<unknown>;
     unsubscribe: (args: { messageId: Id<"messages"> }) => Promise<unknown>;
   },
+  data: Record<string, unknown>,
 ) {
+  if (isSilentMailNotificationAction(action)) {
+    const request = getNotificationQuickActionRequest(action, data);
+    const performed = request
+      ? await performNotificationQuickAction(request).catch(() => false)
+      : false;
+    if (performed) return;
+  }
   const threadId = toConvexId<"threads">(target.threadId);
   if (action === PIN_NOTIFICATION_ACTION) {
     await handlers.setThreadPinned({ threadId, isPinned: true });
@@ -156,8 +183,8 @@ async function executeMailNotificationAction(
     await handlers.setThreadRead({ threadId, isRead: true });
     return;
   }
-  if (action === DELETE_NOTIFICATION_ACTION) {
-    await handlers.removeThreadFromRodge({ threadId });
+  if (action === ARCHIVE_NOTIFICATION_ACTION) {
+    await handlers.archiveThread({ threadId });
     return;
   }
   await handlers.unsubscribe({

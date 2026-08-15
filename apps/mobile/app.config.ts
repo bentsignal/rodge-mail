@@ -57,6 +57,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           enableBackgroundRemoteNotifications: true,
         },
       ],
+      "./expo-plugins/with-ios-notification-quick-actions.cjs",
       "expo-secure-store",
       "expo-web-browser",
       "expo-system-ui",

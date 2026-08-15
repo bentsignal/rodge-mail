@@ -6,8 +6,8 @@ interface NewMailMessage {
   subject: string;
 }
 
-export const NEW_MAIL_CATEGORY = "new-mail-actions";
-export const NEW_MAIL_MAILING_LIST_CATEGORY = "new-mail-list-actions";
+export const NEW_MAIL_CATEGORY = "newMailActions";
+export const NEW_MAIL_MAILING_LIST_CATEGORY = "newMailListActions";
 
 export const MOBILE_THREAD_ROUTE = "/(tabs)/(inbox)/thread/[id]";
 
@@ -19,6 +19,11 @@ export function buildNewMailPush(
   message: NewMailMessage,
   includePreview: boolean,
   unsubscribeAvailable = false,
+  quickAction?: {
+    deliveryId: string;
+    token: string;
+    url: string;
+  },
 ) {
   const sender = firstNonempty(message.from.name, message.from.address);
   return {
@@ -32,6 +37,13 @@ export function buildNewMailPush(
       : NEW_MAIL_CATEGORY,
     data: {
       messageId: message._id,
+      ...(quickAction
+        ? {
+            quickActionDeliveryId: quickAction.deliveryId,
+            quickActionToken: quickAction.token,
+            quickActionUrl: quickAction.url,
+          }
+        : {}),
       route: MOBILE_THREAD_ROUTE,
       threadId: message.threadId,
     },

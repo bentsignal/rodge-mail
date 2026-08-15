@@ -1,25 +1,27 @@
 import type { Doc } from "../_generated/dataModel";
-import type { AuthedMutationCtx } from "../utils";
+import type { MutationCtx } from "../_generated/server";
 import { internal } from "../_generated/api";
 
 export function scheduleProviderReadUpdate({
   ctx,
+  ownerId,
   account,
   message,
   isRead,
   delay,
 }: {
-  ctx: AuthedMutationCtx;
+  ctx: Pick<MutationCtx, "scheduler">;
+  ownerId: string;
   account: Doc<"mailAccounts"> | null;
   message: Doc<"messages">;
   isRead: boolean;
   delay: number;
 }) {
-  if (!account || account.ownerId !== ctx.ownerId || account.isDemo) {
+  if (account?.ownerId !== ownerId || account.isDemo) {
     return undefined;
   }
   const args = {
-    ownerId: ctx.ownerId,
+    ownerId,
     accountId: account._id,
     remoteMessageId: message.remoteMessageId,
     isRead,

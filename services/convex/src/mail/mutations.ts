@@ -1,15 +1,8 @@
 import { ConvexError, v } from "convex/values";
 
-import type { Id } from "../_generated/dataModel";
-import type { MutationCtx } from "../_generated/server";
 import { internal } from "../_generated/api";
-import { deleteEmbeddingRecords } from "../embedding/storage";
 import { authedMutation } from "../utils";
-import {
-  ensureOwnedAccount,
-  ensureOwnedMessage,
-  ensureOwnedThread,
-} from "./helpers";
+import { ensureOwnedAccount, ensureOwnedMessage } from "./helpers";
 import {
   canRetryOutbox,
   getIdempotentEnqueueResult,
@@ -21,6 +14,11 @@ import {
 } from "./outbox";
 import { scheduleProviderReadUpdate } from "./readUpdates";
 import { resolveReplyMetadata } from "./replies";
+import {
+  archiveOwnedThread,
+  setOwnedThreadPinned,
+  setOwnedThreadRead,
+} from "./threadMutations";
 import { updateThreadInboxProjection } from "./threadState";
 import { vMailboxAddress } from "./validators";
 
@@ -56,6 +54,7 @@ export const setRead = authedMutation({
     const account = await ctx.db.get(message.accountId);
     const providerUpdate = scheduleProviderReadUpdate({
       ctx,
+      ownerId: ctx.ownerId,
       account,
       message,
       isRead: args.isRead,
@@ -81,27 +80,8 @@ export const setThreadPinned = authedMutation({
     threadId: v.id("threads"),
     isPinned: v.boolean(),
   },
-  handler: async (ctx, args) => {
-    const thread = await ensureOwnedThread(ctx, ctx.ownerId, args.threadId);
-    const messages = await ctx.db
-      .query("messages")
-      .withIndex("by_thread_received", (q) => q.eq("threadId", thread._id))
-      .collect();
-    await Promise.all([
-      ...messages
-        .filter((message) => message.isPinned !== args.isPinned)
-        .map((message) =>
-          ctx.db.patch(message._id, {
-            isPinned: args.isPinned,
-            updatedAt: Date.now(),
-          }),
-        ),
-      ctx.db.patch(thread._id, {
-        isPinned: args.isPinned,
-        updatedAt: Date.now(),
-      }),
-    ]);
-  },
+  handler: async (ctx, args) =>
+    await setOwnedThreadPinned(ctx, ctx.ownerId, args.threadId, args.isPinned),
 });
 
 export const setThreadRead = authedMutation({
@@ -109,40 +89,8 @@ export const setThreadRead = authedMutation({
     threadId: v.id("threads"),
     isRead: v.boolean(),
   },
-  handler: async (ctx, args) => {
-    const thread = await ensureOwnedThread(ctx, ctx.ownerId, args.threadId);
-    const messages = await ctx.db
-      .query("messages")
-      .withIndex("by_thread_received", (q) => q.eq("threadId", thread._id))
-      .collect();
-    const account = await ctx.db.get(thread.accountId);
-    const now = Date.now();
-    const changedMessages = messages.filter(
-      (message) => message.isRead !== args.isRead,
-    );
-    await Promise.all([
-      ...changedMessages.map(async (message) => {
-        await ctx.db.patch(message._id, {
-          isRead: args.isRead,
-          updatedAt: now,
-        });
-      }),
-      ctx.db.patch(thread._id, {
-        unreadCount: args.isRead ? 0 : messages.length,
-        updatedAt: now,
-      }),
-      ...changedMessages.flatMap((message, index) => {
-        const update = scheduleProviderReadUpdate({
-          ctx,
-          account,
-          message,
-          isRead: args.isRead,
-          delay: index * 100,
-        });
-        return update ? [update] : [];
-      }),
-    ]);
-  },
+  handler: async (ctx, args) =>
+    await setOwnedThreadRead(ctx, ctx.ownerId, args.threadId, args.isRead),
 });
 
 export const archiveThread = authedMutation({
@@ -156,60 +104,6 @@ export const removeThreadFromRodge = authedMutation({
   handler: async (ctx, args) =>
     await archiveOwnedThread(ctx, ctx.ownerId, args.threadId),
 });
-
-async function archiveOwnedThread(
-  ctx: MutationCtx,
-  ownerId: string,
-  threadId: Id<"threads">,
-) {
-  const thread = await ensureOwnedThread(ctx, ownerId, threadId);
-  const messages = await ctx.db
-    .query("messages")
-    .withIndex("by_thread_received", (q) => q.eq("threadId", thread._id))
-    .collect();
-  const now = Date.now();
-
-  await Promise.all([
-    ...messages.map(async (message) => {
-      const existingTombstone = await ctx.db
-        .query("archivedMessageTombstones")
-        .withIndex("by_account_remote", (q) =>
-          q
-            .eq("accountId", message.accountId)
-            .eq("remoteMessageId", message.remoteMessageId),
-        )
-        .unique();
-      if (!existingTombstone) {
-        await ctx.db.insert("archivedMessageTombstones", {
-          ownerId,
-          accountId: message.accountId,
-          remoteMessageId: message.remoteMessageId,
-          archivedAt: now,
-          createdAt: now,
-        });
-      }
-      await ctx.db.patch(message._id, {
-        archivedAt: now,
-        archivedFromInbox: message.inInbox,
-        inInbox: false,
-        isPinned: false,
-        updatedAt: now,
-      });
-      await deleteEmbeddingRecords(ctx, message._id);
-    }),
-    ctx.db.patch(thread._id, {
-      unreadCount: 0,
-      archivedAt: now,
-      inInbox: false,
-      isPinned: false,
-      latestInboxMessageAt: undefined,
-      latestInboxMessageId: undefined,
-      updatedAt: now,
-    }),
-  ]);
-
-  return { archivedMessages: messages.length };
-}
 
 export const enqueuePlainText = authedMutation({
   args: {

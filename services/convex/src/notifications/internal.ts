@@ -4,9 +4,15 @@ import { v } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { internalMutation, internalQuery } from "../_generated/server";
+import {
+  archiveOwnedThread,
+  setOwnedThreadPinned,
+  setOwnedThreadRead,
+} from "../mail/threadMutations";
 import { getMailingListInfo } from "../mailingLists/policy";
 import { isNotificationDeliveryFresh } from "./policy";
 import { resolveNotificationPreferences } from "./preferences";
+import { vNotificationQuickAction } from "./validators";
 
 const SEND_NEW_MAIL = makeFunctionReference<
   "action",
@@ -109,6 +115,81 @@ export const claimDelivery = internalMutation({
     return true;
   },
 });
+
+export const setQuickActionCapability = internalMutation({
+  args: {
+    deliveryId: v.id("notificationDeliveries"),
+    expiresAt: v.number(),
+    tokenHash: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const delivery = await ctx.db.get(args.deliveryId);
+    if (delivery?.status !== "sending") return false;
+    await ctx.db.patch(delivery._id, {
+      quickActionExpiresAt: args.expiresAt,
+      quickActionTokenHash: args.tokenHash,
+      updatedAt: Date.now(),
+    });
+    return true;
+  },
+});
+
+export const performQuickAction = internalMutation({
+  args: {
+    action: vNotificationQuickAction,
+    deliveryId: v.string(),
+    tokenHash: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const authorization = await authorizeQuickAction(ctx, args);
+    if (!authorization.delivery) return authorization.allowed;
+    const { delivery } = authorization;
+
+    const message = await ctx.db.get(delivery.messageId);
+    if (!message || message.ownerId !== delivery.ownerId) return false;
+    if (args.action === "pin") {
+      await setOwnedThreadPinned(ctx, delivery.ownerId, message.threadId, true);
+    } else if (args.action === "mark-read") {
+      await setOwnedThreadRead(ctx, delivery.ownerId, message.threadId, true);
+    } else {
+      await archiveOwnedThread(ctx, delivery.ownerId, message.threadId);
+    }
+    await ctx.db.patch(delivery._id, {
+      quickAction: args.action,
+      quickActionAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+    return true;
+  },
+});
+
+async function authorizeQuickAction(
+  ctx: MutationCtx,
+  args: {
+    action: "archive" | "mark-read" | "pin";
+    deliveryId: string;
+    tokenHash: string;
+  },
+) {
+  const deliveryId = ctx.db.normalizeId(
+    "notificationDeliveries",
+    args.deliveryId,
+  );
+  if (!deliveryId) return { allowed: false };
+  const delivery = await ctx.db.get(deliveryId);
+  if (
+    !delivery?.quickActionTokenHash ||
+    delivery.quickActionTokenHash !== args.tokenHash ||
+    !delivery.quickActionExpiresAt ||
+    delivery.quickActionExpiresAt < Date.now()
+  ) {
+    return { allowed: false };
+  }
+  if (delivery.quickAction) {
+    return { allowed: delivery.quickAction === args.action };
+  }
+  return { allowed: true, delivery };
+}
 
 export const completeDelivery = internalMutation({
   args: {
