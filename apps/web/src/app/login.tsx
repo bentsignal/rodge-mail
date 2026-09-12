@@ -3,7 +3,6 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { z } from "zod";
 
 import { RecoveryForm } from "~/features/auth/components/recovery-form";
-import { RegistrationForm } from "~/features/auth/components/registration-form";
 import { SignInButton } from "~/features/auth/components/sign-in-button";
 import { useAuthStore } from "~/features/auth/store";
 
@@ -18,9 +17,7 @@ export const Route = createFileRoute("/login")({
 });
 
 function Login() {
-  const [view, setView] = useState<"recover" | "register" | "sign-in">(
-    "sign-in",
-  );
+  const [view, setView] = useState<"recover" | "sign-in">("sign-in");
   const imLoggedIn = useAuthStore((store) => store.imSignedIn);
   if (imLoggedIn) return null;
 
@@ -31,7 +28,6 @@ function Login() {
           <LoginBrand />
           <LoginContent
             onCancel={() => setView("sign-in")}
-            onCreateAccount={() => setView("register")}
             onRecover={() => setView("recover")}
             view={view}
           />
@@ -43,20 +39,15 @@ function Login() {
 
 function LoginContent({
   onCancel,
-  onCreateAccount,
   onRecover,
   view,
 }: {
   onCancel: () => void;
-  onCreateAccount: () => void;
   onRecover: () => void;
-  view: "recover" | "register" | "sign-in";
+  view: "recover" | "sign-in";
 }) {
-  if (view === "register") return <RegistrationForm onCancel={onCancel} />;
   if (view === "recover") return <RecoveryForm onCancel={onCancel} />;
-  return (
-    <AuthActions onCreateAccount={onCreateAccount} onRecover={onRecover} />
-  );
+  return <AuthActions onRecover={onRecover} />;
 }
 
 function LoginBrand() {
@@ -74,13 +65,7 @@ function LoginBrand() {
   );
 }
 
-function AuthActions({
-  onCreateAccount,
-  onRecover,
-}: {
-  onCreateAccount: () => void;
-  onRecover: () => void;
-}) {
+function AuthActions({ onRecover }: { onRecover: () => void }) {
   const cancelDesktopSignIn = useAuthStore(
     (store) => store.cancelDesktopSignIn,
   );
@@ -97,14 +82,6 @@ function AuthActions({
     return <DesktopAuthPending onCancel={cancelDesktopSignIn} />;
   }
 
-  function createAccount() {
-    if (usesDesktopBrowserAuth) {
-      void startDesktopSignIn();
-      return;
-    }
-    onCreateAccount();
-  }
-
   function recoverAccount() {
     if (usesDesktopBrowserAuth) {
       void startDesktopSignIn();
@@ -116,14 +93,6 @@ function AuthActions({
   return (
     <div className="space-y-3">
       <SignInButton />
-      <button
-        className="mail-raised flex h-12 w-full items-center justify-center rounded-[10px] border px-5 text-sm font-semibold transition hover:border-[var(--mail-brass)]"
-        disabled={isLoading}
-        onClick={createAccount}
-        type="button"
-      >
-        Create account
-      </button>
       <button
         className="mail-label hover:text-foreground w-full py-2 text-center text-xs font-medium transition"
         disabled={isLoading}

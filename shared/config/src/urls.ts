@@ -22,7 +22,10 @@ function webUrl(options: { effectiveWorktreeId?: string }) {
 
 export function createUrls(options: UrlOptions = {}) {
   if (options.nodeEnv === "production") {
-    throw new Error("Rodge Mail production URLs are not configured");
+    return {
+      web: "https://mail.rodgers.dev",
+      convex: DEVELOPMENT_CONVEX,
+    } as const;
   }
   const effectiveWorktreeId = options.worktreeId ?? overrideWorktreeId;
   const effectiveConvexCloudUrl =

@@ -20,5 +20,7 @@ Then summarize changes for the user.
 
 ## Preferences
 
+- Own the Git workflow: commit and push completed, validated changes regularly
+  without waiting for the user to ask.
 - Do **_NOT_** leave excessive comments when writing code. Only leave comments when
   the code itself does not clearly explain what it does

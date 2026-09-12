@@ -9,11 +9,18 @@ import { ConvexError } from "convex/values";
 
 import type { ActionCtx, MutationCtx, QueryCtx } from "./_generated/server";
 import { action, mutation, query } from "./_generated/server";
+import { isAllowedUser } from "./authAccess";
+import { env } from "./convex.env";
 
-export async function checkIdentity(ctx: QueryCtx | MutationCtx | ActionCtx) {
+export async function checkIdentity(
+  ctx: Pick<QueryCtx | MutationCtx | ActionCtx, "auth">,
+) {
   const user = await ctx.auth.getUserIdentity();
   if (!user) {
     throw new ConvexError("Unauthenticated");
+  }
+  if (!isAllowedUser(user.subject, env.AUTH_ALLOWED_USER_ID)) {
+    throw new ConvexError("Access denied");
   }
   return user;
 }

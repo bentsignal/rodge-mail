@@ -29,6 +29,7 @@ import type * as attachments_constants from "../attachments/constants.js";
 import type * as attachments_internal from "../attachments/internal.js";
 import type * as attachments_mutations from "../attachments/mutations.js";
 import type * as auth from "../auth.js";
+import type * as authAccess from "../authAccess.js";
 import type * as classification_actions from "../classification/actions.js";
 import type * as classification_audit from "../classification/audit.js";
 import type * as classification_backfill from "../classification/backfill.js";
@@ -175,6 +176,7 @@ declare const fullApi: ApiFromModules<{
   "attachments/internal": typeof attachments_internal;
   "attachments/mutations": typeof attachments_mutations;
   auth: typeof auth;
+  authAccess: typeof authAccess;
   "classification/actions": typeof classification_actions;
   "classification/audit": typeof classification_audit;
   "classification/backfill": typeof classification_backfill;

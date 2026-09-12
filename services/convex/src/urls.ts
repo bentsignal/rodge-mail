@@ -8,6 +8,7 @@ const configuredUrls = createUrls({
 
 export const urls = {
   ...configuredUrls,
+  web: env.WEB_URL ?? configuredUrls.web,
   convex: {
     cloud: env.CONVEX_CLOUD_URL,
     site: env.CONVEX_SITE_URL,

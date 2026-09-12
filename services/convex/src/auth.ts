@@ -12,6 +12,7 @@ import { nativeAuthBasePath } from "@rodge-mail/config/auth";
 import type { DataModel } from "./_generated/dataModel";
 import { components, internal } from "./_generated/api";
 import { primaryAuthConfig } from "./auth.config";
+import { privateAccountHooks } from "./authAccess";
 import authSchema from "./betterAuth/schema";
 import { env } from "./convex.env";
 import { desktopAuth } from "./desktopAuth";
@@ -52,6 +53,7 @@ export function createAuthOptions(
     ...(options.basePath ? { basePath: options.basePath } : {}),
     baseURL: urls.convex.site,
     database: authComponent.adapter(ctx),
+    databaseHooks: privateAccountHooks(env.AUTH_ALLOWED_USER_ID),
     secret: env.BETTER_AUTH_SECRET,
     trustedOrigins,
     plugins: [
@@ -61,6 +63,7 @@ export function createAuthOptions(
         from: env.AUTH_EMAIL_FROM,
       }),
       emailOTP({
+        disableSignUp: true,
         allowedAttempts: 3,
         expiresIn: 300,
         storeOTP: "hashed",
@@ -164,10 +167,12 @@ function getAuthCorsAllowedOrigins(passkeyRpId: string) {
   const passkeyRpOrigin = `https://${passkeyRpId}`;
   return env.ENVIRONMENT === "production"
     ? [
+        urls.web,
         passkeyRpOrigin,
         ...(desktopBrowserAuthOrigin ? [desktopBrowserAuthOrigin] : []),
       ]
     : [
+        urls.web,
         passkeyRpOrigin,
         ...(desktopBrowserAuthOrigin ? [desktopBrowserAuthOrigin] : []),
         "*.rodge-mail.local",

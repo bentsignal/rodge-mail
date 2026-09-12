@@ -1,9 +1,13 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   MAX_ACCOUNT_DISPLAY_LABEL_LENGTH,
   normalizeAccountDisplayLabel,
 } from "./mutations";
+
+vi.mock("../convex.env", () => ({
+  env: { AUTH_ALLOWED_USER_ID: "owner" },
+}));
 
 describe("account display labels", () => {
   it("trims saved labels and treats blank input as a reset", () => {

@@ -175,12 +175,6 @@ function SignInActions({ auth }: { auth: ReturnType<typeof usePasskeyAuth> }) {
       />
       <NativeAuthButton
         disabled={isLoading}
-        label="Create account"
-        onPress={() => auth.show("details")}
-        variant="outlined"
-      />
-      <NativeAuthButton
-        disabled={isLoading}
         label="Sign in with email"
         onPress={() => auth.show("recover")}
         variant="text"
