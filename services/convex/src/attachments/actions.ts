@@ -7,21 +7,19 @@ import { ConvexError, v } from "convex/values";
 import type { Doc } from "../_generated/dataModel";
 import type { ActionCtx } from "../_generated/server";
 import { internal } from "../_generated/api";
-import { action } from "../_generated/server";
 import { GmailAdapter } from "../providers/gmail/api";
 import { getUsableGmailTokens } from "../providers/gmail/tokenAccess";
 import { fetchAttachment as fetchICloudAttachment } from "../providers/icloud/client";
 import { decryptICloudCredential } from "../providers/icloud/credentialAccess";
 import { MicrosoftGraphAdapter } from "../providers/microsoft/api";
 import { getUsableMicrosoftTokens } from "../providers/microsoft/tokenAccess";
-import { checkIdentity } from "../utils";
+import { authedAction } from "../utils";
 import { MAX_ATTACHMENT_BYTES } from "./constants";
 
-export const download = action({
+export const download = authedAction({
   args: { attachmentId: v.id("attachments") },
   handler: async (ctx, args): Promise<{ url: string }> => {
-    const user = await checkIdentity(ctx);
-    const ownerId = user.subject;
+    const ownerId = ctx.ownerId;
     const context = await ctx.runQuery(
       internal.attachments.internal.getDownloadContext,
       { ownerId, attachmentId: args.attachmentId },

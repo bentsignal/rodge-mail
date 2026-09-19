@@ -14,4 +14,23 @@ export default defineConfig(
   convexConfig,
   createStrictSyntax({ ts: true }),
   ...convexPlugin.configs.recommended,
+  {
+    files: ["src/**/*.ts"],
+    ignores: ["src/_generated/**", "src/utils.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["**/_generated/server"],
+              importNames: ["action", "mutation", "query"],
+              message:
+                "Use authedAction, authedMutation, or authedQuery from utils for public Convex functions.",
+            },
+          ],
+        },
+      ],
+    },
+  },
 );
