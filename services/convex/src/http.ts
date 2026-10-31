@@ -10,6 +10,7 @@ import {
 } from "./auth";
 import { performQuickAction } from "./notifications/http";
 import { oauthCallback as gmailOAuthCallback } from "./providers/gmail/http";
+import { snsWebhook as hostedSnsWebhook } from "./providers/hosted/http";
 import { oauthCallback as microsoftOAuthCallback } from "./providers/microsoft/http";
 import { urls } from "./urls";
 
@@ -68,6 +69,12 @@ http.route({
   path: "/providers/microsoft/oauth/callback",
   method: "GET",
   handler: microsoftOAuthCallback,
+});
+
+http.route({
+  path: "/providers/hosted/sns",
+  method: "POST",
+  handler: hostedSnsWebhook,
 });
 
 export default http;

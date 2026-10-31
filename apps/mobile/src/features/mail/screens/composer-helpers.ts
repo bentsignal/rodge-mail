@@ -36,7 +36,7 @@ export function getSelectedAccount(
 
 export function canSendFromAccount(account: MobileMailAccount) {
   return (
-    ["gmail", "icloud", "microsoft"].includes(account.provider) &&
+    ["gmail", "hosted", "icloud", "microsoft"].includes(account.provider) &&
     ["connected", "syncing"].includes(account.status)
   );
 }

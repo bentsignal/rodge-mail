@@ -172,3 +172,47 @@ Primary Apple references:
 
 - [iCloud Mail server settings](https://support.apple.com/en-us/102525)
 - [Sign in with app-specific passwords](https://support.apple.com/en-us/102654)
+
+## Hosted mail (Amazon SES)
+
+Hosted accounts are mailboxes on domains you own. Amazon SES handles SMTP,
+spam and virus scanning, DKIM signing, and delivery; Convex is the mailbox.
+
+```text
+MX ─> SES receipt rule ─> S3 inbound/<id> + SNS ─> /providers/hosted/sns
+  ─> SNS signature check ─> ingest action ─> upsertProviderMessage
+outbox ─> hosted/outbox:deliver ─> SES SendEmail (raw) ─> S3 sent/<id>
+SES configuration-set events ─> SNS ─> hostedDeliveryEvents
+```
+
+- One active receipt rule with no recipient filter accepts mail for every
+  SES-verified domain. Convex routes envelope recipients through
+  `hostedAddresses`; unknown recipients are dropped unless the domain has a
+  catch-all account.
+- Raw MIME is kept in the private S3 bucket under `inbound/` and `sent/`.
+  Attachments are parsed from it on demand.
+- Virus failures are dropped. Spam failures and DMARC failures with a
+  `quarantine`/`reject` policy are stored outside the inbox with a `junk` label.
+- SES replaces the outgoing `Message-ID`; the sent copy records
+  `<sesMessageId@email.amazonses.com>` so replies thread correctly.
+- Read state and archive are local-only; there is no provider to synchronize.
+- Convex uses the `rodge-mail-convex` IAM user, limited to the mail bucket and
+  sending from verified identities.
+
+Provisioning is idempotent and lives in `scripts/hosted-mail.mjs`:
+
+```sh
+node scripts/hosted-mail.mjs bootstrap                 # AWS resources + Convex env
+node scripts/hosted-mail.mjs connect                   # subscribe SNS after deploy
+node scripts/hosted-mail.mjs add-domain example.com    # SES identity, DNS, registration
+node scripts/hosted-mail.mjs add-address me@example.com --name "Me"
+node scripts/hosted-mail.mjs add-address hi@example.com --alias-of me@example.com
+node scripts/hosted-mail.mjs send-test me@example.com me@example.com
+node scripts/hosted-mail.mjs status
+```
+
+`add-domain` writes DNS records directly for domains on Vercel DNS (DKIM
+CNAMEs, root MX and SPF, `bounce.` MAIL FROM MX and SPF, and DMARC) and prints
+them for other DNS hosts. It refuses to replace existing MX, SPF, or DMARC
+records without `--force`. While the SES account is in the sandbox, mail can be
+received from anyone but only sent to verified identities.

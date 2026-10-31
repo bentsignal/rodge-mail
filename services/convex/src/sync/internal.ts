@@ -988,7 +988,7 @@ export const listRecoverableProviderOutbox = internalQuery({
       const account = await ctx.db.get(outbox.accountId);
       if (
         account &&
-        ["gmail", "microsoft", "icloud"].includes(account.provider)
+        ["gmail", "microsoft", "icloud", "hosted"].includes(account.provider)
       ) {
         providerOutboxIds.push(outbox._id);
       }
@@ -1410,6 +1410,13 @@ export const claimOutbox = internalMutation({
     ) {
       throw new ConvexError("A queued attachment is unavailable");
     }
+    const replyMessage = outbox.replyToMessageId
+      ? await ctx.db.get(outbox.replyToMessageId)
+      : null;
+    const replyThread =
+      replyMessage?.accountId === outbox.accountId
+        ? await ctx.db.get(replyMessage.threadId)
+        : null;
     const leaseId = `${now}:${outbox.attempt + 1}`;
     await ctx.db.patch(outbox._id, {
       status: "sending",
@@ -1423,6 +1430,7 @@ export const claimOutbox = internalMutation({
       attempt: outbox.attempt + 1,
       from: account.address,
       leaseId,
+      replyToRemoteThreadId: replyThread?.remoteThreadId,
       attachments: attachments.flatMap((attachment) =>
         attachment?.storageId && attachment.size !== undefined
           ? [
@@ -1532,6 +1540,10 @@ export const deliverProviderOutbox = internalAction({
     }
     if (provider === "icloud") {
       await ctx.runAction(internal.providers.icloud.outbox.deliver, args);
+      return;
+    }
+    if (provider === "hosted") {
+      await ctx.runAction(internal.providers.hosted.outbox.deliver, args);
     }
   },
 });

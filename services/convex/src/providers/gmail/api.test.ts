@@ -75,6 +75,37 @@ describe("Gmail attachment delivery", () => {
       "Content-Transfer-Encoding: base64\r\n\r\nAQID",
     );
   });
+
+  it("keeps replies in the original Gmail thread", async () => {
+    let sentThreadId: string | undefined;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+        if (String(input).includes("/messages?")) {
+          return Response.json({ messages: [] });
+        }
+        sentThreadId = (JSON.parse(String(init?.body)) as { threadId?: string })
+          .threadId;
+        return Response.json({ id: "sent-reply-1" });
+      }),
+    );
+
+    await new GmailAdapter().sendMessage("access-token", {
+      _id: "outbox-2" as Id<"outboxMessages">,
+      accountId: "account-1" as Id<"mailAccounts">,
+      attachments: [],
+      bcc: [],
+      cc: [],
+      from: "owner@example.com",
+      plainText: "Thanks",
+      replyToInternetMessageId: "<original@example.com>",
+      replyToRemoteThreadId: "gmail-thread-1",
+      subject: "Re: Notes",
+      to: [{ address: "recipient@example.com" }],
+    });
+
+    expect(sentThreadId).toBe("gmail-thread-1");
+  });
 });
 
 function decodeBase64UrlText(value: string) {

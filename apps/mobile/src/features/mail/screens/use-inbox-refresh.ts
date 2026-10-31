@@ -43,6 +43,7 @@ function isRejected(result: PromiseSettledResult<unknown>) {
 function accountCanSync(account: MobileMailAccount) {
   return (
     !account.isDemo &&
+    account.provider !== "hosted" &&
     account.status !== "disconnected" &&
     account.status !== "reauthorization_required" &&
     account.status !== "syncing"

@@ -162,7 +162,9 @@ function getAccountIdentity(
       ? "Gmail"
       : provider === "icloud"
         ? "iCloud"
-        : "Microsoft 365";
+        : provider === "hosted"
+          ? "Hosted"
+          : "Microsoft 365";
   if (identity && identity !== address) {
     return `${providerLabel} · ${identity} · ${address}`;
   }

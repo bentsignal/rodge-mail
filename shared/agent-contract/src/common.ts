@@ -20,7 +20,12 @@ export const mailboxAddressSchema = z
   })
   .strict();
 
-export const mailProviderSchema = z.enum(["gmail", "microsoft", "icloud"]);
+export const mailProviderSchema = z.enum([
+  "gmail",
+  "microsoft",
+  "icloud",
+  "hosted",
+]);
 
 export const classificationCategorySchema = z.enum([
   "unclassified",

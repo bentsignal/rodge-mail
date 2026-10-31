@@ -113,6 +113,7 @@ export const syncAllNow = authedMutation({
     const syncable = accounts.filter(
       (account) =>
         !account.isDemo &&
+        account.provider !== "hosted" &&
         account.status !== "disconnected" &&
         account.status !== "reauthorization_required",
     );

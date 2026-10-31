@@ -2,7 +2,8 @@
 
 Rodge Mail is a unified email client for web, desktop, and mobile. It stores
 synchronized mail in Convex and connects Gmail, Microsoft 365, and iCloud
-accounts without requiring a separate mail database or worker.
+accounts without requiring a separate mail database or worker. It can also
+host mailboxes on your own domains through Amazon SES.
 
 ## Product shape
 

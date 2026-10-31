@@ -34,8 +34,11 @@ describe("mobile development configuration", () => {
     expect(() => createExpoConfig({ config: {} } as ConfigContext)).toThrow(
       "only has development builds configured",
     );
-    expect(() => createUrls({ nodeEnv: "production" })).toThrow(
-      "production URLs are not configured",
+  });
+
+  it("serves the hosted web app in production", () => {
+    expect(createUrls({ nodeEnv: "production" }).web).toBe(
+      "https://mail.rodgers.dev",
     );
   });
 

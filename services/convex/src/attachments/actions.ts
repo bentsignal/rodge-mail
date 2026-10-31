@@ -9,6 +9,7 @@ import type { ActionCtx } from "../_generated/server";
 import { internal } from "../_generated/api";
 import { GmailAdapter } from "../providers/gmail/api";
 import { getUsableGmailTokens } from "../providers/gmail/tokenAccess";
+import { fetchHostedAttachment } from "../providers/hosted/attachments";
 import { fetchAttachment as fetchICloudAttachment } from "../providers/icloud/client";
 import { decryptICloudCredential } from "../providers/icloud/credentialAccess";
 import { MicrosoftGraphAdapter } from "../providers/microsoft/api";
@@ -35,7 +36,7 @@ export const download = authedAction({
     if (context.attachment.size > MAX_ATTACHMENT_BYTES) {
       throw new ConvexError("Attachments larger than 10 MB are not cached yet");
     }
-    if (!context.credential) {
+    if (!context.credential && context.account.provider !== "hosted") {
       throw new ConvexError(
         "This provider attachment is still remote and cannot be fetched yet",
       );
@@ -95,9 +96,13 @@ async function fetchRemoteAttachment({
   ownerId: string;
   account: Doc<"mailAccounts">;
   attachment: Doc<"attachments">;
-  credential: Doc<"providerCredentials">;
+  credential: Doc<"providerCredentials"> | null;
   message: Doc<"messages">;
 }) {
+  if (account.provider === "hosted") {
+    return await fetchHostedAttachment(message, attachment);
+  }
+  if (!credential) throw new ConvexError("Provider credentials are missing");
   const tokenArgs = {
     ownerId,
     accountId: account._id,
