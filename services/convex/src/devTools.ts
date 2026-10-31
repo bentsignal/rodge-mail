@@ -1,9 +1,10 @@
-import { ConvexError } from "convex/values";
+import { ConvexError, v } from "convex/values";
 
 import type { Id } from "./_generated/dataModel";
 import { internalMutation } from "./_generated/server";
 import { createAuth } from "./auth";
 import { env } from "./convex.env";
+import { bulkMailbox } from "./devSeedBulk";
 import {
   ISOLATED_ACCOUNTS,
   ISOLATED_OWNER_NAME,
@@ -49,10 +50,13 @@ export const ensureOwner = internalMutation({
   },
 });
 
-/** Replaces the test owner's seeded mailbox with a fresh one dated now. */
+/**
+ * Replaces the test owner's seeded mailbox with a fresh one dated now, plus
+ * `bulkThreads` older filler threads for paging through a long inbox.
+ */
 export const seed = internalMutation({
-  args: {},
-  handler: async (ctx) => {
+  args: { bulkThreads: v.optional(v.number()) },
+  handler: async (ctx, args) => {
     requireDevTools();
     const ownerId = env.AUTH_ALLOWED_USER_ID;
     const existing = await ctx.db
@@ -73,7 +77,11 @@ export const seed = internalMutation({
       );
     }
     let messages = 0;
-    for (const fixture of isolatedMailbox(Date.now())) {
+    const now = Date.now();
+    for (const fixture of [
+      ...isolatedMailbox(now),
+      ...bulkMailbox(now, args.bulkThreads ?? 0),
+    ]) {
       const accountId = accountIds.get(fixture.account);
       if (!accountId) throw new ConvexError("Seed account not found");
       messages += await ensureDemoMessage(ctx, ownerId, accountId, fixture);

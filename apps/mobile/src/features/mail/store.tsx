@@ -108,6 +108,7 @@ function useInternalStore() {
     isLoading: inbox.status === "LoadingFirstPage" && !cachedPage.isCached,
     isLoadingMore: inbox.status === "LoadingMore",
     loadMore,
+    pageStatus: inbox.status,
     mailbox,
     markRead,
     selectionMode,

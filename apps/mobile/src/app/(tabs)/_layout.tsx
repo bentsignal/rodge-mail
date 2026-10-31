@@ -21,10 +21,10 @@ export default function TabLayout() {
     >
       <NativeTabs.Trigger name="(inbox)" contentStyle={{ backgroundColor }}>
         <NativeTabs.Trigger.Icon
-          sf={{ default: "tray", selected: "tray.fill" }}
-          md="inbox"
+          sf={{ default: "house", selected: "house.fill" }}
+          md="home"
         />
-        <NativeTabs.Trigger.Label>Inbox</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="(new)" contentStyle={{ backgroundColor }}>
         <NativeTabs.Trigger.Icon sf="square.and.pencil" md="edit" />

@@ -3,6 +3,7 @@ import { ActivityIndicator, Text, View } from "react-native";
 import { ShieldCheck } from "lucide-react-native";
 
 import type { MobileMailbox } from "../store";
+import type { getPageFooter } from "../lib/next-page";
 import type { MailboxFilter } from "./mailbox-controls";
 import { useColor } from "~/hooks/use-color";
 import { getEmptyMailboxCopy } from "./mailbox-empty-state";
@@ -26,16 +27,14 @@ export function EmptyInbox({
 }
 
 export function InboxFooter({
-  isLoading,
-  primary,
+  state,
 }: {
-  isLoading: boolean;
-  primary: string;
+  state: ReturnType<typeof getPageFooter>;
 }) {
-  if (!isLoading) return null;
+  if (state === "none") return null;
   return (
-    <View className="items-center py-6">
-      <ActivityIndicator color={primary} />
+    <View className="h-14 items-center justify-center">
+      {state === "loading" ? <ActivityIndicator /> : null}
     </View>
   );
 }

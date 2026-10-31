@@ -91,11 +91,6 @@ export function ArchiveMailbox({
       />
     );
   }
-  function loadMore() {
-    if (!isSearching && archive.status === "CanLoadMore") {
-      archive.loadMore(pageSize);
-    }
-  }
   return (
     <MailboxThreadList
       accountFilter={accountFilter}
@@ -118,10 +113,11 @@ export function ArchiveMailbox({
       selectionMode={actions.selectionMode}
       onAccountChange={onAccountChange}
       onArchiveSelect={() => undefined}
-      onEndReached={loadMore}
       onFilterChange={actions.changeFilter}
+      onLoadMore={() => archive.loadMore(pageSize)}
       onSpamSelect={onSpamSelect}
       onToggleSelection={actions.toggleSelectionMode}
+      pageStatus={isSearching ? "Exhausted" : archive.status}
     />
   );
 }

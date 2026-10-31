@@ -146,6 +146,7 @@ function InboxMailbox({
   const accountFilter = useMailStore((store) => store.accountFilter);
   const markRead = useMailStore((store) => store.markRead);
   const loadMore = useMailStore((store) => store.loadMore);
+  const inboxPageStatus = useMailStore((store) => store.pageStatus);
   const isLoading = useMailStore((store) => store.isLoading);
   const isLoadingMore = useMailStore((store) => store.isLoadingMore);
   const debouncedSearchTerm = useMailSearchTerm(searchTerm);
@@ -194,7 +195,7 @@ function InboxMailbox({
   }
   function loadNextPage() {
     if (!isSearching) loadMore();
-    else if (search.status === "CanLoadMore") search.loadMore(30);
+    else search.loadMore(30);
   }
   return (
     <MailboxThreadList
@@ -216,11 +217,12 @@ function InboxMailbox({
       selectionMode={controls.selectionMode}
       onAccountChange={onAccountChange}
       onArchiveSelect={onArchiveSelect}
-      onEndReached={loadNextPage}
       onFilterChange={controls.changeFilter}
+      onLoadMore={loadNextPage}
       onRefresh={() => void refresh()}
       onSpamSelect={onSpamSelect}
       onToggleSelection={controls.toggleSelectionMode}
+      pageStatus={isSearching ? search.status : inboxPageStatus}
     />
   );
 }
