@@ -20,11 +20,12 @@ import { getInboxListFeedback } from "./inbox-list-state";
 import { ListHeader, MailboxHeaderSlot } from "./mailbox-list-header";
 import { useInboxFilterTransition } from "./use-inbox-filter-transition";
 
+/** A row's height plus the gap below it. */
+const rowExtent = 109;
+
 // Rows that move (a pin, a new message, a removal closing its gap) slide to
 // their new place. Reanimated animates each row container's frame on the UI
 // thread; nothing re-renders while it moves.
-const rowExtent = 109;
-
 const rowMove = LinearTransition.duration(260).easing(
   Easing.bezier(0.25, 0.1, 0.25, 1),
 );
