@@ -1,0 +1,84 @@
+import { Stack } from "expo-router";
+
+import type { MobileMailbox } from "../store";
+import { useColor } from "~/hooks/use-color";
+
+export function ThreadReaderToolbar({
+  isPinned,
+  mailbox,
+  onArchive,
+  onDelete,
+  onPin,
+  onReply,
+  onRestore,
+  onUnsubscribe,
+  title,
+  unsubscribeName,
+}: {
+  isPinned: boolean;
+  mailbox: MobileMailbox;
+  onArchive: () => void;
+  onDelete: () => void;
+  onPin: () => void;
+  onReply: () => void;
+  onRestore: () => void;
+  onUnsubscribe: () => void;
+  title: string;
+  unsubscribeName?: string;
+}) {
+  const destructive = useColor("destructive");
+  const isInbox = mailbox === "inbox";
+  const isArchive = mailbox === "archive";
+  const pinLabel = isPinned ? "Unpin" : "Pin";
+  return (
+    <>
+      <Stack.Screen options={{ title }} />
+      <Stack.Toolbar placement="right">
+        <Stack.Toolbar.Menu
+          accessibilityLabel="More"
+          hidden={!isInbox}
+          icon="ellipsis"
+        >
+          <Stack.Toolbar.MenuAction
+            icon={isPinned ? "pin.slash" : "pin"}
+            onPress={onPin}
+          >
+            {pinLabel}
+          </Stack.Toolbar.MenuAction>
+          <Stack.Toolbar.MenuAction
+            hidden={!unsubscribeName}
+            icon="envelope.badge.shield.half.filled"
+            onPress={onUnsubscribe}
+          >
+            {`Unsubscribe from ${unsubscribeName ?? ""}`}
+          </Stack.Toolbar.MenuAction>
+        </Stack.Toolbar.Menu>
+        <Stack.Toolbar.Button
+          accessibilityLabel="Archive"
+          hidden={!isInbox}
+          icon="archivebox"
+          onPress={onArchive}
+        />
+        <Stack.Toolbar.Button
+          accessibilityLabel="Restore"
+          hidden={!isArchive}
+          icon="arrow.uturn.backward"
+          onPress={onRestore}
+        />
+        <Stack.Toolbar.Button
+          accessibilityLabel="Delete"
+          hidden={!isArchive}
+          icon="trash"
+          tintColor={destructive}
+          onPress={onDelete}
+        />
+        <Stack.Toolbar.Button
+          accessibilityLabel="Reply"
+          hidden={isArchive}
+          icon="arrowshape.turn.up.left"
+          onPress={onReply}
+        />
+      </Stack.Toolbar>
+    </>
+  );
+}

@@ -1,18 +1,28 @@
 import type { LegendListRenderItemProps } from "@legendapp/list/react-native";
 import { Animated, RefreshControl, View } from "react-native";
-import { LegendList } from "@legendapp/list/react-native";
+import { Easing, LinearTransition } from "react-native-reanimated";
+import { AnimatedLegendList } from "@legendapp/list/reanimated";
 
 import type { MailAccountFilter, MailThread } from "@rodge-mail/features/mail";
 
 import type { MobileMailAccount } from "../lib/convex-mail";
 import type { MobileMailbox } from "../store";
+import type { InboxHeader } from "./inbox-header";
 import type { MailboxFilter } from "./mailbox-controls";
 import { useColor } from "~/hooks/use-color";
-import { InboxHeader } from "./inbox-header";
+import { useSteadyData } from "../hooks/use-steady-data";
+import { stableRows } from "../lib/stable-rows";
 import { EmptyInbox, InboxFooter } from "./inbox-list-feedback";
 import { getInboxListFeedback } from "./inbox-list-state";
-import { MailboxBulkToolbar } from "./mailbox-bulk-toolbar";
+import { ListHeader, MailboxHeaderSlot } from "./mailbox-list-header";
 import { useInboxFilterTransition } from "./use-inbox-filter-transition";
+
+// Rows that move (a pin, a new message, a removal closing its gap) slide to
+// their new place. Reanimated animates each row container's frame on the UI
+// thread; nothing re-renders while it moves.
+const rowMove = LinearTransition.duration(260).easing(
+  Easing.bezier(0.25, 0.1, 0.25, 1),
+);
 
 export interface MailboxBulkAction {
   destructive?: boolean;
@@ -50,6 +60,7 @@ interface MailboxThreadListProps {
   renderThread: (
     info: LegendListRenderItemProps<MailThread>,
   ) => React.ReactElement;
+  searchMode?: boolean;
   searchTerm?: string;
   selectedCount: number;
   selectionMode: boolean;
@@ -78,6 +89,7 @@ export function MailboxThreadList({
   primary,
   refreshError,
   renderThread,
+  searchMode = false,
   searchTerm,
   selectedCount,
   selectionMode,
@@ -103,6 +115,7 @@ export function MailboxThreadList({
       <MailboxHeaderSlot
         accountFilter={accountFilter}
         accounts={accounts}
+        bulkActions={bulkActions}
         filter={filter}
         headerInList={headerInList}
         includeTopSafeArea={includeTopSafeArea}
@@ -113,10 +126,13 @@ export function MailboxThreadList({
         onToggleSelection={onToggleSelection}
         onSpamSelect={onSpamSelect}
         refreshError={refreshError}
+        searchMode={searchMode}
+        selectedCount={selectedCount}
         selectionEnabled={selectionEnabled}
         selectionMode={selectionMode}
       />
       <MailboxRows
+        accounts={accounts}
         feedback={feedback}
         headerInList={headerInList}
         headerProps={{
@@ -140,20 +156,18 @@ export function MailboxThreadList({
         background={background}
         primary={primary}
         refreshControl={refreshControl}
+        refreshError={refreshError}
         renderThread={renderThread}
+        searchMode={searchMode}
         searchTerm={searchTerm}
         transition={transition}
-      />
-      <MailboxBulkToolbarSlot
-        actions={bulkActions}
-        selectedCount={selectedCount}
-        selectionMode={selectionMode}
       />
     </View>
   );
 }
 
 function MailboxRows({
+  accounts,
   feedback,
   headerInList,
   headerProps,
@@ -163,10 +177,13 @@ function MailboxRows({
   background,
   primary,
   refreshControl,
+  refreshError,
   renderThread,
+  searchMode,
   searchTerm,
   transition,
 }: {
+  accounts: MobileMailAccount[];
   feedback: ReturnType<typeof getInboxListFeedback>;
   headerInList: boolean;
   headerProps: React.ComponentProps<typeof InboxHeader>;
@@ -178,25 +195,29 @@ function MailboxRows({
   refreshControl:
     | React.ReactElement<React.ComponentProps<typeof RefreshControl>>
     | undefined;
+  refreshError: string | undefined;
   renderThread: MailboxThreadListProps["renderThread"];
+  searchMode: boolean;
   searchTerm: string | undefined;
   transition: ReturnType<
     typeof useInboxFilterTransition<MailThread, MailboxFilter>
   >;
 }) {
+  const steady = useSteadyData(stableRows(transition.data));
   return (
     <Animated.View style={{ flex: 1, opacity: transition.opacity }}>
-      <LegendList
+      <AnimatedLegendList
         contentContainerStyle={{
           paddingBottom: 24,
           paddingTop: headerInList ? 0 : 12,
         }}
-        data={transition.data}
+        {...steady.listProps}
+        data={steady.data}
         estimatedItemSize={109}
         extraData={listVersion}
+        itemLayoutAnimation={rowMove}
         keyExtractor={threadKey}
-        maintainVisibleContentPosition={true}
-        recycleItems={true}
+        recycleItems={false}
         refreshControl={refreshControl}
         renderItem={renderThread}
         contentInsetAdjustmentBehavior="automatic"
@@ -215,7 +236,13 @@ function MailboxRows({
           />
         }
         ListHeaderComponent={
-          headerInList ? <MailboxHeader {...headerProps} /> : undefined
+          <ListHeader
+            accounts={accounts}
+            headerInList={headerInList}
+            headerProps={headerProps}
+            refreshError={refreshError}
+            searchMode={searchMode}
+          />
         }
         ListFooterComponent={
           <InboxFooter isLoading={feedback.footerIsLoading} primary={primary} />
@@ -223,31 +250,6 @@ function MailboxRows({
       />
     </Animated.View>
   );
-}
-
-function MailboxHeader(props: React.ComponentProps<typeof InboxHeader>) {
-  return <InboxHeader {...props} />;
-}
-
-function MailboxHeaderSlot({
-  headerInList,
-  ...props
-}: React.ComponentProps<typeof InboxHeader> & { headerInList: boolean }) {
-  if (headerInList) return null;
-  return <MailboxHeader {...props} />;
-}
-
-function MailboxBulkToolbarSlot({
-  actions,
-  selectedCount,
-  selectionMode,
-}: {
-  actions: MailboxBulkAction[];
-  selectedCount: number;
-  selectionMode: boolean;
-}) {
-  if (!selectionMode) return null;
-  return <MailboxBulkToolbar actions={actions} selectedCount={selectedCount} />;
 }
 
 function threadKey(thread: MailThread) {

@@ -65,6 +65,7 @@ export function InboxScreen({ searchMode = false }: { searchMode?: boolean }) {
       <ActiveMailbox
         mailbox={mailbox}
         primary={primary}
+        searchMode={searchMode}
         searchTerm={searchTerm}
         onAccountChange={selectInbox}
         onArchiveSelect={selectArchive}
@@ -80,6 +81,7 @@ function ActiveMailbox({
   onArchiveSelect,
   onSpamSelect,
   primary,
+  searchMode,
   searchTerm,
 }: {
   mailbox: MobileMailbox;
@@ -87,12 +89,14 @@ function ActiveMailbox({
   onArchiveSelect: () => void;
   onSpamSelect: () => void;
   primary: string;
+  searchMode: boolean;
   searchTerm: string;
 }) {
   if (mailbox === "archive") {
     return (
       <ArchiveMailbox
         primary={primary}
+        searchMode={searchMode}
         searchTerm={searchTerm}
         onAccountChange={onAccountChange}
         onSpamSelect={onSpamSelect}
@@ -103,6 +107,7 @@ function ActiveMailbox({
     return (
       <SpamMailbox
         primary={primary}
+        searchMode={searchMode}
         searchTerm={searchTerm}
         onAccountChange={onAccountChange}
         onArchiveSelect={onArchiveSelect}
@@ -111,6 +116,7 @@ function ActiveMailbox({
   }
   return (
     <InboxMailbox
+      searchMode={searchMode}
       searchTerm={searchTerm}
       onAccountChange={onAccountChange}
       onArchiveSelect={onArchiveSelect}
@@ -123,6 +129,7 @@ interface InboxMailboxProps {
   onAccountChange: (value: MailAccountFilter) => void;
   onArchiveSelect: () => void;
   onSpamSelect: () => void;
+  searchMode: boolean;
   searchTerm: string;
 }
 
@@ -130,6 +137,7 @@ function InboxMailbox({
   onAccountChange,
   onArchiveSelect,
   onSpamSelect,
+  searchMode,
   searchTerm,
 }: InboxMailboxProps) {
   const router = useRouter();
@@ -202,6 +210,7 @@ function InboxMailbox({
       primary={primary}
       refreshError={refreshError}
       renderThread={renderThread}
+      searchMode={searchMode}
       searchTerm={isSearching ? searchTerm.trim() : undefined}
       selectedCount={controls.selectedCount}
       selectionMode={controls.selectionMode}

@@ -3,6 +3,7 @@ import { DevSettings } from "react-native";
 import { router } from "expo-router";
 
 import { authClient, convexUrls } from "~/features/auth/client";
+import { devMailActions } from "./dev-mail-actions";
 import { frameReport, startFrames, stopFrames } from "./frames";
 
 const PRODUCTION_DEPLOYMENT = "dazzling-dog-633";
@@ -71,6 +72,13 @@ export function installDevAutomation() {
       signIn,
       signInStatus: () => signInStatus,
       frames: { report: frameReport, start: startFrames, stop: stopFrames },
+      /** The inbox's rows by index: `mail.pin(0)`, `archive`, `read`; `select()` toggles selection mode. */
+      mail: {
+        archive: (index: number) => devMailActions()?.archive(index),
+        pin: (index: number) => devMailActions()?.pin(index),
+        read: (index: number) => devMailActions()?.read(index),
+        select: () => devMailActions()?.select(),
+      },
     },
   });
 }

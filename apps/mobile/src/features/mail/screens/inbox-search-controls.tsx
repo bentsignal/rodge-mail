@@ -19,7 +19,7 @@ export function InboxSearchControls({
   onSearchClose: () => void;
   searchMode: boolean;
 }) {
-  if (!searchMode) return <Stack.Screen options={{ headerShown: false }} />;
+  if (!searchMode) return null;
   return (
     <FocusedSearchBar
       placeholder={getMailboxSearchPlaceholder(mailbox) ?? "Search mail"}

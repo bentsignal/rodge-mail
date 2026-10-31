@@ -4,15 +4,18 @@ import {
   blurNativeSearch,
   focusNativeSearch,
 } from "~/features/mail/native-search-controller";
+import { useMailStore } from "~/features/mail/store";
 import { useColor } from "~/hooks/use-color";
 
 export default function TabLayout() {
   const backgroundColor = useColor("background");
   const primary = useColor("primary");
+  const selectionMode = useMailStore((store) => store.selectionMode);
 
   return (
     <NativeTabs
       backgroundColor={backgroundColor}
+      hidden={selectionMode}
       minimizeBehavior="onScrollDown"
       tintColor={primary}
     >

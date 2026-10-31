@@ -1,5 +1,5 @@
-import { MailSettingsScreen } from "~/features/mail/screens/mail-settings-screen";
+import { SettingsScreen } from "~/features/settings/settings-screen";
 
 export default function Settings() {
-  return <MailSettingsScreen />;
+  return <SettingsScreen />;
 }

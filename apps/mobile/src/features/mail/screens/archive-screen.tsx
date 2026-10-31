@@ -22,11 +22,13 @@ interface ArchiveMailboxProps {
   onAccountChange: (value: MailAccountFilter) => void;
   onSpamSelect: () => void;
   primary: string;
+  searchMode: boolean;
   searchTerm: string;
 }
 
 export function ArchiveMailbox({
   primary,
+  searchMode,
   searchTerm,
   onAccountChange,
   onSpamSelect,
@@ -110,6 +112,7 @@ export function ArchiveMailbox({
       mailbox="archive"
       primary={primary}
       renderThread={renderThread}
+      searchMode={searchMode}
       searchTerm={isSearching ? normalizedSearchTerm : undefined}
       selectedCount={actions.selectedIds.size}
       selectionMode={actions.selectionMode}

@@ -1,29 +1,19 @@
+import { Platform } from "react-native";
 import { Stack } from "expo-router";
 
-import { useColor } from "~/hooks/use-color";
-
 export default function InboxLayout() {
-  const backgroundColor = useColor("background");
-  const foreground = useColor("foreground");
-
   return (
     <Stack
       screenOptions={{
-        contentStyle: { backgroundColor },
         headerBackButtonDisplayMode: "minimal",
-        headerLargeStyle: { backgroundColor },
-        headerLargeTitleStyle: { color: foreground },
-        headerStyle: { backgroundColor },
-        headerShadowVisible: false,
-        headerTintColor: foreground,
-        headerTitleStyle: { color: foreground },
+        headerTransparent: Platform.OS === "ios",
       }}
     >
       <Stack.Screen
         name="index"
-        options={{ headerLargeTitle: false, headerTitle: "" }}
+        options={{ headerLargeTitle: true, title: "All Inboxes" }}
       />
-      <Stack.Screen name="thread/[id]" options={{ title: "Message" }} />
+      <Stack.Screen name="thread/[id]" options={{ title: "" }} />
     </Stack>
   );
 }
