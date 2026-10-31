@@ -22,6 +22,8 @@ export type MobileMailbox = "archive" | "inbox" | "spam";
 function useInternalStore() {
   const [accountFilter, setAccountFilter] = useState<MailAccountFilter>("all");
   const [mailbox, setMailbox] = useState<MobileMailbox>("inbox");
+  // Shared so the tab bar can make way for the selection toolbar.
+  const [selectionMode, setSelectionMode] = useState(false);
   const inbox = usePaginatedQuery(
     api.mail.queries.listInbox,
     {
@@ -108,8 +110,10 @@ function useInternalStore() {
     loadMore,
     mailbox,
     markRead,
+    selectionMode,
     setAccountFilter,
     setMailbox,
+    setSelectionMode,
     threads,
     togglePin,
     toggleRead,

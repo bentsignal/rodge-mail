@@ -7,6 +7,7 @@ import { api } from "@rodge-mail/convex/api";
 import type { MailboxFilter } from "./mailbox-controls";
 import type { MailboxBulkAction } from "./mailbox-thread-list";
 import { toConvexId } from "../lib/convex-id";
+import { useMailStore } from "../store";
 import { optimisticallyDeleteArchivedThread } from "./archive-optimistic";
 import { toggleSelectedThread } from "./mailbox-controls";
 
@@ -16,7 +17,8 @@ export function useArchiveActions() {
     api.mail.archiveMutations.permanentlyDeleteArchivedThread,
   ).withOptimisticUpdate(optimisticallyDeleteArchivedThread);
   const [filter, setFilter] = useState<MailboxFilter>("all");
-  const [selectionMode, setSelectionMode] = useState(false);
+  const selectionMode = useMailStore((store) => store.selectionMode);
+  const setSelectionMode = useMailStore((store) => store.setSelectionMode);
   const [selectedIds, setSelectedIds] = useState(() => new Set<string>());
 
   function toggleSelectionMode() {

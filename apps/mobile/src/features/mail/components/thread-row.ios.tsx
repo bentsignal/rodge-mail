@@ -18,9 +18,6 @@ import {
   tint,
 } from "@expo/ui/swift-ui/modifiers";
 
-import type { MailThread } from "@rodge-mail/features/mail";
-
-import type { MobileMailbox } from "../store";
 import type { NativeThreadRowColors } from "./thread-row-summary.ios";
 import type { ThreadRowProps } from "./thread-row-types";
 import { useResolvedMobileColorScheme } from "~/features/theme/mobile-theme";
@@ -30,7 +27,6 @@ import {
   getPinAction,
   getReadAction,
   getThreadRowAccessibilityLabel,
-  getThreadRowNativeKey,
   runAfterSwipeAnimation,
 } from "./thread-row-presentation";
 import { NativeThreadSummary } from "./thread-row-summary.ios";
@@ -38,20 +34,18 @@ import { NativeThreadSummary } from "./thread-row-summary.ios";
 const rowHeight = 100;
 
 export function ThreadRow(props: ThreadRowProps) {
-  const {
-    mailbox = "inbox",
-    selected = false,
-    selectionMode = false,
-    thread,
-  } = props;
+  const { selected = false, selectionMode = false, thread } = props;
   const colorScheme = useResolvedMobileColorScheme();
   const colors = useThreadRowColors();
 
   return (
     <Host
-      key={getNativeKey(thread, mailbox)}
       colorScheme={colorScheme}
-      seedColor={colors.primary}
+      // Edit mode draws a white check on the accent; the dark theme's accent
+      // is white, so selection uses the muted gray there.
+      seedColor={
+        colorScheme === "dark" ? colors.mutedForeground : colors.primary
+      }
       style={{
         borderRadius: 14,
         height: rowHeight,
@@ -240,10 +234,6 @@ function getNativeAccessibilityLabel(props: ThreadRowProps) {
   const label = getThreadRowAccessibilityLabel(props.thread);
   if (!props.selectionMode) return label;
   return `${props.selected ? "Selected" : "Not selected"}, ${label}`;
-}
-
-function getNativeKey(thread: MailThread, mailbox: MobileMailbox) {
-  return `${getThreadRowNativeKey(thread)}:${mailbox}`;
 }
 
 function rowModifiers(background: string) {

@@ -11,7 +11,8 @@ export function useInboxMailboxControls(threads: MailThread[]) {
   const archiveThread = useMailStore((store) => store.archiveThread);
   const toggleRead = useMailStore((store) => store.toggleRead);
   const [filter, setFilter] = useState<MailboxFilter>("all");
-  const [selectionMode, setSelectionMode] = useState(false);
+  const selectionMode = useMailStore((store) => store.selectionMode);
+  const setSelectionMode = useMailStore((store) => store.setSelectionMode);
   const [selectedIds, setSelectedIds] = useState(() => new Set<string>());
   const [retainedUnreadIds, setRetainedUnreadIds] = useState(
     () => new Set<string>(),
