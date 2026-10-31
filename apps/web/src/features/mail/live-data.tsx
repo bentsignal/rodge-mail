@@ -1,4 +1,4 @@
-import { createContext, use, useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 
 import type { LiveMailContextValue } from "./live-data-types";
 import type { MailAccountFilter } from "./store";
@@ -7,6 +7,7 @@ import type { UnreadSessionSnapshot } from "./unread-session";
 import { useArchiveLiveMailValue } from "./archive-live-data";
 import { MAIL_PAGE_SIZE } from "./constants";
 import { useLiveMailActions } from "./live-data-actions";
+import { LiveMailContext } from "./live-data-context";
 import { useAccountsQuery, useUnreadCountQuery } from "./live-data-query-hooks";
 import {
   canSeedDemoMail,
@@ -34,10 +35,6 @@ import {
   preserveUnreadSessionMessage,
 } from "./unread-session";
 import { useUnreadSelectionSync } from "./use-unread-selection-sync";
-
-const LiveMailContext = createContext<LiveMailContextValue | undefined>(
-  undefined,
-);
 
 export function LiveMailProvider({
   children,

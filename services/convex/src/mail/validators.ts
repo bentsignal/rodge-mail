@@ -337,6 +337,15 @@ export const vOutboxMessage = v.object({
   replyToInternetMessageId: v.optional(v.string()),
   replyToRemoteMessageId: v.optional(v.string()),
   attachmentIds: v.optional(v.array(v.id("draftAttachments"))),
+  sentAttachments: v.optional(
+    v.array(
+      v.object({
+        fileName: v.string(),
+        contentType: v.string(),
+        size: v.number(),
+      }),
+    ),
+  ),
   status: vOutboxStatus,
   attempt: v.number(),
   leaseId: v.optional(v.string()),

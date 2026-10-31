@@ -32,6 +32,7 @@ import {
 } from "../mailingLists/suppression";
 import { queueNewMailNotification } from "../notifications/internal";
 import { shouldNotifyForProviderMessage } from "../notifications/policy";
+import { toSentAttachments } from "../outbox/sent";
 import { GmailAdapter, GmailApiError } from "../providers/gmail/api";
 import { getUsableGmailTokens } from "../providers/gmail/tokenAccess";
 import {
@@ -1458,6 +1459,18 @@ export const finishOutbox = internalMutation({
     const outbox = await ctx.db.get(args.outboxId);
     if (outbox?.status !== "sending" || outbox.leaseId !== args.leaseId) return;
     const now = Date.now();
+    const attachments = args.error
+      ? []
+      : await Promise.all(
+          (outbox.attachmentIds ?? []).map(async (attachmentId) =>
+            ctx.db.get(attachmentId),
+          ),
+        );
+    const claimed = attachments.filter(
+      (attachment): attachment is NonNullable<typeof attachment> =>
+        attachment?.ownerId === outbox.ownerId &&
+        attachment.outboxId === outbox._id,
+    );
     await ctx.db.patch(outbox._id, {
       status: args.error ? "failed" : "sent",
       leaseId: undefined,
@@ -1465,20 +1478,12 @@ export const finishOutbox = internalMutation({
       remoteMessageId: args.remoteMessageId,
       sentAt: args.error ? undefined : now,
       updatedAt: now,
+      ...(claimed.length > 0
+        ? { sentAttachments: toSentAttachments(claimed) }
+        : {}),
     });
     if (!args.error) {
-      const attachments = await Promise.all(
-        (outbox.attachmentIds ?? []).map(async (attachmentId) =>
-          ctx.db.get(attachmentId),
-        ),
-      );
-      for (const attachment of attachments) {
-        if (
-          attachment?.ownerId !== outbox.ownerId ||
-          attachment.outboxId !== outbox._id
-        ) {
-          continue;
-        }
+      for (const attachment of claimed) {
         if (attachment.storageId) {
           await ctx.storage.delete(attachment.storageId);
         }

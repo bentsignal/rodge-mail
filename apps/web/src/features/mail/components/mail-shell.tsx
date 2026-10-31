@@ -7,6 +7,7 @@ import {
   LiveMailProvider,
   SpamLiveMailProvider,
 } from "../live-data";
+import { SentLiveMailProvider } from "../sent-live-data";
 import { MailStore } from "../store";
 import { AccountRail } from "./account-rail";
 import { ArchivePage } from "./archive-page";
@@ -15,6 +16,8 @@ import { InboxPane } from "./inbox-pane";
 import { MailDataErrorBoundary } from "./mail-data-error-boundary";
 import { OutboxStatus } from "./outbox-status";
 import { ReaderPane } from "./reader-pane";
+import { SentReader } from "./sent-message-pane";
+import { SentPane } from "./sent-pane";
 
 export function MailShell({
   children,
@@ -66,8 +69,14 @@ function MailModeProvider({
   const isSpam = useRouterState({
     select: (state) => state.location.pathname.startsWith("/spam"),
   });
+  const isSent = useRouterState({
+    select: (state) => state.location.pathname.startsWith("/sent"),
+  });
   if (isSpam) {
     return <SpamLiveMailProvider>{children}</SpamLiveMailProvider>;
+  }
+  if (isSent) {
+    return <SentLiveMailProvider>{children}</SentLiveMailProvider>;
   }
   if (isArchive) {
     return <ArchiveLiveMailProvider>{children}</ArchiveLiveMailProvider>;
@@ -90,12 +99,19 @@ function MailWorkspace() {
   const isSpam = useRouterState({
     select: (state) => state.location.pathname.startsWith("/spam"),
   });
+  const isSent = useRouterState({
+    select: (state) => state.location.pathname.startsWith("/sent"),
+  });
   return (
     <main className="mail-shell bg-background text-foreground relative flex h-dvh min-h-0 overflow-hidden">
       <div className="relative z-10 flex min-w-0 flex-1 overflow-hidden">
         <AccountRail />
         <div className="bg-background flex min-w-0 flex-1 overflow-hidden">
-          <MailWorkspaceContent isArchive={isArchive} isSpam={isSpam} />
+          <MailWorkspaceContent
+            isArchive={isArchive}
+            isSent={isSent}
+            isSpam={isSpam}
+          />
         </div>
       </div>
       <ComposeDialog />
@@ -106,12 +122,22 @@ function MailWorkspace() {
 
 function MailWorkspaceContent({
   isArchive,
+  isSent,
   isSpam,
 }: {
   isArchive: boolean;
+  isSent: boolean;
   isSpam: boolean;
 }) {
   if (isArchive) return <ArchivePage />;
+  if (isSent) {
+    return (
+      <>
+        <SentPane />
+        <SentReader />
+      </>
+    );
+  }
   if (isSpam) {
     return (
       <>

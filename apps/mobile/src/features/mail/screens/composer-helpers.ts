@@ -52,8 +52,3 @@ export function draftCanSend(draft: {
     draft.attachments.every((attachment) => attachment.status === "ready")
   );
 }
-
-export function getComposerErrorMessage(error: unknown) {
-  if (error instanceof Error && error.message.trim()) return error.message;
-  return "Rodge Mail could not add this message to the delivery queue.";
-}

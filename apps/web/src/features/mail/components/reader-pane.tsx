@@ -9,6 +9,7 @@ import { cn } from "@rodge-mail/std/cn";
 import type { MailThreadDetail, ThreadMessageDetail } from "../types";
 import type { ReaderViewMode } from "./reader-message";
 import { useLiveMail } from "../live-data";
+import { getMailModePath } from "../live-data-types";
 import { useMailStore } from "../store";
 import { useUnsubscribe } from "../use-unsubscribe";
 import { CleanViewCodeCard } from "./reader-clean-view-code-card";
@@ -74,12 +75,7 @@ function ReaderContent() {
         closeMobileReader={() => {
           closeMobileReader();
           void navigate({
-            to:
-              mailMode === "archive"
-                ? "/archive"
-                : mailMode === "spam"
-                  ? "/spam"
-                  : "/",
+            to: getMailModePath(mailMode),
             search: (previous) => previous,
           });
         }}

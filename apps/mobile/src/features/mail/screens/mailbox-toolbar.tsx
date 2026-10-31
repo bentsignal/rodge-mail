@@ -1,4 +1,4 @@
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 
 import type { MailAccountFilter } from "@rodge-mail/features/mail";
 
@@ -31,6 +31,7 @@ export interface MailboxToolbarProps {
  */
 export function MailboxToolbar(props: MailboxToolbarProps) {
   const { selectionMode } = props;
+  const router = useRouter();
   const selectLabel = selectionMode ? "Done" : "Select";
   return (
     <>
@@ -43,7 +44,9 @@ export function MailboxToolbar(props: MailboxToolbarProps) {
             : getMailboxTitle(props),
         }}
       />
-      <Stack.Toolbar placement="left">{mailboxMenu(props)}</Stack.Toolbar>
+      <Stack.Toolbar placement="left">
+        {mailboxMenu(props, () => router.push("/(tabs)/(inbox)/sent"))}
+      </Stack.Toolbar>
       <Stack.Toolbar placement="right">
         <Stack.Toolbar.Menu
           accessibilityLabel="Filter"
@@ -88,15 +91,18 @@ export function MailboxToolbar(props: MailboxToolbarProps) {
 }
 
 // Called, not rendered: toolbar items must be the toolbar's direct children.
-function mailboxMenu({
-  accountFilter,
-  accounts,
-  mailbox,
-  onAccountChange,
-  onArchiveSelect,
-  onSpamSelect,
-  selectionMode,
-}: MailboxToolbarProps) {
+function mailboxMenu(
+  {
+    accountFilter,
+    accounts,
+    mailbox,
+    onAccountChange,
+    onArchiveSelect,
+    onSpamSelect,
+    selectionMode,
+  }: MailboxToolbarProps,
+  onSentSelect: () => void,
+) {
   const isInbox = mailbox === "inbox";
   return (
     <Stack.Toolbar.Menu
@@ -122,6 +128,9 @@ function mailboxMenu({
           {account.label}
         </Stack.Toolbar.MenuAction>
       ))}
+      <Stack.Toolbar.MenuAction icon="paperplane" onPress={onSentSelect}>
+        Sent
+      </Stack.Toolbar.MenuAction>
       <Stack.Toolbar.MenuAction
         key={`archive:${mailbox === "archive"}`}
         icon="archivebox"

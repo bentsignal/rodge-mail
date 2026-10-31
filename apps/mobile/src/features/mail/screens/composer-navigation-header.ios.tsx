@@ -1,19 +1,17 @@
 import { Stack } from "expo-router";
 
+import type { ComposerNavigationHeaderProps } from "./composer-navigation-header.types";
 import { useColor } from "~/hooks/use-color";
 
 export function ComposerNavigationHeader({
   canSend,
+  onAttachFiles,
+  onAttachPhotos,
   onCancel,
   onSend,
+  title,
   variant,
-}: {
-  canSend: boolean;
-  onCancel: () => void;
-  onSend: () => void;
-  variant: "modal" | "tab";
-}) {
-  const backgroundColor = useColor("background");
+}: ComposerNavigationHeaderProps) {
   const foreground = useColor("foreground");
   const primary = useColor("primary");
 
@@ -24,51 +22,43 @@ export function ComposerNavigationHeader({
           headerBackVisible: false,
           headerShadowVisible: false,
           headerShown: true,
-          headerStyle: { backgroundColor },
           headerTintColor: foreground,
-          title: "New message",
+          headerTransparent: true,
+          title,
         }}
       />
-      <ModalCloseToolbar
-        color={foreground}
-        onCancel={onCancel}
-        variant={variant}
-      />
-      <Stack.Toolbar placement="right">
+      <Stack.Toolbar placement="left">
         <Stack.Toolbar.Button
-          accessibilityHint="Queues this message to be sent"
-          accessibilityLabel="Send email"
-          disabled={!canSend}
-          tintColor={primary}
-          variant="done"
-          onPress={onSend}
+          accessibilityLabel="Cancel"
+          hidden={variant === "tab"}
+          icon="xmark"
+          onPress={onCancel}
+        />
+      </Stack.Toolbar>
+      <Stack.Toolbar placement="right">
+        <Stack.Toolbar.Menu
+          accessibilityLabel="Add attachment"
+          icon="paperclip"
         >
-          Send
-        </Stack.Toolbar.Button>
+          <Stack.Toolbar.MenuAction
+            icon="photo.on.rectangle"
+            onPress={onAttachPhotos}
+          >
+            Photo Library
+          </Stack.Toolbar.MenuAction>
+          <Stack.Toolbar.MenuAction icon="folder" onPress={onAttachFiles}>
+            Choose File
+          </Stack.Toolbar.MenuAction>
+        </Stack.Toolbar.Menu>
+        <Stack.Toolbar.Button
+          accessibilityLabel="Send"
+          disabled={!canSend}
+          icon="arrow.up"
+          tintColor={primary}
+          variant="prominent"
+          onPress={onSend}
+        />
       </Stack.Toolbar>
     </>
-  );
-}
-
-function ModalCloseToolbar({
-  color,
-  onCancel,
-  variant,
-}: {
-  color: string;
-  onCancel: () => void;
-  variant: "modal" | "tab";
-}) {
-  if (variant === "tab") return null;
-
-  return (
-    <Stack.Toolbar placement="left">
-      <Stack.Toolbar.Button
-        accessibilityLabel="Close new message"
-        icon="xmark"
-        tintColor={color}
-        onPress={onCancel}
-      />
-    </Stack.Toolbar>
   );
 }

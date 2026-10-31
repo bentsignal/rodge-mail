@@ -3,6 +3,7 @@ import { MailOpen, PenLine, Search, X } from "lucide-react";
 
 import { cn } from "@rodge-mail/std/cn";
 
+import type { MailMode } from "../live-data-types";
 import { useLiveMail } from "../live-data";
 import { withUnreadSearch } from "../mail-route-search";
 import { useMailStore } from "../store";
@@ -66,26 +67,19 @@ function InboxHeader() {
   );
 }
 
-function SearchInputSlot({
-  mailMode,
-}: {
-  mailMode: "archive" | "inbox" | "spam";
-}) {
+function SearchInputSlot({ mailMode }: { mailMode: MailMode }) {
   if (mailMode === "spam") return null;
   return <SearchInput />;
 }
 
-function getMailboxTitle(mailMode: "archive" | "inbox" | "spam") {
+function getMailboxTitle(mailMode: MailMode) {
   if (mailMode === "archive") return "Archive";
   if (mailMode === "spam") return "Spam";
+  if (mailMode === "sent") return "Sent";
   return "Inbox";
 }
 
-function MailboxFilterControl({
-  mailMode,
-}: {
-  mailMode: "archive" | "inbox" | "spam";
-}) {
+function MailboxFilterControl({ mailMode }: { mailMode: MailMode }) {
   if (mailMode !== "inbox") return null;
   return <UnreadFilterButton />;
 }

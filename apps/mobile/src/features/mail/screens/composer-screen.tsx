@@ -1,27 +1,25 @@
 import { useState } from "react";
-import { Alert, ScrollView, TextInput, View } from "react-native";
+import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useHeaderHeight } from "expo-router/react-navigation";
 
 import type { ComposerDraft, RecipientFields } from "@rodge-mail/features/mail";
 
 import type { MobileMailAccount } from "../lib/convex-mail";
 import type { ComposerFieldName } from "./composer-helpers";
 import type { NativeComposerAttachment } from "./use-native-attachments";
-import {
-  PostalPaperBackground,
-  PostalSurface,
-} from "~/features/theme/postal-surface";
 import { useColor } from "~/hooks/use-color";
 import { useMailStore } from "../store";
-import { ComposerAttachButton } from "./composer-attach-button";
 import { ComposerAttachmentList } from "./composer-attachment-list";
-import { ComposerField, ComposerSectionLabel } from "./composer-field";
+import { ComposerRow, ComposerTextField } from "./composer-field";
 import {
   canSendFromAccount,
   createComposerDraft,
   getSelectedAccount,
 } from "./composer-helpers";
 import { ComposerNavigationHeader } from "./composer-navigation-header";
+import { getCollapsedRecipientSummary } from "./composer-presentation";
+import { ComposerRecipientField } from "./composer-recipient-field";
 import { ComposerSenderField } from "./composer-sender-field";
 import { useNativeAttachments } from "./use-native-attachments";
 import { useSendMessage } from "./use-send-message";
@@ -68,117 +66,134 @@ export function ComposerScreen({
   });
   const backgroundColor = useColor("background");
 
-  function attach() {
-    showAttachmentPicker(attachFiles, attachImages);
-  }
-
   function setField(field: ComposerFieldName, value: string) {
     setDraft((current) => ({ ...current, [field]: value }));
   }
+
   return (
-    <View className="bg-background flex-1" style={{ backgroundColor, flex: 1 }}>
+    <View style={{ backgroundColor, flex: 1 }}>
       <ComposerNavigationHeader
         canSend={canSend}
+        title={draft.subject.trim() || "New Message"}
         variant={variant}
+        onAttachFiles={() => void attachFiles()}
+        onAttachPhotos={() => void attachImages()}
         onCancel={router.back}
-        onSend={() => void send()}
+        onSend={send}
       />
       <ComposerBody
         key={idempotencyKey}
         accounts={sendingAccounts}
         draft={draft}
-        onAttach={attach}
+        focus={getInitialFocus(variant, params.to)}
+        recipientErrors={recipientErrors}
+        selectedAccount={selectedAccount}
         onChange={setField}
         onOpenSettings={() => router.navigate("/(tabs)/(settings)")}
-        onSenderChange={setSelectedAccountId}
         onRemoveAttachment={(attachment) => void removeAttachment(attachment)}
-        recipientErrors={recipientErrors}
-        selectedAccountId={selectedAccount?.id}
-        autoFocusBody={variant === "modal"}
+        onSenderChange={setSelectedAccountId}
       />
     </View>
   );
 }
 
-function showAttachmentPicker(
-  attachFiles: () => Promise<void>,
-  attachImages: () => Promise<void>,
-) {
-  Alert.alert("Add attachment", undefined, [
-    { text: "Photos", onPress: () => void attachImages() },
-    { text: "Files", onPress: () => void attachFiles() },
-    { text: "Cancel", style: "cancel" },
-  ]);
+function getInitialFocus(variant: "modal" | "tab", to: string | undefined) {
+  if (variant === "tab") return undefined;
+  return to ? "body" : "to";
 }
 
 function ComposerBody({
   accounts,
   draft,
-  onAttach,
+  focus,
   onChange,
   onOpenSettings,
   onRemoveAttachment,
-  recipientErrors,
   onSenderChange,
-  selectedAccountId,
-  autoFocusBody,
+  recipientErrors,
+  selectedAccount,
 }: {
   accounts: MobileMailAccount[];
   draft: ComposerDraft<NativeComposerAttachment>;
-  onAttach: () => void;
+  focus: "body" | "to" | undefined;
   onChange: (field: ComposerFieldName, value: string) => void;
   onOpenSettings: () => void;
   onRemoveAttachment: (attachment: NativeComposerAttachment) => void;
-  recipientErrors: Partial<RecipientFields<string>>;
   onSenderChange: (accountId: string) => void;
-  selectedAccountId: string | undefined;
-  autoFocusBody: boolean;
+  recipientErrors: Partial<RecipientFields<string>>;
+  selectedAccount: MobileMailAccount | undefined;
 }) {
-  const background = useColor("background");
+  const headerHeight = useHeaderHeight();
+  const foreground = useColor("foreground");
+  const mutedForeground = useColor("muted-foreground");
+  const primary = useColor("primary");
 
   return (
-    <PostalPaperBackground
-      className="min-h-0"
-      style={{ backgroundColor: background }}
-    >
+    // Not flattened: the form sheet lays out a ScrollView that is its direct child itself.
+    <View className="min-h-0 flex-1" collapsable={false}>
       <ScrollView
-        className="flex-1"
-        contentContainerClassName="gap-5 px-4 pt-4"
-        contentContainerStyle={{ flexGrow: 1, paddingBottom: 32 }}
         automaticallyAdjustKeyboardInsets
-        contentInsetAdjustmentBehavior="automatic"
+        className="flex-1"
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
         keyboardDismissMode="interactive"
         keyboardShouldPersistTaps="handled"
       >
-        <ComposerFieldsSurface
+        <View style={{ height: headerHeight }} />
+        <ComposerRecipientField
+          autoFocus={focus === "to"}
+          defaultValue={draft.to}
+          error={recipientErrors.to}
+          label="To"
+          onChange={(value) => onChange("to", value)}
+        />
+        <CopiesAndSender
           accounts={accounts}
           draft={draft}
+          recipientErrors={recipientErrors}
+          selectedAccount={selectedAccount}
           onChange={onChange}
           onOpenSettings={onOpenSettings}
           onSenderChange={onSenderChange}
-          recipientErrors={recipientErrors}
-          selectedAccountId={selectedAccountId}
         />
-        <ComposerMessageSurface
-          autoFocus={autoFocusBody}
-          draft={draft}
-          onChange={onChange}
-          onRemoveAttachment={onRemoveAttachment}
+        <ComposerTextField
+          defaultValue={draft.subject}
+          label="Subject"
+          returnKeyType="next"
+          testID="composer-subject-field"
+          onChangeText={(value) => onChange("subject", value)}
         />
-        <ComposerAttachButton onAttach={onAttach} />
+        <ComposerAttachmentList
+          attachments={draft.attachments}
+          onRemove={onRemoveAttachment}
+        />
+        <TextInput
+          accessibilityLabel="Message body"
+          autoFocus={focus === "body"}
+          className="text-foreground flex-1 px-4 pt-3 text-base leading-6"
+          defaultValue={draft.body}
+          multiline
+          scrollEnabled={false}
+          selectionColor={primary}
+          style={{ color: foreground, minHeight: 240 }}
+          testID="composer-body-field"
+          textAlignVertical="top"
+          placeholderTextColor={mutedForeground}
+          onChangeText={(value) => onChange("body", value)}
+        />
       </ScrollView>
-    </PostalPaperBackground>
+    </View>
   );
 }
 
-function ComposerFieldsSurface({
+/** Cc, Bcc, and From fold into one row until tapped, like Mail. */
+function CopiesAndSender({
   accounts,
   draft,
   onChange,
   onOpenSettings,
   onSenderChange,
   recipientErrors,
-  selectedAccountId,
+  selectedAccount,
 }: {
   accounts: MobileMailAccount[];
   draft: ComposerDraft<NativeComposerAttachment>;
@@ -186,98 +201,54 @@ function ComposerFieldsSurface({
   onOpenSettings: () => void;
   onSenderChange: (accountId: string) => void;
   recipientErrors: Partial<RecipientFields<string>>;
-  selectedAccountId: string | undefined;
+  selectedAccount: MobileMailAccount | undefined;
 }) {
-  return (
-    <View className="gap-4">
-      <View className="gap-2">
-        <ComposerSectionLabel>Delivery</ComposerSectionLabel>
-        <View className="border-border border-y px-1">
-          <ComposerSenderField
-            accounts={accounts}
-            onChange={onSenderChange}
-            onOpenSettings={onOpenSettings}
-            selectedAccountId={selectedAccountId}
-          />
-        </View>
-      </View>
-      <View className="gap-2">
-        <ComposerSectionLabel>Recipients</ComposerSectionLabel>
-        <PostalSurface className="overflow-hidden px-4">
-          <ComposerField
-            autoCapitalize="none"
-            defaultValue={draft.to}
-            keyboardType="email-address"
-            label="To"
-            error={recipientErrors.to}
-            onChangeText={(value) => onChange("to", value)}
-          />
-          <ComposerField
-            autoCapitalize="none"
-            defaultValue={draft.cc}
-            keyboardType="email-address"
-            label="CC"
-            error={recipientErrors.cc}
-            onChangeText={(value) => onChange("cc", value)}
-          />
-          <ComposerField
-            autoCapitalize="none"
-            defaultValue={draft.bcc}
-            divider={false}
-            keyboardType="email-address"
-            label="BCC"
-            error={recipientErrors.bcc}
-            onChangeText={(value) => onChange("bcc", value)}
-          />
-        </PostalSurface>
-      </View>
-    </View>
+  const [expanded, setExpanded] = useState(
+    () => draft.cc.trim().length > 0 || draft.bcc.trim().length > 0,
   );
-}
+  const [focusCopies, setFocusCopies] = useState(false);
 
-function ComposerMessageSurface({
-  autoFocus,
-  draft,
-  onChange,
-  onRemoveAttachment,
-}: {
-  autoFocus: boolean;
-  draft: ComposerDraft<NativeComposerAttachment>;
-  onChange: (field: ComposerFieldName, value: string) => void;
-  onRemoveAttachment: (attachment: NativeComposerAttachment) => void;
-}) {
-  const foreground = useColor("foreground");
-  const mutedForeground = useColor("muted-foreground");
-  const primary = useColor("primary");
+  if (!expanded) {
+    return (
+      <Pressable
+        accessibilityHint="Shows the Cc, Bcc, and From fields"
+        accessibilityRole="button"
+        testID="composer-copies-row"
+        onPress={() => {
+          setExpanded(true);
+          setFocusCopies(true);
+        }}
+      >
+        <ComposerRow>
+          <Text className="text-muted-foreground text-base" numberOfLines={1}>
+            {getCollapsedRecipientSummary(selectedAccount?.address)}
+          </Text>
+        </ComposerRow>
+      </Pressable>
+    );
+  }
+
   return (
-    <View className="min-h-80 flex-1 gap-2">
-      <ComposerSectionLabel>Message</ComposerSectionLabel>
-      <PostalSurface className="min-h-72 flex-1 overflow-hidden px-4">
-        <ComposerField
-          defaultValue={draft.subject}
-          label="Subject"
-          onChangeText={(value) => onChange("subject", value)}
-        />
-        <View className="min-h-56 flex-1 py-4">
-          <TextInput
-            accessibilityLabel="Message body"
-            autoFocus={autoFocus}
-            className="text-foreground min-h-48 flex-1 text-base leading-6"
-            defaultValue={draft.body}
-            multiline
-            placeholder="Write your message…"
-            placeholderTextColor={mutedForeground}
-            selectionColor={primary}
-            style={{ color: foreground }}
-            textAlignVertical="top"
-            onChangeText={(value) => onChange("body", value)}
-          />
-          <ComposerAttachmentList
-            attachments={draft.attachments}
-            onRemove={onRemoveAttachment}
-          />
-        </View>
-      </PostalSurface>
-    </View>
+    <>
+      <ComposerRecipientField
+        autoFocus={focusCopies}
+        defaultValue={draft.cc}
+        error={recipientErrors.cc}
+        label="Cc"
+        onChange={(value) => onChange("cc", value)}
+      />
+      <ComposerRecipientField
+        defaultValue={draft.bcc}
+        error={recipientErrors.bcc}
+        label="Bcc"
+        onChange={(value) => onChange("bcc", value)}
+      />
+      <ComposerSenderField
+        accounts={accounts}
+        selectedAccount={selectedAccount}
+        onChange={onSenderChange}
+        onOpenSettings={onOpenSettings}
+      />
+    </>
   );
 }

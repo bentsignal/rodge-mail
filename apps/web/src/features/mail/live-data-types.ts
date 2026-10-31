@@ -1,5 +1,14 @@
 import type { InboxMessage, MailAccountView, MailThreadDetail } from "./types";
 
+export type MailMode = "archive" | "inbox" | "sent" | "spam";
+
+export function getMailModePath(mailMode: MailMode) {
+  if (mailMode === "archive") return "/archive";
+  if (mailMode === "spam") return "/spam";
+  if (mailMode === "sent") return "/sent";
+  return "/";
+}
+
 export interface LiveMailContextValue {
   accounts: MailAccountView[];
   canLoadMore: boolean;
@@ -14,7 +23,7 @@ export interface LiveMailContextValue {
   isSeedingDemo: boolean;
   isSyncingAccounts: boolean;
   loadMore: () => void;
-  mailMode: "archive" | "inbox" | "spam";
+  mailMode: MailMode;
   markMessageRead: (message: InboxMessage) => void;
   archiveThread: (message: Pick<InboxMessage, "threadId">) => Promise<void>;
   archiveThreads: (messages: Pick<InboxMessage, "threadId">[]) => Promise<void>;

@@ -16,6 +16,7 @@ import {
 import { cn } from "@rodge-mail/std/cn";
 import * as Dialog from "@rodge-mail/ui-web/dialog";
 
+import type { MailMode } from "../live-data-types";
 import type { ThreadMessageDetail } from "../types";
 import {
   getUnsubscribeDialogMessage,
@@ -25,7 +26,7 @@ import {
 interface ReaderToolbarProps {
   archiveThread: (message: ThreadMessageDetail) => Promise<void>;
   closeMobileReader: () => void;
-  mailMode: "archive" | "inbox" | "spam";
+  mailMode: MailMode;
   markNotSpam: (message: ThreadMessageDetail) => Promise<void>;
   permanentlyDeleteArchivedThread: (
     message: ThreadMessageDetail,

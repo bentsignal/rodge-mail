@@ -7,8 +7,10 @@ import { api } from "@rodge-mail/convex/api";
 import { getReplyAddress } from "@rodge-mail/features/mail";
 import { toast } from "@rodge-mail/ui-web/toast";
 
+import type { MailMode } from "./live-data-types";
 import type { InboxMessage, MailAccountView, MailThreadDetail } from "./types";
 import { env } from "~/env";
+import { getMailModePath } from "./live-data-types";
 import { getErrorMessage } from "./live-data-utils";
 import { useMailStore } from "./store";
 import { useSyncAll } from "./use-sync-all";
@@ -17,7 +19,7 @@ import { useThreadActions } from "./use-thread-actions";
 export function useLiveMailActions(
   accounts: MailAccountView[],
   selectedThread: MailThreadDetail | undefined,
-  mailMode: "archive" | "inbox" | "spam",
+  mailMode: MailMode,
   unreadSession?: {
     forget: (threadId: InboxMessage["threadId"]) => void;
     preserve: (message: InboxMessage) => void;
@@ -67,7 +69,7 @@ function useArchiveActions({
 }: {
   clearSelection: () => void;
   forgetUnreadThread?: (threadId: InboxMessage["threadId"]) => void;
-  mailMode: "archive" | "inbox" | "spam";
+  mailMode: MailMode;
   navigate: NavigateFn;
 }) {
   const archive = useMutation(api.mail.mutations.archiveThread);
@@ -86,12 +88,7 @@ function useArchiveActions({
       forgetUnreadThread?.(message.threadId);
       clearSelection();
       await navigate({
-        to:
-          mailMode === "archive"
-            ? "/archive"
-            : mailMode === "spam"
-              ? "/spam"
-              : "/",
+        to: getMailModePath(mailMode),
         search: (previous) => previous,
       });
       toast.success("Archived in Rodge. Your provider copy is unchanged.");

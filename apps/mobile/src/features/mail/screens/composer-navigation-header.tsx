@@ -1,19 +1,19 @@
+import { Alert } from "react-native";
 import { Stack } from "expo-router";
 import { Button, Host } from "@expo/ui";
 
+import type { ComposerNavigationHeaderProps } from "./composer-navigation-header.types";
 import { useColor } from "~/hooks/use-color";
 
 export function ComposerNavigationHeader({
   canSend,
+  onAttachFiles,
+  onAttachPhotos,
   onCancel,
   onSend,
+  title,
   variant,
-}: {
-  canSend: boolean;
-  onCancel: () => void;
-  onSend: () => void;
-  variant: "modal" | "tab";
-}) {
+}: ComposerNavigationHeaderProps) {
   const backgroundColor = useColor("background");
   const foreground = useColor("foreground");
   const primary = useColor("primary");
@@ -27,7 +27,7 @@ export function ComposerNavigationHeader({
           headerShown: true,
           headerStyle: { backgroundColor },
           headerTintColor: foreground,
-          title: "New message",
+          title,
         }}
       />
       <NativeToolbarButton
@@ -36,6 +36,18 @@ export function ComposerNavigationHeader({
         placement="left"
         seedColor={primary}
         onPress={onCancel}
+      />
+      <NativeToolbarButton
+        label="Attach"
+        placement="right"
+        seedColor={primary}
+        onPress={() =>
+          Alert.alert("Add attachment", undefined, [
+            { text: "Photos", onPress: onAttachPhotos },
+            { text: "Files", onPress: onAttachFiles },
+            { text: "Cancel", style: "cancel" },
+          ])
+        }
       />
       <NativeToolbarButton
         disabled={!canSend}

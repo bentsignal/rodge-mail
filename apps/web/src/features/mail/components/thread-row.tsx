@@ -3,6 +3,7 @@ import { Archive, Pin } from "lucide-react";
 import { cn } from "@rodge-mail/std/cn";
 import * as ContextMenu from "@rodge-mail/ui-web/context-menu";
 
+import type { MailMode } from "../live-data-types";
 import type { MailRouteSearch } from "../mail-route-search";
 import type { MailAccountFilter } from "../store";
 import type { InboxMessage } from "../types";
@@ -98,7 +99,7 @@ function ThreadRowTarget({
   accountFilter: MailAccountFilter;
   bulkSelectionIsActive: boolean;
   isBulkSelected: boolean;
-  mailMode: "archive" | "inbox" | "spam";
+  mailMode: MailMode;
   markMessageRead: (message: InboxMessage) => void;
   message: InboxMessage;
   preview: string;
@@ -165,7 +166,7 @@ function InboxThreadActions({
   togglePinned,
 }: {
   archiveThread: (message: Pick<InboxMessage, "threadId">) => Promise<void>;
-  mailMode: "archive" | "inbox" | "spam";
+  mailMode: MailMode;
   message: InboxMessage;
   pinLabel: string;
   togglePinned: (message: InboxMessage) => Promise<void>;
@@ -195,7 +196,7 @@ function ThreadLink({
 }: {
   accountFilter: MailAccountFilter;
   children: React.ReactNode;
-  mailMode: "archive" | "inbox" | "spam";
+  mailMode: MailMode;
   message: InboxMessage;
   onClick: () => void;
   senderName: string;
