@@ -12,6 +12,7 @@ import { createUrls } from "@rodge-mail/config/urls";
 const urls = createUrls({
   nodeEnv: "development",
 });
+export const convexUrls = urls.convex;
 
 export const authClient = createAuthClient({
   baseURL: urls.convex.site,

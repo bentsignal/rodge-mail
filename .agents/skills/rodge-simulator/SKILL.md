@@ -58,6 +58,7 @@ only works if every agent goes through it.
 scripts/sim.sh up             # wait for a slot, then dev client + this worktree's simulator + Metro
 scripts/sim.sh open /compose  # go to any route: /thread/<id>, /(tabs)/(settings), ...
 scripts/sim.sh relaunch       # restart the app, e.g. to drop the keyboard or reset state
+scripts/sim.sh signin         # sign in as the isolated backend's test owner (scripts/backend.sh isolate first)
 scripts/sim.sh reload         # reload the JavaScript
 scripts/sim.sh shot <name>    # screenshot to .cache/evidence/<name>.png
 scripts/sim.sh record <name>  # start a video; `scripts/sim.sh stop` ends it
@@ -84,17 +85,18 @@ serial `up` prints (`emulator-55xx`), with `platform: "android"`.
   Portless origin `pnpm dev` uses; the app is launched straight at
   `http://127.0.0.1:<port>`. Its log is `.cache/sim/metro.log`; check it for
   red boxes and warnings you introduced.
-- `open`, `reload`, and `frames` go through the dev-only
+- `open`, `reload`, `signin`, and `frames` go through the dev-only
   `globalThis.rodgeDev` hook (`apps/mobile/src/features/dev/automation.ts`)
   over Metro's debugger connection, because iOS asks "Open in Rodge Mail?"
   before every `simctl openurl`.
-- **The simulator is signed out.** Rodge's only account is Shawn's real
-  one, on the production deployment, so there is no test user and
-  `scripts/sim.sh signin` isn't available yet
-  ([docs/simulator-sign-in.md](../../../docs/simulator-sign-in.md)). What
-  you can check signed out: the sign-in screens, launch, and anything not
-  behind auth. For signed-in screens, say in the PR that they weren't seen
-  in the simulator and ask Shawn to check them. Never sign in with Shawn's
+- **Signing in needs an isolated backend.** The default backend is the
+  production deployment with Shawn's real mail, so there the simulator
+  stays signed out. `scripts/backend.sh isolate` gives the worktree its
+  own dev deployment with a fake owner and seeded mail, and points Metro
+  at it; then `scripts/sim.sh up` (or `relaunch`) and `scripts/sim.sh
+signin` signs in as that owner, and evidence of it is safe to publish
+  ([docs/simulator-sign-in.md](../../../docs/simulator-sign-in.md)).
+  `signin` refuses without an isolated backend. Never sign in with Shawn's
   email or try to get a code sent to him.
 - Let Shawn watch: call the T3 `device_open` tool with the simulator UDID
   that `up` prints, once (rule 6). It returns the exact `agent-device`

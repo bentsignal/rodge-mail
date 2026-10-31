@@ -87,8 +87,9 @@ fallback behavior, and the selective semantic-indexing boundary.
 Agents and worktrees use `scripts/sim.sh` (the `rodge-simulator` skill)
 instead of `pnpm ios`: it queues devices with every other repo on the Mac,
 clones a per-worktree simulator, installs a cached dev client, and runs the
-worktree's own Metro on a plain port. Simulators are signed out; see
-[simulator-sign-in.md](simulator-sign-in.md).
+worktree's own Metro on a plain port. To test signed in, give the worktree
+an isolated backend (`scripts/backend.sh isolate`) and run
+`scripts/sim.sh signin`; see [simulator-sign-in.md](simulator-sign-in.md).
 
 ## Validation
 

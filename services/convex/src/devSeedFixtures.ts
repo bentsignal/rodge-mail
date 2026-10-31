@@ -38,6 +38,8 @@ export interface DemoMessage {
   summary: string;
   shouldEmbed: boolean;
   attachment?: DemoAttachment;
+  placement?: "archive" | "spam";
+  recipientName?: string;
 }
 
 export const DEMO_ACCOUNTS = [

@@ -27,9 +27,11 @@ if worktree_id="$(scripts/worktree-id.sh 2>/dev/null)"; then
   cat >shared/config/src/auth.ts <<EOF
 export const sharedAuthIssuer: string | undefined = undefined;
 export const sharedAuthJwksUri: string | undefined = undefined;
+export const nativeAuthBasePath = "/api/mobile-auth";
 EOF
   cat >shared/config/src/overrides.ts <<EOF
 export const convexCloudUrl: string | undefined = undefined;
+export const convexSiteUrl: string | undefined = undefined;
 export const worktreeId: string | undefined = "${worktree_id}";
 EOF
   git update-index --skip-worktree shared/config/src/auth.ts shared/config/src/overrides.ts
