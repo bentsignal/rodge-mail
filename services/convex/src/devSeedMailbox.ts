@@ -460,7 +460,7 @@ export function isolatedMailbox(now: number) {
       from: { address, name },
       subject: seed.subject,
       snippet: seed.snippet,
-      body: seed.body ?? `${seed.snippet}\n\n— ${name.split(" ")[0]}`,
+      body: seed.body ?? `${seed.snippet}\n\n${name}`,
       receivedAt: Math.round(now - seed.hoursAgo * 60 * 60 * 1000),
       isRead: seed.unread !== true,
       isPinned: seed.pinned === true,
