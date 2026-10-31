@@ -191,6 +191,7 @@ async function insertDemoMessageDetails({
       ownerId,
       messageId,
       plainText: fixture.body,
+      ...(fixture.html ? { sanitizedHtml: fixture.html } : {}),
       truncated: false,
       createdAt: now,
       updatedAt: now,
@@ -214,6 +215,24 @@ async function insertDemoMessageDetails({
     }),
   ]);
 
+  if (fixture.cleanView) {
+    await ctx.db.insert("messageCleanViews", {
+      ownerId,
+      messageId,
+      status: "ready",
+      promptVersion: SEED_PROMPT_VERSION,
+      outputSchemaVersion: SEED_PROMPT_VERSION,
+      jobKey: `${SEED_PROMPT_VERSION}:${fixture.remoteMessageId}`,
+      inputHash: fixture.remoteMessageId,
+      summary: fixture.summary,
+      cleanedMarkdown: fixture.cleanView.markdown,
+      ...(fixture.cleanView.code ? { code: fixture.cleanView.code } : {}),
+      generatedAt: now,
+      createdAt: now,
+      updatedAt: now,
+    });
+  }
+
   if (fixture.attachment) {
     await ctx.db.insert("attachments", {
       ownerId,
@@ -234,33 +253,44 @@ async function deleteMessageRecords(
   ctx: MutationCtx,
   messageId: Id<"messages">,
 ) {
-  const [contents, attachments, classifications, embeddingJobs, embeddings] =
-    await Promise.all([
-      ctx.db
-        .query("messageContents")
-        .withIndex("by_message", (q) => q.eq("messageId", messageId))
-        .collect(),
-      ctx.db
-        .query("attachments")
-        .withIndex("by_message", (q) => q.eq("messageId", messageId))
-        .collect(),
-      ctx.db
-        .query("messageClassifications")
-        .withIndex("by_message", (q) => q.eq("messageId", messageId))
-        .collect(),
-      ctx.db
-        .query("messageEmbeddingJobs")
-        .withIndex("by_message", (q) => q.eq("messageId", messageId))
-        .collect(),
-      ctx.db
-        .query("messageEmbeddings")
-        .withIndex("by_message", (q) => q.eq("messageId", messageId))
-        .collect(),
-    ]);
+  const [
+    contents,
+    attachments,
+    classifications,
+    cleanViews,
+    embeddingJobs,
+    embeddings,
+  ] = await Promise.all([
+    ctx.db
+      .query("messageContents")
+      .withIndex("by_message", (q) => q.eq("messageId", messageId))
+      .collect(),
+    ctx.db
+      .query("attachments")
+      .withIndex("by_message", (q) => q.eq("messageId", messageId))
+      .collect(),
+    ctx.db
+      .query("messageClassifications")
+      .withIndex("by_message", (q) => q.eq("messageId", messageId))
+      .collect(),
+    ctx.db
+      .query("messageCleanViews")
+      .withIndex("by_message", (q) => q.eq("messageId", messageId))
+      .collect(),
+    ctx.db
+      .query("messageEmbeddingJobs")
+      .withIndex("by_message", (q) => q.eq("messageId", messageId))
+      .collect(),
+    ctx.db
+      .query("messageEmbeddings")
+      .withIndex("by_message", (q) => q.eq("messageId", messageId))
+      .collect(),
+  ]);
   for (const row of [
     ...contents,
     ...attachments,
     ...classifications,
+    ...cleanViews,
     ...embeddingJobs,
     ...embeddings,
   ]) {

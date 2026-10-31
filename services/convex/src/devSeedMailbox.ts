@@ -1,6 +1,10 @@
 /* eslint-disable max-lines -- Seed fixture data reads best as one list. */
 
-import type { DemoAccount, DemoMessage } from "./devSeedFixtures";
+import type {
+  DemoAccount,
+  DemoCleanView,
+  DemoMessage,
+} from "./devSeedFixtures";
 
 /**
  * The isolated backend's seeded mailbox (`scripts/backend.sh seed`): three
@@ -50,8 +54,25 @@ type Seed = Pick<
   unread?: boolean;
   pinned?: boolean;
   body?: string;
+  html?: string;
+  cleanView?: DemoCleanView;
   thread?: string;
 };
+
+const NEWSLETTER_HTML = [
+  '<table width="100%" cellpadding="0" cellspacing="0" style="font-family:Georgia,serif;color:#1f2933">',
+  '<tr><td style="padding:24px 20px;background:#f4efe6;text-align:center">',
+  '<h1 style="margin:0;font-size:26px">Trailhead Weekly</h1>',
+  '<p style="margin:6px 0 0;font-size:14px;color:#52606d">Five trails worth the drive this weekend</p>',
+  "</td></tr>",
+  '<tr><td style="padding:20px">',
+  "<p>Fall color is peaking along the ridge. We picked five hikes for every pace, from a flat lakeside loop to a full-day summit.</p>",
+  '<p><a href="https://example.com/trails/ridge-loop" target="_blank">Ridge Loop, 4.2 miles</a> is the pick for families.</p>',
+  '<p><a href="https://example.com/trails/summit">Summit Trail, 9.8 miles</a> rewards an early start.</p>',
+  '<p style="text-align:center;margin:28px 0"><a href="https://example.com/trails" target="_blank" style="display:inline-block;padding:12px 22px;background:#1f2933;color:#ffffff;text-decoration:none;border-radius:6px">See all five trails</a></p>',
+  '<p style="font-size:13px;color:#52606d">Questions? Write to <a href="mailto:hello@trailhead.example">hello@trailhead.example</a>.</p>',
+  "</td></tr></table>",
+].join("");
 
 const SEEDS = [
   {
@@ -106,6 +127,36 @@ const SEEDS = [
       fileName: "lake.jpg",
       contentType: "image/jpeg",
       size: 842_194,
+    },
+  },
+  {
+    account: "gmail",
+    from: ["Trailhead Weekly", "news@trailhead.example"],
+    subject: "Five trails worth the drive this weekend",
+    snippet: "Fall color is peaking along the ridge. We picked five hikes.",
+    category: "newsletter",
+    hoursAgo: 1.2,
+    body: "Fall color is peaking along the ridge. We picked five hikes for every pace.\n\nRidge Loop, 4.2 miles: https://example.com/trails/ridge-loop\nSummit Trail, 9.8 miles: https://example.com/trails/summit\n\nSee all five trails: https://example.com/trails",
+    html: NEWSLETTER_HTML,
+    cleanView: {
+      markdown:
+        "Five fall hikes picked for this weekend, from a flat lakeside loop to a full-day summit.\n\n- **Ridge Loop**, 4.2 miles, good for families\n- **Summit Trail**, 9.8 miles, start early\n\n[See all five trails](https://example.com/trails)",
+    },
+  },
+  {
+    account: "icloud",
+    from: ["Lumen Accounts", "no-reply@lumen.example"],
+    subject: "Your Lumen sign-in code",
+    snippet: "Use 482 913 to finish signing in. It expires in 10 minutes.",
+    category: "transactional",
+    hoursAgo: 0.1,
+    unread: true,
+    body: "Use 482913 to finish signing in to Lumen. It expires in 10 minutes.\n\nIf you didn't try to sign in, you can ignore this email.",
+    html: '<div style="font-family:-apple-system,Helvetica,sans-serif;padding:16px"><p>Use this code to finish signing in to Lumen:</p><p style="font-size:30px;letter-spacing:6px;font-weight:700">482913</p><p>It expires in 10 minutes. If you didn\'t try to sign in, <a href="https://example.com/security">secure your account</a>.</p></div>',
+    cleanView: {
+      markdown:
+        "A sign-in code for Lumen. It expires in 10 minutes. If you didn't try to sign in, you can ignore it.",
+      code: { label: "Sign-in code", value: "482913" },
     },
   },
   {
@@ -486,6 +537,8 @@ export function isolatedMailbox(now: number) {
       subject: seed.subject,
       snippet: seed.snippet,
       body: seed.body ?? `${seed.snippet}\n\n${name}`,
+      ...(seed.html ? { html: seed.html } : {}),
+      ...(seed.cleanView ? { cleanView: seed.cleanView } : {}),
       receivedAt: Math.round(now - seed.hoursAgo * 60 * 60 * 1000),
       isRead: seed.unread !== true,
       isPinned: seed.pinned === true,
