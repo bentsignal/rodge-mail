@@ -351,7 +351,7 @@ require_app() {
   fi
   echo "the app is not running: it crashed or was closed${hint:+ ($hint)}" >&2
   echo "restart it with scripts/sim.sh$(flag) relaunch" >&2
-  exit 1
+  return 1
 }
 
 cdp_eval() {
@@ -359,14 +359,14 @@ cdp_eval() {
 }
 
 app_eval() {
-  require_app
+  require_app || return 1
   cdp_eval "$1"
 }
 
 # Brings the running app to the front without restarting it. On a fresh
 # simulator, SpringBoard can come up over the app after it launches.
 front() {
-  require_app
+  require_app || return 1
   if [ "$PLATFORM" = ios ]; then
     xcrun simctl launch "$DEVICE" "$BUNDLE_ID" >/dev/null
   else
