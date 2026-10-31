@@ -1,20 +1,25 @@
 import type { LayoutChangeEvent } from "react-native";
 import { useEffect, useRef, useState } from "react";
-import { ScrollView, Text, View } from "react-native";
+import { Alert, ScrollView, Text, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMutation, useQuery } from "convex/react";
 
-import type { MailThread } from "@rodge-mail/features/mail";
+import type { MailMessage, MailThread } from "@rodge-mail/features/mail";
 import { api } from "@rodge-mail/convex/api";
 import { getReplyAddress } from "@rodge-mail/features/mail";
 
 import type { MobileMailbox } from "../store";
 import type { MessageViewMode } from "./thread-message-body";
+import type { CleanViewMenuAction } from "./thread-reader-toolbar";
 import { PostalPaperBackground } from "~/features/theme/postal-surface";
 import { toConvexId } from "../lib/convex-id";
 import { toMailThreadDetail } from "../lib/convex-mail";
-import { formatMessageTime } from "../lib/mail-format";
 import { CleanViewCodeCard } from "./clean-view-code-card";
+import { optimisticallyGenerateCleanView } from "./clean-view-optimistic";
+import {
+  hasGeneratedCleanView,
+  isPreparingCleanView,
+} from "./clean-view-status";
 import { parseMobileMailbox } from "./mailbox-controls";
 import { MessageViewToolbar } from "./message-view-toolbar";
 import { ThreadMessageBody } from "./thread-message-body";
@@ -95,6 +100,7 @@ function ThreadReader({
   const [viewMode, setViewMode] = useState<MessageViewMode>("clean");
   const actions = useThreadReaderActions(thread, onPermanentDeleteStart);
   const activeMessage = getActiveMessage(thread, targetMessageId);
+  const cleanViewAction = useCleanViewAction(activeMessage);
   function reply() {
     const latestMessage = thread.messages.at(-1);
     if (!latestMessage) return;
@@ -115,6 +121,7 @@ function ThreadReader({
   return (
     <>
       <ThreadReaderToolbar
+        cleanViewAction={cleanViewAction}
         isPinned={actions.isPinned}
         mailbox={mailbox}
         title={thread.sender.name}
@@ -129,10 +136,15 @@ function ThreadReader({
       <PostalPaperBackground>
         <ScrollView
           ref={scrollViewRef}
-          contentContainerClassName="gap-4 px-4 pt-4 pb-32"
+          contentContainerClassName="gap-5 px-4 pt-2 pb-32"
           contentInsetAdjustmentBehavior="automatic"
         >
-          <ThreadHeader thread={thread} />
+          <Text
+            className="text-foreground text-[22px] leading-7 font-bold"
+            selectable
+          >
+            {thread.subject}
+          </Text>
           <MessageViewToolbar
             message={activeMessage}
             onChange={setViewMode}
@@ -142,10 +154,12 @@ function ThreadReader({
             code={activeMessage?.cleanCode}
             viewMode={viewMode}
           />
-          {thread.messages.map((message) => (
+          {/* react-doctor-disable-next-line react-doctor/rn-no-scrollview-mapped-list -- A thread's messages stay mounted: virtualizing would tear down and reload each message's web view (and its remote images) on scroll, and the jump to a linked message needs every message laid out. */}
+          {thread.messages.map((message, index) => (
             <ThreadMessageBody
               key={message.id}
               message={message}
+              showSeparator={index > 0}
               viewMode={viewMode}
               onLayout={
                 message.id === targetMessageId
@@ -170,32 +184,22 @@ function getActiveMessage(thread: MailThread, targetMessageId?: string) {
   return thread.messages.at(-1);
 }
 
-function ThreadHeader({ thread }: { thread: MailThread }) {
-  return (
-    <View className="gap-5 px-1 pt-2 pb-3">
-      <Text className="text-foreground text-[28px] leading-[34px] font-bold">
-        {thread.subject}
-      </Text>
-      <View className="flex-row items-center gap-3">
-        <View className="bg-muted border-border size-11 items-center justify-center rounded-lg border">
-          <Text className="text-foreground text-base font-bold">
-            {thread.sender.name.slice(0, 1)}
-          </Text>
-        </View>
-        <View className="min-w-0 flex-1">
-          <Text className="text-foreground text-base font-semibold">
-            {thread.sender.name}
-          </Text>
-          <Text className="text-muted-foreground text-sm" numberOfLines={1}>
-            {thread.sender.address}
-          </Text>
-        </View>
-        <Text className="text-muted-foreground text-xs">
-          {formatMessageTime(thread.receivedAt)}
-        </Text>
-      </View>
-    </View>
-  );
+function useCleanViewAction(message: MailMessage | undefined) {
+  const generate = useMutation(
+    api.cleanView.mutations.generate,
+  ).withOptimisticUpdate(optimisticallyGenerateCleanView);
+  if (!message) return;
+  const messageId = toConvexId<"messages">(message.id);
+  return {
+    disabled: isPreparingCleanView(message),
+    label: hasGeneratedCleanView(message)
+      ? "Regenerate Clean View"
+      : "Generate Clean View",
+    onPress: () =>
+      void generate({ messageId }).catch(() =>
+        Alert.alert("Couldn’t prepare a clean version", "Please try again."),
+      ),
+  } satisfies CleanViewMenuAction;
 }
 
 function firstParam(value: string | string[] | undefined) {

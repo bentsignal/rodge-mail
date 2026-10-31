@@ -5,3 +5,7 @@
 @import "uniwind";
 
 @import "@rodge-mail/tailwind-config/theme";
+
+@utility border-t-hairline {
+  border-top-width: hairlineWidth();
+}

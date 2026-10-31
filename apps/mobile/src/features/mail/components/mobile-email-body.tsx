@@ -1,10 +1,12 @@
-import { Alert, Linking, Text, View } from "react-native";
+import { Text, View } from "react-native";
 
 import type {
   EmailTextBlock,
   EmailTextInline,
 } from "@rodge-mail/features/mail";
 import { parseEmailText } from "@rodge-mail/features/mail";
+
+import { openEmailLink } from "../lib/open-email-link";
 
 export function MobileEmailBody({
   markdown = false,
@@ -104,8 +106,8 @@ function MobileInlineText({
 }
 
 function getTextClassName(muted: boolean) {
-  if (muted) return "text-muted-foreground text-[15px] leading-7";
-  return "text-foreground text-[16px] leading-7";
+  if (muted) return "text-muted-foreground text-[15px] leading-6";
+  return "text-foreground text-[17px] leading-[26px]";
 }
 
 function MobileInlineToken({ token }: { token: EmailTextInline }) {
@@ -132,12 +134,4 @@ function MobileInlineToken({ token }: { token: EmailTextInline }) {
       {token.display}
     </Text>
   );
-}
-
-async function openEmailLink(href: string) {
-  try {
-    await Linking.openURL(href);
-  } catch {
-    Alert.alert("Couldn’t open link", href);
-  }
 }

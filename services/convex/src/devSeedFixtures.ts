@@ -19,6 +19,11 @@ export interface DemoAttachment {
   size: number;
 }
 
+export interface DemoCleanView {
+  markdown: string;
+  code?: { label: string; value: string };
+}
+
 export interface DemoMessage {
   account: DemoAccount["key"];
   remoteMessageId: string;
@@ -28,6 +33,8 @@ export interface DemoMessage {
   subject: string;
   snippet: string;
   body: string;
+  html?: string;
+  cleanView?: DemoCleanView;
   receivedAt: number;
   isRead: boolean;
   isPinned: boolean;
