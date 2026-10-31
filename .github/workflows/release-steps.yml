@@ -1,0 +1,35 @@
+name: Release steps
+
+# Every PR's Release notes say whether it needs a Convex deploy, whether it
+# changes native code, and whether it adds steps the next release must do,
+# listed in docs/next-release.md (scripts/check-release-steps.ts). Reruns
+# when the description is edited.
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+concurrency:
+  group: release-steps-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  release-steps:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: ".nvmrc"
+          # No install needed, so no pnpm cache.
+          package-manager-cache: false
+
+      - name: Check the description's release notes
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: node --experimental-strip-types --no-warnings scripts/check-release-steps.ts

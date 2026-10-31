@@ -82,6 +82,14 @@ production work; development builds must never infer a production destination.
 See [`services/convex/AI.md`](../services/convex/AI.md) for model variables,
 fallback behavior, and the selective semantic-indexing boundary.
 
+## Simulators
+
+Agents and worktrees use `scripts/sim.sh` (the `rodge-simulator` skill)
+instead of `pnpm ios`: it queues devices with every other repo on the Mac,
+clones a per-worktree simulator, installs a cached dev client, and runs the
+worktree's own Metro on a plain port. Simulators are signed out; see
+[simulator-sign-in.md](simulator-sign-in.md).
+
 ## Validation
 
 Run these commands in order after changes:
@@ -89,8 +97,9 @@ Run these commands in order after changes:
 ```sh
 pnpm run lint
 pnpm run typecheck
+pnpm run test
+pnpm run react-doctor --base origin/main   # when apps/mobile changed
 pnpm run format:fix
 ```
 
-Add package-specific tests and smoke checks as each provider and client becomes
-runnable.
+`pnpm run check` runs the first three.
