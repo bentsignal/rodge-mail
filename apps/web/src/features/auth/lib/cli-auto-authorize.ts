@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { desktopAuthRequestSearchSchema } from "./desktop-auth-contracts";
+import { cliAuthRequestSearchSchema } from "./cli-auth-contracts";
 
 const storageKey = "rodge-mail:desktop-auth-after-sign-in";
 const authorizationTtlMs = 5 * 60 * 1000;
@@ -15,7 +15,7 @@ interface BrowserStorage {
   setItem(key: string, value: string): void;
 }
 
-export function rememberDesktopAuthAfterSignIn({
+export function rememberCliAuthAfterSignIn({
   now = Date.now(),
   origin,
   redirectUri,
@@ -26,7 +26,7 @@ export function rememberDesktopAuthAfterSignIn({
   redirectUri: string | undefined;
   storage: BrowserStorage;
 }) {
-  const request = parseDesktopAuthRedirect(redirectUri, origin);
+  const request = parseCliAuthRedirect(redirectUri, origin);
   if (!request) {
     storage.removeItem(storageKey);
     return false;
@@ -42,7 +42,7 @@ export function rememberDesktopAuthAfterSignIn({
   return true;
 }
 
-export function consumeDesktopAuthAfterSignIn({
+export function consumeCliAuthAfterSignIn({
   now = Date.now(),
   requestId,
   storage,
@@ -67,10 +67,7 @@ export function consumeDesktopAuthAfterSignIn({
   }
 }
 
-function parseDesktopAuthRedirect(
-  redirectUri: string | undefined,
-  origin: string,
-) {
+function parseCliAuthRedirect(redirectUri: string | undefined, origin: string) {
   if (!redirectUri) return undefined;
 
   try {
@@ -79,14 +76,11 @@ function parseDesktopAuthRedirect(
       return undefined;
     }
 
-    const parsed = desktopAuthRequestSearchSchema.safeParse(
+    const parsed = cliAuthRequestSearchSchema.safeParse(
       Object.fromEntries(url.searchParams),
     );
-    if (!parsed.success) return undefined;
-    const expectedParameters = parsed.data.callback_url ? 2 : 1;
-    return url.searchParams.size === expectedParameters
-      ? parsed.data
-      : undefined;
+    if (!parsed.success || url.searchParams.size !== 2) return undefined;
+    return parsed.data;
   } catch {
     return undefined;
   }

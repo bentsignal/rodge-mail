@@ -23,7 +23,6 @@ import { urls } from "./urls";
 // eslint-disable-next-line no-restricted-syntax -- This preserves Better Auth's generated Convex API typing.
 const authFunctions: AuthFunctions = internal.auth;
 const androidPasskeyOrigins = getAndroidPasskeyOrigins();
-const desktopBrowserAuthOrigin = getDesktopBrowserAuthOrigin();
 const nativePasskeyRpId = new URL(urls.convex.site).hostname;
 
 export const authCorsAllowedOrigins = getAuthCorsAllowedOrigins(
@@ -141,17 +140,10 @@ function getAuthOrigins(passkeyRpId: string) {
   const trustedOrigins = [
     ...new Set(
       env.ENVIRONMENT === "production"
-        ? [
-            urls.web,
-            passkeyRpOrigin,
-            ...(desktopBrowserAuthOrigin ? [desktopBrowserAuthOrigin] : []),
-            "rodge-mail://",
-            ...androidPasskeyOrigins,
-          ]
+        ? [urls.web, passkeyRpOrigin, "rodge-mail://", ...androidPasskeyOrigins]
         : [
             urls.web,
             passkeyRpOrigin,
-            ...(desktopBrowserAuthOrigin ? [desktopBrowserAuthOrigin] : []),
             "https://*.rodge-mail.local",
             "https://*.www.rodge-mail.local",
             "rodge-mail://",
@@ -166,33 +158,11 @@ function getAuthOrigins(passkeyRpId: string) {
 function getAuthCorsAllowedOrigins(passkeyRpId: string) {
   const passkeyRpOrigin = `https://${passkeyRpId}`;
   return env.ENVIRONMENT === "production"
-    ? [
-        urls.web,
-        passkeyRpOrigin,
-        ...(desktopBrowserAuthOrigin ? [desktopBrowserAuthOrigin] : []),
-      ]
+    ? [urls.web, passkeyRpOrigin]
     : [
         urls.web,
         passkeyRpOrigin,
-        ...(desktopBrowserAuthOrigin ? [desktopBrowserAuthOrigin] : []),
         "*.rodge-mail.local",
         "*.www.rodge-mail.local",
       ];
-}
-
-function getDesktopBrowserAuthOrigin() {
-  const configured = env.DESKTOP_BROWSER_AUTH_URL?.trim();
-  if (!configured) return undefined;
-  const url = new URL(configured);
-  if (
-    url.protocol !== "https:" ||
-    url.pathname !== "/" ||
-    url.search ||
-    url.hash ||
-    url.username ||
-    url.password
-  ) {
-    throw new Error("DESKTOP_BROWSER_AUTH_URL must be an HTTPS origin");
-  }
-  return url.origin;
 }

@@ -30,7 +30,7 @@ function createAdapter(
   };
 }
 
-describe("desktop authentication handoff", () => {
+describe("CLI authentication handoff", () => {
   it("consumes an authorized handoff exactly once", async () => {
     const codeChallenge = await createCodeChallenge(verifier);
     const authorizationCodeHash = await createCodeChallenge(authorizationCode);

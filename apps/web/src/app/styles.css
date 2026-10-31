@@ -152,51 +152,6 @@
   background-color: var(--background);
 }
 
-.desktop-drag-region {
-  display: none;
-}
-
-html[data-desktop-runtime="true"]:where(
-    [data-desktop-platform="darwin"],
-    :not([data-desktop-platform])
-  ) {
-  --mail-desktop-rail-width: 92px;
-  --mail-desktop-titlebar-reserve: 60px;
-}
-
-html[data-desktop-runtime="true"]:where(
-    [data-desktop-platform="darwin"],
-    :not([data-desktop-platform])
-  )
-  .desktop-drag-region {
-  position: fixed;
-  z-index: 50;
-  top: 0;
-  left: 0;
-  display: block;
-  width: var(--mail-desktop-rail-width);
-  height: 52px;
-  -webkit-app-region: drag;
-}
-
-html[data-desktop-runtime="true"]:where(
-    [data-desktop-platform="darwin"],
-    :not([data-desktop-platform])
-  )
-  .mail-account-rail {
-  width: var(--mail-desktop-rail-width);
-  padding-top: var(--mail-desktop-titlebar-reserve);
-}
-
-@media (min-width: 1280px) {
-  html[data-desktop-runtime="true"]:where(
-      [data-desktop-platform="darwin"],
-      :not([data-desktop-platform])
-    ) {
-    --mail-desktop-rail-width: 216px;
-  }
-}
-
 .mail-app-frame {
   background: var(--mail-paper);
 }

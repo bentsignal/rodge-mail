@@ -21,7 +21,7 @@ const desktopAuthClaimSchema = desktopAuthVerifierSchema.extend({
 });
 
 const desktopAuthTtlMs = 5 * 60 * 1000;
-const invalidHandoffMessage = "Desktop sign-in request is invalid or expired";
+const invalidHandoffMessage = "CLI sign-in request is invalid or expired";
 const invalidHandoffError = { message: invalidHandoffMessage };
 
 interface VerificationValue {
@@ -122,19 +122,6 @@ export function desktopAuth() {
           return ctx.json({ success: true });
         },
       ),
-      cancelDesktopAuth: createAuthEndpoint(
-        "/desktop-auth/cancel",
-        { body: desktopAuthVerifierSchema, method: "POST" },
-        async (ctx) => {
-          const handoff = await consumeDesktopAuthCancellation(
-            ctx.context.internalAdapter,
-            ctx.body,
-            Date.now(),
-          );
-          if (!handoff) throw ctx.error("BAD_REQUEST", invalidHandoffError);
-          return ctx.json({ success: true });
-        },
-      ),
     },
   };
 }
@@ -164,23 +151,6 @@ export async function consumeDesktopAuthHandoff(
   ) {
     return undefined;
   }
-
-  const consumed = await adapter.consumeVerificationValue(identifier);
-  return parseDesktopAuthValue(consumed, now);
-}
-
-async function consumeDesktopAuthCancellation(
-  adapter: DesktopAuthVerificationAdapter,
-  claim: { codeVerifier: string; requestId: string },
-  now: number,
-) {
-  const identifier = getDesktopAuthIdentifier(claim.requestId);
-  const current = await adapter.findVerificationValue(identifier);
-  const currentHandoff = parseDesktopAuthValue(current, now);
-  if (!currentHandoff) return undefined;
-
-  const challenge = await createCodeChallenge(claim.codeVerifier);
-  if (challenge !== currentHandoff.codeChallenge) return undefined;
 
   const consumed = await adapter.consumeVerificationValue(identifier);
   return parseDesktopAuthValue(consumed, now);

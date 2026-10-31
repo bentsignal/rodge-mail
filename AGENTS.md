@@ -2,8 +2,7 @@
 
 ## Repository Summary
 
-A focused, AI-native email client for web, Electron desktop, and Expo mobile,
-backed by Convex.
+A focused, AI-native email client for web and Expo mobile, backed by Convex.
 
 ## Required Validation After Changes
 

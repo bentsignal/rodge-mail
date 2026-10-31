@@ -1,7 +1,5 @@
-import { access, readFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { get } from "node:https";
-import { homedir } from "node:os";
-import { join } from "node:path";
 import { parseEnv } from "node:util";
 
 const localEnv = await readLocalEnv();
@@ -29,7 +27,6 @@ const checks = [
         ok: false,
         detail: " (CONVEX_SITE_URL is not configured)",
       }),
-  checkDesktopApp(),
 ];
 
 const results = await Promise.all(checks);
@@ -77,37 +74,6 @@ function request(url) {
     request.on("error", reject);
     request.on("timeout", () => request.destroy(new Error("request timed out")));
   });
-}
-
-async function checkDesktopApp() {
-  if (process.platform !== "darwin") {
-    return {
-      name: "Installed desktop app",
-      ok: true,
-      detail: " (skipped outside macOS)",
-    };
-  }
-
-  const appPaths = [
-    "/Applications/Rodge Mail.app",
-    join(homedir(), "Applications", "Rodge Mail.app"),
-  ];
-  for (const appPath of appPaths) {
-    try {
-      await access(appPath);
-      return {
-        name: "Installed desktop app",
-        ok: true,
-        detail: ` (${appPath})`,
-      };
-    } catch {}
-  }
-
-  return {
-    name: "Installed desktop app",
-    ok: false,
-    detail: ` (${appPaths.join(" or ")})`,
-  };
 }
 
 async function readLocalEnv() {

@@ -16,7 +16,7 @@ Portless HTTPS is the primary development environment. Production hosting is
 not required to exercise the application locally.
 
 `pnpm dev:web` starts the development Convex functions and TanStack web client.
-`pnpm dev` adds the Expo and Electron development processes. Both commands
+`pnpm dev` adds the Expo development process. Both commands
 start Portless explicitly in LAN mode, making the stable origins available on
 this Mac and other devices on the same Wi-Fi network:
 
@@ -26,13 +26,6 @@ this Mac and other devices on the same Wi-Fi network:
 The local `rodge` CLI uses the web origin for browser-handoff authentication,
 so keep the web development server and Portless proxy running when signing in.
 See `apps/cli/README.md` for commands and URL overrides.
-
-For desktop-only iteration, use `pnpm dev:desktop`. This starts the web/Vite
-runtime and Electron development shell together without starting Expo. The
-renderer receives Vite HMR updates. An app launched from
-`apps/desktop/release` is a packaged snapshot instead: Cmd-R only reloads its
-embedded web bundle. The desktop command detects that stale packaged process
-and asks you to quit it before development starts.
 
 On first use, allow Portless to install its local certificate authority. If the
 certificate was removed or is not trusted, run `pnpm exec portless trust` and
@@ -47,19 +40,10 @@ The Convex development auth deployment trusts `https://www.rodge-mail.local`,
 and its passkey relying-party ID is `rodge-mail.local`. Worktree-specific hosts
 remain subdomains of the same relying-party ID.
 
-The desktop app defaults to the Portless web origin in development. Set
-`RODGE_WEB_URL` only when intentionally testing another safe development
-origin. Packaged builds ignore that override and serve the bundled TanStack
-output through Electron's intercepted `https://www.rodge-mail.local` origin.
-
-Desktop authentication opens `/desktop-auth` in the system browser and returns
-through `rodge-mail://`. Local development can use the Portless origin. For a
-packaged build, set the public web bundle's
-`VITE_DESKTOP_BROWSER_AUTH_URL=https://<host>` and the matching Convex variable
-`DESKTOP_BROWSER_AUTH_URL=https://<host>`. A packaged app cannot expose its
-Electron-intercepted `www.rodge-mail.local` runtime to an external browser, so
-the hosted route must be deployed before release acceptance on macOS or
-Windows.
+CLI authentication opens `/desktop-auth` in the system browser. After explicit
+approval, the web app redirects to the CLI's random-port loopback callback at
+`http://127.0.0.1:<port>/auth/desktop-complete`. The `desktop` path names are
+kept for compatibility with installed CLIs.
 
 ## Secrets
 

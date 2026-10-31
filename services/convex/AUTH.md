@@ -9,9 +9,6 @@ component. Configure these variables on each Convex deployment:
 - `PASSKEY_RP_ID`: the browser WebAuthn relying-party domain, without a scheme
   or path. Local web development keeps its `.local` relying party.
 - `RESEND_API_KEY`: the Resend API key used for registration verification codes.
-- `DESKTOP_BROWSER_AUTH_URL`: optional origin-only HTTPS URL for the public web
-  app that handles packaged desktop authentication. It must match the web
-  bundle's `VITE_DESKTOP_BROWSER_AUTH_URL`.
 - `ANDROID_PASSKEY_ORIGINS`: optional comma-separated
   `android:apk-key-hash:<BASE64_SHA256>` origins for every debug, EAS, and Play
   signing certificate that may authenticate on Android versions where
@@ -47,12 +44,12 @@ code, and creates a normal authenticated session. It neither replaces nor adds
 a passkey. Users can add another passkey later from Settings. Both email sign-in
 endpoints are rate limited to three requests per minute.
 
-Non-browser authentication uses a five-minute, PKCE-bound handoff stored in
-Better Auth's verification table. The system-browser URL contains a random
-request ID. After explicit browser approval, desktop uses a `rodge-mail://`
-callback and the CLI uses a random-port loopback callback. Both return a fresh
-one-time authorization code. The verifier remains in the initiating client,
-and both factors are submitted in the final POST. The server stores only their
+CLI authentication uses a five-minute, PKCE-bound handoff stored in Better
+Auth's verification table under the `/desktop-auth/*` endpoints. The
+system-browser URL contains a random request ID. After explicit browser
+approval, the web app redirects to the CLI's random-port loopback callback with
+a fresh one-time authorization code. The verifier remains in the CLI, and both
+factors are submitted in the final POST. The server stores only their
 hashes and atomically consumes the verification record before a separate
 client session is issued, preventing interception and replay.
 

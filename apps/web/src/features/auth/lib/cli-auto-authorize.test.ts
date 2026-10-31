@@ -1,21 +1,21 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  consumeDesktopAuthAfterSignIn,
-  rememberDesktopAuthAfterSignIn,
-} from "./desktop-auto-authorize";
+  consumeCliAuthAfterSignIn,
+  rememberCliAuthAfterSignIn,
+} from "./cli-auto-authorize";
 
 const origin = "https://www.rodge-mail.local";
 const requestId = "a".repeat(43);
 const callbackUrl = "http://127.0.0.1:43123/auth/desktop-complete";
 
-describe("desktop authorization after browser sign-in", () => {
-  it("consumes the matching short-lived desktop request", () => {
+describe("CLI authorization after browser sign-in", () => {
+  it("consumes the matching short-lived CLI request", () => {
     const storage = createStorage();
     const redirectUri = `/desktop-auth?request_id=${requestId}&callback_url=${encodeURIComponent(callbackUrl)}`;
 
     expect(
-      rememberDesktopAuthAfterSignIn({
+      rememberCliAuthAfterSignIn({
         now: 1_000,
         origin,
         redirectUri,
@@ -23,14 +23,14 @@ describe("desktop authorization after browser sign-in", () => {
       }),
     ).toBe(true);
     expect(
-      consumeDesktopAuthAfterSignIn({
+      consumeCliAuthAfterSignIn({
         now: 2_000,
         requestId,
         storage,
       }),
     ).toBe(true);
     expect(
-      consumeDesktopAuthAfterSignIn({
+      consumeCliAuthAfterSignIn({
         now: 2_000,
         requestId,
         storage,
@@ -40,8 +40,8 @@ describe("desktop authorization after browser sign-in", () => {
 
   it("rejects expired and mismatched requests", () => {
     const storage = createStorage();
-    const redirectUri = `/desktop-auth?request_id=${requestId}`;
-    rememberDesktopAuthAfterSignIn({
+    const redirectUri = `/desktop-auth?request_id=${requestId}&callback_url=${encodeURIComponent(callbackUrl)}`;
+    rememberCliAuthAfterSignIn({
       now: 1_000,
       origin,
       redirectUri,
@@ -49,21 +49,21 @@ describe("desktop authorization after browser sign-in", () => {
     });
 
     expect(
-      consumeDesktopAuthAfterSignIn({
+      consumeCliAuthAfterSignIn({
         now: 5 * 60 * 1000 + 1_001,
         requestId,
         storage,
       }),
     ).toBe(false);
 
-    rememberDesktopAuthAfterSignIn({
+    rememberCliAuthAfterSignIn({
       now: 1_000,
       origin,
       redirectUri,
       storage,
     });
     expect(
-      consumeDesktopAuthAfterSignIn({
+      consumeCliAuthAfterSignIn({
         now: 2_000,
         requestId: "b".repeat(43),
         storage,
@@ -77,11 +77,12 @@ describe("desktop authorization after browser sign-in", () => {
     for (const redirectUri of [
       "/",
       `https://example.com/desktop-auth?request_id=${requestId}`,
-      `/desktop-auth?request_id=${requestId}&unexpected=true`,
+      `/desktop-auth?request_id=${requestId}`,
+      `/desktop-auth?request_id=${requestId}&callback_url=${encodeURIComponent(callbackUrl)}&unexpected=true`,
       "/desktop-auth?request_id=invalid",
     ]) {
       expect(
-        rememberDesktopAuthAfterSignIn({
+        rememberCliAuthAfterSignIn({
           origin,
           redirectUri,
           storage,

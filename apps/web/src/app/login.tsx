@@ -66,29 +66,7 @@ function LoginBrand() {
 }
 
 function AuthActions({ onRecover }: { onRecover: () => void }) {
-  const cancelDesktopSignIn = useAuthStore(
-    (store) => store.cancelDesktopSignIn,
-  );
-  const desktopAuthIsPending = useAuthStore(
-    (store) => store.desktopAuthIsPending,
-  );
   const isLoading = useAuthStore((store) => store.isLoading);
-  const startDesktopSignIn = useAuthStore((store) => store.startDesktopSignIn);
-  const usesDesktopBrowserAuth = useAuthStore(
-    (store) => store.usesDesktopBrowserAuth,
-  );
-
-  if (desktopAuthIsPending) {
-    return <DesktopAuthPending onCancel={cancelDesktopSignIn} />;
-  }
-
-  function recoverAccount() {
-    if (usesDesktopBrowserAuth) {
-      void startDesktopSignIn();
-      return;
-    }
-    onRecover();
-  }
 
   return (
     <div className="space-y-3">
@@ -96,30 +74,10 @@ function AuthActions({ onRecover }: { onRecover: () => void }) {
       <button
         className="mail-label hover:text-foreground w-full py-2 text-center text-xs font-medium transition"
         disabled={isLoading}
-        onClick={recoverAccount}
+        onClick={onRecover}
         type="button"
       >
         Sign in with email
-      </button>
-    </div>
-  );
-}
-
-function DesktopAuthPending({ onCancel }: { onCancel: () => void }) {
-  return (
-    <div className="text-center">
-      <h2 className="font-serif text-2xl font-semibold tracking-[-0.03em]">
-        Check your browser
-      </h2>
-      <p className="mail-label mt-3 text-sm leading-6">
-        Finish signing in there, then Rodge Mail will reopen here.
-      </p>
-      <button
-        className="mail-label hover:text-foreground mt-6 text-xs font-medium transition"
-        onClick={onCancel}
-        type="button"
-      >
-        Cancel
       </button>
     </div>
   );
