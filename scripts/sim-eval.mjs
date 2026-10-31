@@ -40,7 +40,9 @@ socket.addEventListener("open", () => {
     JSON.stringify({
       id: 1,
       method: "Runtime.evaluate",
-      params: { awaitPromise: true, expression, returnByValue: true },
+      // Hermes ignores `awaitPromise`, so asynchronous hooks return at once
+      // and scripts/sim.sh polls for their result.
+      params: { expression, returnByValue: true },
     }),
   );
 });

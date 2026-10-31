@@ -63,8 +63,10 @@ Shawn starts each feature or fix in its own T3 Code worktree and thread
   simulator or emulator use: devices start only through `scripts/sim.sh`,
   which queues them with every other repo on the Mac (Vera, SYNQ): up to
   three run at once, and a boot never overlaps a performance measurement.
-  Open a device in T3's Device panel (`device_open`) at most once, and
-  close it (`device_close`) before `scripts/sim.sh down`. Shut the device
+  Run `up` as a background command, run it again right away when it exits
+  75 (still queued), and never end your turn while it's queued. Open a
+  device in T3's Device panel (`device_open`) at most once, and close it
+  (`device_close`) before `scripts/sim.sh down`. Shut the device
   down as soon as you have your evidence, and always before you end your
   turn. A Stop hook sends you back if one is still up, and the queue
   deletes devices left idle for 30 minutes.

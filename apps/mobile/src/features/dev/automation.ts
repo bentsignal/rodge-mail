@@ -38,9 +38,8 @@ async function requestSignIn() {
 let signInStatus = "idle";
 
 /**
- * Starts sign-in and returns at once: Hermes' debugger crashes the app when
- * `sim-eval` awaits a promise, so `scripts/sim.sh signin` polls
- * `signInStatus()` instead.
+ * Starts sign-in and returns at once: Hermes' `Runtime.evaluate` can't wait
+ * on a promise, so `scripts/sim.sh signin` polls `signInStatus()` instead.
  */
 function signIn() {
   if (signInStatus === "pending") return signInStatus;

@@ -329,13 +329,44 @@ target_name() {
   fi
 }
 
-app_eval() {
+app_running() {
+  if [ "$PLATFORM" = ios ]; then
+    xcrun simctl spawn "$DEVICE" launchctl list 2>/dev/null |
+      awk -v app="UIKitApplication:$BUNDLE_ID[" '$1 ~ /^[0-9]+$/ && index($3, app) == 1 { found = 1 } END { exit !found }'
+  else
+    [ -n "$(adb_device shell pidof "$BUNDLE_ID" 2>/dev/null | tr -d '\r')" ]
+  fi
+}
+
+# Fails loudly when the app has died, instead of letting `front` reopen it
+# without Metro and the next command report "not connected to Metro".
+require_app() {
+  app_running && return
+  local hint
+  if [ "$PLATFORM" = ios ]; then
+    hint="$(ls -t "$HOME"/Library/Logs/DiagnosticReports/RodgeMail-*.ips 2>/dev/null | head -20 |
+      while read -r report; do grep -q "$DEVICE" "$report" && echo "crash report: $report" && break; done || true)"
+  else
+    hint="crash log: adb -s $SERIAL logcat -b crash -d"
+  fi
+  echo "the app is not running: it crashed or was closed${hint:+ ($hint)}" >&2
+  echo "restart it with scripts/sim.sh$(flag) relaunch" >&2
+  exit 1
+}
+
+cdp_eval() {
   RODGE_DEVICE="$(target_name)" node "$ROOT/scripts/sim-eval.mjs" "$PORT" "$1"
+}
+
+app_eval() {
+  require_app
+  cdp_eval "$1"
 }
 
 # Brings the running app to the front without restarting it. On a fresh
 # simulator, SpringBoard can come up over the app after it launches.
 front() {
+  require_app
   if [ "$PLATFORM" = ios ]; then
     xcrun simctl launch "$DEVICE" "$BUNDLE_ID" >/dev/null
   else
@@ -367,7 +398,7 @@ launch() {
       "$BUNDLE_ID" >/dev/null
   fi
   for _ in $(seq 1 180); do
-    if app_eval "typeof globalThis.rodgeDev" 2>/dev/null | grep -q object; then
+    if cdp_eval "typeof globalThis.rodgeDev" 2>/dev/null | grep -q object; then
       front
       return
     fi

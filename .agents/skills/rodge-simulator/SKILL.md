@@ -29,12 +29,13 @@ only works if every agent goes through it.
 3. **Only touch your own worktree's device and Metro.** Never use, stop, or
    screenshot another worktree's simulator (`Rodge <other>`, `Vera ...`,
    `SYNQ ...`), even one that looks abandoned. The queue cleans those up.
-4. **Wait your turn.** If `up` prints `simulator queue: position N of M`,
-   it's waiting, and says why. If it exits with code 75 ("still queued"),
-   run `up` again right away to keep your place; the place lapses after 5
-   minutes. If your harness can run commands in the background and wake you
-   when they finish, run `up` that way and do other work meanwhile.
-   `frames start` waits the same way and exits 75 the same way.
+4. **Wait your turn, and never end your turn while queued.** If `up`
+   prints `simulator queue: position N of M`, it's waiting, and says why.
+   Nothing resumes you once your turn ends, so run `up` as a background
+   command and keep working meanwhile. When it exits with code 75 ("still
+   queued"), run it again right away to keep your place; the place lapses
+   after 5 minutes. End your turn only once you're done with the device and
+   it's down. `frames start` waits the same way and exits 75 the same way.
 5. **Hold a device only while you're using it.** Bring it up when you're
    ready to verify, and `down` as soon as you have your evidence, before you
    wait for CI or for Shawn. **Never end a turn with a device up.** A Stop
@@ -137,7 +138,8 @@ When you have your evidence, and in any case before you end your turn:
 ## Troubleshooting
 
 - **`up` keeps saying you're queued:** `scripts/sim.sh queue` shows why.
-  That's working as intended; keep waiting, and do other work meanwhile.
+  That's working as intended; keep re-running it in the background and do
+  other work meanwhile, without ending your turn.
   Tell Shawn if the line hasn't moved in half an hour.
 - **`up` says Metro didn't start:** read `.cache/sim/metro.log`. Kill only
   the PID in `.cache/sim/metro`, never by pattern (other worktrees run
