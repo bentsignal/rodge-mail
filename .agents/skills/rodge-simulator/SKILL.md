@@ -31,11 +31,13 @@ only works if every agent goes through it.
    `SYNQ ...`), even one that looks abandoned. The queue cleans those up.
 4. **Wait your turn, and never end your turn while queued.** If `up`
    prints `simulator queue: position N of M`, it's waiting, and says why.
-   Nothing resumes you once your turn ends, so run `up` as a background
-   command and keep working meanwhile. When it exits with code 75 ("still
-   queued"), run it again right away to keep your place; the place lapses
-   after 5 minutes. End your turn only once you're done with the device and
-   it's down. `frames start` waits the same way and exits 75 the same way.
+   Nothing resumes you once your turn ends, and a background command that
+   finishes later doesn't either. Run `up` (and a dev client build) in the
+   foreground with your tool's longest timeout (600000 ms for Claude Code's
+   Bash). When it exits with code 75 ("still queued") or times out, run it
+   again in your very next call to keep your place; the place lapses after
+   5 minutes. End your turn only once you're done with the device and it's
+   down. `frames start` waits the same way and exits 75 the same way.
 5. **Hold a device only while you're using it.** Bring it up when you're
    ready to verify, and `down` as soon as you have your evidence, before you
    wait for CI or for Shawn. **Never end a turn with a device up.** A Stop
@@ -138,8 +140,8 @@ When you have your evidence, and in any case before you end your turn:
 ## Troubleshooting
 
 - **`up` keeps saying you're queued:** `scripts/sim.sh queue` shows why.
-  That's working as intended; keep re-running it in the background and do
-  other work meanwhile, without ending your turn.
+  That's working as intended; keep re-running it in the foreground,
+  without ending your turn.
   Tell Shawn if the line hasn't moved in half an hour.
 - **`up` says Metro didn't start:** read `.cache/sim/metro.log`. Kill only
   the PID in `.cache/sim/metro`, never by pattern (other worktrees run
