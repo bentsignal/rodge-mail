@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useHeaderHeight } from "expo-router/react-navigation";
 
 import type { ComposerDraft, RecipientFields } from "@rodge-mail/features/mail";
 
@@ -122,16 +123,22 @@ function ComposerBody({
   recipientErrors: Partial<RecipientFields<string>>;
   selectedAccount: MobileMailAccount | undefined;
 }) {
+  const headerHeight = useHeaderHeight();
   const foreground = useColor("foreground");
   const mutedForeground = useColor("muted-foreground");
   const primary = useColor("primary");
 
   return (
-    <ScrollView
+    // Not flattened: the form sheet lays out a ScrollView that is its direct child itself.
+    <View className="min-h-0 flex-1" collapsable={false}>
+      <ScrollView
       automaticallyAdjustKeyboardInsets
       className="flex-1"
-      contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
-      contentInsetAdjustmentBehavior="automatic"
+      contentContainerStyle={{
+        flexGrow: 1,
+        paddingBottom: 24,
+        paddingTop: headerHeight,
+      }}
       keyboardDismissMode="interactive"
       keyboardShouldPersistTaps="handled"
     >
@@ -176,7 +183,8 @@ function ComposerBody({
         placeholderTextColor={mutedForeground}
         onChangeText={(value) => onChange("body", value)}
       />
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 

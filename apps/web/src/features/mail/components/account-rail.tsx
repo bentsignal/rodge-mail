@@ -129,51 +129,27 @@ function AccountRailNavigation({
         label="All Inboxes"
         onClick={() => selectMailbox("all")}
       />
-      <QuickLink
-        aria-label="Sent"
-        aria-current={isSent ? "page" : undefined}
-        className={cn(
-          "group relative flex h-11 w-full items-center justify-center gap-3 rounded-lg px-3 text-sm transition-colors xl:justify-start",
-          isSent
-            ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-            : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground",
-        )}
+      <MailboxLink
+        active={isSent}
+        icon={Send}
+        label="Sent"
         onClick={onClearSelection}
         to="/sent"
-      >
-        <Send className="size-[18px]" strokeWidth={1.7} />
-        <span className="hidden truncate xl:block">Sent</span>
-      </QuickLink>
-      <QuickLink
-        aria-label="Archive"
-        aria-current={isArchive ? "page" : undefined}
-        className={cn(
-          "group relative flex h-11 w-full items-center justify-center gap-3 rounded-lg px-3 text-sm transition-colors xl:justify-start",
-          isArchive
-            ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-            : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground",
-        )}
+      />
+      <MailboxLink
+        active={isArchive}
+        icon={Archive}
+        label="Archive"
         onClick={onClearSelection}
         to="/archive"
-      >
-        <Archive className="size-[18px]" strokeWidth={1.7} />
-        <span className="hidden truncate xl:block">Archive</span>
-      </QuickLink>
-      <QuickLink
-        aria-label="Spam"
-        aria-current={isSpam ? "page" : undefined}
-        className={cn(
-          "group relative flex h-11 w-full items-center justify-center gap-3 rounded-lg px-3 text-sm transition-colors xl:justify-start",
-          isSpam
-            ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-            : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground",
-        )}
+      />
+      <MailboxLink
+        active={isSpam}
+        icon={ShieldAlert}
+        label="Spam"
         onClick={onClearSelection}
         to="/spam"
-      >
-        <ShieldAlert className="size-[18px]" strokeWidth={1.7} />
-        <span className="hidden truncate xl:block">Spam</span>
-      </QuickLink>
+      />
       <div className="border-sidebar-border mx-3 mt-4 mb-2.5 border-t" />
       <div className="mb-1 flex items-center justify-center px-1 xl:justify-between xl:pl-3">
         <p className="text-muted-foreground hidden text-[11px] font-medium tracking-wide uppercase xl:block">
@@ -199,6 +175,38 @@ function AccountRailNavigation({
       })}
       <AccountLoadingState isLoading={isLoadingAccounts} />
     </nav>
+  );
+}
+
+function MailboxLink({
+  active,
+  icon: Icon,
+  label,
+  onClick,
+  to,
+}: {
+  active: boolean;
+  icon: LucideIcon;
+  label: string;
+  onClick: () => void;
+  to: "/archive" | "/sent" | "/spam";
+}) {
+  return (
+    <QuickLink
+      aria-label={label}
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "group relative flex h-11 w-full items-center justify-center gap-3 rounded-lg px-3 text-sm transition-colors xl:justify-start",
+        active
+          ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+          : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground",
+      )}
+      onClick={onClick}
+      to={to}
+    >
+      <Icon className="size-[18px]" strokeWidth={1.7} />
+      <span className="hidden truncate xl:block">{label}</span>
+    </QuickLink>
   );
 }
 

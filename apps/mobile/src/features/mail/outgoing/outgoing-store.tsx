@@ -51,12 +51,12 @@ function useInternalStore() {
   }
 
   function send(args: EnqueueArgs) {
-    const next: OutgoingSend = {
+    const next = {
       args,
       key: args.idempotencyKey,
       phase: "enqueuing",
       subject: args.subject,
-    };
+    } satisfies OutgoingSend;
     setSends((current) => [
       ...current.filter((item) => item.key !== next.key),
       next,

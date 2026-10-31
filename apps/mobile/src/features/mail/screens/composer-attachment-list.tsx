@@ -2,7 +2,6 @@ import {
   ActivityIndicator,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   View,
 } from "react-native";
@@ -19,17 +18,10 @@ export function ComposerAttachmentList({
   attachments: NativeComposerAttachment[];
   onRemove: (attachment: NativeComposerAttachment) => void;
 }) {
-  const border = useColor("border");
   if (attachments.length === 0) return null;
 
   return (
-    <View
-      className="ml-4"
-      style={{
-        borderBottomColor: border,
-        borderBottomWidth: StyleSheet.hairlineWidth,
-      }}
-    >
+    <View className="border-border ml-4 border-b-[0.5px]">
       <ScrollView
         horizontal
         contentContainerClassName="gap-2 py-2.5 pr-4"
@@ -55,17 +47,13 @@ function AttachmentChip({
   attachment: NativeComposerAttachment;
   onRemove: () => void;
 }) {
-  const border = useColor("border");
   const mutedForeground = useColor("muted-foreground");
   const destructive = useColor("destructive");
   const Icon = attachment.contentType.startsWith("image/") ? ImageIcon : FileText;
   const failed = attachment.status === "error";
 
   return (
-    <View
-      className="bg-muted h-11 max-w-60 flex-row items-center gap-2 rounded-xl pr-1 pl-2.5"
-      style={{ borderColor: border, borderWidth: StyleSheet.hairlineWidth }}
-    >
+    <View className="bg-muted border-border h-11 max-w-60 flex-row items-center gap-2 rounded-xl border-[0.5px] pr-1 pl-2.5">
       <AttachmentLeading
         icon={<Icon color={failed ? destructive : mutedForeground} size={18} />}
         uploading={attachment.status === "uploading"}

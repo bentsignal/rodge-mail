@@ -7,6 +7,7 @@ import type { Id } from "@rodge-mail/convex/model";
 import { api } from "@rodge-mail/convex/api";
 
 import type { LiveMailContextValue } from "./live-data-types";
+import { LiveMailContext } from "./live-data";
 import { useLiveMailActions } from "./live-data-actions";
 import { useAccountsQuery, useUnreadCountQuery } from "./live-data-query-hooks";
 import { throwQueryError, useThreadQuery } from "./live-data-support";
@@ -71,4 +72,15 @@ export function useSentLiveMailValue() {
       ? toUnreadCountRecord(unreadCountQuery.data)
       : {},
   } satisfies LiveMailContextValue;
+}
+
+export function SentLiveMailProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const value = useSentLiveMailValue();
+  return (
+    <LiveMailContext.Provider value={value}>{children}</LiveMailContext.Provider>
+  );
 }

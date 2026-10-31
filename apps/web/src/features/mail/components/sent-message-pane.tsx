@@ -37,7 +37,13 @@ type SentMessage = NonNullable<
 export function SentReader() {
   const outboxId = useSelectedOutboxId();
   const query = useSentMessageQuery(outboxId);
-  if (!outboxId) return <SentReaderFrame hiddenOnMobile placeholder />;
+  if (!outboxId) {
+    return (
+      <SentReaderFrame hiddenOnMobile>
+        <SentPlaceholder title="Select a sent message" />
+      </SentReaderFrame>
+    );
+  }
   if (query.isPending) {
     return (
       <SentReaderFrame>
@@ -63,11 +69,9 @@ export function SentReader() {
 function SentReaderFrame({
   children,
   hiddenOnMobile = false,
-  placeholder = false,
 }: {
-  children?: React.ReactNode;
+  children: React.ReactNode;
   hiddenOnMobile?: boolean;
-  placeholder?: boolean;
 }) {
   return (
     <section
@@ -77,7 +81,6 @@ function SentReaderFrame({
         hiddenOnMobile ? "hidden lg:flex" : "flex",
       )}
     >
-      {placeholder ? <SentPlaceholder title="Select a sent message" /> : null}
       {children}
     </section>
   );
@@ -107,9 +110,7 @@ function SentMessageView({ message }: { message: SentMessage }) {
         </QuickLink>
         <SentStatusBadge status={message.status} />
         <div className="ml-auto">
-          {message.status === "failed" ? (
-            <RetryOutboxButton outboxId={message._id} />
-          ) : null}
+          <FailedRetryButton message={message} />
         </div>
       </div>
       <div className="mail-scrollbar min-h-0 flex-1 overflow-y-auto">
@@ -148,6 +149,11 @@ function SentMessageView({ message }: { message: SentMessage }) {
       </div>
     </>
   );
+}
+
+function FailedRetryButton({ message }: { message: SentMessage }) {
+  if (message.status !== "failed") return null;
+  return <RetryOutboxButton outboxId={message._id} />;
 }
 
 function SentHeaderRow({ label, value }: { label: string; value: string }) {
@@ -194,16 +200,15 @@ function SentAttachment({
 }: {
   attachment: SentMessage["attachments"][number];
 }) {
-  const content = (
-    <>
-      <Paperclip className="text-muted-foreground size-3.5 shrink-0" />
-      <span className="min-w-0 truncate">{attachment.fileName}</span>
-      <span className="mail-label shrink-0">{formatSize(attachment.size)}</span>
-    </>
-  );
   const className =
     "bg-muted flex h-10 max-w-[320px] items-center gap-2 rounded-lg border px-3 text-[13px]";
-  if (!attachment.url) return <div className={className}>{content}</div>;
+  if (!attachment.url) {
+    return (
+      <div className={className}>
+        <SentAttachmentLabel attachment={attachment} />
+      </div>
+    );
+  }
   return (
     <a
       className={cn(className, "hover:bg-accent")}
@@ -212,8 +217,22 @@ function SentAttachment({
       rel="noreferrer"
       target="_blank"
     >
-      {content}
+      <SentAttachmentLabel attachment={attachment} />
     </a>
+  );
+}
+
+function SentAttachmentLabel({
+  attachment,
+}: {
+  attachment: SentMessage["attachments"][number];
+}) {
+  return (
+    <>
+      <Paperclip className="text-muted-foreground size-3.5 shrink-0" />
+      <span className="min-w-0 truncate">{attachment.fileName}</span>
+      <span className="mail-label shrink-0">{formatSize(attachment.size)}</span>
+    </>
   );
 }
 

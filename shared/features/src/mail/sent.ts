@@ -11,9 +11,11 @@ export function formatSentRecipients(
   recipients: readonly { address: string; name?: string }[],
   maxNames = 2,
 ) {
-  const names = recipients.map(
-    (recipient) => recipient.name?.trim() || recipient.address,
-  );
+  const names = recipients.map((recipient) => {
+    const name = recipient.name?.trim();
+    if (!name) return recipient.address;
+    return name;
+  });
   if (names.length === 0) return "No recipients";
   const shown = names.slice(0, maxNames).join(", ");
   const hidden = names.length - maxNames;

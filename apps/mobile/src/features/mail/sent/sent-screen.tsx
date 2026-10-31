@@ -3,7 +3,6 @@ import {
   ActivityIndicator,
   Pressable,
   SectionList,
-  StyleSheet,
   Text,
   View,
 } from "react-native";
@@ -108,8 +107,6 @@ function SentListRow({
   onRetry: () => void;
   row: SentRow;
 }) {
-  const border = useColor("border");
-  const mutedForeground = useColor("muted-foreground");
   const recipients = formatSentRecipients(row.to);
   const subject = getSentSubject(row.subject);
   return (
@@ -121,13 +118,7 @@ function SentListRow({
       testID={`sent-row-${row._id}`}
       onPress={onOpen}
     >
-      <View
-        className="gap-0.5 py-3 pr-4"
-        style={{
-          borderBottomColor: border,
-          borderBottomWidth: StyleSheet.hairlineWidth,
-        }}
-      >
+      <View className="border-border gap-0.5 border-b-[0.5px] py-3 pr-4">
         <View className="flex-row items-center gap-2">
           <Text
             className="text-foreground min-w-0 flex-1 text-base font-semibold"
@@ -135,9 +126,7 @@ function SentListRow({
           >
             {recipients}
           </Text>
-          {row.attachmentCount > 0 ? (
-            <Paperclip color={mutedForeground} size={13} />
-          ) : null}
+          <AttachmentMarker count={row.attachmentCount} />
           <Text className="text-muted-foreground text-sm">
             {formatInboxMessageTime(
               new Date(row.sentAt ?? row.createdAt).toISOString(),
@@ -159,6 +148,12 @@ function SentListRow({
   );
 }
 
+function AttachmentMarker({ count }: { count: number }) {
+  const mutedForeground = useColor("muted-foreground");
+  if (count === 0) return null;
+  return <Paperclip color={mutedForeground} size={13} />;
+}
+
 function SentRowStatus({
   onRetry,
   status,
@@ -166,11 +161,10 @@ function SentRowStatus({
   onRetry: () => void;
   status: SentRow["status"];
 }) {
-  const foreground = useColor("foreground");
   if (status === "sent") return null;
   return (
     <View className="mt-1.5 min-h-8 flex-row items-center gap-2">
-      {status === "sending" ? <ActivityIndicator size="small" /> : null}
+      <SendingIndicator status={status} />
       <Text
         className={
           status === "failed"
@@ -180,19 +174,36 @@ function SentRowStatus({
       >
         {getSentStatusLabel(status)}
       </Text>
-      {status === "failed" ? (
-        <Pressable
-          accessibilityLabel="Retry sending"
-          accessibilityRole="button"
-          className="bg-muted ml-auto h-8 flex-row items-center gap-1.5 rounded-full px-3"
-          hitSlop={6}
-          testID="sent-row-retry"
-          onPress={onRetry}
-        >
-          <RotateCcw color={foreground} size={13} />
-          <Text className="text-foreground text-sm font-semibold">Retry</Text>
-        </Pressable>
-      ) : null}
+      <RetryPill status={status} onRetry={onRetry} />
     </View>
+  );
+}
+
+function SendingIndicator({ status }: { status: SentRow["status"] }) {
+  if (status !== "sending") return null;
+  return <ActivityIndicator size="small" />;
+}
+
+function RetryPill({
+  onRetry,
+  status,
+}: {
+  onRetry: () => void;
+  status: SentRow["status"];
+}) {
+  const foreground = useColor("foreground");
+  if (status !== "failed") return null;
+  return (
+    <Pressable
+      accessibilityLabel="Retry sending"
+      accessibilityRole="button"
+      className="bg-muted ml-auto h-8 flex-row items-center gap-1.5 rounded-full px-3"
+      hitSlop={6}
+      testID="sent-row-retry"
+      onPress={onRetry}
+    >
+      <RotateCcw color={foreground} size={13} />
+      <Text className="text-foreground text-sm font-semibold">Retry</Text>
+    </Pressable>
   );
 }

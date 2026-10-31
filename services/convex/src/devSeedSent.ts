@@ -1,105 +1,8 @@
 import type { Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
-import type { ISOLATED_ACCOUNTS } from "./devSeedMailbox";
+import type { SentSeed } from "./devSeedSentFixtures";
 import { ISOLATED_OWNER_NAME } from "./devSeedMailbox";
-
-type AccountKey = (typeof ISOLATED_ACCOUNTS)[number]["key"];
-
-interface SentSeed {
-  account: AccountKey;
-  to: [name: string, address: string][];
-  cc?: [name: string, address: string][];
-  subject: string;
-  body: string;
-  hoursAgo: number;
-  status: "failed" | "pending" | "sending" | "sent";
-  /** Whether the provider's copy has synced into the mailbox. */
-  stored?: boolean;
-  /** Reply in the seeded inbox thread with this remote id. */
-  thread?: string;
-  attachment?: { fileName: string; contentType: string; size: number };
-  error?: string;
-}
-
-const SENT_SEEDS = [
-  {
-    account: "gmail",
-    to: [["Maya Chen", "maya@northwind.example"]],
-    cc: [["Priya Patel", "priya@northwind.example"]],
-    subject: "Notes from today's call",
-    body: "Hi Maya,\n\nHere are the notes from today's call. The short version: we ship the beta on the 14th and keep the old importer for another month.\n\nAlex",
-    hoursAgo: 0.02,
-    status: "pending",
-  },
-  {
-    account: "microsoft",
-    to: [["Finance Team", "finance@northwind.example"]],
-    subject: "Quarterly numbers",
-    body: "Attached are the quarterly numbers we discussed. Let me know if anything looks off.\n\nAlex",
-    hoursAgo: 1.2,
-    status: "failed",
-    error: "Microsoft 365 rejected the message: the connection needs to be renewed.",
-    attachment: {
-      fileName: "q3-numbers.xlsx",
-      contentType:
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      size: 48_213,
-    },
-  },
-  {
-    account: "microsoft",
-    to: [["Maya Chen", "maya@northwind.example"]],
-    subject: "Re: Can we move tomorrow's review?",
-    body: "11 works for me. I'll move the invite and let the team know.\n\nAlex",
-    hoursAgo: 0.1,
-    status: "sent",
-    stored: true,
-    thread: "isolated-thread-0",
-  },
-  {
-    account: "gmail",
-    to: [
-      ["Jordan Blake", "jordan@example.org"],
-      ["Sam Ortiz", "sam@example.org"],
-    ],
-    cc: [["Riley Park", "riley@example.org"]],
-    subject: "Weekend hike?",
-    body: "Anyone up for the ridge trail on Saturday? I attached the map. We'd leave at 8 and be back by 2.\n\nAlex",
-    hoursAgo: 3,
-    status: "sent",
-    stored: true,
-    attachment: {
-      fileName: "ridge-trail-map.pdf",
-      contentType: "application/pdf",
-      size: 812_455,
-    },
-  },
-  {
-    account: "hosted",
-    to: [["Accounts Payable", "billing@client.example"]],
-    subject: "Invoice #204",
-    body: "Hello,\n\nPlease find invoice #204 for October attached. Payment is due within 30 days.\n\nThank you,\nAlex Rivera",
-    hoursAgo: 26,
-    status: "sent",
-    attachment: {
-      fileName: "invoice-204.pdf",
-      contentType: "application/pdf",
-      size: 96_520,
-    },
-  },
-  {
-    account: "icloud",
-    to: [
-      ["Casey Rivera", "casey@example.net"],
-      ["Morgan Lee", "morgan@studio.example"],
-    ],
-    subject: "Dinner on Friday",
-    body: "Booked a table for four at 7:30 on Friday. See you there!\n\nAlex",
-    hoursAgo: 50,
-    status: "sent",
-    stored: true,
-  },
-] satisfies SentSeed[];
+import { SENT_SEEDS } from "./devSeedSentFixtures";
 
 /** Sent mail and outbox rows for the isolated backend's seeded mailbox. */
 export async function seedSentMail(
@@ -112,62 +15,96 @@ export async function seedSentMail(
     const accountId = accountIds.get(seed.account);
     const account = accountId ? await ctx.db.get(accountId) : null;
     if (!account) continue;
-    const at = Math.round(now - seed.hoursAgo * 60 * 60 * 1000);
-    const remoteMessageId = `isolated-sent-${index}`;
-    const to = toAddresses(seed.to);
-    const cc = toAddresses(seed.cc ?? []);
-    const attachment: SentSeed["attachment"] = seed.attachment;
-    if (seed.status === "sent" && seed.stored) {
-      await insertStoredSentMessage(ctx, {
-        account,
-        at,
-        attachment,
-        body: seed.body,
-        cc,
-        now,
-        remoteMessageId,
-        subject: seed.subject,
-        thread: seed.thread,
-        to,
-      });
-    }
-    const outboxId = await ctx.db.insert("outboxMessages", {
-      ownerId,
-      accountId: account._id,
-      idempotencyKey: `isolated-sent-${index}`,
-      to,
+    await seedSentMessage(ctx, { account, index, now, ownerId, seed });
+  }
+}
+
+async function seedSentMessage(
+  ctx: MutationCtx,
+  {
+    account,
+    index,
+    now,
+    ownerId,
+    seed,
+  }: {
+    account: { _id: Id<"mailAccounts">; address: string; ownerId: string };
+    index: number;
+    now: number;
+    ownerId: string;
+    seed: SentSeed;
+  },
+) {
+  const at = Math.round(now - seed.hoursAgo * 60 * 60 * 1000);
+  const remoteMessageId = `isolated-sent-${index}`;
+  const to = toAddresses(seed.to);
+  const cc = toAddresses(seed.cc ?? []);
+  const { attachment, status } = seed;
+  if (status === "sent" && seed.stored) {
+    await insertStoredSentMessage(ctx, {
+      account,
+      at,
+      attachment,
+      body: seed.body,
       cc,
-      bcc: [],
+      now,
+      remoteMessageId,
       subject: seed.subject,
-      plainText: seed.body,
-      status: seed.status,
-      attempt: seed.status === "pending" ? 0 : 1,
-      ...(seed.status === "sent"
-        ? {
-            remoteMessageId,
-            sentAt: at,
-            ...(attachment ? { sentAttachments: [attachment] } : {}),
-          }
-        : {}),
-      ...(seed.status === "failed" ? { error: seed.error } : {}),
+      thread: seed.thread,
+      to,
+    });
+  }
+  const outboxId = await ctx.db.insert("outboxMessages", {
+    ownerId,
+    accountId: account._id,
+    idempotencyKey: remoteMessageId,
+    to,
+    cc,
+    bcc: [],
+    subject: seed.subject,
+    plainText: seed.body,
+    status,
+    attempt: status === "pending" ? 0 : 1,
+    ...getSeedDelivery({ at, attachment, error: seed.error, remoteMessageId, status }),
+    createdAt: at,
+    updatedAt: at,
+  });
+  if (attachment && status !== "sent") {
+    const draftId = await ctx.db.insert("draftAttachments", {
+      ownerId,
+      fileName: attachment.fileName,
+      contentType: attachment.contentType,
+      declaredSize: attachment.size,
+      size: attachment.size,
+      status: "claimed",
+      outboxId,
       createdAt: at,
       updatedAt: at,
     });
-    if (attachment && seed.status !== "sent") {
-      const draftId = await ctx.db.insert("draftAttachments", {
-        ownerId,
-        fileName: attachment.fileName,
-        contentType: attachment.contentType,
-        declaredSize: attachment.size,
-        size: attachment.size,
-        status: "claimed",
-        outboxId,
-        createdAt: at,
-        updatedAt: at,
-      });
-      await ctx.db.patch(outboxId, { attachmentIds: [draftId] });
-    }
+    await ctx.db.patch(outboxId, { attachmentIds: [draftId] });
   }
+}
+
+function getSeedDelivery({
+  at,
+  attachment,
+  error,
+  remoteMessageId,
+  status,
+}: {
+  at: number;
+  attachment: SentSeed["attachment"];
+  error: string | undefined;
+  remoteMessageId: string;
+  status: SentSeed["status"];
+}) {
+  if (status === "failed") return { error };
+  if (status !== "sent") return {};
+  return {
+    remoteMessageId,
+    sentAt: at,
+    ...(attachment ? { sentAttachments: [attachment] } : {}),
+  };
 }
 
 export async function deleteAccountOutbox(

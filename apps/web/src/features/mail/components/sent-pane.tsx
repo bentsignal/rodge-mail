@@ -86,11 +86,7 @@ function SentSection({
   if (rows.length === 0) return null;
   return (
     <div>
-      {title ? (
-        <h2 className="mail-label bg-muted/60 border-border border-b px-5 py-2 text-[11px] font-medium tracking-wide uppercase">
-          {title}
-        </h2>
-      ) : null}
+      <SectionTitle title={title} />
       {rows.map((row) => (
         <SentListRow
           key={row._id}
@@ -99,6 +95,15 @@ function SentSection({
         />
       ))}
     </div>
+  );
+}
+
+function SectionTitle({ title }: { title: string | undefined }) {
+  if (!title) return null;
+  return (
+    <h2 className="mail-label bg-muted/60 border-border border-b px-5 py-2 text-[11px] font-medium tracking-wide uppercase">
+      {title}
+    </h2>
   );
 }
 
@@ -150,12 +155,17 @@ function SentListRow({ row, selected }: { row: SentRow; selected: boolean }) {
           </div>
         </div>
       </QuickLink>
-      {row.status === "failed" ? (
-        <div className="absolute right-4 bottom-3 sm:right-5">
-          <RetryOutboxButton outboxId={row._id} />
-        </div>
-      ) : null}
+      <RowRetry row={row} />
     </article>
+  );
+}
+
+function RowRetry({ row }: { row: SentRow }) {
+  if (row.status !== "failed") return null;
+  return (
+    <div className="absolute right-4 bottom-3 sm:right-5">
+      <RetryOutboxButton outboxId={row._id} />
+    </div>
   );
 }
 

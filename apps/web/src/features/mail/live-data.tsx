@@ -24,7 +24,6 @@ import {
   getIsSearchingInbox,
   useMailboxPage,
 } from "./mailbox-page";
-import { useSentLiveMailValue } from "./sent-live-data";
 import { useSpamLiveMailValue } from "./spam-live-data";
 import { useMailStore } from "./store";
 import {
@@ -36,7 +35,7 @@ import {
 } from "./unread-session";
 import { useUnreadSelectionSync } from "./use-unread-selection-sync";
 
-const LiveMailContext = createContext<LiveMailContextValue | undefined>(
+export const LiveMailContext = createContext<LiveMailContextValue | undefined>(
   undefined,
 );
 
@@ -82,19 +81,6 @@ export function SpamLiveMailProvider({
   children: React.ReactNode;
 }) {
   const value = useSpamLiveMailValue();
-  return (
-    <LiveMailContext.Provider value={value}>
-      {children}
-    </LiveMailContext.Provider>
-  );
-}
-
-export function SentLiveMailProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const value = useSentLiveMailValue();
   return (
     <LiveMailContext.Provider value={value}>
       {children}

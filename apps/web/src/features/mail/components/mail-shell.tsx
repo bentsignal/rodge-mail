@@ -5,9 +5,9 @@ import type { InboxMessage } from "../types";
 import {
   ArchiveLiveMailProvider,
   LiveMailProvider,
-  SentLiveMailProvider,
   SpamLiveMailProvider,
 } from "../live-data";
+import { SentLiveMailProvider } from "../sent-live-data";
 import { MailStore } from "../store";
 import { AccountRail } from "./account-rail";
 import { ArchivePage } from "./archive-page";

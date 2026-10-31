@@ -1,14 +1,9 @@
-import { useRef, useState } from "react";
 import { Pressable, Text, TextInput } from "react-native";
 
 import { useColor } from "~/hooks/use-color";
 import { ComposerRow } from "./composer-field";
-import {
-  getRecipientToken,
-  joinRecipientTokens,
-  splitRecipientTokens,
-  takeRecipientTokens,
-} from "./composer-presentation";
+import { getRecipientToken } from "./composer-presentation";
+import { useRecipientTokens } from "./use-recipient-tokens";
 
 /**
  * Recipients as compact tokens followed by the text being typed, like Mail.
@@ -27,63 +22,27 @@ export function ComposerRecipientField({
   label: string;
   onChange: (value: string) => void;
 }) {
-  const inputRef = useRef<TextInput>(null);
-  const pending = useRef("");
-  const [tokens, setTokens] = useState(() => splitRecipientTokens(defaultValue));
-  const [selectedIndex, setSelectedIndex] = useState<number>();
+  const {
+    commitPending,
+    handleBackspace,
+    handleChangeText,
+    inputRef,
+    selectedIndex,
+    toggleSelected,
+    tokens,
+  } = useRecipientTokens(defaultValue, onChange);
   const foreground = useColor("foreground");
   const mutedForeground = useColor("muted-foreground");
   const primary = useColor("primary");
-
-  function commit(nextTokens: string[], nextPending: string) {
-    setTokens(nextTokens);
-    setSelectedIndex(undefined);
-    pending.current = nextPending;
-    onChange(joinRecipientTokens(nextTokens, nextPending));
-  }
-
-  function handleChangeText(text: string) {
-    const taken = takeRecipientTokens(text);
-    if (taken.tokens.length === 0) {
-      setSelectedIndex(undefined);
-      pending.current = text;
-      onChange(joinRecipientTokens(tokens, text));
-      return;
-    }
-    inputRef.current?.clear();
-    commit([...tokens, ...taken.tokens], taken.pending);
-  }
-
-  function commitPending() {
-    const text = pending.current.trim();
-    if (!text) return;
-    inputRef.current?.clear();
-    commit([...tokens, ...splitRecipientTokens(text)], "");
-  }
-
-  function handleBackspace() {
-    if (pending.current.length > 0 || tokens.length === 0) return;
-    if (selectedIndex === undefined) {
-      setSelectedIndex(tokens.length - 1);
-      return;
-    }
-    commit(
-      tokens.filter((_, index) => index !== selectedIndex),
-      pending.current,
-    );
-  }
 
   return (
     <ComposerRow error={error} label={`${label}:`}>
       {tokens.map((token, index) => (
         <RecipientToken
-          key={`${token}:${index}`}
+          key={token}
           selected={index === selectedIndex}
           token={token}
-          onPress={() => {
-            setSelectedIndex(index === selectedIndex ? undefined : index);
-            inputRef.current?.focus();
-          }}
+          onPress={() => toggleSelected(index)}
         />
       ))}
       <TextInput
@@ -93,12 +52,12 @@ export function ComposerRecipientField({
         autoComplete="email"
         autoCorrect={false}
         autoFocus={autoFocus}
-        className="text-foreground min-h-8 min-w-24 flex-1 text-base"
+        className="text-foreground min-h-8 min-w-12 flex-1 text-base"
         keyboardType="email-address"
         placeholderTextColor={mutedForeground}
         returnKeyType="next"
         selectionColor={primary}
-        style={{ color: foreground, paddingVertical: 4 }}
+        style={{ color: foreground, paddingVertical: 0 }}
         submitBehavior="submit"
         testID={`composer-${label.toLocaleLowerCase()}-field`}
         textContentType="emailAddress"

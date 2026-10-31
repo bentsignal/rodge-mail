@@ -25,12 +25,13 @@ function markOutboxQueued(
   store: OptimisticLocalStore,
   outboxId: Id<"outboxMessages">,
 ) {
-  const queue = <T extends { _id: string; error?: string; status: string }>(
+  function queue<T extends { _id: string; error?: string; status: string }>(
     row: T,
-  ): T =>
-    row._id === outboxId && row.status === "failed"
-      ? { ...row, error: undefined, status: "pending" }
+  ) {
+    return row._id === outboxId && row.status === "failed"
+      ? { ...row, error: undefined, status: "pending" as const }
       : row;
+  }
   const unsent = store.getQuery(api.outbox.queries.listUnsent, {});
   if (unsent) {
     store.setQuery(api.outbox.queries.listUnsent, {}, unsent.map(queue));

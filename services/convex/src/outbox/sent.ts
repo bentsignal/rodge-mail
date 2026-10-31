@@ -35,8 +35,16 @@ export function getAccountLabel(
   account: Pick<Doc<"mailAccounts">, "address" | "displayLabel" | "displayName">,
 ) {
   return (
-    account.displayLabel?.trim() || account.displayName?.trim() || account.address
+    nonEmpty(account.displayLabel) ??
+    nonEmpty(account.displayName) ??
+    account.address
   );
+}
+
+function nonEmpty(value: string | undefined) {
+  const trimmed = value?.trim();
+  if (!trimmed) return undefined;
+  return trimmed;
 }
 
 /** A stored copy of a sent outbox message opens in the reader. */

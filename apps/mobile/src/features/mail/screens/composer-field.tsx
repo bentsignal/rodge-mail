@@ -1,4 +1,4 @@
-import { StyleSheet, Text, TextInput, View } from "react-native";
+import { Text, TextInput, View } from "react-native";
 
 import { useColor } from "~/hooks/use-color";
 
@@ -12,23 +12,25 @@ export function ComposerRow({
   error?: string;
   label?: string;
 }) {
-  const border = useColor("border");
   return (
-    <View
-      className="ml-4 pr-4"
-      style={{ borderBottomColor: border, borderBottomWidth: StyleSheet.hairlineWidth }}
-    >
+    <View className="border-border ml-4 border-b-[0.5px] pr-4">
       <View className="min-h-11 flex-row flex-wrap items-center gap-x-1.5 gap-y-1 py-1.5">
-        {label ? (
-          <Text className="text-muted-foreground text-base">{label}</Text>
-        ) : null}
+        <RowLabel label={label} />
         {children}
       </View>
-      {error ? (
-        <Text className="text-destructive -mt-0.5 pb-1.5 text-xs">{error}</Text>
-      ) : null}
+      <RowError error={error} />
     </View>
   );
+}
+
+function RowLabel({ label }: { label: string | undefined }) {
+  if (!label) return null;
+  return <Text className="text-muted-foreground text-base">{label}</Text>;
+}
+
+function RowError({ error }: { error: string | undefined }) {
+  if (!error) return null;
+  return <Text className="text-destructive -mt-0.5 pb-1.5 text-xs">{error}</Text>;
 }
 
 export function ComposerTextField({
@@ -46,7 +48,7 @@ export function ComposerTextField({
         className="text-foreground min-h-8 min-w-0 flex-1 text-base"
         placeholderTextColor={mutedForeground}
         selectionColor={primary}
-        style={[{ color: foreground, paddingVertical: 4 }, style]}
+        style={[{ color: foreground, paddingVertical: 0 }, style]}
         {...props}
       />
     </ComposerRow>

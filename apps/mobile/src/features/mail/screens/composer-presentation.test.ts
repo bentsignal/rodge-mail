@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  addRecipientTokens,
   getCollapsedRecipientSummary,
   getComposerAccountLabel,
   getRecipientToken,
@@ -51,14 +52,24 @@ describe("recipient tokens", () => {
       pending: "maya ",
       tokens: [],
     });
-    expect(takeRecipientTokens("a@example.com, b@example.com")).toEqual({
+    expect(takeRecipientTokens("a@example.com, b@example.com,")).toEqual({
       pending: "",
       tokens: ["a@example.com", "b@example.com"],
+    });
+    expect(takeRecipientTokens("a@example.com, b@exa")).toEqual({
+      pending: "a@example.com, b@exa",
+      tokens: [],
     });
     expect(takeRecipientTokens("Maya Chen ")).toEqual({
       pending: "Maya Chen ",
       tokens: [],
     });
+  });
+
+  it("adds tokens once each", () => {
+    expect(
+      addRecipientTokens(["a@example.com"], ["A@example.com", "b@example.com"]),
+    ).toEqual(["a@example.com", "b@example.com"]);
   });
 
   it("joins tokens and unfinished text into the draft field", () => {

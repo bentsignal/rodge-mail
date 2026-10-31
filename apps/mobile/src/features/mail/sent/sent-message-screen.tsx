@@ -4,7 +4,6 @@ import {
   Linking,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   View,
 } from "react-native";
@@ -138,15 +137,20 @@ function SentStatus({ message }: { message: SentMessage }) {
         </Text>
         <Text className="text-muted-foreground text-sm">· {time}</Text>
       </View>
-      {failed && message.error ? (
-        <Text
-          className="bg-destructive/10 text-destructive rounded-lg px-3 py-2.5 text-sm leading-5"
-          selectable
-        >
-          {message.error}
-        </Text>
-      ) : null}
+      <FailureNote message={message} />
     </View>
+  );
+}
+
+function FailureNote({ message }: { message: SentMessage }) {
+  if (message.status !== "failed" || !message.error) return null;
+  return (
+    <Text
+      className="bg-destructive/10 text-destructive rounded-lg px-3 py-2.5 text-sm leading-5"
+      selectable
+    >
+      {message.error}
+    </Text>
   );
 }
 
@@ -193,14 +197,12 @@ function HeaderRow({
   label: string;
   value: string;
 }) {
-  const border = useColor("border");
   return (
     <View
-      className="flex-row gap-3 py-2.5"
-      style={
+      className={
         divider
-          ? { borderBottomColor: border, borderBottomWidth: StyleSheet.hairlineWidth }
-          : undefined
+          ? "border-border flex-row gap-3 border-b-[0.5px] py-2.5"
+          : "flex-row gap-3 py-2.5"
       }
     >
       <Text className="text-muted-foreground w-11 text-[15px]">{label}</Text>
