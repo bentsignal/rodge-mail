@@ -3,7 +3,7 @@ import type { FunctionReturnType } from "convex/server";
 import { useQuery } from "@tanstack/react-query";
 import { convexQuery } from "@convex-dev/react-query";
 import { usePaginatedQuery } from "convex/react";
-import { Paperclip, Send } from "lucide-react";
+import { ArrowLeft, Paperclip, Send } from "lucide-react";
 
 import { api } from "@rodge-mail/convex/api";
 import {
@@ -43,7 +43,14 @@ export function SentPane() {
         outboxId ? "hidden lg:flex" : "flex",
       )}
     >
-      <header className="bg-background border-border shrink-0 border-b px-4 pt-5 pb-4 sm:px-5">
+      <header className="bg-background border-border flex shrink-0 items-center gap-2 border-b px-4 pt-5 pb-4 sm:px-5">
+        <QuickLink
+          aria-label="Back to inbox"
+          className="hover:bg-muted -ml-2 flex size-10 items-center justify-center rounded-lg md:hidden"
+          to="/"
+        >
+          <ArrowLeft className="size-4" />
+        </QuickLink>
         <h1 className="text-[32px] leading-none font-semibold tracking-[-0.04em] sm:text-[34px]">
           Sent
         </h1>

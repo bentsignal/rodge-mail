@@ -258,13 +258,13 @@ function getStatusLabel(status: OutboxItem["status"]) {
 
 function getStatusTextClass(status: OutboxItem["status"]) {
   if (status === "failed") return "text-destructive";
-  if (status === "sent") return "text-secondary";
+  if (status === "sent") return "text-foreground";
   return "text-muted-foreground";
 }
 
 function getStatusIconClass(status: OutboxItem["status"]) {
   if (status === "failed") return "bg-destructive/10 text-destructive";
-  if (status === "sent") return "bg-secondary/10 text-secondary";
+  if (status === "sent") return "bg-muted text-foreground";
   return "bg-muted text-muted-foreground";
 }
 

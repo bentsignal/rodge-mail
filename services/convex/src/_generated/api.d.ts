@@ -63,6 +63,7 @@ import type * as devSeed from "../devSeed.js";
 import type * as devSeedFixtures from "../devSeedFixtures.js";
 import type * as devSeedMailbox from "../devSeedMailbox.js";
 import type * as devSeedSent from "../devSeedSent.js";
+import type * as devSeedSentFixtures from "../devSeedSentFixtures.js";
 import type * as devSeedThreads from "../devSeedThreads.js";
 import type * as devSeedWrites from "../devSeedWrites.js";
 import type * as devSignIn from "../devSignIn.js";
@@ -230,6 +231,7 @@ declare const fullApi: ApiFromModules<{
   devSeedFixtures: typeof devSeedFixtures;
   devSeedMailbox: typeof devSeedMailbox;
   devSeedSent: typeof devSeedSent;
+  devSeedSentFixtures: typeof devSeedSentFixtures;
   devSeedThreads: typeof devSeedThreads;
   devSeedWrites: typeof devSeedWrites;
   devSignIn: typeof devSignIn;
