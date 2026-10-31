@@ -147,7 +147,7 @@ function ThreadFooterButton({
     <Pressable
       accessibilityLabel={`${label} thread`}
       accessibilityRole="button"
-      className="border-paper-border bg-paper flex-1 flex-row items-center justify-center gap-2 rounded-xl border px-3 py-3 active:opacity-70"
+      className="border-border bg-background flex-1 flex-row items-center justify-center gap-2 rounded-xl border px-3 py-3 active:opacity-70"
       onPress={onPress}
     >
       <View className="shrink-0">{icon}</View>

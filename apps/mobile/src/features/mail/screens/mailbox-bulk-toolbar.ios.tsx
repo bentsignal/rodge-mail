@@ -45,7 +45,7 @@ export function MailboxBulkToolbar({
 
   return (
     <View
-      className="bg-paper border-paper-border border-t px-3 pt-1"
+      className="bg-background border-border border-t px-3 pt-1"
       style={{ height: 88 + tabBarClearance, paddingBottom: tabBarClearance }}
     >
       <Host colorScheme={colorScheme} seedColor={primary} style={{ flex: 1 }}>

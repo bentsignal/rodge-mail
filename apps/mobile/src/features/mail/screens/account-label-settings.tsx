@@ -63,13 +63,10 @@ function AccountLabelForm({ account }: { account: MobileMailAccount }) {
   }
 
   return (
-    <View className="border-well-border gap-3 border-b px-4 py-4 last:border-b-0">
+    <View className="border-border gap-3 border-b px-4 py-4 last:border-b-0">
       <View className="flex-row items-start gap-3">
-        <View
-          className="border-brass/50 size-10 items-center justify-center rounded-full border"
-          style={{ backgroundColor: account.accent }}
-        >
-          <Text className="font-bold text-white">{account.initials}</Text>
+        <View className="bg-muted size-10 items-center justify-center rounded-full">
+          <Text className="text-foreground font-bold">{account.initials}</Text>
         </View>
         <View className="min-w-0 flex-1">
           <View className="flex-row items-center gap-2">
@@ -100,7 +97,7 @@ function AccountLabelForm({ account }: { account: MobileMailAccount }) {
         <TextInput
           accessibilityLabel={`Display name for ${account.address}`}
           autoCapitalize="words"
-          className="bg-well border-well-border text-foreground h-10 min-w-0 flex-1 rounded-lg border px-3"
+          className="bg-muted border-border text-foreground h-10 min-w-0 flex-1 rounded-lg border px-3"
           maxLength={MAX_LABEL_LENGTH}
           onChangeText={setLabel}
           placeholder={identity ?? account.address}
@@ -142,9 +139,9 @@ function getConnectionBadgeClassName(
   tone: ReturnType<typeof getAccountConnectionPresentation>["tone"],
 ) {
   if (tone === "danger") return "bg-destructive/15 rounded-full px-2 py-1";
-  if (tone === "warning") return "bg-brass/15 rounded-full px-2 py-1";
+  if (tone === "warning") return "bg-muted rounded-full px-2 py-1";
   if (tone === "healthy") return "bg-primary/15 rounded-full px-2 py-1";
-  return "bg-well rounded-full px-2 py-1";
+  return "bg-muted rounded-full px-2 py-1";
 }
 
 function getConnectionBadgeTextClassName(
@@ -152,7 +149,7 @@ function getConnectionBadgeTextClassName(
 ) {
   const base = "text-[10px] font-bold tracking-wide uppercase";
   if (tone === "danger") return `${base} text-destructive`;
-  if (tone === "warning") return `${base} text-brass`;
+  if (tone === "warning") return `${base} text-foreground`;
   if (tone === "healthy") return `${base} text-primary`;
   return `${base} text-muted-foreground`;
 }

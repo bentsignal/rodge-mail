@@ -91,10 +91,10 @@ function MailWorkspace() {
     select: (state) => state.location.pathname.startsWith("/spam"),
   });
   return (
-    <main className="mail-shell mail-atmosphere bg-background text-foreground relative flex h-dvh min-h-0 overflow-hidden">
-      <div className="mail-app-frame relative z-10 flex min-w-0 flex-1 overflow-hidden">
+    <main className="mail-shell bg-background text-foreground relative flex h-dvh min-h-0 overflow-hidden">
+      <div className="relative z-10 flex min-w-0 flex-1 overflow-hidden">
         <AccountRail />
-        <div className="mail-workspace flex min-w-0 flex-1 overflow-hidden">
+        <div className="bg-background flex min-w-0 flex-1 overflow-hidden">
           <MailWorkspaceContent isArchive={isArchive} isSpam={isSpam} />
         </div>
       </div>

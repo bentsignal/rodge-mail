@@ -17,8 +17,8 @@ export function SignOutLink({
       className={cn(
         "flex w-full items-center gap-2.5 rounded-xl transition-colors disabled:cursor-not-allowed disabled:opacity-50",
         variant === "settings"
-          ? "h-11 justify-center border border-[var(--mail-seam)] px-4 text-sm font-semibold text-[var(--mail-highlight)] shadow-[var(--mail-shadow-inset)] hover:bg-[var(--mail-paper-soft)]"
-          : "h-10 justify-center px-3 text-xs text-[var(--mail-chassis-foreground)]/72 hover:bg-white/[0.07] hover:text-[var(--mail-chassis-foreground)] xl:justify-start",
+          ? "border-border text-destructive hover:bg-accent h-11 justify-center border px-4 text-sm font-semibold"
+          : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground h-10 justify-center px-3 text-xs xl:justify-start",
       )}
       disabled={disabled}
       onClick={signOut}

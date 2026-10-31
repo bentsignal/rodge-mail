@@ -45,10 +45,10 @@ export function InboxHeader({
 }) {
   return (
     <SafeAreaView
-      className="bg-paper"
+      className="bg-background"
       edges={includeTopSafeArea ? ["top"] : []}
     >
-      <View className="border-paper-border gap-2 border-b px-4 py-2">
+      <View className="border-border gap-2 border-b px-4 py-2">
         <View className="min-h-11 flex-row items-center gap-2">
           <AccountFilter
             accounts={accounts}
@@ -98,7 +98,7 @@ function SelectionButton({
     <Pressable
       accessibilityLabel={selectionMode ? "Done selecting" : "Select messages"}
       accessibilityRole="button"
-      className="bg-paper-deep border-paper-border size-11 items-center justify-center rounded-xl border"
+      className="bg-muted border-border size-11 items-center justify-center rounded-xl border"
       testID="mailbox-select-button"
       onPress={onPress}
     >
@@ -144,7 +144,7 @@ function MailboxFilterMenu({
       <Pressable
         accessibilityLabel={`Filter: ${getFilterLabel(filter)}`}
         accessibilityRole="button"
-        className="bg-paper-deep border-paper-border size-11 items-center justify-center rounded-xl border"
+        className="bg-muted border-border size-11 items-center justify-center rounded-xl border"
       >
         <ListFilter color={mutedForeground} size={17} />
         <ActiveFilterDot filter={filter} />

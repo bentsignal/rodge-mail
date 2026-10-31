@@ -182,7 +182,7 @@ function ICloudReconnectForm({
   const primaryForeground = useColor("primary-foreground");
   if (!isVisible) return null;
   return (
-    <View className="bg-well gap-2 rounded-lg p-3">
+    <View className="bg-muted gap-2 rounded-lg p-3">
       <Text className="text-foreground text-sm font-semibold">
         New app-specific password for {address}
       </Text>
@@ -191,7 +191,7 @@ function ICloudReconnectForm({
         autoCapitalize="none"
         autoComplete="off"
         autoCorrect={false}
-        className="bg-paper border-paper-border text-foreground min-h-11 rounded-lg border px-3"
+        className="bg-background border-border text-foreground min-h-11 rounded-lg border px-3"
         defaultValue=""
         onChangeText={onPasswordChange}
         placeholder="xxxx-xxxx-xxxx-xxxx"
@@ -244,7 +244,7 @@ function RecoveryMessage({ message }: { message: string | undefined }) {
 
 function getReconnectButtonClassName(hasPrimaryAction: boolean) {
   if (hasPrimaryAction) {
-    return "border-well-border min-h-11 flex-1 items-center justify-center rounded-lg border px-3 disabled:opacity-50";
+    return "border-border min-h-11 flex-1 items-center justify-center rounded-lg border px-3 disabled:opacity-50";
   }
   return "bg-primary min-h-11 flex-1 items-center justify-center rounded-lg px-3 disabled:opacity-50";
 }

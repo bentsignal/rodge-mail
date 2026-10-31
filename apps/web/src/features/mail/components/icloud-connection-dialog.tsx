@@ -33,15 +33,15 @@ export function ICloudConnectionDialog({
 
   return (
     <Dialog.Container onOpenChange={onOpenChange} open={open}>
-      <Dialog.Content className="mail-dialog mail-workspace max-w-md overflow-hidden rounded-[18px] border p-0">
-        <div className="mail-chassis border-b p-6">
-          <span className="mail-brass-button flex size-10 items-center justify-center rounded-[9px]">
+      <Dialog.Content className="mail-dialog bg-background max-w-md overflow-hidden rounded-[18px] border p-0">
+        <div className="border-b p-6">
+          <span className="mail-primary-button flex size-10 items-center justify-center rounded-[9px]">
             <Cloud className="size-4" />
           </span>
-          <Dialog.Title className="mt-4 font-serif text-2xl tracking-[-0.03em]">
+          <Dialog.Title className="mt-4 text-2xl font-semibold tracking-tight">
             Connect iCloud Mail
           </Dialog.Title>
-          <Dialog.Description className="mt-2 text-xs leading-5 text-[var(--mail-chassis-foreground)]/70">
+          <Dialog.Description className="text-muted-foreground mt-2 text-xs leading-5">
             Use an Apple app-specific password. Rodge Mail verifies it directly
             with Apple, encrypts it in Convex, and never stores your primary
             Apple Account password.
@@ -71,7 +71,7 @@ export function ICloudConnectionDialog({
             value={password}
           />
           <button
-            className="mail-brass-button flex h-11 w-full items-center justify-center gap-2 rounded-[9px] px-4 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-50"
+            className="mail-primary-button flex h-11 w-full items-center justify-center gap-2 rounded-[9px] px-4 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-50"
             disabled={isConnecting || !address.trim() || !password.trim()}
             type="submit"
           >
@@ -114,7 +114,7 @@ function ConnectionField({
 }) {
   return (
     <label className="block">
-      <span className="mail-label mb-1.5 block font-mono text-[8px] tracking-[0.16em] uppercase">
+      <span className="mail-label mb-1.5 block text-[10px] font-medium tracking-wide uppercase">
         {label}
       </span>
       <input

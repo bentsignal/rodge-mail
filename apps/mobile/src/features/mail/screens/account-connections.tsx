@@ -135,11 +135,11 @@ function ProviderButton({
     <Pressable
       accessibilityLabel={`Connect ${label}`}
       accessibilityRole="button"
-      className="border-well-border min-h-16 flex-row items-center gap-3 border-b px-4 py-3 disabled:opacity-50"
+      className="border-border min-h-16 flex-row items-center gap-3 border-b px-4 py-3 disabled:opacity-50"
       disabled={isLoading}
       onPress={onPress}
     >
-      <View className="bg-paper-deep border-paper-border size-10 items-center justify-center rounded-lg border">
+      <View className="bg-muted border-border size-10 items-center justify-center rounded-lg border">
         <Icon color={primary} size={19} />
       </View>
       <View className="min-w-0 flex-1">
@@ -196,12 +196,12 @@ function ICloudForm({
   const mutedForeground = useColor("muted-foreground");
   const canSubmit = address.trim().length > 0 && password.trim().length > 0;
   return (
-    <View className="bg-paper-deep border-well-border gap-3 border-b px-4 py-4">
+    <View className="bg-muted border-border gap-3 border-b px-4 py-4">
       <TextInput
         accessibilityLabel="iCloud Mail address"
         autoCapitalize="none"
         autoComplete="email"
-        className="bg-paper border-paper-border text-foreground min-h-12 rounded-lg border px-3.5"
+        className="bg-background border-border text-foreground min-h-12 rounded-lg border px-3.5"
         keyboardType="email-address"
         onChangeText={onAddressChange}
         placeholder="you@icloud.com"
@@ -212,7 +212,7 @@ function ICloudForm({
         accessibilityLabel="iCloud app-specific password"
         autoCapitalize="none"
         autoComplete="off"
-        className="bg-paper border-paper-border text-foreground min-h-12 rounded-lg border px-3.5"
+        className="bg-background border-border text-foreground min-h-12 rounded-lg border px-3.5"
         onChangeText={onPasswordChange}
         placeholder="xxxx-xxxx-xxxx-xxxx"
         placeholderTextColor={mutedForeground}

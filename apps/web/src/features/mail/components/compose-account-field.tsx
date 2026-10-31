@@ -20,19 +20,14 @@ export function ComposeAccountField() {
   );
 
   return (
-    <label className="flex min-h-12 items-center gap-4 border-b border-[var(--mail-seam)]">
-      <span className="mail-label w-12 shrink-0 font-mono text-[9px] tracking-[0.14em] uppercase">
+    <label className="border-border flex min-h-12 items-center gap-4 border-b">
+      <span className="mail-label w-12 shrink-0 text-[11px] font-medium tracking-wide uppercase">
         From
       </span>
-      <span
-        aria-hidden="true"
-        className="size-2 shrink-0 rounded-full"
-        style={{ backgroundColor: selectedAccount?.accent ?? "#aaa095" }}
-      />
       <span className="relative min-w-0 flex-1">
         <select
           aria-label="From account"
-          className="h-12 w-full appearance-none bg-transparent pr-7 text-sm outline-none disabled:text-[var(--mail-ink-soft)]"
+          className="disabled:text-muted-foreground h-12 w-full appearance-none bg-transparent pr-7 text-sm outline-none"
           disabled={sendableAccounts.length === 0}
           onChange={(event) =>
             setComposerAccountId(toMailAccountId(event.target.value))
@@ -43,7 +38,7 @@ export function ComposeAccountField() {
         </select>
         <ChevronDown
           aria-hidden="true"
-          className="pointer-events-none absolute top-1/2 right-0 size-3.5 -translate-y-1/2 text-[var(--mail-ink-soft)]"
+          className="text-muted-foreground pointer-events-none absolute top-1/2 right-0 size-3.5 -translate-y-1/2"
         />
       </span>
     </label>

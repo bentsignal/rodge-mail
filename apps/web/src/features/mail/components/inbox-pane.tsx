@@ -20,7 +20,7 @@ export function InboxPane() {
     <section
       aria-label="Inbox"
       className={cn(
-        "mail-inbox-pane min-w-0 flex-1 flex-col border-r border-[var(--mail-seam)] lg:w-[400px] lg:min-w-[380px] lg:flex-none xl:w-[420px] xl:min-w-[420px]",
+        "border-border min-w-0 flex-1 flex-col border-r lg:w-[400px] lg:min-w-[380px] lg:flex-none xl:w-[420px] xl:min-w-[420px]",
         mobileReaderIsOpen ? "hidden lg:flex" : "flex",
       )}
     >
@@ -35,12 +35,12 @@ function InboxHeader() {
   const { mailMode } = useLiveMail();
 
   return (
-    <header className="mail-paper shrink-0 border-b border-[var(--mail-seam)] px-4 pt-5 pb-4 shadow-[0_2px_6px_rgba(55,40,19,0.08)] sm:px-5 dark:shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
+    <header className="bg-background border-border shrink-0 border-b px-4 pt-5 pb-4 sm:px-5">
       <div className="mb-5 flex items-end justify-between gap-4">
         <div className="min-w-0">
           <div className="flex items-center gap-2.5">
             <MobileBrand />
-            <h1 className="font-serif text-[32px] leading-none font-semibold tracking-[-0.04em] sm:text-[34px]">
+            <h1 className="text-[32px] leading-none font-semibold tracking-[-0.04em] sm:text-[34px]">
               {getMailboxTitle(mailMode)}
             </h1>
           </div>
@@ -50,7 +50,7 @@ function InboxHeader() {
           <BulkSelectButton />
           <button
             aria-label="New message"
-            className="mail-brass-button flex size-10 items-center justify-center rounded-[10px] transition-colors md:hidden"
+            className="mail-primary-button flex size-10 items-center justify-center rounded-[10px] transition-colors md:hidden"
             onClick={openComposer}
             type="button"
           >
@@ -114,10 +114,10 @@ function UnreadFilterButton() {
     <button
       aria-pressed={unreadOnly}
       className={cn(
-        "flex h-9 items-center gap-2 rounded-[9px] border px-3 font-mono text-[10px] font-semibold tracking-[0.04em] transition-[background-color,border-color,color,box-shadow] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--mail-brass-deep)]",
+        "focus-visible:outline-ring flex h-9 items-center gap-2 rounded-[9px] border px-3 text-[11px] font-semibold tracking-wide transition-[background-color,border-color,color,box-shadow] focus-visible:outline-2 focus-visible:outline-offset-2",
         unreadOnly
-          ? "border-[var(--mail-brass-deep)] bg-[var(--mail-brass)] text-[#21190a] shadow-[var(--mail-shadow-raised)]"
-          : "mail-raised hover:text-foreground border-[var(--mail-seam)] text-[var(--mail-ink-soft)]",
+          ? "border-primary bg-primary text-primary-foreground"
+          : "bg-background hover:text-foreground border-border text-muted-foreground",
       )}
       onClick={toggleUnread}
       type="button"
@@ -134,7 +134,7 @@ export function SearchInput() {
 
   return (
     <div className="relative">
-      <Search className="absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[var(--mail-ink-soft)]" />
+      <Search className="text-muted-foreground absolute top-1/2 left-3.5 size-4 -translate-y-1/2" />
       <input
         aria-label="Search mail"
         autoComplete="off"
@@ -184,7 +184,6 @@ function MobileAccountFilters() {
       />
       {accounts.map((account) => (
         <MobileAccountChip
-          accent={account.accent}
           active={accountFilter === account._id}
           key={account._id}
           label={account.label}
@@ -209,7 +208,7 @@ function SearchResultsLabel() {
     return null;
   }
   return (
-    <p className="mail-label mt-3 font-mono text-[9px] tracking-[0.12em] uppercase">
+    <p className="mail-label mt-3 text-[11px] font-medium tracking-wide uppercase">
       Search results
     </p>
   );
@@ -219,19 +218,17 @@ function MobileBrand() {
   return (
     <img
       alt="Rodge Mail"
-      className="size-6 rounded-[7px] border border-[var(--mail-brass-deep)] shadow-[var(--mail-shadow-raised)] md:hidden"
+      className="size-6 rounded-[7px] md:hidden"
       src="/icon-192.png"
     />
   );
 }
 
 function MobileAccountChip({
-  accent,
   active,
   label,
   onClick,
 }: {
-  accent?: string;
   active: boolean;
   label: string;
   onClick: () => void;
@@ -241,21 +238,13 @@ function MobileAccountChip({
       className={cn(
         "flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs transition",
         active
-          ? "border-[var(--mail-brass-deep)] bg-[var(--mail-brass)] text-[#21190a] shadow-[var(--mail-shadow-raised)]"
-          : "border-[var(--mail-seam)] bg-[var(--mail-paper)] text-[var(--mail-ink-soft)] shadow-[var(--mail-shadow-inset)]",
+          ? "border-primary bg-primary text-primary-foreground"
+          : "border-border bg-background text-muted-foreground",
       )}
       onClick={onClick}
       type="button"
     >
-      <ChipAccent accent={accent} />
       {label}
     </button>
-  );
-}
-
-function ChipAccent({ accent }: { accent: string | undefined }) {
-  if (!accent) return null;
-  return (
-    <span className="size-1.5 rounded-full" style={{ background: accent }} />
   );
 }

@@ -40,7 +40,7 @@ export function MailSettingsScreen() {
         <Image
           accessibilityLabel="Rodge Mail"
           source={roundedIcon}
-          className="border-brass/50 size-20 rounded-[22px] border"
+          className="size-20 rounded-[22px]"
         />
         <Text className="text-foreground text-xl font-bold">Rodge Mail</Text>
       </View>
@@ -275,7 +275,7 @@ function SignOutButton() {
 }
 
 function SignOutIcon({ isLoading }: { isLoading: boolean }) {
-  const stamp = useColor("stamp");
-  if (isLoading) return <ActivityIndicator color={stamp} />;
-  return <LogOut color={stamp} size={20} />;
+  const destructive = useColor("destructive");
+  if (isLoading) return <ActivityIndicator color={destructive} />;
+  return <LogOut color={destructive} size={20} />;
 }

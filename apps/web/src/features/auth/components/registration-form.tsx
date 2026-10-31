@@ -142,12 +142,10 @@ function RegistrationCodeStep({
 export function StepHeading({ step, title }: { step: string; title: string }) {
   return (
     <div>
-      <p className="mail-label font-mono text-[8px] tracking-[0.16em] uppercase">
+      <p className="mail-label text-[10px] font-medium tracking-wide uppercase">
         {step}
       </p>
-      <h2 className="mt-2 font-serif text-2xl font-semibold tracking-[-0.03em]">
-        {title}
-      </h2>
+      <h2 className="mt-2 text-2xl font-semibold tracking-tight">{title}</h2>
     </div>
   );
 }
@@ -197,7 +195,7 @@ export function PrimaryButton({
 }) {
   return (
     <button
-      className="mail-brass-button flex h-12 w-full items-center justify-center gap-2 rounded-[10px] px-5 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-55"
+      className="mail-primary-button flex h-12 w-full items-center justify-center gap-2 rounded-[10px] px-5 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-55"
       disabled={disabled}
       type="submit"
     >

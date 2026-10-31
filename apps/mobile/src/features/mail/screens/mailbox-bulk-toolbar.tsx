@@ -10,8 +10,8 @@ export function MailboxBulkToolbar({
   selectedCount: number;
 }) {
   return (
-    <View className="bg-paper border-paper-border border-t px-3 pb-2">
-      <View className="border-paper-border h-9 flex-row items-center border-b px-2">
+    <View className="bg-background border-border border-t px-3 pb-2">
+      <View className="border-border h-9 flex-row items-center border-b px-2">
         <Text className="text-foreground text-sm font-semibold">
           {getSelectionLabel(selectedCount)}
         </Text>
@@ -24,7 +24,7 @@ export function MailboxBulkToolbar({
           <Pressable
             key={action.label}
             accessibilityRole="button"
-            className="border-paper-border h-10 flex-1 items-center justify-center border-r px-2 last:border-r-0"
+            className="border-border h-10 flex-1 items-center justify-center border-r px-2 last:border-r-0"
             disabled={selectedCount === 0}
             onPress={action.onPress}
           >

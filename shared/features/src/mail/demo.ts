@@ -7,7 +7,6 @@ export const DEMO_MAIL_ACCOUNTS = [
     address: "shawn@gmail.com",
     provider: "gmail",
     initials: "SG",
-    accent: "#c95d3f",
   },
   {
     id: "work",
@@ -15,7 +14,6 @@ export const DEMO_MAIL_ACCOUNTS = [
     address: "shawn@bentsignal.com",
     provider: "microsoft",
     initials: "BS",
-    accent: "#397367",
   },
   {
     id: "icloud",
@@ -23,7 +21,6 @@ export const DEMO_MAIL_ACCOUNTS = [
     address: "shawn@icloud.com",
     provider: "icloud",
     initials: "SI",
-    accent: "#b38736",
   },
 ] satisfies MailAccount[];
 

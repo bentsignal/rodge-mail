@@ -10,7 +10,6 @@ export interface MailAddress {
 }
 
 export interface MailAccount {
-  accent: string;
   address: string;
   id: MailAccountId;
   initials: string;

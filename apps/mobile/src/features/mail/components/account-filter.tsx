@@ -81,7 +81,7 @@ export function AccountFilter({
           accessibilityHint="Choose which inbox to show"
           accessibilityLabel={`Mailbox: ${selectedLabel}`}
           accessibilityRole="button"
-          className="bg-paper-deep border-paper-border h-11 min-w-0 flex-row items-center gap-2 rounded-xl border px-3"
+          className="bg-muted border-border h-11 min-w-0 flex-row items-center gap-2 rounded-xl border px-3"
         >
           <Text
             className="text-foreground min-w-0 flex-1 text-sm font-semibold"

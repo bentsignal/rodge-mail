@@ -106,7 +106,7 @@ function MessageAttachments({
           key={attachment.id}
           accessibilityLabel={`${fileName}, ${attachment.size}`}
           accessibilityRole="button"
-          className="bg-well border-well-border flex-row items-center gap-3 rounded-xl border px-4 py-3"
+          className="bg-muted border-border flex-row items-center gap-3 rounded-xl border px-4 py-3"
           disabled={downloadingId !== undefined}
           onPress={() => onDownload(attachment)}
         >

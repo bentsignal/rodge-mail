@@ -114,9 +114,10 @@ const successPage = `<!doctype html>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Rodge Mail sign-in complete</title>
     <style>
-      body { background: #e9dfca; color: #183f2a; display: grid; font: 16px system-ui, sans-serif; min-height: 100vh; margin: 0; place-items: center; }
+      :root { color-scheme: light dark; }
+      body { background: #ffffff; color: #0a0a0a; display: grid; font: 16px -apple-system, system-ui, sans-serif; min-height: 100vh; margin: 0; place-items: center; }
       main { max-width: 32rem; padding: 2rem; text-align: center; }
-      h1 { font-family: Georgia, serif; }
+      @media (prefers-color-scheme: dark) { body { background: #0a0a0a; color: #fafafa; } }
     </style>
   </head>
   <body><main><h1>Sign-in successful</h1><p>Return to your terminal. You can close this tab.</p></main></body>

@@ -24,7 +24,7 @@ export function ReaderPane() {
     <section
       aria-label="Message reader"
       className={cn(
-        "mail-reader-pane relative min-w-0 flex-1 flex-col bg-[var(--mail-reader)] lg:-ml-[3px] lg:border-l lg:border-[var(--mail-seam)]",
+        "bg-background lg:border-border relative min-w-0 flex-1 flex-col lg:-ml-[3px] lg:border-l",
         mobileReaderIsOpen ? "flex" : "hidden lg:flex",
       )}
     >
@@ -120,10 +120,10 @@ function ReaderArticle({
   return (
     <div className="mail-scrollbar min-h-0 flex-1 overflow-y-auto">
       <article className="relative z-[1] mx-auto w-full max-w-[840px] px-6 pt-8 pb-28 sm:px-10 sm:pt-10 xl:px-12 xl:pt-12">
-        <h1 className="max-w-3xl font-serif text-[34px] leading-[1.1] font-semibold tracking-[-0.035em] text-balance sm:text-[40px]">
+        <h1 className="max-w-3xl text-[34px] leading-[1.1] font-semibold tracking-tight text-balance sm:text-[40px]">
           {selectedThread.subject}
         </h1>
-        <div className="mt-8 h-px bg-[var(--mail-seam)] sm:mt-10" />
+        <div className="bg-border mt-8 h-px sm:mt-10" />
 
         <div className="mt-5 flex items-center justify-between gap-3">
           <ReaderViewSwitch onChange={setViewMode} value={viewMode} />
@@ -143,7 +143,7 @@ function ReaderArticle({
         ))}
 
         <button
-          className="mail-raised text-foreground mt-10 flex h-11 items-center gap-2 rounded-lg border px-4 text-sm font-semibold transition hover:border-[var(--mail-brass)]"
+          className="bg-background text-foreground hover:bg-accent mt-10 flex h-11 items-center gap-2 rounded-lg border px-4 text-sm font-semibold transition"
           onClick={replyToSelectedThread}
           type="button"
         >
@@ -165,7 +165,7 @@ function ReaderViewSwitch({
   return (
     <div
       aria-label="Message view"
-      className="mail-inset inline-flex rounded-[10px] border p-1"
+      className="bg-muted inline-flex rounded-[10px] border p-1"
       role="group"
     >
       <ReaderViewButton
@@ -196,7 +196,7 @@ function RegenerateCleanViewButton({
   return (
     <button
       aria-label={cleanViewActionAccessibilityLabel(state)}
-      className="inline-flex h-9 items-center gap-1.5 rounded-lg px-2.5 font-mono text-[9px] font-semibold tracking-[0.08em] text-[var(--mail-ink-soft)] uppercase transition hover:text-[var(--mail-ink)] disabled:cursor-wait disabled:opacity-60"
+      className="text-muted-foreground hover:text-foreground inline-flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-[11px] font-semibold tracking-wide uppercase transition disabled:cursor-wait disabled:opacity-60"
       disabled={isPreparing}
       onClick={() => void generate({ messageId: message._id })}
       type="button"
@@ -248,10 +248,10 @@ function ReaderViewButton({
     <button
       aria-pressed={selected}
       className={cn(
-        "flex h-8 items-center gap-1.5 rounded-[7px] px-3 font-mono text-[9px] font-semibold tracking-[0.08em] uppercase transition",
+        "flex h-8 items-center gap-1.5 rounded-[7px] px-3 text-[11px] font-semibold tracking-wide uppercase transition",
         selected
-          ? "text-foreground bg-[var(--mail-paper)] shadow-[var(--mail-shadow-raised)]"
-          : "hover:text-foreground text-[var(--mail-ink-soft)]",
+          ? "text-foreground bg-background"
+          : "hover:text-foreground text-muted-foreground",
       )}
       onClick={onClick}
       type="button"

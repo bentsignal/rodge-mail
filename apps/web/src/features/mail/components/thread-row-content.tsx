@@ -33,11 +33,11 @@ export function ThreadRowContent({
             {senderName}
           </p>
           <ThreadMetadata message={message} />
-          <time className="mail-label shrink-0 font-mono text-[9px] tabular-nums">
+          <time className="mail-label shrink-0 text-[11px] font-medium tabular-nums">
             {formatInboxDate(new Date(message.receivedAt).toISOString())}
           </time>
         </div>
-        <p className="text-foreground/90 mt-0.5 truncate font-serif text-[16px] leading-5 tracking-[-0.01em]">
+        <p className="text-foreground/90 mt-0.5 truncate text-[16px] leading-5 tracking-[-0.01em]">
           {message.subject}
         </p>
         <p className="mail-label mt-0.5 line-clamp-2 pr-9 text-[12px] leading-[1.45]">
@@ -70,8 +70,8 @@ function ThreadSelectionMarker({ selected }: { selected: boolean }) {
       className={cn(
         "flex size-8 shrink-0 items-center justify-center rounded-[10px] border transition-colors",
         selected
-          ? "border-[var(--mail-brass-deep)] bg-[var(--mail-brass)] text-[#21190a] shadow-[var(--mail-shadow-raised)]"
-          : "mail-inset border-[var(--mail-seam)] text-transparent",
+          ? "border-primary bg-primary text-primary-foreground"
+          : "bg-muted border-border text-transparent",
       )}
     >
       <Check className="size-4" strokeWidth={2.5} />
@@ -91,21 +91,18 @@ function ThreadMetadata({ message }: { message: InboxMessage }) {
 function PinnedMarker({ isPinned }: { isPinned: boolean }) {
   if (!isPinned) return null;
   return (
-    <Pin
-      aria-label="Pinned"
-      className="size-3 fill-current text-[var(--mail-highlight)]"
-    />
+    <Pin aria-label="Pinned" className="text-foreground size-3 fill-current" />
   );
 }
 
 function AttachmentMarker({ hasAttachments }: { hasAttachments: boolean }) {
   if (!hasAttachments) return null;
-  return <Paperclip className="size-3 text-[var(--mail-ink-soft)]" />;
+  return <Paperclip className="text-muted-foreground size-3" />;
 }
 
 function SenderAvatar({ isRead, name }: { isRead: boolean; name: string }) {
   return (
-    <div className="relative flex size-8 shrink-0 items-center justify-center rounded-[10px] border border-[var(--mail-seam)] bg-[var(--mail-avatar)] font-mono text-[10px] font-semibold text-[var(--mail-avatar-foreground)] shadow-[var(--mail-shadow-raised)]">
+    <div className="border-border bg-muted text-foreground relative flex size-8 shrink-0 items-center justify-center rounded-[10px] border text-[11px] font-semibold">
       {getInitials(name)}
       <UnreadDot isRead={isRead} />
     </div>
@@ -117,7 +114,7 @@ function UnreadDot({ isRead }: { isRead: boolean }) {
   return (
     <span
       aria-hidden="true"
-      className="absolute -top-0.5 -right-0.5 size-2.5 rounded-full border-2 border-[var(--mail-paper)] bg-[var(--mail-brass-deep)]"
+      className="border-background bg-foreground absolute -top-0.5 -right-0.5 size-2.5 rounded-full border-2"
     />
   );
 }

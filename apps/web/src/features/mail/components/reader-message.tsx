@@ -28,25 +28,25 @@ export function ReaderMessage({
   return (
     <section className="pt-7">
       <header className="flex items-center gap-3">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-[11px] border border-[var(--mail-seam)] bg-[var(--mail-avatar)] font-mono text-[10px] font-semibold text-[var(--mail-avatar-foreground)] shadow-[var(--mail-shadow-raised)]">
+        <div className="border-border bg-muted text-foreground flex size-10 shrink-0 items-center justify-center rounded-[11px] border text-[11px] font-semibold">
           {getInitials(senderName)}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-2">
             <p className="truncate text-sm font-semibold">{senderName}</p>
-            <time className="mail-label ml-auto shrink-0 font-mono text-[9px] tabular-nums">
+            <time className="mail-label ml-auto shrink-0 text-[11px] font-medium tabular-nums">
               {formatFullDate(
                 new Date(message.sentAt ?? message.receivedAt).toISOString(),
               )}
             </time>
           </div>
-          <p className="mail-label mt-0.5 truncate font-mono text-[9px]">
+          <p className="mail-label mt-0.5 truncate text-[11px] font-medium">
             {message.from.address} · to {formatRecipients(recipients)}
           </p>
         </div>
       </header>
 
-      <div className="text-foreground mt-7 space-y-5 font-serif text-[17px] leading-[1.75] tracking-[-0.008em] sm:pl-[52px] sm:text-[18px]">
+      <div className="text-foreground mt-7 space-y-5 text-[17px] leading-[1.75] tracking-[-0.008em] sm:pl-[52px] sm:text-[18px]">
         <ReaderMessageContent
           message={message}
           senderName={senderName}
@@ -100,7 +100,7 @@ function OriginalHtml({ html, title }: { html: string; title: string }) {
   const [height, setHeight] = useState(420);
   return (
     <iframe
-      className="w-full rounded-xl border border-[var(--mail-seam)] bg-white shadow-[var(--mail-shadow-inset)]"
+      className="border-border w-full rounded-xl border bg-white"
       height={height}
       onLoad={() => {
         const nextHeight = frameRef.current?.contentDocument?.body.scrollHeight;
@@ -148,7 +148,7 @@ function EmailBlock({ block }: { block: EmailTextBlock }) {
   }
   if (block.type === "quote") {
     return (
-      <blockquote className="space-y-3 border-l-2 border-[var(--mail-brass)] pl-4 text-[var(--mail-ink-soft)]">
+      <blockquote className="border-border text-muted-foreground space-y-3 border-l-2 pl-4">
         {block.paragraphs.map((paragraph, index) => (
           <p className="whitespace-pre-line" key={index}>
             <EmailInlineContent content={paragraph} />
@@ -165,7 +165,7 @@ function EmailBlock({ block }: { block: EmailTextBlock }) {
     );
   }
   return (
-    <ul className="list-disc space-y-2 pl-6 marker:text-[var(--mail-highlight)]">
+    <ul className="marker:text-muted-foreground list-disc space-y-2 pl-6">
       <EmailListItems items={block.items} />
     </ul>
   );
@@ -197,7 +197,7 @@ function EmailInline({ token }: { token: EmailTextInline }) {
   if (token.type === "emphasis") return <em>{token.value}</em>;
   if (token.type === "code") {
     return (
-      <code className="mail-inset rounded px-1 py-0.5 font-mono text-[0.82em]">
+      <code className="bg-muted rounded px-1 py-0.5 font-mono text-[0.82em]">
         {token.value}
       </code>
     );
@@ -205,7 +205,7 @@ function EmailInline({ token }: { token: EmailTextInline }) {
   if (token.href.toLowerCase().startsWith("mailto:")) {
     return (
       <a
-        className="font-sans text-[0.84em] font-semibold text-[var(--mail-highlight)] underline decoration-current/35 underline-offset-3 hover:decoration-current"
+        className="text-foreground font-sans text-[0.84em] font-semibold underline decoration-current/35 underline-offset-3 hover:decoration-current"
         href={token.href}
         title={token.href}
       >
@@ -215,7 +215,7 @@ function EmailInline({ token }: { token: EmailTextInline }) {
   }
   return (
     <a
-      className="font-sans text-[0.84em] font-semibold text-[var(--mail-highlight)] underline decoration-current/35 underline-offset-3 hover:decoration-current"
+      className="text-foreground font-sans text-[0.84em] font-semibold underline decoration-current/35 underline-offset-3 hover:decoration-current"
       href={token.href}
       rel="noreferrer noopener"
       target="_blank"

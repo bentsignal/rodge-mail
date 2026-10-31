@@ -54,11 +54,11 @@ export function AccountRail() {
   } = useLiveMail();
 
   return (
-    <aside className="mail-account-rail mail-chassis relative z-10 hidden h-full w-[76px] shrink-0 flex-col px-2.5 py-4 md:flex xl:w-[216px] xl:px-4">
+    <aside className="mail-account-rail bg-sidebar text-sidebar-foreground border-sidebar-border relative z-10 hidden h-full w-[76px] shrink-0 flex-col border-r px-2.5 py-4 md:flex xl:w-[216px] xl:px-4">
       <Brand />
       <button
         aria-label="New message"
-        className="mail-brass-button mt-5 flex h-11 items-center justify-center gap-2.5 rounded-lg px-3 text-sm font-bold transition-colors xl:justify-start xl:px-4"
+        className="mail-primary-button mt-5 flex h-11 items-center justify-center gap-2.5 rounded-lg px-3 text-sm font-bold transition-colors xl:justify-start xl:px-4"
         onClick={openComposer}
         type="button"
       >
@@ -77,8 +77,8 @@ export function AccountRail() {
         onClearSelection={clearSelection}
       />
 
-      <div className="mt-3 shrink-0 border-t border-white/10 pt-3">
-        <div className="grid grid-cols-1 gap-1 rounded-xl border border-white/[0.08] bg-black/10 p-1 xl:grid-cols-2">
+      <div className="border-sidebar-border mt-3 shrink-0 border-t pt-3">
+        <div className="grid grid-cols-1 gap-1 p-1 xl:grid-cols-2">
           <SyncAllButton
             accounts={accounts}
             isSyncing={isSyncingAccounts}
@@ -128,8 +128,8 @@ function AccountRailNavigation({
         className={cn(
           "group relative flex h-11 w-full items-center justify-center gap-3 rounded-lg px-3 text-sm transition-colors xl:justify-start",
           isArchive
-            ? "border border-white/10 bg-white/[0.09] text-[var(--mail-chassis-foreground)] shadow-[var(--warm-shadow-inset)] after:absolute after:inset-y-2 after:left-0 after:w-0.5 after:rounded-r after:bg-[var(--mail-brass)]"
-            : "border border-transparent text-[var(--mail-chassis-foreground)]/72 hover:border-white/10 hover:bg-white/[0.07] hover:text-[var(--mail-chassis-foreground)]",
+            ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+            : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground",
         )}
         onClick={onClearSelection}
         to="/archive"
@@ -143,8 +143,8 @@ function AccountRailNavigation({
         className={cn(
           "group relative flex h-11 w-full items-center justify-center gap-3 rounded-lg px-3 text-sm transition-colors xl:justify-start",
           isSpam
-            ? "border border-white/10 bg-white/[0.09] text-[var(--mail-chassis-foreground)] shadow-[var(--warm-shadow-inset)] after:absolute after:inset-y-2 after:left-0 after:w-0.5 after:rounded-r after:bg-[var(--mail-brass)]"
-            : "border border-transparent text-[var(--mail-chassis-foreground)]/72 hover:border-white/10 hover:bg-white/[0.07] hover:text-[var(--mail-chassis-foreground)]",
+            ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+            : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground",
         )}
         onClick={onClearSelection}
         to="/spam"
@@ -152,9 +152,9 @@ function AccountRailNavigation({
         <ShieldAlert className="size-[18px]" strokeWidth={1.7} />
         <span className="hidden truncate xl:block">Spam</span>
       </QuickLink>
-      <div className="mx-3 mt-4 mb-2.5 border-t border-white/10" />
+      <div className="border-sidebar-border mx-3 mt-4 mb-2.5 border-t" />
       <div className="mb-1 flex items-center justify-center px-1 xl:justify-between xl:pl-3">
-        <p className="hidden font-mono text-[9px] tracking-[0.14em] text-[var(--mail-chassis-foreground)]/48 uppercase xl:block">
+        <p className="text-muted-foreground hidden text-[11px] font-medium tracking-wide uppercase xl:block">
           Accounts
         </p>
         <AccountManagerButton accounts={accounts} />
@@ -164,7 +164,6 @@ function AccountRailNavigation({
         return (
           <AccountButton
             active={!isArchive && !isSpam && accountFilter === account._id}
-            accent={account.accent}
             count={unreadCounts[account._id]}
             icon={Icon}
             key={account._id}
@@ -181,14 +180,14 @@ function AccountRailNavigation({
 
 function Brand() {
   return (
-    <div className="mail-brand flex min-h-10 items-center justify-center gap-3 xl:justify-start xl:px-1">
+    <div className="flex min-h-10 items-center justify-center gap-3 xl:justify-start xl:px-1">
       <img
         alt="Rodge Mail"
-        className="size-10 shrink-0 rounded-[10px] border border-[var(--mail-brass-deep)] shadow-[0_1px_0_rgba(255,255,255,0.22)_inset,0_5px_12px_rgba(0,0,0,0.24)]"
+        className="size-10 shrink-0 rounded-[10px]"
         src="/icon-192.png"
       />
       <div className="hidden min-w-0 xl:block">
-        <p className="font-serif text-[16px] leading-5 font-semibold tracking-[-0.02em] whitespace-nowrap text-[var(--mail-chassis-foreground)]">
+        <p className="text-foreground text-[16px] leading-5 font-semibold tracking-[-0.02em] whitespace-nowrap">
           Rodge Mail
         </p>
       </div>
@@ -197,7 +196,6 @@ function Brand() {
 }
 
 function AccountButton({
-  accent,
   accessibleLabel,
   active,
   count,
@@ -205,7 +203,6 @@ function AccountButton({
   label,
   onClick,
 }: {
-  accent?: string;
   accessibleLabel?: string;
   active: boolean;
   count: number | undefined;
@@ -220,30 +217,16 @@ function AccountButton({
       className={cn(
         "group relative flex h-11 w-full items-center justify-center gap-3 rounded-lg px-3 text-sm transition-colors xl:justify-start",
         active
-          ? "border border-white/10 bg-white/[0.09] text-[var(--mail-chassis-foreground)] shadow-[var(--warm-shadow-inset)] after:absolute after:inset-y-2 after:left-0 after:w-0.5 after:rounded-r after:bg-[var(--mail-brass)]"
-          : "border border-transparent text-[var(--mail-chassis-foreground)]/72 hover:border-white/10 hover:bg-white/[0.07] hover:text-[var(--mail-chassis-foreground)]",
+          ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+          : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground",
       )}
       onClick={onClick}
       type="button"
     >
-      <span className="relative shrink-0">
-        <Icon className="size-[18px]" strokeWidth={active ? 2.2 : 1.7} />
-        <AccountAccent accent={accent} />
-      </span>
+      <Icon className="size-[18px] shrink-0" strokeWidth={active ? 2.2 : 1.7} />
       <span className="hidden truncate xl:block">{label}</span>
       <UnreadCount active={active} count={count} />
     </button>
-  );
-}
-
-function AccountAccent({ accent }: { accent: string | undefined }) {
-  if (!accent) return null;
-
-  return (
-    <span
-      className="absolute -right-1 -bottom-1 size-2 rounded-full ring-2 ring-[var(--mail-chassis)]"
-      style={{ backgroundColor: accent }}
-    />
   );
 }
 
@@ -267,10 +250,10 @@ function UnreadCount({
     <span
       aria-hidden="true"
       className={cn(
-        "absolute top-1.5 right-1.5 flex min-w-4 items-center justify-center rounded-full px-1 py-0.5 font-mono text-[8px] tabular-nums xl:static xl:ml-auto xl:min-w-5 xl:px-1.5 xl:text-[9px]",
+        "absolute top-1.5 right-1.5 flex min-w-4 items-center justify-center rounded-full px-1 py-0.5 text-[10px] font-medium tabular-nums xl:static xl:ml-auto xl:min-w-5 xl:px-1.5 xl:text-[11px]",
         active
-          ? "bg-[var(--mail-brass)] text-[#251c0e]"
-          : "bg-white/10 text-[var(--mail-chassis-foreground)]",
+          ? "bg-primary text-primary-foreground"
+          : "bg-sidebar-accent text-muted-foreground",
       )}
     >
       {count}
@@ -283,7 +266,7 @@ function AccountSkeletons() {
     <div aria-label="Loading accounts" className="space-y-2 px-3 py-1">
       {[0, 1, 2].map((index) => (
         <div
-          className="h-9 animate-pulse rounded-lg bg-white/[0.07]"
+          className="bg-sidebar-accent h-9 animate-pulse rounded-lg"
           key={index}
         />
       ))}

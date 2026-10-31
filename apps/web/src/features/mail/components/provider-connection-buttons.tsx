@@ -98,8 +98,8 @@ export function AddAccountButton({
             aria-label="Add account"
             className={
               appearance === "manager"
-                ? "mail-raised flex h-9 shrink-0 items-center justify-center gap-2 rounded-[9px] border px-3 text-xs font-semibold transition-colors hover:border-[var(--mail-brass)]"
-                : "mt-3 flex h-11 w-full items-center justify-center gap-2.5 rounded-lg border border-dashed border-white/25 px-3 text-xs font-semibold text-[var(--mail-chassis-foreground)]/72 transition-colors hover:border-[var(--mail-brass)] hover:bg-white/[0.06] hover:text-[var(--mail-chassis-foreground)] xl:justify-start"
+                ? "bg-background hover:bg-accent flex h-9 shrink-0 items-center justify-center gap-2 rounded-[9px] border px-3 text-xs font-semibold transition-colors"
+                : "border-sidebar-border text-muted-foreground hover:bg-sidebar-accent hover:text-foreground mt-3 flex h-11 w-full items-center justify-center gap-2.5 rounded-lg border border-dashed px-3 text-xs font-semibold transition-colors xl:justify-start"
             }
             type="button"
           >
@@ -113,12 +113,12 @@ export function AddAccountButton({
             </span>
           </button>
         </Dialog.Trigger>
-        <Dialog.Content className="mail-dialog mail-workspace max-w-[460px] gap-0 overflow-hidden rounded-[18px] border p-0">
-          <div className="mail-chassis border-b px-6 py-5">
-            <Dialog.Title className="font-serif text-2xl tracking-[-0.03em]">
+        <Dialog.Content className="mail-dialog bg-background max-w-[460px] gap-0 overflow-hidden rounded-[18px] border p-0">
+          <div className="border-b px-6 py-5">
+            <Dialog.Title className="text-2xl font-semibold tracking-tight">
               Add account
             </Dialog.Title>
-            <Dialog.Description className="mt-1.5 max-w-sm text-xs leading-5 text-[var(--mail-chassis-foreground)]/70">
+            <Dialog.Description className="text-muted-foreground mt-1.5 max-w-sm text-xs leading-5">
               Choose a provider. You can connect more than one account from the
               same service.
             </Dialog.Description>
@@ -168,12 +168,12 @@ function ProviderOption({
   return (
     <button
       aria-label={getProviderAriaLabel(label, requiresReconnect)}
-      className="group flex w-full items-center gap-3 rounded-[12px] border border-transparent px-3 py-3 text-left transition-colors hover:border-[var(--mail-seam)] hover:bg-[var(--mail-paper-soft)] hover:shadow-[var(--mail-shadow-raised)] disabled:cursor-wait disabled:opacity-60"
+      className="group hover:border-border hover:bg-accent flex w-full items-center gap-3 rounded-[12px] border border-transparent px-3 py-3 text-left transition-colors disabled:cursor-wait disabled:opacity-60"
       disabled={isConnecting}
       onClick={onSelect}
       type="button"
     >
-      <span className="mail-inset flex size-10 shrink-0 items-center justify-center rounded-[9px] border text-[var(--mail-ink-soft)]">
+      <span className="bg-muted text-muted-foreground flex size-10 shrink-0 items-center justify-center rounded-[9px] border">
         <Icon className="size-[17px]" strokeWidth={1.7} />
       </span>
       <span className="min-w-0 flex-1">
@@ -202,14 +202,14 @@ function ProviderStatus({
 }) {
   if (requiresReconnect) {
     return (
-      <span className="font-mono text-[8px] tracking-[0.08em] text-[var(--mail-highlight)] uppercase">
+      <span className="text-destructive text-[10px] font-medium tracking-wide uppercase">
         Reconnect required
       </span>
     );
   }
   if (connectedCount === 0) return null;
   return (
-    <span className="mail-label font-mono text-[8px] tracking-[0.08em] uppercase">
+    <span className="mail-label text-[10px] font-medium tracking-wide uppercase">
       {connectedCount} connected
     </span>
   );
@@ -218,7 +218,7 @@ function ProviderStatus({
 function ProviderOptionIcon({ isConnecting }: { isConnecting: boolean }) {
   if (isConnecting) return <Loader className="size-4 animate-spin" />;
   return (
-    <ArrowRight className="size-4 text-[var(--mail-ink-soft)] transition-transform group-hover:translate-x-0.5" />
+    <ArrowRight className="text-muted-foreground size-4 transition-transform group-hover:translate-x-0.5" />
   );
 }
 

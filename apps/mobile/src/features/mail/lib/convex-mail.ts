@@ -72,7 +72,6 @@ export function toMailAccount(account: Account) {
   const providerLabel = getNonemptyValue(account.displayName, account.address);
   const label = getNonemptyValue(account.displayLabel, providerLabel);
   return {
-    accent: getProviderAccent(account.provider),
     address: account.address,
     displayLabel: account.displayLabel,
     displayName: account.displayName,
@@ -149,12 +148,6 @@ function toParagraphs(plainText: string | undefined, fallback: string) {
     .split(/\n\s*\n/u)
     .map((paragraph) => paragraph.trim())
     .filter(Boolean);
-}
-
-function getProviderAccent(provider: Account["provider"]) {
-  if (provider === "gmail") return "#c95d3f";
-  if (provider === "microsoft") return "#397367";
-  return "#b38736";
 }
 
 function getInitials(value: string) {

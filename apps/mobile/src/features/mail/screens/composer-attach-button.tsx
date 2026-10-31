@@ -11,7 +11,7 @@ export function ComposerAttachButton({ onAttach }: { onAttach: () => void }) {
       accessibilityHint="Choose photos or files"
       accessibilityLabel="Add attachments"
       accessibilityRole="button"
-      className="bg-well border-well-border min-h-12 flex-row items-center justify-center gap-2 rounded-xl border px-4 py-3"
+      className="bg-muted border-border min-h-12 flex-row items-center justify-center gap-2 rounded-xl border px-4 py-3"
       onPress={onAttach}
     >
       <Paperclip color={mutedForeground} size={18} />

@@ -21,7 +21,7 @@ export function MobileAppearanceSettings() {
       <Text className="text-muted-foreground text-sm leading-5">
         Follow your device or keep Rodge Mail in a preferred appearance.
       </Text>
-      <View className="bg-well border-well-border flex-row rounded-xl border p-1">
+      <View className="bg-muted border-border flex-row rounded-xl border p-1">
         {MOBILE_MODES.map((option) => {
           const isSelected = appearance.mode === option.mode;
           return (
@@ -30,7 +30,7 @@ export function MobileAppearanceSettings() {
               accessibilityState={{ checked: isSelected }}
               className={
                 isSelected
-                  ? "bg-paper border-brass/30 h-9 flex-1 items-center justify-center rounded-lg border"
+                  ? "bg-background border-border h-9 flex-1 items-center justify-center rounded-lg border"
                   : "h-9 flex-1 items-center justify-center rounded-lg"
               }
               key={option.mode}

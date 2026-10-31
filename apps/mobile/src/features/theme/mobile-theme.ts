@@ -18,54 +18,34 @@ const MODE_KEY = "rodge-mail.theme-mode";
 const PALETTES = {
   postal: {
     dark: theme({
-      accent: "#214A36",
-      accentForeground: "#F7F0DF",
-      background: "#171B17",
-      border: "#41453B",
-      brass: "#C89A42",
-      brassSoft: "#D4A64B",
-      card: "#242720",
-      foreground: "#F3EBDD",
-      forest: "#173C2B",
-      forestDeep: "#102C20",
-      forestRaised: "#214A36",
-      muted: "#2D3029",
-      mutedForeground: "#BEB8AA",
-      paper: "#242720",
-      paperBorder: "#41453B",
-      paperDeep: "#2D3029",
-      primary: "#C89A42",
-      primaryForeground: "#21190C",
-      ring: "#C89A42",
-      shadow: "#080A08",
-      stamp: "#D56A59",
-      well: "#2D3029",
-      wellBorder: "#41453B",
+      accent: "#2C2C2E",
+      accentForeground: "#FFFFFF",
+      background: "#000000",
+      border: "#38383A",
+      card: "#1C1C1E",
+      destructive: "#FF453A",
+      destructiveForeground: "#FFFFFF",
+      foreground: "#FFFFFF",
+      muted: "#1C1C1E",
+      mutedForeground: "#8E8E93",
+      primary: "#FFFFFF",
+      primaryForeground: "#000000",
+      ring: "#8E8E93",
     }),
     light: theme({
-      accent: "#173C2B",
-      accentForeground: "#F7F0DF",
-      background: "#F5F0E5",
-      border: "#D8CFBC",
-      brass: "#C99B43",
-      brassSoft: "#D2A953",
-      card: "#FFFDF6",
-      foreground: "#2B2924",
-      forest: "#173C2B",
-      forestDeep: "#102C20",
-      forestRaised: "#214A36",
-      muted: "#EEE5D3",
-      mutedForeground: "#686158",
-      paper: "#FFFDF6",
-      paperBorder: "#D8CFBC",
-      paperDeep: "#EEE5D3",
-      primary: "#C99B43",
-      primaryForeground: "#251C0E",
-      ring: "#C99B43",
-      shadow: "#372F22",
-      stamp: "#A83F32",
-      well: "#EEE5D3",
-      wellBorder: "#D8CFBC",
+      accent: "#E5E5EA",
+      accentForeground: "#000000",
+      background: "#FFFFFF",
+      border: "#C6C6C8",
+      card: "#FFFFFF",
+      destructive: "#FF3B30",
+      destructiveForeground: "#FFFFFF",
+      foreground: "#000000",
+      muted: "#F2F2F7",
+      mutedForeground: "#6C6C70",
+      primary: "#000000",
+      primaryForeground: "#FFFFFF",
+      ring: "#6C6C70",
     }),
   },
 } satisfies Record<MobilePalette, Record<"dark" | "light", ThemeVariables>>;
@@ -209,25 +189,15 @@ interface ThemeInput {
   accentForeground: string;
   background: string;
   border: string;
-  brass: string;
-  brassSoft: string;
   card: string;
+  destructive: string;
+  destructiveForeground: string;
   foreground: string;
-  forest: string;
-  forestDeep: string;
-  forestRaised: string;
   muted: string;
   mutedForeground: string;
-  paper: string;
-  paperBorder: string;
-  paperDeep: string;
   primary: string;
   primaryForeground: string;
   ring: string;
-  shadow: string;
-  stamp: string;
-  well: string;
-  wellBorder: string;
 }
 
 type ThemeVariables = ReturnType<typeof theme>;
@@ -238,29 +208,21 @@ function theme(input: ThemeInput) {
     "--accent-foreground": input.accentForeground,
     "--background": input.background,
     "--border": input.border,
-    "--brass": input.brass,
-    "--brass-soft": input.brassSoft,
     "--card": input.card,
     "--card-foreground": input.foreground,
+    "--destructive": input.destructive,
+    "--destructive-foreground": input.destructiveForeground,
     "--foreground": input.foreground,
-    "--forest": input.forest,
-    "--forest-deep": input.forestDeep,
-    "--forest-raised": input.forestRaised,
     "--input": input.border,
     "--muted": input.muted,
     "--muted-foreground": input.mutedForeground,
-    "--paper": input.paper,
-    "--paper-border": input.paperBorder,
-    "--paper-deep": input.paperDeep,
     "--popover": input.card,
     "--popover-foreground": input.foreground,
     "--primary": input.primary,
     "--primary-foreground": input.primaryForeground,
     "--ring": input.ring,
-    "--shadow-color": input.shadow,
-    "--stamp": input.stamp,
-    "--secondary": input.accent,
-    "--secondary-foreground": input.accentForeground,
+    "--secondary": input.muted,
+    "--secondary-foreground": input.foreground,
     "--sidebar": input.background,
     "--sidebar-accent": input.muted,
     "--sidebar-accent-foreground": input.foreground,
@@ -269,8 +231,6 @@ function theme(input: ThemeInput) {
     "--sidebar-primary": input.primary,
     "--sidebar-primary-foreground": input.primaryForeground,
     "--sidebar-ring": input.ring,
-    "--well": input.well,
-    "--well-border": input.wellBorder,
   };
 }
 

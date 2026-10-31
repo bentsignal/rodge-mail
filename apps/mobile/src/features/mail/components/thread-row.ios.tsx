@@ -67,7 +67,7 @@ export function ThreadRow(props: ThreadRowProps) {
           scrollDisabled(true),
           scrollIndicators("hidden"),
           scrollContentBackground("hidden"),
-          background(colors.paper),
+          background(colors.background),
           environment("editMode", selectionMode ? "active" : "inactive"),
         ]}
         onSelectionChange={
@@ -122,7 +122,7 @@ function NativeSelectableThread({
         accessibilityElement("ignore"),
         accessibilityLabel(getNativeAccessibilityLabel(props)),
         accessibilityHint("Toggles selection"),
-        ...rowModifiers(colors.paper),
+        ...rowModifiers(colors.background),
       ]}
       thread={thread}
     />
@@ -145,7 +145,7 @@ function NativeThreadButton({
         accessibilityElement("ignore"),
         accessibilityLabel(getNativeAccessibilityLabel(props)),
         accessibilityHint("Opens this email thread"),
-        ...rowModifiers(colors.paper),
+        ...rowModifiers(colors.background),
       ]}
       onPress={onOpen}
     >
@@ -167,12 +167,12 @@ function InboxSwipeRow({
   const pinAction = getPinAction(props.thread);
   const readAction = getReadAction(props.thread);
   return (
-    <SwipeActions modifiers={rowModifiers(colors.paper)}>
+    <SwipeActions modifiers={rowModifiers(colors.background)}>
       <NativeThreadButton colors={colors} props={props} />
       <SwipeActions.Actions edge="leading">
         <Button
           label={pinAction.label}
-          modifiers={[tint(colors.primary)]}
+          modifiers={[tint(colors.mutedForeground)]}
           systemImage={pinAction.systemImage}
           onPress={() =>
             runAfterSwipeAnimation(
@@ -184,7 +184,7 @@ function InboxSwipeRow({
       <SwipeActions.Actions edge="trailing">
         <Button
           label="Archive"
-          modifiers={[tint(colors.brass)]}
+          modifiers={[tint(colors.mutedForeground)]}
           systemImage="archivebox"
           onPress={() =>
             runAfterSwipeAnimation(() => void archiveThread(props.thread.id))
@@ -192,7 +192,7 @@ function InboxSwipeRow({
         />
         <Button
           label={readAction.label}
-          modifiers={[tint(props.thread.isRead ? colors.muted : colors.forest)]}
+          modifiers={[tint(colors.mutedForeground)]}
           systemImage={readAction.systemImage}
           onPress={() =>
             runAfterSwipeAnimation(
@@ -213,12 +213,12 @@ function ArchiveSwipeRow({
   props: ThreadRowProps;
 }) {
   return (
-    <SwipeActions modifiers={rowModifiers(colors.paper)}>
+    <SwipeActions modifiers={rowModifiers(colors.background)}>
       <NativeThreadButton colors={colors} props={props} />
       <SwipeActions.Actions edge="leading">
         <Button
           label="Restore"
-          modifiers={[tint(colors.forest)]}
+          modifiers={[tint(colors.mutedForeground)]}
           systemImage="arrow.uturn.backward"
           onPress={props.onRestore}
         />
@@ -246,24 +246,21 @@ function getNativeKey(thread: MailThread, mailbox: MobileMailbox) {
   return `${getThreadRowNativeKey(thread)}:${mailbox}`;
 }
 
-function rowModifiers(paper: string) {
+function rowModifiers(background: string) {
   return [
     listRowInsets({ bottom: 0, leading: 0, top: 0, trailing: 0 }),
     listRowSeparator("hidden"),
-    listRowBackground(paper),
+    listRowBackground(background),
   ];
 }
 
 function useThreadRowColors() {
   return {
-    brass: useColor("brass"),
+    background: useColor("background"),
     destructive: useColor("destructive"),
     foreground: useColor("foreground"),
-    forest: useColor("forest-raised"),
     muted: useColor("muted"),
     mutedForeground: useColor("muted-foreground"),
-    paper: useColor("paper"),
-    paperDeep: useColor("paper-deep"),
     primary: useColor("primary"),
   };
 }

@@ -19,7 +19,7 @@ export function ComposerAttachmentList({
       {attachments.map((attachment) => (
         <View
           key={attachment.id}
-          className="bg-well border-well-border flex-row items-center gap-2 rounded-xl border px-3 py-2"
+          className="bg-muted border-border flex-row items-center gap-2 rounded-xl border px-3 py-2"
         >
           <Paperclip color={mutedForeground} size={16} />
           <Text className="text-foreground min-w-0 flex-1" numberOfLines={1}>

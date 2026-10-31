@@ -25,8 +25,8 @@ export function SyncAllButton({
       className={cn(
         "group flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-transparent px-2 text-xs transition-colors",
         state === "failed"
-          ? "text-[#ff9a7f] hover:bg-white/[0.08]"
-          : "text-[var(--mail-chassis-foreground)]/65 hover:bg-white/[0.08] hover:text-[var(--mail-chassis-foreground)]",
+          ? "text-destructive hover:bg-sidebar-accent"
+          : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground",
       )}
       disabled={accounts.length === 0 || isSyncing}
       onClick={() => void onSync()}

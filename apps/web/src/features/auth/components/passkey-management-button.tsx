@@ -33,8 +33,8 @@ export function PasskeyManagementButton({
           aria-label="Settings"
           className={
             compact
-              ? "flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-transparent px-2 text-[var(--mail-chassis-foreground)]/68 transition-colors hover:border-white/10 hover:bg-white/[0.07] hover:text-[var(--mail-chassis-foreground)]"
-              : "flex h-11 w-full items-center justify-center gap-2.5 rounded-lg border border-transparent px-3 text-[var(--mail-chassis-foreground)]/72 transition-colors hover:border-white/10 hover:bg-white/[0.07] hover:text-[var(--mail-chassis-foreground)] xl:justify-start"
+              ? "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-transparent px-2 transition-colors"
+              : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground flex h-11 w-full items-center justify-center gap-2.5 rounded-lg border border-transparent px-3 transition-colors xl:justify-start"
           }
           type="button"
         >
@@ -42,21 +42,21 @@ export function PasskeyManagementButton({
           <span className="hidden text-xs xl:inline">Settings</span>
         </button>
       </Dialog.Trigger>
-      <Dialog.Content className="mail-dialog mail-workspace max-h-[calc(100vh-2rem)] max-w-2xl gap-0 overflow-hidden overflow-y-auto rounded-[18px] border p-0">
-        <div className="mail-chassis border-b p-6">
-          <Dialog.Title className="font-serif text-2xl tracking-[-0.03em]">
+      <Dialog.Content className="mail-dialog bg-background max-h-[calc(100vh-2rem)] max-w-2xl gap-0 overflow-hidden overflow-y-auto rounded-[18px] border p-0">
+        <div className="border-b p-6">
+          <Dialog.Title className="text-2xl font-semibold tracking-tight">
             Settings
           </Dialog.Title>
-          <Dialog.Description className="mt-2 text-xs leading-5 text-[var(--mail-chassis-foreground)]/70">
+          <Dialog.Description className="text-muted-foreground mt-2 text-xs leading-5">
             Appearance and security controls for Rodge Mail.
           </Dialog.Description>
         </div>
-        <div className="mail-paper p-6">
+        <div className="bg-background p-6">
           <AppearanceSettings />
         </div>
-        <div className="mail-paper border-t border-[var(--mail-seam)] p-6">
+        <div className="bg-background border-border border-t p-6">
           <div className="flex items-center gap-3">
-            <span className="mail-raised flex size-9 shrink-0 items-center justify-center rounded-[9px] border text-[var(--mail-ink-soft)]">
+            <span className="bg-background text-muted-foreground flex size-9 shrink-0 items-center justify-center rounded-[9px] border">
               <Fingerprint className="size-4" />
             </span>
             <div className="min-w-0 flex-1">
@@ -66,7 +66,7 @@ export function PasskeyManagementButton({
               </p>
             </div>
             <button
-              className="mail-raised flex h-9 shrink-0 items-center justify-center gap-2 rounded-[9px] border px-3 text-xs font-semibold transition-colors hover:border-[var(--mail-brass)] disabled:cursor-not-allowed disabled:opacity-50"
+              className="bg-background hover:bg-accent flex h-9 shrink-0 items-center justify-center gap-2 rounded-[9px] border px-3 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50"
               disabled={isLoading}
               onClick={() => void registerPasskey()}
               type="button"
@@ -75,7 +75,7 @@ export function PasskeyManagementButton({
               Add
             </button>
           </div>
-          <div className="mt-5 border-t border-[var(--mail-seam)] pt-5">
+          <div className="border-border mt-5 border-t pt-5">
             <SignOutLink variant="settings" />
           </div>
         </div>

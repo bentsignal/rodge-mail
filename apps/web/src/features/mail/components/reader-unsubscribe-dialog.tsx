@@ -29,12 +29,12 @@ export function ReaderUnsubscribeDialog({
   const name = message?.mailingList?.displayName ?? "this mailing list";
   return (
     <Dialog.Container onOpenChange={onOpenChange} open={message !== undefined}>
-      <Dialog.Content className="mail-dialog mail-workspace max-w-md overflow-hidden rounded-[18px] border p-0">
-        <div className="mail-chassis border-b p-6">
-          <Dialog.Title className="font-serif text-2xl tracking-[-0.03em]">
+      <Dialog.Content className="mail-dialog bg-background max-w-md overflow-hidden rounded-[18px] border p-0">
+        <div className="border-b p-6">
+          <Dialog.Title className="text-2xl font-semibold tracking-tight">
             Unsubscribe from {name}?
           </Dialog.Title>
-          <Dialog.Description className="mt-2 text-xs leading-5 text-[var(--mail-chassis-foreground)]/70">
+          <Dialog.Description className="text-muted-foreground mt-2 text-xs leading-5">
             Rodge will ask the sender to remove you using their one-click or
             email unsubscribe method. Either way, current and future advertising
             mail matching this list will go to Spam.
@@ -42,7 +42,7 @@ export function ReaderUnsubscribeDialog({
         </div>
         <div className="flex justify-end gap-2 p-5">
           <button
-            className="mail-raised h-10 rounded-lg border border-[var(--mail-seam)] px-4 text-xs font-semibold"
+            className="bg-background border-border h-10 rounded-lg border px-4 text-xs font-semibold"
             disabled={isUnsubscribing}
             onClick={() => onOpenChange(false)}
             type="button"
@@ -50,7 +50,7 @@ export function ReaderUnsubscribeDialog({
             Cancel
           </button>
           <button
-            className="h-10 rounded-lg bg-[var(--mail-highlight)] px-4 text-xs font-bold text-white disabled:opacity-50"
+            className="bg-primary text-primary-foreground h-10 rounded-lg px-4 text-xs font-bold disabled:opacity-50"
             disabled={isUnsubscribing}
             onClick={() => void confirmUnsubscribe()}
             type="button"

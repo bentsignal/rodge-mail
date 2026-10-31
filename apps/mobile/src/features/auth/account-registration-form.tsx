@@ -31,7 +31,7 @@ export function RegistrationDetailsForm({
       <TextInput
         accessibilityLabel="Full name"
         autoCapitalize="words"
-        className="bg-paper border-well-border text-foreground h-12 rounded-xl border px-4"
+        className="bg-background border-border text-foreground h-12 rounded-xl border px-4"
         defaultValue={name}
         editable={!isLoading}
         onChangeText={onNameChange}
@@ -43,7 +43,7 @@ export function RegistrationDetailsForm({
         autoCapitalize="none"
         autoComplete="email"
         autoCorrect={false}
-        className="bg-paper border-well-border text-foreground h-12 rounded-xl border px-4"
+        className="bg-background border-border text-foreground h-12 rounded-xl border px-4"
         defaultValue={email}
         editable={!isLoading}
         inputMode="email"
@@ -84,7 +84,7 @@ export function VerificationCodeForm({
       <TextInput
         accessibilityLabel="Verification code"
         autoComplete="one-time-code"
-        className="bg-paper border-well-border text-foreground h-12 rounded-xl border px-4 font-mono tracking-[0.3em]"
+        className="bg-background border-border text-foreground h-12 rounded-xl border px-4 font-mono tracking-[0.3em]"
         defaultValue={code}
         editable={!isLoading}
         inputMode="numeric"
@@ -126,7 +126,7 @@ export function RecoveryEmailForm({
         autoCapitalize="none"
         autoComplete="email"
         autoCorrect={false}
-        className="bg-paper border-well-border text-foreground h-12 rounded-xl border px-4"
+        className="bg-background border-border text-foreground h-12 rounded-xl border px-4"
         defaultValue={email}
         editable={!isLoading}
         inputMode="email"

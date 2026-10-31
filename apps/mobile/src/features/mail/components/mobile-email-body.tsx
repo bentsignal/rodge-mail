@@ -117,7 +117,9 @@ function MobileInlineToken({ token }: { token: EmailTextInline }) {
     return <Text className="italic">{token.value}</Text>;
   }
   if (token.type === "code") {
-    return <Text className="bg-well font-mono text-[14px]">{token.value}</Text>;
+    return (
+      <Text className="bg-muted font-mono text-[14px]">{token.value}</Text>
+    );
   }
   return (
     <Text

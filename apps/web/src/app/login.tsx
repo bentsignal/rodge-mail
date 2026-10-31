@@ -22,16 +22,14 @@ function Login() {
   if (imLoggedIn) return null;
 
   return (
-    <main className="mail-atmosphere bg-background relative flex min-h-dvh items-center justify-center overflow-hidden px-5 py-10">
-      <section className="mail-auth-frame relative z-10 w-full max-w-[420px] rounded-[24px] border p-2.5">
-        <div className="mail-auth-paper rounded-[16px] border px-7 py-8 sm:px-9 sm:py-9">
-          <LoginBrand />
-          <LoginContent
-            onCancel={() => setView("sign-in")}
-            onRecover={() => setView("recover")}
-            view={view}
-          />
-        </div>
+    <main className="bg-background relative flex min-h-dvh items-center justify-center overflow-hidden px-5 py-10">
+      <section className="relative z-10 w-full max-w-[360px] py-8">
+        <LoginBrand />
+        <LoginContent
+          onCancel={() => setView("sign-in")}
+          onRecover={() => setView("recover")}
+          view={view}
+        />
       </section>
     </main>
   );
@@ -53,14 +51,8 @@ function LoginContent({
 function LoginBrand() {
   return (
     <div className="mb-9 flex flex-col items-center text-center">
-      <img
-        alt=""
-        className="mail-auth-logo rounded-[17px] border border-[var(--mail-brass-deep)] shadow-[0_1px_0_rgba(255,255,255,0.22)_inset,0_9px_22px_rgba(18,23,15,0.28)]"
-        src="/icon-192.png"
-      />
-      <h1 className="mt-4 font-serif text-2xl font-semibold tracking-[-0.035em]">
-        Rodge Mail
-      </h1>
+      <img alt="" className="size-16 rounded-[14px]" src="/icon-192.png" />
+      <h1 className="mt-4 text-2xl font-semibold tracking-tight">Rodge Mail</h1>
     </div>
   );
 }

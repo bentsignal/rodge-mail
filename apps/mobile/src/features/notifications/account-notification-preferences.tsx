@@ -86,7 +86,7 @@ export function AccountNotificationPreferences({
                 {preference.address}
               </Text>
             </View>
-            <View className="bg-well border-well-border flex-row rounded-lg border p-1">
+            <View className="bg-muted border-border flex-row rounded-lg border p-1">
               {options.map((option) => (
                 <PreferenceOption
                   key={option.label}
