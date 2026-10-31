@@ -1,8 +1,4 @@
-import type {
-  LegendListRef,
-  LegendListRenderItemProps,
-} from "@legendapp/list/react-native";
-import { useRef } from "react";
+import type { LegendListRenderItemProps } from "@legendapp/list/react-native";
 import { Animated, RefreshControl, View } from "react-native";
 import { Easing, LinearTransition } from "react-native-reanimated";
 import { AnimatedLegendList } from "@legendapp/list/reanimated";
@@ -15,14 +11,9 @@ import type { MobileMailbox } from "../store";
 import type { InboxHeader } from "./inbox-header";
 import type { MailboxFilter } from "./mailbox-controls";
 import { useColor } from "~/hooks/use-color";
+import { useNextPage } from "../hooks/use-next-page";
 import { useSteadyData } from "../hooks/use-steady-data";
-import {
-  getPageFooter,
-  getRowsBelow,
-  getThresholdRows,
-  NEXT_PAGE_THRESHOLD,
-  shouldRequestNextPage,
-} from "../lib/next-page";
+import { getPageFooter, NEXT_PAGE_THRESHOLD } from "../lib/next-page";
 import { stableRows } from "../lib/stable-rows";
 import { EmptyInbox, InboxFooter } from "./inbox-list-feedback";
 import { getInboxListFeedback } from "./inbox-list-state";
@@ -183,24 +174,7 @@ export function MailboxThreadList({
   );
 }
 
-function MailboxRows({
-  accounts,
-  feedback,
-  headerInList,
-  headerProps,
-  mailbox,
-  listVersion,
-  onLoadMore,
-  pageStatus,
-  background,
-  primary,
-  refreshControl,
-  refreshError,
-  renderThread,
-  searchMode,
-  searchTerm,
-  transition,
-}: {
+interface MailboxRowsProps {
   accounts: MobileMailAccount[];
   feedback: ReturnType<typeof getInboxListFeedback>;
   headerInList: boolean;
@@ -221,27 +195,33 @@ function MailboxRows({
   transition: ReturnType<
     typeof useInboxFilterTransition<MailThread, MailboxFilter>
   >;
-}) {
+}
+
+function MailboxRows({
+  accounts,
+  feedback,
+  headerInList,
+  headerProps,
+  mailbox,
+  listVersion,
+  onLoadMore,
+  pageStatus,
+  background,
+  primary,
+  refreshControl,
+  refreshError,
+  renderThread,
+  searchMode,
+  searchTerm,
+  transition,
+}: MailboxRowsProps) {
   const steady = useSteadyData(stableRows(transition.data), threadKey);
-  const listRef = useRef<LegendListRef>(null);
-  const requestedSinceScroll = useRef(false);
-  function requestNextPage() {
-    const list = listRef.current?.getState();
-    const rowsBelow = list && getRowsBelow(list.data.length, list.end);
-    if (
-      shouldRequestNextPage({
-        requestedSinceScroll: requestedSinceScroll.current,
-        rowsBelow,
-        rowsFitOnScreen: list?.start === 0 && rowsBelow === 0,
-        rowsPending: steady.rowsPending,
-        status: pageStatus,
-        thresholdRows: getThresholdRows(list?.scrollLength ?? 0, rowExtent),
-      })
-    ) {
-      requestedSinceScroll.current = true;
-      onLoadMore();
-    }
-  }
+  const { listRef, request, resetOnDrag } = useNextPage({
+    onLoadMore,
+    pageStatus,
+    rowExtent,
+    rowsPending: steady.rowsPending,
+  });
   return (
     <Animated.View style={{ flex: 1, opacity: transition.opacity }}>
       <AnimatedLegendList
@@ -260,15 +240,15 @@ function MailboxRows({
         keyboardDismissMode="on-drag"
         stickyHeaderIndices={headerInList ? [0] : undefined}
         style={{ backgroundColor: background, flex: 1 }}
-        onEndReached={requestNextPage}
+        onEndReached={request}
         onEndReachedThreshold={NEXT_PAGE_THRESHOLD}
         onScroll={(event) => {
           steady.listProps.onScroll(event);
-          requestNextPage();
+          request();
         }}
         onScrollBeginDrag={() => {
           steady.listProps.onScrollBeginDrag();
-          requestedSinceScroll.current = false;
+          resetOnDrag();
         }}
         ListEmptyComponent={
           <EmptyInbox

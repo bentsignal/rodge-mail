@@ -9,7 +9,13 @@ import {
   shouldRequestNextPage,
 } from "./next-page";
 
-const key = (row: string) => row;
+function trackPage(status: PageStatus) {
+  return { status };
+}
+
+function key(row: string) {
+  return row;
+}
 
 const near = {
   requestedSinceScroll: false,
@@ -55,7 +61,7 @@ describe("shouldRequestNextPage", () => {
     // The list's end signal and scroll events keep firing while the user
     // rests at the end; pages land below (inbox) or sort in above (search).
     const list = { lastVisible: 25, rows: 30 };
-    let status: PageStatus = "CanLoadMore";
+    const page = trackPage("CanLoadMore");
     let requestedSinceScroll = false;
     let requests = 0;
     function endSignal() {
@@ -66,7 +72,7 @@ describe("shouldRequestNextPage", () => {
           rowsBelow,
           rowsFitOnScreen: false,
           rowsPending: false,
-          status,
+          status: page.status,
           thresholdRows: getThresholdRows(800, 109),
         })
       ) {
@@ -74,12 +80,12 @@ describe("shouldRequestNextPage", () => {
       }
       requests += 1;
       requestedSinceScroll = true;
-      status = "LoadingMore";
+      page.status = "LoadingMore";
     }
     function pageLands({ above, below }: { above: number; below: number }) {
       list.rows += above + below;
       list.lastVisible += above;
-      status = "CanLoadMore";
+      page.status = "CanLoadMore";
       endSignal();
       endSignal();
     }
@@ -102,7 +108,7 @@ describe("shouldRequestNextPage", () => {
     userScrolls(1);
     expect(requests).toBe(3);
 
-    status = "Exhausted";
+    page.status = "Exhausted";
     userScrolls(1);
     expect(requests).toBe(3);
   });

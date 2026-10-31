@@ -34,9 +34,14 @@ export function InboxFooter({
   if (state === "none") return null;
   return (
     <View className="h-14 items-center justify-center">
-      {state === "loading" ? <ActivityIndicator /> : null}
+      <FooterSpinner isLoading={state === "loading"} />
     </View>
   );
+}
+
+function FooterSpinner({ isLoading }: { isLoading: boolean }) {
+  if (!isLoading) return null;
+  return <ActivityIndicator />;
 }
 
 function DelayedInboxLoader({ color }: { color: string }) {

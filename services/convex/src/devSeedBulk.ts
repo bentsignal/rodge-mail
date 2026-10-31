@@ -12,6 +12,8 @@ const CATEGORIES = [
   "transactional",
 ] as const;
 
+type Pair = readonly [string, string];
+
 const SENDERS = [
   ["Jordan Park", "jordan@northwind.example"],
   ["Priya Natarajan", "priya@studio.example"],
@@ -41,8 +43,8 @@ export function bulkMailbox(now: number, count: number) {
   const total = Math.min(Math.max(Math.floor(count), 0), MAX_BULK_THREADS);
   return Array.from({ length: total }, (_, index): DemoMessage => {
     const id = `isolated-bulk-${index}`;
-    const [name, address] = cycle(SENDERS, index);
-    const [subject, snippet] = cycle(SUBJECTS, index);
+    const [name, address] = cycle<Pair>(SENDERS, index);
+    const [subject, snippet] = cycle<Pair>(SUBJECTS, index);
     return {
       account: cycle(ACCOUNTS, index),
       remoteMessageId: id,
@@ -66,9 +68,6 @@ export function bulkMailbox(now: number, count: number) {
   });
 }
 
-function cycle<const Items extends readonly [unknown, ...unknown[]]>(
-  items: Items,
-  index: number,
-): Items[number] {
+function cycle<T>(items: readonly [T, ...T[]], index: number) {
   return items[index % items.length] ?? items[0];
 }
