@@ -165,7 +165,12 @@ export class GmailAdapter implements MailProviderAdapter {
       "/messages/send",
       {
         method: "POST",
-        body: JSON.stringify({ raw }),
+        body: JSON.stringify({
+          raw,
+          ...(payload.replyToRemoteThreadId
+            ? { threadId: payload.replyToRemoteThreadId }
+            : {}),
+        }),
       },
     );
     if (!message.id)

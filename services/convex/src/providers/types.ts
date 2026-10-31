@@ -60,6 +60,7 @@ export interface OutboxPayload {
   plainText: string;
   replyToInternetMessageId?: string;
   replyToRemoteMessageId?: string;
+  replyToRemoteThreadId?: string;
   attachments: OutboxAttachmentPayload[];
 }
 

@@ -7,6 +7,7 @@ import type { MailAccountDocument } from "./types";
 
 const ACCOUNT_ACCENTS = {
   gmail: "#c95d3f",
+  hosted: "#5b5fc7",
   icloud: "#b38736",
   microsoft: "#397367",
 } as const;

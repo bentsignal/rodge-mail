@@ -2,6 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import { useRouterState } from "@tanstack/react-router";
 import {
   Archive,
+  AtSign,
   BriefcaseBusiness,
   Cloud,
   Inbox,
@@ -28,6 +29,7 @@ import { SyncAllButton } from "./sync-all-button";
 
 const ACCOUNT_ICONS = {
   gmail: Mail,
+  hosted: AtSign,
   icloud: Cloud,
   microsoft: BriefcaseBusiness,
 } satisfies Record<MailAccountView["provider"], LucideIcon>;
@@ -248,6 +250,7 @@ function AccountAccent({ accent }: { accent: string | undefined }) {
 function getProviderLabel(provider: MailAccountView["provider"]) {
   if (provider === "gmail") return "Gmail";
   if (provider === "icloud") return "iCloud";
+  if (provider === "hosted") return "Hosted";
   return "Microsoft 365";
 }
 

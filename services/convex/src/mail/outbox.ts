@@ -31,7 +31,7 @@ export function validateSendRequest(
   },
 ) {
   if (
-    !["gmail", "microsoft", "icloud"].includes(account.provider) ||
+    !["gmail", "microsoft", "icloud", "hosted"].includes(account.provider) ||
     !["connected", "syncing"].includes(account.status)
   ) {
     throw new ConvexError("The selected account cannot send mail");

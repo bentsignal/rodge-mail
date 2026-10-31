@@ -74,7 +74,7 @@ export function validateAttachmentMetadata({
 }
 
 export function getProviderAttachmentError(
-  provider: "gmail" | "icloud" | "microsoft" | undefined,
+  provider: "gmail" | "hosted" | "icloud" | "microsoft" | undefined,
   attachments: { size: number }[],
 ) {
   if (

@@ -2,7 +2,7 @@ export type MailAccountId = string;
 
 export type MailAccountFilter = string;
 
-export type MailProvider = "gmail" | "icloud" | "microsoft";
+export type MailProvider = "gmail" | "hosted" | "icloud" | "microsoft";
 
 export interface MailAddress {
   address: string;

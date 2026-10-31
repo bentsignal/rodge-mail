@@ -21,6 +21,7 @@ export function useAccountSyncRetry(account: MobileMailAccount) {
   const [message, setMessage] = useState<string>();
 
   async function retry() {
+    if (account.provider === "hosted") return;
     setIsRetrying(true);
     setMessage(undefined);
     try {

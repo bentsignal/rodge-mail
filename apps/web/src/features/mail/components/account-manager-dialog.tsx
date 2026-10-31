@@ -1,6 +1,12 @@
 import type { LucideIcon } from "lucide-react";
 import { useState } from "react";
-import { BriefcaseBusiness, Cloud, Mail, Settings2 } from "lucide-react";
+import {
+  AtSign,
+  BriefcaseBusiness,
+  Cloud,
+  Mail,
+  Settings2,
+} from "lucide-react";
 
 import * as Dialog from "@rodge-mail/ui-web/dialog";
 
@@ -10,6 +16,7 @@ import { AddAccountButton } from "./provider-connection-buttons";
 
 const ACCOUNT_ICONS = {
   gmail: Mail,
+  hosted: AtSign,
   icloud: Cloud,
   microsoft: BriefcaseBusiness,
 } satisfies Record<MailAccountView["provider"], LucideIcon>;
@@ -160,5 +167,6 @@ function getAccountStatus(account: MailAccountView) {
 function getProviderLabel(provider: MailAccountView["provider"]) {
   if (provider === "gmail") return "Gmail";
   if (provider === "icloud") return "iCloud";
+  if (provider === "hosted") return "Hosted";
   return "Microsoft 365";
 }

@@ -32,7 +32,7 @@ export function useNativeAttachments({
   setDraft,
 }: {
   draft: NativeDraft;
-  provider: "gmail" | "icloud" | "microsoft" | undefined;
+  provider: "gmail" | "hosted" | "icloud" | "microsoft" | undefined;
   setDraft: Dispatch<SetStateAction<NativeDraft>>;
 }) {
   const generateUploadUrl = useMutation(
@@ -95,7 +95,7 @@ export function useNativeAttachments({
   async function attachSelected(
     select: (
       current: NativeComposerAttachment[],
-      selectedProvider: "gmail" | "icloud" | "microsoft" | undefined,
+      selectedProvider: "gmail" | "hosted" | "icloud" | "microsoft" | undefined,
     ) => Promise<NativeComposerAttachment[] | undefined>,
   ) {
     const selected = await select(draft.attachments, provider);
@@ -143,7 +143,7 @@ export function getDraftAttachmentIds(attachments: NativeComposerAttachment[]) {
 
 async function selectFiles(
   current: NativeComposerAttachment[],
-  provider: "gmail" | "icloud" | "microsoft" | undefined,
+  provider: "gmail" | "hosted" | "icloud" | "microsoft" | undefined,
 ) {
   const selection = await File.pickFileAsync({
     mimeTypes: "*/*",
@@ -174,7 +174,7 @@ async function selectFiles(
 
 async function selectImages(
   current: NativeComposerAttachment[],
-  provider: "gmail" | "icloud" | "microsoft" | undefined,
+  provider: "gmail" | "hosted" | "icloud" | "microsoft" | undefined,
 ) {
   const result = await ImagePicker.launchImageLibraryAsync({
     allowsMultipleSelection: true,
@@ -246,7 +246,7 @@ const contentTypesByExtension = new Map([
 
 function getSelectionError(
   attachments: NativeComposerAttachment[],
-  provider: "gmail" | "icloud" | "microsoft" | undefined,
+  provider: "gmail" | "hosted" | "icloud" | "microsoft" | undefined,
 ) {
   const totalBytes = attachments.reduce(
     (total, attachment) => total + attachment.size,

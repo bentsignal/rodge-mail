@@ -17,7 +17,11 @@ export function scheduleProviderReadUpdate({
   isRead: boolean;
   delay: number;
 }) {
-  if (account?.ownerId !== ownerId || account.isDemo) {
+  if (
+    account?.ownerId !== ownerId ||
+    account.isDemo ||
+    account.provider === "hosted"
+  ) {
     return undefined;
   }
   const args = {

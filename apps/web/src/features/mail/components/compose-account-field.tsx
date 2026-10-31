@@ -74,7 +74,7 @@ export function getSendingAccount(
 
 function canSendFromAccount(account: MailAccountView) {
   return (
-    ["gmail", "microsoft", "icloud"].includes(account.provider) &&
+    ["gmail", "microsoft", "icloud", "hosted"].includes(account.provider) &&
     (account.status === "connected" || account.status === "syncing")
   );
 }
@@ -82,6 +82,7 @@ function canSendFromAccount(account: MailAccountView) {
 function providerLabel(provider: MailAccountView["provider"]) {
   if (provider === "gmail") return "Gmail";
   if (provider === "icloud") return "iCloud";
+  if (provider === "hosted") return "Hosted";
   return "Microsoft 365";
 }
 

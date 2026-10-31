@@ -6,6 +6,7 @@ export const vMailProvider = v.union(
   v.literal("gmail"),
   v.literal("microsoft"),
   v.literal("icloud"),
+  v.literal("hosted"),
 );
 
 export const vMailAccountStatus = v.union(

@@ -9,28 +9,22 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './app/__root'
-import { Route as ProviderCompleteRouteImport } from './app/provider-complete'
-import { Route as LoginRouteImport } from './app/login'
-import { Route as DesktopAuthRouteImport } from './app/desktop-auth'
 import { Route as AuthedRouteImport } from './app/_authed'
+import { Route as DesktopAuthRouteImport } from './app/desktop-auth'
+import { Route as LoginRouteImport } from './app/login'
+import { Route as ProviderCompleteRouteImport } from './app/provider-complete'
 import { Route as AuthedIndexRouteImport } from './app/_authed/index'
-import { Route as AuthDesktopCompleteRouteImport } from './app/auth.desktop-complete'
-import { Route as AuthCallbackRouteImport } from './app/auth.callback'
-import { Route as AuthedSpamRouteImport } from './app/_authed.spam'
 import { Route as AuthedArchiveRouteImport } from './app/_authed.archive'
-import { Route as ApiAuthSplatRouteImport } from './app/api.auth.$'
+import { Route as AuthedSpamRouteImport } from './app/_authed.spam'
+import { Route as AuthCallbackRouteImport } from './app/auth.callback'
+import { Route as AuthDesktopCompleteRouteImport } from './app/auth.desktop-complete'
 import { Route as AuthedMessagesMessageIdRouteImport } from './app/_authed.messages.$messageId'
-import { Route as AuthedSpamMessagesMessageIdRouteImport } from './app/_authed.spam.messages.$messageId'
+import { Route as ApiAuthSplatRouteImport } from './app/api.auth.$'
 import { Route as AuthedArchiveMessagesMessageIdRouteImport } from './app/_authed.archive.messages.$messageId'
+import { Route as AuthedSpamMessagesMessageIdRouteImport } from './app/_authed.spam.messages.$messageId'
 
-const ProviderCompleteRoute = ProviderCompleteRouteImport.update({
-  id: '/provider-complete',
-  path: '/provider-complete',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
+const AuthedRoute = AuthedRouteImport.update({
+  id: '/_authed',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DesktopAuthRoute = DesktopAuthRouteImport.update({
@@ -38,8 +32,14 @@ const DesktopAuthRoute = DesktopAuthRouteImport.update({
   path: '/desktop-auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthedRoute = AuthedRouteImport.update({
-  id: '/_authed',
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProviderCompleteRoute = ProviderCompleteRouteImport.update({
+  id: '/provider-complete',
+  path: '/provider-complete',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthedIndexRoute = AuthedIndexRouteImport.update({
@@ -47,29 +47,24 @@ const AuthedIndexRoute = AuthedIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthedRoute,
 } as any)
-const AuthDesktopCompleteRoute = AuthDesktopCompleteRouteImport.update({
-  id: '/auth/desktop-complete',
-  path: '/auth/desktop-complete',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthCallbackRoute = AuthCallbackRouteImport.update({
-  id: '/auth/callback',
-  path: '/auth/callback',
-  getParentRoute: () => rootRouteImport,
+const AuthedArchiveRoute = AuthedArchiveRouteImport.update({
+  id: '/archive',
+  path: '/archive',
+  getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedSpamRoute = AuthedSpamRouteImport.update({
   id: '/spam',
   path: '/spam',
   getParentRoute: () => AuthedRoute,
 } as any)
-const AuthedArchiveRoute = AuthedArchiveRouteImport.update({
-  id: '/archive',
-  path: '/archive',
-  getParentRoute: () => AuthedRoute,
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/auth/callback',
+  path: '/auth/callback',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
-  id: '/api/auth/$',
-  path: '/api/auth/$',
+const AuthDesktopCompleteRoute = AuthDesktopCompleteRouteImport.update({
+  id: '/auth/desktop-complete',
+  path: '/auth/desktop-complete',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthedMessagesMessageIdRoute = AuthedMessagesMessageIdRouteImport.update({
@@ -77,17 +72,22 @@ const AuthedMessagesMessageIdRoute = AuthedMessagesMessageIdRouteImport.update({
   path: '/messages/$messageId',
   getParentRoute: () => AuthedRoute,
 } as any)
-const AuthedSpamMessagesMessageIdRoute =
-  AuthedSpamMessagesMessageIdRouteImport.update({
-    id: '/messages/$messageId',
-    path: '/messages/$messageId',
-    getParentRoute: () => AuthedSpamRoute,
-  } as any)
+const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
+  id: '/api/auth/$',
+  path: '/api/auth/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthedArchiveMessagesMessageIdRoute =
   AuthedArchiveMessagesMessageIdRouteImport.update({
     id: '/messages/$messageId',
     path: '/messages/$messageId',
     getParentRoute: () => AuthedArchiveRoute,
+  } as any)
+const AuthedSpamMessagesMessageIdRoute =
+  AuthedSpamMessagesMessageIdRouteImport.update({
+    id: '/messages/$messageId',
+    path: '/messages/$messageId',
+    getParentRoute: () => AuthedSpamRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -192,18 +192,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/provider-complete': {
-      id: '/provider-complete'
-      path: '/provider-complete'
-      fullPath: '/provider-complete'
-      preLoaderRoute: typeof ProviderCompleteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
+    '/_authed': {
+      id: '/_authed'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthedRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/desktop-auth': {
@@ -213,11 +206,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DesktopAuthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authed': {
-      id: '/_authed'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof AuthedRouteImport
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/provider-complete': {
+      id: '/provider-complete'
+      path: '/provider-complete'
+      fullPath: '/provider-complete'
+      preLoaderRoute: typeof ProviderCompleteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authed/': {
@@ -227,19 +227,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
-    '/auth/desktop-complete': {
-      id: '/auth/desktop-complete'
-      path: '/auth/desktop-complete'
-      fullPath: '/auth/desktop-complete'
-      preLoaderRoute: typeof AuthDesktopCompleteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth/callback': {
-      id: '/auth/callback'
-      path: '/auth/callback'
-      fullPath: '/auth/callback'
-      preLoaderRoute: typeof AuthCallbackRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_authed/archive': {
+      id: '/_authed/archive'
+      path: '/archive'
+      fullPath: '/archive'
+      preLoaderRoute: typeof AuthedArchiveRouteImport
+      parentRoute: typeof AuthedRoute
     }
     '/_authed/spam': {
       id: '/_authed/spam'
@@ -248,18 +241,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedSpamRouteImport
       parentRoute: typeof AuthedRoute
     }
-    '/_authed/archive': {
-      id: '/_authed/archive'
-      path: '/archive'
-      fullPath: '/archive'
-      preLoaderRoute: typeof AuthedArchiveRouteImport
-      parentRoute: typeof AuthedRoute
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/api/auth/$': {
-      id: '/api/auth/$'
-      path: '/api/auth/$'
-      fullPath: '/api/auth/$'
-      preLoaderRoute: typeof ApiAuthSplatRouteImport
+    '/auth/desktop-complete': {
+      id: '/auth/desktop-complete'
+      path: '/auth/desktop-complete'
+      fullPath: '/auth/desktop-complete'
+      preLoaderRoute: typeof AuthDesktopCompleteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authed/messages/$messageId': {
@@ -269,12 +262,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedMessagesMessageIdRouteImport
       parentRoute: typeof AuthedRoute
     }
-    '/_authed/spam/messages/$messageId': {
-      id: '/_authed/spam/messages/$messageId'
-      path: '/messages/$messageId'
-      fullPath: '/spam/messages/$messageId'
-      preLoaderRoute: typeof AuthedSpamMessagesMessageIdRouteImport
-      parentRoute: typeof AuthedSpamRoute
+    '/api/auth/$': {
+      id: '/api/auth/$'
+      path: '/api/auth/$'
+      fullPath: '/api/auth/$'
+      preLoaderRoute: typeof ApiAuthSplatRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authed/archive/messages/$messageId': {
       id: '/_authed/archive/messages/$messageId'
@@ -282,6 +275,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/archive/messages/$messageId'
       preLoaderRoute: typeof AuthedArchiveMessagesMessageIdRouteImport
       parentRoute: typeof AuthedArchiveRoute
+    }
+    '/_authed/spam/messages/$messageId': {
+      id: '/_authed/spam/messages/$messageId'
+      path: '/messages/$messageId'
+      fullPath: '/spam/messages/$messageId'
+      preLoaderRoute: typeof AuthedSpamMessagesMessageIdRouteImport
+      parentRoute: typeof AuthedSpamRoute
     }
   }
 }

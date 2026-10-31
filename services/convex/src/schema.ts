@@ -30,6 +30,11 @@ import {
   vNotificationPreference,
   vNotificationPushTicket,
 } from "./notifications/validators";
+import {
+  vHostedAddress,
+  vHostedDeliveryEvent,
+  vHostedDomain,
+} from "./providers/hosted/validators";
 
 export default defineSchema(
   {
@@ -150,7 +155,18 @@ export default defineSchema(
       .index("by_account_idempotency", ["accountId", "idempotencyKey"])
       .index("by_owner_created", ["ownerId", "createdAt"])
       .index("by_owner_status_created", ["ownerId", "status", "createdAt"])
-      .index("by_status_created", ["status", "createdAt"]),
+      .index("by_status_created", ["status", "createdAt"])
+      .index("by_remote_message", ["remoteMessageId"]),
+    hostedDomains: defineTable(vHostedDomain)
+      .index("by_domain", ["domain"])
+      .index("by_owner", ["ownerId"]),
+    hostedAddresses: defineTable(vHostedAddress)
+      .index("by_address", ["address"])
+      .index("by_owner", ["ownerId"])
+      .index("by_account", ["accountId"]),
+    hostedDeliveryEvents: defineTable(vHostedDeliveryEvent)
+      .index("by_ses_message", ["sesMessageId"])
+      .index("by_owner_created", ["ownerId", "createdAt"]),
     draftAttachments: defineTable(vDraftAttachment)
       .index("by_owner_status_created", ["ownerId", "status", "createdAt"])
       .index("by_status_created", ["status", "createdAt"])
