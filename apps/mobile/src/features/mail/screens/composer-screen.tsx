@@ -134,14 +134,11 @@ function ComposerBody({
       <ScrollView
       automaticallyAdjustKeyboardInsets
       className="flex-1"
-      contentContainerStyle={{
-        flexGrow: 1,
-        paddingBottom: 24,
-        paddingTop: headerHeight,
-      }}
+      contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
       keyboardDismissMode="interactive"
       keyboardShouldPersistTaps="handled"
     >
+      <View style={{ height: headerHeight }} />
       <ComposerRecipientField
         autoFocus={focus === "to"}
         defaultValue={draft.to}

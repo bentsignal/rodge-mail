@@ -1,7 +1,7 @@
 import {
   ActivityIndicator,
+  FlatList,
   Pressable,
-  ScrollView,
   Text,
   View,
 } from "react-native";
@@ -22,20 +22,17 @@ export function ComposerAttachmentList({
 
   return (
     <View className="border-border ml-4 border-b-[0.5px]">
-      <ScrollView
+      <FlatList
         horizontal
         contentContainerClassName="gap-2 py-2.5 pr-4"
+        data={attachments}
         keyboardShouldPersistTaps="handled"
+        keyExtractor={(attachment) => attachment.id}
+        renderItem={({ item }) => (
+          <AttachmentChip attachment={item} onRemove={() => onRemove(item)} />
+        )}
         showsHorizontalScrollIndicator={false}
-      >
-        {attachments.map((attachment) => (
-          <AttachmentChip
-            key={attachment.id}
-            attachment={attachment}
-            onRemove={() => onRemove(attachment)}
-          />
-        ))}
-      </ScrollView>
+      />
     </View>
   );
 }
