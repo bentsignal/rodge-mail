@@ -1,27 +1,21 @@
+import { Platform } from "react-native";
 import { Stack } from "expo-router";
 
-import { useColor } from "~/hooks/use-color";
-
 export default function SettingsLayout() {
-  const backgroundColor = useColor("background");
-  const foreground = useColor("foreground");
-
   return (
     <Stack
       screenOptions={{
-        contentStyle: { backgroundColor },
-        headerLargeStyle: { backgroundColor },
-        headerLargeTitleStyle: { color: foreground },
-        headerStyle: { backgroundColor },
-        headerShadowVisible: false,
-        headerTintColor: foreground,
-        headerTitleStyle: { color: foreground },
+        headerBackButtonDisplayMode: "minimal",
+        headerTransparent: Platform.OS === "ios",
       }}
     >
       <Stack.Screen
         name="index"
         options={{ headerLargeTitle: true, title: "Settings" }}
       />
+      <Stack.Screen name="account/[id]" options={{ title: "" }} />
+      <Stack.Screen name="add-account" options={{ title: "Add Account" }} />
+      <Stack.Screen name="notifications" options={{ title: "Notifications" }} />
     </Stack>
   );
 }

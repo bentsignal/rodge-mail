@@ -1,9 +1,8 @@
 import type { LayoutChangeEvent } from "react-native";
 import { useEffect, useRef, useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { ScrollView, Text, View } from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMutation, useQuery } from "convex/react";
-import { Reply } from "lucide-react-native";
 
 import type { MailThread } from "@rodge-mail/features/mail";
 import { api } from "@rodge-mail/convex/api";
@@ -12,7 +11,6 @@ import { getReplyAddress } from "@rodge-mail/features/mail";
 import type { MobileMailbox } from "../store";
 import type { MessageViewMode } from "./thread-message-body";
 import { PostalPaperBackground } from "~/features/theme/postal-surface";
-import { useColor } from "~/hooks/use-color";
 import { toConvexId } from "../lib/convex-id";
 import { toMailThreadDetail } from "../lib/convex-mail";
 import { formatMessageTime } from "../lib/mail-format";
@@ -20,7 +18,7 @@ import { CleanViewCodeCard } from "./clean-view-code-card";
 import { parseMobileMailbox } from "./mailbox-controls";
 import { MessageViewToolbar } from "./message-view-toolbar";
 import { ThreadMessageBody } from "./thread-message-body";
-import { ThreadReaderFooter } from "./thread-reader-footer";
+import { ThreadReaderToolbar } from "./thread-reader-toolbar";
 import { useThreadReaderActions } from "./use-thread-reader-actions";
 
 export function ThreadReaderScreen() {
@@ -93,7 +91,6 @@ function ThreadReader({
   thread: MailThread;
 }) {
   const router = useRouter();
-  const foreground = useColor("foreground");
   const scrollViewRef = useRef<ScrollView>(null);
   const [viewMode, setViewMode] = useState<MessageViewMode>("clean");
   const actions = useThreadReaderActions(thread, onPermanentDeleteStart);
@@ -117,18 +114,22 @@ function ThreadReader({
   }
   return (
     <>
-      <Stack.Screen
-        options={{
-          title: thread.sender.name,
-          headerRight: () => (
-            <ThreadReplyAction color={foreground} onReply={reply} />
-          ),
-        }}
+      <ThreadReaderToolbar
+        isPinned={actions.isPinned}
+        mailbox={mailbox}
+        title={thread.sender.name}
+        onArchive={() => void actions.archive()}
+        onDelete={actions.confirmPermanentDelete}
+        onPin={() => void actions.togglePin()}
+        onReply={reply}
+        onRestore={() => void actions.restore()}
+        onUnsubscribe={() => actions.confirmUnsubscribe(activeMessage)}
+        unsubscribeName={activeMessage?.mailingList?.displayName}
       />
       <PostalPaperBackground>
         <ScrollView
           ref={scrollViewRef}
-          contentContainerClassName="gap-4 px-4 pt-4 pb-24"
+          contentContainerClassName="gap-4 px-4 pt-4 pb-32"
           contentInsetAdjustmentBehavior="automatic"
         >
           <ThreadHeader thread={thread} />
@@ -153,16 +154,6 @@ function ThreadReader({
               }
             />
           ))}
-          <ThreadReaderFooter
-            isPinned={actions.isPinned}
-            mailbox={mailbox}
-            onArchive={() => void actions.archive()}
-            onDelete={actions.confirmPermanentDelete}
-            onPin={() => void actions.togglePin()}
-            onRestore={() => void actions.restore()}
-            onUnsubscribe={() => actions.confirmUnsubscribe(activeMessage)}
-            unsubscribeName={activeMessage?.mailingList?.displayName}
-          />
         </ScrollView>
       </PostalPaperBackground>
     </>
@@ -177,26 +168,6 @@ function getActiveMessage(thread: MailThread, targetMessageId?: string) {
     if (target) return target;
   }
   return thread.messages.at(-1);
-}
-
-function ThreadReplyAction({
-  color,
-  onReply,
-}: {
-  color: string;
-  onReply: () => void;
-}) {
-  return (
-    <Pressable
-      accessibilityHint="Starts a reply to the latest message"
-      accessibilityLabel="Reply"
-      accessibilityRole="button"
-      hitSlop={10}
-      onPress={onReply}
-    >
-      <Reply color={color} size={20} />
-    </Pressable>
-  );
 }
 
 function ThreadHeader({ thread }: { thread: MailThread }) {

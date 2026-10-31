@@ -22,11 +22,13 @@ export function SpamMailbox({
   onAccountChange,
   onArchiveSelect,
   primary,
+  searchMode,
   searchTerm,
 }: {
   onAccountChange: (value: MailAccountFilter) => void;
   onArchiveSelect: () => void;
   primary: string;
+  searchMode: boolean;
   searchTerm: string;
 }) {
   const router = useRouter();
@@ -78,6 +80,7 @@ export function SpamMailbox({
       mailbox="spam"
       primary={primary}
       renderThread={renderThread}
+      searchMode={searchMode}
       searchTerm={activeSearchTerm ? normalizedSearchTerm : undefined}
       selectedCount={0}
       selectionEnabled={false}
