@@ -32,6 +32,13 @@ export const ISOLATED_ACCOUNTS = [
     address: "alex.rivera@example.net",
     displayName: "iCloud",
   },
+  {
+    key: "hosted",
+    provider: "hosted",
+    remoteAccountId: "alex@rivera.example",
+    address: "alex@rivera.example",
+    displayName: "Rivera",
+  },
 ] as const satisfies readonly DemoAccount[];
 
 type Seed = Pick<
@@ -66,6 +73,24 @@ const SEEDS = [
     hoursAgo: 0.5,
     unread: true,
     pinned: true,
+  },
+  {
+    account: "hosted",
+    from: ["Morgan Lee", "morgan@studio.example"],
+    subject: "Re: Brand refresh kickoff",
+    snippet:
+      "Thursday at 10 works for us. I'll bring the first round of directions.",
+    category: "action_required",
+    hoursAgo: 3,
+    unread: true,
+  },
+  {
+    account: "hosted",
+    from: ["Fathom Hosting", "billing@fathom.example"],
+    subject: "Your invoice for November",
+    snippet: "Your monthly invoice is ready. The total is $12.00.",
+    category: "transactional",
+    hoursAgo: 30,
   },
   {
     account: "icloud",
