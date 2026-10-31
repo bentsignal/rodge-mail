@@ -1,6 +1,6 @@
 ---
 name: rodge-feature
-description: The end-to-end workflow for building a Rodge Mail feature or fix in a T3 Code worktree, from planning through simulator and browser verification, PR evidence, CI, and Shawn's approval to merge. Use at the start of any feature, bug fix, or UI change in this repo, and whenever you need screenshots or videos for a PR, touch Convex functions, or are about to open or merge a PR. Simulator and emulator use also requires the rodge-simulator skill.
+description: The end-to-end workflow for building a Rodge Mail feature or fix in a T3 Code worktree, from planning through simulator and browser verification, PR evidence, CI, and merging it yourself (Shawn does not review PRs). Use at the start of any feature, bug fix, or UI change in this repo, and whenever you need screenshots or videos for a PR, touch Convex functions, or are about to open or merge a PR. Simulator and emulator use also requires the rodge-simulator skill.
 ---
 
 # Building a Rodge Mail change

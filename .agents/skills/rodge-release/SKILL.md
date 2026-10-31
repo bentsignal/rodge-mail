@@ -12,7 +12,7 @@ point it says, and verify each one. A step you can't do blocks the release:
 tell Shawn. After shipping, open a PR that removes the finished ones.
 
 Releases always come from `origin/main`, never from a feature branch.
-Nothing ships without Shawn's explicit go-ahead at step 3.
+Step 3 decides when to ship; ask Shawn only for what needs him.
 
 ## 0. Get onto main
 
