@@ -1,74 +1,94 @@
-# Signing in on a simulator (not built yet)
+# Isolated backends and simulator sign-in
 
-`scripts/sim.sh up` gives an agent a signed-out Rodge Mail. Vera solves
-this with throwaway accounts on an isolated dev backend; Rodge can't,
-because:
+Agents test signed-in screens on an **isolated backend**: a throwaway
+Convex dev deployment for one branch, with a fake owner and seeded fake
+mail. Nothing on it is Shawn's, so screenshots of it are safe to publish as
+PR evidence. The production deployment, `dazzling-dog-633`, is never
+touched.
 
-- There is one Convex deployment, `dazzling-dog-633`, and it holds Shawn's
-  real mail.
-- Auth is owner-only. `privateAccountHooks` (`services/convex/src/authAccess.ts`)
-  rejects every new user and every session not for `AUTH_ALLOWED_USER_ID`,
-  so a test account can't exist.
-- Signing in takes a passkey or an email code sent to Shawn. Agents must
-  not do either.
+```sh
+scripts/backend.sh isolate    # create dev/<branch>, configure, push, make the test owner, seed
+scripts/sim.sh up             # Metro serves the app pointed at it
+scripts/sim.sh signin         # signed in as the test owner (alex.rivera@example.com)
+scripts/backend.sh push       # after changing services/convex/src
+scripts/backend.sh seed       # a fresh mailbox, dated now
+scripts/backend.sh status     # which deployment this worktree talks to
+scripts/backend.sh teardown   # delete it; the worktree goes back to the default
+```
 
-So any signed-in simulator is signed in **as Shawn, with his real
-mailbox**. That is a decision for Shawn, not a technical detail, which is
-why nothing below is implemented or deployed.
+## What `isolate` does
 
-## Proposal: an admin-minted, short-lived session
+1. Saves `services/convex/.env.local`, then creates (or reselects)
+   `<team>:<project>:dev/<branch>` with `npx convex deployment create
+--type dev --select --expiration "in 14 days"`. The CLI writes the new
+   deployment into `.env.local`. Every later write checks that
+   `.env.local` selects that deployment, not `dazzling-dog-633`, and that
+   no `CONVEX_DEPLOY_KEY` is in play.
+2. Sets only what `convex.env.ts` declares, plus `DEV_TOOLS=true`:
+   `ENVIRONMENT=development`, a fresh random `BETTER_AUTH_SECRET`,
+   `PASSKEY_RP_ID` (the deployment's `.convex.site` host), `WEB_URL` and
+   `DESKTOP_BROWSER_AUTH_URL` (this worktree's Portless origin),
+   `AUTH_EMAIL_FROM` (`noreply@example.invalid`), and a placeholder
+   `RESEND_API_KEY`. No production setting is copied.
+3. Pushes the functions (`convex dev --once`).
+4. Runs `devTools:ensureOwner`, an internal mutation that creates the test
+   user `alex.rivera@example.com` through Better Auth's raw adapter
+   (registration stays closed in `privateAccountHooks`), and sets
+   `AUTH_ALLOWED_USER_ID` to its id, so on this deployment the test user is
+   the only allowed owner, exactly as Shawn is on production.
+5. Runs `devTools:seed`: three accounts (Gmail, Microsoft 365, iCloud) and
+   41 messages in 39 threads, with pinned, unread, and read mail,
+   attachments, two multi-message threads, archived threads, and spam
+   (`services/convex/src/devSeedMailbox.ts`). Every address uses a reserved
+   domain (`example.com`, `.example`).
+6. Writes the deployment's URLs into `shared/config/src/overrides.ts`
+   (skip-worktree, like the worktree id), which `createUrls` reads, so the
+   mobile app served by this worktree's Metro and the web dev server both
+   talk to it. Relaunch the app after `isolate` or `teardown`.
 
-Who can run it doesn't widen: an internal Convex function can only be
-called with the deployment's admin credentials (`npx convex run` with the
-CLI login or `CONVEX_DEPLOY_KEY`), and anyone holding those can already
-read every table with `npx convex data`.
+The state lives in `.cache/backend/`. `teardown` deletes the deployment
+through the Convex API, restores `.env.local`, and resets the overrides.
+Deployments expire on their own after 14 days.
 
-1. **`services/convex/src/devSession.ts`, `internalMutation` `mint`.**
-   Arguments: `{ minutes?: number }`, capped at 60. It builds the native
-   auth instance (`createNativeAuth(ctx)`), creates a session for
-   `env.AUTH_ALLOWED_USER_ID` through `$context.internalAdapter.createSession`
-   (so `privateAccountHooks` still runs and still rejects anyone else), with
-   `expiresAt` = now + minutes and `userAgent: "rodge-agent-simulator"`, and
-   returns the signed session-cookie value (`<token>.<HMAC-SHA256 with
-   BETTER_AUTH_SECRET>`, as Better Auth's `setSignedCookie` signs it). Nothing
-   public calls it; it is not exported through `http.ts`.
-2. **`internalMutation` `revoke`** deletes every session with that user
-   agent. `scripts/sim.sh down` calls it.
-3. **App, Debug builds only:** `globalThis.rodgeDev.importSession(value)` in
-   `apps/mobile/src/features/dev/automation.ts` writes the cookie where
-   `@better-auth/expo` reads it (SecureStore key `rodge-mail_cookie`, JSON
-   `{"better-auth.session_token":{"value":"…","expires":"<ISO>"}}`, per
-   `storagePrefix: "rodge-mail"` and `cookiePrefix: "better-auth"` in
-   `features/auth/client.ts`), then reloads. `__DEV__` is false in the
-   phone's standalone build, so the hook isn't there.
-4. **`scripts/sim.sh signin`** runs
-   `npx convex run devSession:mint '{"minutes":30}'` from `services/convex`
-   and pipes the value straight into `importSession`, so the token never
-   shows up in agent output or logs.
+## How sign-in works, and why it can't reach production
 
-Production auth is unchanged: no new HTTP route, no new client-callable
-function, no change to `privateAccountHooks`, and sessions still only for
-the owner.
+`scripts/sim.sh signin` calls the debug-only `globalThis.rodgeDev.signIn()`
+(`apps/mobile/src/features/dev/automation.ts`) over Metro's debugger
+connection. It POSTs to `/api/mobile-auth/dev/sign-in` through the app's
+own Better Auth client, so `@better-auth/expo` stores the session cookie in
+SecureStore exactly as after a passkey sign-in.
 
-## Risks Shawn would be accepting
+That route is a Better Auth plugin (`services/convex/src/devSignIn.ts`)
+that signs in the deployment's allowed owner without a passkey or code.
+Several independent checks keep it off production:
 
-- An agent driving the simulator can read, send, archive, and delete his
-  real mail, and connected providers act on it (Gmail, Microsoft 365,
-  iCloud, SES). Agents would need a rule: read-only unless the change
-  under test is about sending or changing mail, and then only to his own
-  addresses.
-- A live session sits in a simulator's keychain until it expires or
-  `down` deletes the simulator and revokes it.
+- **It isn't installed on production.** `auth.ts` adds the plugin only when
+  `devToolsEnabled()`: `DEV_TOOLS` is `"true"`, `ENVIRONMENT` is
+  `development`, and neither `CONVEX_CLOUD_URL` nor `CONVEX_SITE_URL` is
+  `dazzling-dog-633` (`devToolsPolicy.ts`, with tests). Production sets
+  none of the first and is the last, so the route 404s there.
+- **The handler checks again** and refuses unless the user it signs in is
+  `AUTH_ALLOWED_USER_ID`, and `privateAccountHooks` still vets the session.
+- **`ensureOwner` and `seed` are internal** (only callable with the
+  deployment's admin credentials) and call `requireDevTools()` first.
+- **The app refuses** to call the route when its Convex URLs point at
+  `dazzling-dog-633`, and the hook exists only in `__DEV__` builds, never
+  the phone's standalone build.
+- **`sim.sh signin` refuses** unless `scripts/backend.sh isolate` has run.
 
-## Deploying it
+## What doesn't work on an isolated backend
 
-It ships like any backend change: a PR with "Convex deploy needed: yes",
-then a release (`pnpm exec convex dev --once` from `services/convex`,
-docs/releasing.md). Before that, `npx convex run devSession:mint` fails
-with "Could not find function". No environment variables are needed;
-`BETTER_AUTH_SECRET` and `AUTH_ALLOWED_USER_ID` are already set.
+No provider, AI, email, push, or AWS secret is set there, on purpose:
 
-The alternative that avoids all of this is a second, isolated deployment
-with seeded demo mail (`devSeed.ts` already has fixtures) and its own
-allowed user, which `scripts/worktree-db.sh` could grow into. It costs a
-deployment and a separate test login, but no agent touches real mail.
+- Connecting, syncing, or reconnecting Gmail, Microsoft 365, or iCloud
+  (no OAuth clients or `PROVIDER_CREDENTIAL_KEYS`). The seeded accounts
+  show as connected but never sync; "Try sync" fails.
+- Sending mail (the outbox has no provider to send through).
+- Classification, clean view, summaries, and semantic search
+  (no `OPENAI_API_KEY`); lexical search over the seed works.
+- Email codes and passkey recovery emails (placeholder `RESEND_API_KEY`).
+- Push notifications (simulators can't register for them anyway).
+- Passkeys on the simulator (the dev client isn't associated with the
+  isolated `.convex.site` domain). Use `scripts/sim.sh signin`.
+- Hosted mailboxes: this codebase has no hosted (SES) provider yet, so the
+  seed has none.

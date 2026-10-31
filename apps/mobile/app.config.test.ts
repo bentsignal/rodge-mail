@@ -1,9 +1,16 @@
 import type { ConfigContext } from "expo/config";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createUrls } from "@rodge-mail/config/urls";
 
 import createExpoConfig from "./app.config";
+
+// A worktree with an isolated backend points its overrides elsewhere.
+vi.mock("../../shared/config/src/overrides", () => ({
+  convexCloudUrl: undefined,
+  convexSiteUrl: undefined,
+  worktreeId: undefined,
+}));
 
 const originalBuildProfile = process.env.EAS_BUILD_PROFILE;
 

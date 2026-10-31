@@ -16,6 +16,7 @@ import { privateAccountHooks } from "./authAccess";
 import authSchema from "./betterAuth/schema";
 import { env } from "./convex.env";
 import { desktopAuth } from "./desktopAuth";
+import { devSignIn, devToolsEnabled } from "./devSignIn";
 import { passkeyRecovery } from "./passkeyRecovery";
 import { sendRegistrationEmail } from "./registrationEmail";
 import { urls } from "./urls";
@@ -97,6 +98,7 @@ export function createAuthOptions(
         },
       }),
       expo(),
+      ...(devToolsEnabled() ? [devSignIn()] : []),
       crossDomain({ siteUrl: urls.web }),
       convex({
         authConfig: primaryAuthConfig,

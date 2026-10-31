@@ -3,6 +3,7 @@ import { ConvexError } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import type { DemoAccount, DemoMessage } from "./devSeedFixtures";
+import { ensureDemoThread } from "./devSeedThreads";
 
 const SEED_PROMPT_VERSION = "demo-v1";
 
@@ -93,7 +94,13 @@ export async function ensureDemoMessage(
     fixture,
     now,
   });
-  const recipient = { address: account.address, name: "Shawn" };
+  const recipient = {
+    address: account.address,
+    name: fixture.recipientName ?? "Shawn",
+  };
+  const archivedAt =
+    fixture.placement === "archive" ? fixture.receivedAt : undefined;
+  const inInbox = archivedAt === undefined;
   const messageId = await ctx.db.insert("messages", {
     ownerId,
     accountId,
@@ -118,54 +125,17 @@ export async function ensureDemoMessage(
     bodyState: "available",
     receivedAt: fixture.receivedAt,
     hasAttachments: fixture.attachment !== undefined,
-    inInbox: true,
+    inInbox,
+    ...(archivedAt === undefined
+      ? {}
+      : { archivedAt, archivedFromInbox: true }),
     isRead: fixture.isRead,
     isPinned: fixture.isPinned,
     createdAt: now,
     updatedAt: now,
   });
 
-  await Promise.all([
-    ctx.db.insert("messageContents", {
-      ownerId,
-      messageId,
-      plainText: fixture.body,
-      truncated: false,
-      createdAt: now,
-      updatedAt: now,
-    }),
-    ctx.db.insert("messageClassifications", {
-      ownerId,
-      messageId,
-      status: "classified",
-      category: fixture.category,
-      importance: fixture.importance,
-      confidence: fixture.confidence,
-      reason: fixture.reason,
-      summary: fixture.summary,
-      shouldEmbed: fixture.shouldEmbed,
-      source: "seed",
-      promptVersion: SEED_PROMPT_VERSION,
-      classifiedAt: now,
-      createdAt: now,
-      updatedAt: now,
-    }),
-  ]);
-
-  if (fixture.attachment) {
-    await ctx.db.insert("attachments", {
-      ownerId,
-      messageId,
-      remoteAttachmentId: fixture.attachment.remoteAttachmentId,
-      fileName: fixture.attachment.fileName,
-      contentType: fixture.attachment.contentType,
-      size: fixture.attachment.size,
-      isInline: false,
-      status: "remote",
-      createdAt: now,
-      updatedAt: now,
-    });
-  }
+  await insertDemoMessageDetails({ ctx, ownerId, messageId, fixture, now });
   return 1;
 }
 
@@ -201,44 +171,61 @@ export async function deleteDemoAccountRecords(
   await ctx.db.delete(accountId);
 }
 
-async function ensureDemoThread({
+async function insertDemoMessageDetails({
   ctx,
   ownerId,
-  accountId,
+  messageId,
   fixture,
   now,
 }: {
   ctx: MutationCtx;
   ownerId: string;
-  accountId: Id<"mailAccounts">;
+  messageId: Id<"messages">;
   fixture: DemoMessage;
   now: number;
 }) {
-  const existing = await ctx.db
-    .query("threads")
-    .withIndex("by_account_remote", (q) =>
-      q.eq("accountId", accountId).eq("remoteThreadId", fixture.remoteThreadId),
-    )
-    .first();
-  if (existing) return existing._id;
+  await Promise.all([
+    ctx.db.insert("messageContents", {
+      ownerId,
+      messageId,
+      plainText: fixture.body,
+      truncated: false,
+      createdAt: now,
+      updatedAt: now,
+    }),
+    ctx.db.insert("messageClassifications", {
+      ownerId,
+      messageId,
+      status: "classified",
+      category: fixture.category,
+      importance: fixture.importance,
+      confidence: fixture.confidence,
+      reason: fixture.reason,
+      summary: fixture.summary,
+      shouldEmbed: fixture.shouldEmbed,
+      ...(fixture.placement === "spam" ? { isSpam: true } : {}),
+      source: "seed",
+      promptVersion: SEED_PROMPT_VERSION,
+      classifiedAt: now,
+      createdAt: now,
+      updatedAt: now,
+    }),
+  ]);
 
-  return await ctx.db.insert("threads", {
-    ownerId,
-    accountId,
-    remoteThreadId: fixture.remoteThreadId,
-    subject: fixture.subject,
-    snippet: fixture.snippet,
-    participants: [fixture.from],
-    latestMessageAt: fixture.receivedAt,
-    latestInboxMessageAt: fixture.receivedAt,
-    messageCount: 1,
-    unreadCount: fixture.isRead ? 0 : 1,
-    inInbox: true,
-    isPinned: fixture.isPinned,
-    hasAttachments: fixture.attachment !== undefined,
-    createdAt: now,
-    updatedAt: now,
-  });
+  if (fixture.attachment) {
+    await ctx.db.insert("attachments", {
+      ownerId,
+      messageId,
+      remoteAttachmentId: fixture.attachment.remoteAttachmentId,
+      fileName: fixture.attachment.fileName,
+      contentType: fixture.attachment.contentType,
+      size: fixture.attachment.size,
+      isInline: false,
+      status: "remote",
+      createdAt: now,
+      updatedAt: now,
+    });
+  }
 }
 
 async function deleteMessageRecords(

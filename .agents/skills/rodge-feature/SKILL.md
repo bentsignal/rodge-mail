@@ -42,11 +42,15 @@ Functions reach it only in a release (the `rodge-release` skill).
   build keeps calling the old functions until Shawn installs a new one, and
   the website until the next `vercel deploy`. Add, don't rename or remove;
   make new arguments optional.
-- If a change can't be checked without running it, say so in the PR and
-  ask Shawn. `scripts/worktree-db.sh` can make an isolated dev deployment
-  for the branch, but it creates a Convex deployment and copies the main
-  deployment's environment variables (provider and AI secrets), so use it
-  only when Shawn says to.
+- **Backend changes, and any signed-in check, get an isolated backend:**
+  `scripts/backend.sh isolate` makes a dev deployment for the branch
+  (`dev/<branch>`) with a fake owner and seeded fake mail, copies no
+  production secret, and points this worktree's apps at it;
+  `scripts/backend.sh push` after each Convex change, `seed` for a fresh
+  mailbox, `teardown` when the work is done
+  ([docs/simulator-sign-in.md](../../../docs/simulator-sign-in.md), which
+  also lists what doesn't work there: syncing, sending, AI, email). Check
+  `scripts/backend.sh status` before any Convex CLI command.
 - Read data only through tests or, when Shawn asks, read-only
   `npx convex data` / `npx convex run` on internal queries from
   `services/convex`. Never mutate it.
@@ -65,9 +69,10 @@ update (AGENTS.md). Keep the change to one concern.
 **Mobile: load the `rodge-simulator` skill first and follow its rules.**
 Every worktree in every repo shares Shawn's Mac, so devices start only
 through `scripts/sim.sh` and its queue, and `up` may make you wait your
-turn. The simulator is signed out (no test account exists), so check what
-you can reach there and say plainly in the PR which signed-in screens you
-couldn't see. Check Android too whenever a change touches layout,
+turn. For signed-in screens, isolate the backend first (step 2), then
+`scripts/sim.sh signin` signs the simulator in as its test owner with
+seeded mail. Without an isolated backend the simulator stays signed out;
+say plainly in the PR which signed-in screens you couldn't see. Check Android too whenever a change touches layout,
 navigation, platform files (`.ios.tsx`/`.android.tsx`), or native config.
 
 **Web:** run only the web app on the worktree's Portless origin
@@ -100,8 +105,8 @@ preview that links to the MP4. Save web screenshots into
 `.cache/evidence/` too.
 
 Anyone with an evidence URL can open it. Never capture Shawn's real mail,
-addresses, contacts, or account names: use demo or fixture data, or
-signed-out screens, and describe a screen in words when that's all that
+addresses, contacts, or account names: use the isolated backend's seeded
+mail, fixture data, or signed-out screens, and describe a screen in words when that's all that
 would show it.
 
 - UI changes: screenshots of every changed screen. For changes to an
@@ -168,7 +173,8 @@ not just the fingerprint and release-steps checks.
 
 Shawn does not review PRs. Once your review is done and CI is green, merge
 it yourself (the `merge` skill), then tell Shawn: the PR link, a two-line
-summary, the evidence highlights, what you couldn't check, what to try
+summary, the evidence highlights, what you couldn't check (what doesn't
+run on an isolated backend), what to try
 himself (on the website, or on the phone once it's released), and any extra
 release steps.
 

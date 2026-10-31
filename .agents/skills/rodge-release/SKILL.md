@@ -54,7 +54,8 @@ Run what you can of the test list before sending it: the website against
 the worktree's Portless origin (`pnpm exec portless proxy start --lan`,
 then `pnpm -F @rodge-mail/web dev`; never `pnpm dev`, which runs
 `convex dev`), and the mobile app in the simulator (the `rodge-simulator`
-skill; it's signed out, so only what's reachable there). Fix what fails
+skill; signed in on an isolated backend, `scripts/backend.sh isolate`,
+with seeded mail). Fix what fails
 the usual way (a PR, the `rodge-feature` skill) before Shawn sees it.
 Then send him the write-up, split into what you checked (with evidence)
 and what's for him.

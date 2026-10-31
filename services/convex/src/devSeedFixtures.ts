@@ -5,7 +5,7 @@ import type {
 } from "./mail/types";
 
 export interface DemoAccount {
-  key: "gmail" | "microsoft" | "icloud";
+  key: "gmail" | "microsoft" | "icloud" | "hosted";
   provider: MailProvider;
   remoteAccountId: string;
   address: string;
@@ -38,6 +38,8 @@ export interface DemoMessage {
   summary: string;
   shouldEmbed: boolean;
   attachment?: DemoAttachment;
+  placement?: "archive" | "spam";
+  recipientName?: string;
 }
 
 export const DEMO_ACCOUNTS = [

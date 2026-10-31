@@ -23,6 +23,13 @@ write to its data except through the app as he would.
 Auth is owner-only (Better Auth, email codes and passkeys,
 `AUTH_ALLOWED_USER_ID`). Registration is closed.
 
+Backend changes and signed-in checks get an **isolated backend**:
+`scripts/backend.sh isolate` creates a dev deployment for the branch with
+a fake owner and seeded fake mail (no production secrets), points this
+worktree's apps at it, and `scripts/sim.sh signin` signs the simulator in.
+`push` after Convex changes, `teardown` when done
+([docs/simulator-sign-in.md](docs/simulator-sign-in.md)).
+
 ## Project knowledge
 
 Record decisions, plans, and durable context as Markdown in this repository

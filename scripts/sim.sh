@@ -18,7 +18,8 @@
 #                    waits until no device on the Mac is booting
 #   frames stop      stop, and report the frames that drew slowly and how
 #                    busy the Mac was
-#   signin           not available yet (docs/simulator-sign-in.md)
+#   signin           sign in as the isolated backend's test owner
+#                    (scripts/backend.sh isolate first; docs/simulator-sign-in.md)
 #   status           devices, port, and Metro
 #   queue            the simulator queue: devices up on this Mac, who is waiting, and why
 #   down             delete this platform's device; stops Metro when no device is left
@@ -401,7 +402,7 @@ status() {
   PLATFORM="$saved"
   load
   echo "metro: ${PORT:-none} ($(metro_running && echo running || echo stopped))"
-  echo "backend: dazzling-dog-633 (the one deployment, with Shawn's real mail); sign-in: not automated (docs/simulator-sign-in.md)"
+  echo "backend: $("$ROOT/scripts/backend.sh" status | head -1)"
 }
 
 shot() {
@@ -559,8 +560,20 @@ case "$command" in
   stop) stop ;;
   reload) require_up && app_eval "globalThis.rodgeDev.reload()" ;;
   signin)
-    echo "simulator sign-in isn't automated yet: Rodge has one owner-only account on the production deployment. See docs/simulator-sign-in.md." >&2
-    exit 1
+    require_up
+    if [ ! -f "$ROOT/.cache/backend/isolated" ]; then
+      echo "sign-in needs an isolated backend: scripts/backend.sh isolate (docs/simulator-sign-in.md)" >&2
+      exit 1
+    fi
+    front
+    app_eval "globalThis.rodgeDev.signIn()" >/dev/null
+    for _ in $(seq 1 30); do
+      result="$(app_eval "globalThis.rodgeDev.signInStatus()" | tr -d '"')"
+      [ "$result" != pending ] && break
+      sleep 1
+    done
+    echo "$result"
+    [[ "$result" == "signed in"* ]]
     ;;
   status) status ;;
   queue) queue status ;;

@@ -1,5 +1,6 @@
 import {
   convexCloudUrl as overrideConvexCloudUrl,
+  convexSiteUrl as overrideConvexSiteUrl,
   worktreeId as overrideWorktreeId,
 } from "./overrides";
 import { normalizeWorktreeId } from "./worktrees";
@@ -35,7 +36,7 @@ export function createUrls(options: UrlOptions = {}) {
     web: webUrl({ effectiveWorktreeId }),
     convex: {
       cloud: effectiveConvexCloudUrl,
-      site: DEVELOPMENT_CONVEX.site,
+      site: overrideConvexSiteUrl ?? DEVELOPMENT_CONVEX.site,
     },
   } as const;
 }
