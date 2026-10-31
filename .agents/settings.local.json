@@ -2,15 +2,6 @@
   "permissions": {
     "defaultMode": "auto",
     "deny": [
-      "Bash(git commit *)",
-      "Bash(git commit)",
-      "Bash(git stash *)",
-      "Bash(git stash)",
-      "Bash(git push *)",
-      "Bash(git push)",
-      "Bash(git reset --hard *)",
-      "Bash(git reset *)",
-
       "Bash(pnpm dev)",
       "Bash(pnpm dev *)",
       "Bash(pnpm start)",

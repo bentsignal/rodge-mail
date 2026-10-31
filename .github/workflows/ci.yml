@@ -1,8 +1,9 @@
 name: CI
 
 on:
+  # Every PR, whatever its base (stacked PRs target feature branches;
+  # `"*"` would skip bases with a slash).
   pull_request:
-    branches: ["*"]
   push:
     branches: ["main"]
   merge_group:
@@ -28,17 +29,6 @@ jobs:
       - name: Lint
         run: pnpm lint && pnpm lint:ws
 
-  format:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Setup
-        uses: ./tooling/github/setup
-
-      - name: Format
-        run: pnpm format
-
   typecheck:
     runs-on: ubuntu-latest
     steps:
@@ -61,6 +51,17 @@ jobs:
       - name: Test
         run: pnpm test
 
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup
+        uses: ./tooling/github/setup
+
+      - name: Format
+        run: pnpm format
+
   build:
     runs-on: ubuntu-latest
     steps:
@@ -71,3 +72,34 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+  # React-specific problems (effects, state, React Native lists, ...) in the
+  # mobile files this PR touches. Any warning fails it; fix the code rather
+  # than suppressing the rule.
+  react-doctor:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup
+        uses: ./tooling/github/setup
+
+      - name: React Doctor
+        run: pnpm run react-doctor --base "${{ github.event.pull_request.base.sha }}"
+
+  # The iOS JavaScript bundle still builds (Metro resolution, Babel, the
+  # React Compiler), as the phone's standalone builds will bundle it.
+  bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup
+        uses: ./tooling/github/setup
+
+      - name: Export the iOS bundle
+        working-directory: apps/mobile
+        run: pnpm exec expo export --platform ios --output-dir "$RUNNER_TEMP/export"

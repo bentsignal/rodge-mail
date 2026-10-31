@@ -9,6 +9,7 @@ import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
 
 import { authClient, convex } from "~/features/auth/client";
 import { useStableAuthState } from "~/features/auth/use-stable-auth-state";
+import { installDevAutomation } from "~/features/dev/automation";
 import { MailStore } from "~/features/mail/store";
 import { useMobileNotifications } from "~/features/notifications/mobile-notifications";
 import { useResolvedMobileColorScheme } from "~/features/theme/mobile-theme";
@@ -19,6 +20,7 @@ import "../styles.css";
 
 SplashScreen.setOptions({ duration: 200, fade: true });
 void SplashScreen.preventAutoHideAsync();
+installDevAutomation();
 
 export default function RootLayout() {
   const readiness = useInitApp();

@@ -60,8 +60,13 @@ website before adding its domain-specific passkey.
 ```sh
 pnpm run lint
 pnpm run typecheck
+pnpm run test
+pnpm run react-doctor --base origin/main   # when apps/mobile changed
 pnpm run format:fix
 ```
+
+The agent workflow (worktrees, simulators, PRs, releases) is in
+[AGENTS.md](AGENTS.md) and [docs/releasing.md](docs/releasing.md).
 
 ## License
 
