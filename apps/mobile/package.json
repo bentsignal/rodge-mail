@@ -78,7 +78,6 @@
     "@types/react": "catalog:react19",
     "eslint": "catalog:",
     "prettier": "catalog:",
-    "sharp": "0.34.4",
     "typescript": "catalog:",
     "vitest": "^4.0.17"
   },

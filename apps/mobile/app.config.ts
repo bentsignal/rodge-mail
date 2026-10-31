@@ -16,7 +16,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     scheme: "rodge-mail",
     version: "0.1.0",
     orientation: "portrait",
-    icon: "./assets/rounded-icon.png",
+    icon: "./assets/icon.png",
     userInterfaceStyle: "automatic",
     updates: {
       fallbackToCacheTimeout: 0,
@@ -33,14 +33,19 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       associatedDomains: ["webcredentials:dazzling-dog-633.convex.site"],
       bundleIdentifier: "com.bentsignal.rodgemail",
       supportsTablet: true,
-      icon: "./assets/rounded-icon.png",
+      // Liquid Glass icon from Icon Composer; see assets/icons/README.md.
+      icon: "./assets/icons/rodge-mail.icon",
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
       },
     },
     android: {
       package: "com.bentsignal.rodgemail",
-      icon: "./assets/rounded-icon.png",
+      adaptiveIcon: {
+        backgroundImage: "./assets/icons/rodge-mail-android-background.png",
+        foregroundImage: "./assets/icons/rodge-mail-android-foreground.png",
+        monochromeImage: "./assets/icons/rodge-mail-android-monochrome.png",
+      },
     },
     experiments: {
       tsconfigPaths: true,
@@ -52,7 +57,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       [
         "expo-notifications",
         {
-          color: "#0f2a1c",
+          color: "#000000",
+          icon: "./assets/icons/rodge-mail-android-notification.png",
           defaultChannel: "new-mail",
           enableBackgroundRemoteNotifications: true,
         },
@@ -82,12 +88,12 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       [
         "expo-splash-screen",
         {
-          backgroundColor: "#e9d0a0",
+          backgroundColor: "#ffffff",
           image: "./assets/splash-icon.png",
           imageWidth: 190,
           dark: {
-            backgroundColor: "#0f2a1c",
-            image: "./assets/splash-icon.png",
+            backgroundColor: "#000000",
+            image: "./assets/splash-icon-dark.png",
           },
         },
       ],

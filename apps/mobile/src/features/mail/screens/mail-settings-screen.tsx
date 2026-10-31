@@ -13,7 +13,7 @@ import { Bell, Fingerprint, LogOut } from "lucide-react-native";
 import { api } from "@rodge-mail/convex/api";
 
 import { useColor } from "~/hooks/use-color";
-import roundedIcon from "../../../../assets/rounded-icon.png";
+import roundedIcon from "../../../../assets/icon.png";
 import { authClient } from "../../auth/client";
 import { retryTransientPasskeyAssociation } from "../../auth/native-passkey-operation";
 import {
