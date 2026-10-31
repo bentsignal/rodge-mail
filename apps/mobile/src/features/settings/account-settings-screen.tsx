@@ -20,6 +20,7 @@ import { ActionRow, ValueRow } from "./settings-rows";
 const MAX_LABEL_LENGTH = 80;
 const PROVIDER_NAMES = {
   gmail: "Gmail",
+  hosted: "Hosted",
   icloud: "iCloud",
   microsoft: "Microsoft 365",
 } as const;

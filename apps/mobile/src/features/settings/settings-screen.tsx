@@ -27,6 +27,7 @@ const fillRow = Platform.OS === "ios" ? [frame({ maxWidth: Infinity })] : [];
 
 const PROVIDER_ICONS = {
   gmail: "envelope",
+  hosted: "at",
   icloud: "icloud",
   microsoft: "briefcase",
 } as const;
