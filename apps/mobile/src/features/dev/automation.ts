@@ -17,7 +17,7 @@ function isAppPath(path: string): path is Href & string {
  * production doesn't have. The Expo auth client stores the session cookie
  * as it does after any sign-in.
  */
-async function signIn() {
+async function requestSignIn() {
   if (
     convexUrls.cloud.includes(PRODUCTION_DEPLOYMENT) ||
     convexUrls.site.includes(PRODUCTION_DEPLOYMENT)
@@ -32,6 +32,24 @@ async function signIn() {
   );
   if (error) throw new Error(error.message ?? error.statusText);
   return data.email;
+}
+
+let signInStatus = "idle";
+
+/**
+ * Starts sign-in and returns at once: Hermes' debugger crashes the app when
+ * `sim-eval` awaits a promise, so `scripts/sim.sh signin` polls
+ * `signInStatus()` instead.
+ */
+function signIn() {
+  if (signInStatus === "pending") return signInStatus;
+  signInStatus = "pending";
+  requestSignIn().then(
+    (email) => (signInStatus = `signed in as ${email}`),
+    (error: unknown) =>
+      (signInStatus = `failed: ${error instanceof Error ? error.message : String(error)}`),
+  );
+  return signInStatus;
 }
 
 /**
@@ -51,6 +69,7 @@ export function installDevAutomation() {
         DevSettings.reload();
       },
       signIn,
+      signInStatus: () => signInStatus,
       frames: { report: frameReport, start: startFrames, stop: stopFrames },
     },
   });

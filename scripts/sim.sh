@@ -566,7 +566,14 @@ case "$command" in
       exit 1
     fi
     front
-    app_eval "globalThis.rodgeDev.signIn()"
+    app_eval "globalThis.rodgeDev.signIn()" >/dev/null
+    for _ in $(seq 1 30); do
+      result="$(app_eval "globalThis.rodgeDev.signInStatus()" | tr -d '"')"
+      [ "$result" != pending ] && break
+      sleep 1
+    done
+    echo "$result"
+    [[ "$result" == "signed in"* ]]
     ;;
   status) status ;;
   queue) queue status ;;
