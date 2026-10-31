@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
 import { ShieldCheck } from "lucide-react-native";
 
-import type { MobileMailbox } from "../store";
 import type { getPageFooter } from "../lib/next-page";
+import type { MobileMailbox } from "../store";
 import type { MailboxFilter } from "./mailbox-controls";
 import { useColor } from "~/hooks/use-color";
 import { getEmptyMailboxCopy } from "./mailbox-empty-state";

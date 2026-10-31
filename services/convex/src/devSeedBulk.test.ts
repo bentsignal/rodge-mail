@@ -12,7 +12,9 @@ describe("bulkMailbox", () => {
     expect(new Set(messages.map((m) => m.remoteMessageId)).size).toBe(90);
     for (const message of messages) {
       expect(message.receivedAt).toBeLessThan(now - 190 * 60 * 60 * 1000);
-      expect(message.from.address).toMatch(/(\.example|@example\.(com|net|org))$/);
+      expect(message.from.address).toMatch(
+        /(\.example|@example\.(com|net|org))$/,
+      );
       expect(message.placement).toBeUndefined();
     }
   });

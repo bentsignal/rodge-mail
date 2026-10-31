@@ -94,4 +94,3 @@ export function appendToHeldRows<Row>(
   if (next.length === held.length) return { hasAllRows: true, rows: held };
   return { hasAllRows: true, rows: [...held, ...next.slice(held.length)] };
 }
-

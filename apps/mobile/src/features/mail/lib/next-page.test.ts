@@ -29,9 +29,7 @@ const near = {
 describe("shouldRequestNextPage", () => {
   it("asks only when a cursor is waiting and the end is near", () => {
     expect(shouldRequestNextPage(near)).toBe(true);
-    expect(shouldRequestNextPage({ ...near, rowsBelow: undefined })).toBe(
-      true,
-    );
+    expect(shouldRequestNextPage({ ...near, rowsBelow: undefined })).toBe(true);
     expect(shouldRequestNextPage({ ...near, rowsBelow: 11 })).toBe(false);
     expect(shouldRequestNextPage({ ...near, rowsPending: true })).toBe(false);
     for (const status of [
@@ -44,9 +42,9 @@ describe("shouldRequestNextPage", () => {
   });
 
   it("waits for the user to scroll again unless every row fits", () => {
-    expect(
-      shouldRequestNextPage({ ...near, requestedSinceScroll: true }),
-    ).toBe(false);
+    expect(shouldRequestNextPage({ ...near, requestedSinceScroll: true })).toBe(
+      false,
+    );
     expect(
       shouldRequestNextPage({
         ...near,
@@ -182,11 +180,13 @@ describe("appendToHeldRows", () => {
     const first = { id: "a", read: false };
     const result = appendToHeldRows(
       [first],
-      [{ id: "a", read: true }, { id: "b", read: false }],
+      [
+        { id: "a", read: true },
+        { id: "b", read: false },
+      ],
       (row) => row.id,
     );
     expect(result.rows[0]).toBe(first);
     expect(result.rows).toHaveLength(2);
   });
 });
-
