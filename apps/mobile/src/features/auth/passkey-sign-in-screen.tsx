@@ -9,7 +9,7 @@ import {
 } from "react-native";
 
 import { PostalSurface } from "~/features/theme/postal-surface";
-import roundedIcon from "../../../assets/rounded-icon.png";
+import roundedIcon from "../../../assets/icon.png";
 import {
   RecoveryEmailForm,
   RegistrationDetailsForm,
