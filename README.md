@@ -1,6 +1,6 @@
 # Rodge Mail
 
-Rodge Mail is a unified email client for web, desktop, and mobile. It stores
+Rodge Mail is a unified email client for web and mobile. It stores
 synchronized mail in Convex and connects Gmail, Microsoft 365, and iCloud
 accounts without requiring a separate mail database or worker. It can also
 host mailboxes on your own domains through Amazon SES.
@@ -8,7 +8,6 @@ host mailboxes on your own domains through Amazon SES.
 ## Product shape
 
 - TanStack Start web client
-- Electron desktop client for macOS and Windows
 - Expo React Native mobile client with native iOS and Android controls
 - Convex mail store, provider sync, search, and background processing
 - Better Auth account protected by email and passkeys
@@ -30,8 +29,8 @@ pnpm dev
 pnpm run readiness:dev
 ```
 
-`readiness:dev` checks the Portless web and Expo origins, development Convex
-auth, and the installed macOS desktop app.
+`readiness:dev` checks the Portless web and Expo origins and development Convex
+auth.
 
 Local provider credentials and Convex deployment values belong in ignored env
 files. Never commit mailbox credentials, OAuth secrets, app passwords, or mail

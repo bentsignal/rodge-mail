@@ -1,35 +1,32 @@
 import { useEffect, useRef, useState } from "react";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
+import { authorizeCliAuth } from "~/features/auth/lib/cli-auth";
 import {
-  createDesktopAuthCallbackUrl,
-  desktopAuthRequestSearchSchema,
-} from "~/features/auth/lib/desktop-auth-contracts";
-import { consumeDesktopAuthAfterSignIn } from "~/features/auth/lib/desktop-auto-authorize";
-import {
-  authorizeDesktopAuth,
-  createDesktopDeepLink,
-} from "~/features/auth/lib/desktop-handoff";
+  cliAuthRequestSearchSchema,
+  createCliAuthCallbackUrl,
+} from "~/features/auth/lib/cli-auth-contracts";
+import { consumeCliAuthAfterSignIn } from "~/features/auth/lib/cli-auto-authorize";
 
-type DesktopAuthStatus =
-  | { kind: "authorized"; deepLink: string }
+type CliAuthStatus =
+  | { kind: "authorized"; callbackUrl: string }
   | { kind: "authorizing" | "error" | "ready" };
 
 export const Route = createFileRoute("/desktop-auth")({
-  component: DesktopAuth,
-  validateSearch: desktopAuthRequestSearchSchema,
+  component: CliAuth,
+  validateSearch: cliAuthRequestSearchSchema,
   beforeLoad: ({ context, search }) => {
     if (context.isAuthenticated) return;
     throw redirect({
       to: "/login",
       search: {
-        redirect_uri: createDesktopAuthRedirectUrl(search),
+        redirect_uri: createCliAuthRedirectUrl(search),
       },
     });
   },
 });
 
-function DesktopAuth() {
+function CliAuth() {
   const { callbackUrl, requestId } = Route.useSearch({
     select: (search) => ({
       callbackUrl: search.callback_url,
@@ -37,17 +34,17 @@ function DesktopAuth() {
     }),
   });
   const [autoAuthorize] = useState(() =>
-    consumeDesktopAuthAfterSignIn({
+    consumeCliAuthAfterSignIn({
       requestId,
       storage: sessionStorage,
     }),
   );
-  const [status, setStatus] = useState<DesktopAuthStatus>({
+  const [status, setStatus] = useState<CliAuthStatus>({
     kind: autoAuthorize ? "authorizing" : "ready",
   });
-  const authorization = useRef<Promise<DesktopAuthStatus>>(undefined);
+  const authorization = useRef<Promise<CliAuthStatus>>(undefined);
 
-  // This resumes the desktop request only after the user explicitly completed its browser sign-in.
+  // This resumes the CLI request only after the user explicitly completed its browser sign-in.
   // eslint-disable-next-line no-restricted-syntax
   useEffect(() => {
     if (!autoAuthorize) return;
@@ -68,47 +65,46 @@ function DesktopAuth() {
     setStatus(await authorization.current);
   }
 
-  return <DesktopAuthStatus authorize={authorize} status={status} />;
+  return <CliAuthStatus authorize={authorize} status={status} />;
 }
 
-async function finishAuthorization(
-  callbackUrl: string | undefined,
-  requestId: string,
-) {
+async function finishAuthorization(callbackUrl: string, requestId: string) {
   try {
-    const authorizationCode = await authorizeDesktopAuth(requestId);
-    const destination = callbackUrl
-      ? createDesktopAuthCallbackUrl(callbackUrl, requestId, authorizationCode)
-      : createDesktopDeepLink(requestId, authorizationCode);
+    const authorizationCode = await authorizeCliAuth(requestId);
+    const destination = createCliAuthCallbackUrl(
+      callbackUrl,
+      requestId,
+      authorizationCode,
+    );
     window.location.assign(destination);
-    return { deepLink: destination, kind: "authorized" } as const;
+    return { callbackUrl: destination, kind: "authorized" } as const;
   } catch {
     return { kind: "error" } as const;
   }
 }
 
-function createDesktopAuthRedirectUrl(search: {
-  callback_url?: string;
+function createCliAuthRedirectUrl(search: {
+  callback_url: string;
   request_id: string;
 }) {
-  const parameters = new URLSearchParams({ request_id: search.request_id });
-  if (search.callback_url) {
-    parameters.set("callback_url", search.callback_url);
-  }
+  const parameters = new URLSearchParams({
+    request_id: search.request_id,
+    callback_url: search.callback_url,
+  });
   return `/desktop-auth?${parameters.toString()}`;
 }
 
-function DesktopAuthStatus({
+function CliAuthStatus({
   authorize,
   status,
 }: {
   authorize: () => Promise<void>;
-  status: DesktopAuthStatus;
+  status: CliAuthStatus;
 }) {
   if (status.kind === "error") {
     return (
       <AuthPage
-        detail="This request has expired. Return to Rodge Mail and start again."
+        detail="This request has expired. Start sign-in again from your terminal."
         title="Could not finish sign-in"
       />
     );
@@ -117,7 +113,7 @@ function DesktopAuthStatus({
     return (
       <AuthPage
         action={{ label: "Continue", onClick: authorize }}
-        detail="Continue only if you started this sign-in from a Rodge Mail app or command."
+        detail="Continue only if you started this sign-in from the Rodge Mail CLI."
         title="Sign in to Rodge Mail?"
       />
     );
@@ -126,20 +122,20 @@ function DesktopAuthStatus({
     return (
       <AuthPage
         action={{
-          label: "Open Rodge Mail",
+          label: "Retry",
           onClick: () => {
-            window.location.assign(status.deepLink);
+            window.location.assign(status.callbackUrl);
             return Promise.resolve();
           },
         }}
-        detail="If Rodge Mail did not reopen automatically, open it now to finish the secure exchange."
-        title="Return to Rodge Mail"
+        detail="If your terminal did not finish signing in, retry the handoff."
+        title="Return to your terminal"
       />
     );
   }
   return (
     <AuthPage
-      detail="Return to the app or terminal when this is done."
+      detail="Return to your terminal when this is done."
       title="Finishing sign-in"
     />
   );
@@ -164,13 +160,13 @@ function AuthPage({
           {title}
         </h1>
         <p className="mail-label mt-3 text-sm leading-6">{detail}</p>
-        <DesktopAuthAction action={action} />
+        <CliAuthAction action={action} />
       </section>
     </main>
   );
 }
 
-function DesktopAuthAction({
+function CliAuthAction({
   action,
 }: {
   action: { label: string; onClick: () => Promise<void> } | undefined;

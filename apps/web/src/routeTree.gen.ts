@@ -17,7 +17,6 @@ import { Route as AuthedIndexRouteImport } from './app/_authed/index'
 import { Route as AuthedArchiveRouteImport } from './app/_authed.archive'
 import { Route as AuthedSpamRouteImport } from './app/_authed.spam'
 import { Route as AuthCallbackRouteImport } from './app/auth.callback'
-import { Route as AuthDesktopCompleteRouteImport } from './app/auth.desktop-complete'
 import { Route as AuthedMessagesMessageIdRouteImport } from './app/_authed.messages.$messageId'
 import { Route as ApiAuthSplatRouteImport } from './app/api.auth.$'
 import { Route as AuthedArchiveMessagesMessageIdRouteImport } from './app/_authed.archive.messages.$messageId'
@@ -62,11 +61,6 @@ const AuthCallbackRoute = AuthCallbackRouteImport.update({
   path: '/auth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthDesktopCompleteRoute = AuthDesktopCompleteRouteImport.update({
-  id: '/auth/desktop-complete',
-  path: '/auth/desktop-complete',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AuthedMessagesMessageIdRoute = AuthedMessagesMessageIdRouteImport.update({
   id: '/messages/$messageId',
   path: '/messages/$messageId',
@@ -98,7 +92,6 @@ export interface FileRoutesByFullPath {
   '/archive': typeof AuthedArchiveRouteWithChildren
   '/spam': typeof AuthedSpamRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
-  '/auth/desktop-complete': typeof AuthDesktopCompleteRoute
   '/messages/$messageId': typeof AuthedMessagesMessageIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/archive/messages/$messageId': typeof AuthedArchiveMessagesMessageIdRoute
@@ -111,7 +104,6 @@ export interface FileRoutesByTo {
   '/archive': typeof AuthedArchiveRouteWithChildren
   '/spam': typeof AuthedSpamRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
-  '/auth/desktop-complete': typeof AuthDesktopCompleteRoute
   '/': typeof AuthedIndexRoute
   '/messages/$messageId': typeof AuthedMessagesMessageIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -127,7 +119,6 @@ export interface FileRoutesById {
   '/_authed/archive': typeof AuthedArchiveRouteWithChildren
   '/_authed/spam': typeof AuthedSpamRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
-  '/auth/desktop-complete': typeof AuthDesktopCompleteRoute
   '/_authed/': typeof AuthedIndexRoute
   '/_authed/messages/$messageId': typeof AuthedMessagesMessageIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -144,7 +135,6 @@ export interface FileRouteTypes {
     | '/archive'
     | '/spam'
     | '/auth/callback'
-    | '/auth/desktop-complete'
     | '/messages/$messageId'
     | '/api/auth/$'
     | '/archive/messages/$messageId'
@@ -157,7 +147,6 @@ export interface FileRouteTypes {
     | '/archive'
     | '/spam'
     | '/auth/callback'
-    | '/auth/desktop-complete'
     | '/'
     | '/messages/$messageId'
     | '/api/auth/$'
@@ -172,7 +161,6 @@ export interface FileRouteTypes {
     | '/_authed/archive'
     | '/_authed/spam'
     | '/auth/callback'
-    | '/auth/desktop-complete'
     | '/_authed/'
     | '/_authed/messages/$messageId'
     | '/api/auth/$'
@@ -186,7 +174,6 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   ProviderCompleteRoute: typeof ProviderCompleteRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
-  AuthDesktopCompleteRoute: typeof AuthDesktopCompleteRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
@@ -246,13 +233,6 @@ declare module '@tanstack/react-router' {
       path: '/auth/callback'
       fullPath: '/auth/callback'
       preLoaderRoute: typeof AuthCallbackRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth/desktop-complete': {
-      id: '/auth/desktop-complete'
-      path: '/auth/desktop-complete'
-      fullPath: '/auth/desktop-complete'
-      preLoaderRoute: typeof AuthDesktopCompleteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authed/messages/$messageId': {
@@ -333,7 +313,6 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   ProviderCompleteRoute: ProviderCompleteRoute,
   AuthCallbackRoute: AuthCallbackRoute,
-  AuthDesktopCompleteRoute: AuthDesktopCompleteRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport

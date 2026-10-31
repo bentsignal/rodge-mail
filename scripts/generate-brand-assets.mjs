@@ -88,47 +88,17 @@ function createIco(entries, output) {
 }
 
 try {
-  const productionIcon = join(temporaryDirectory, "icon-1024.png");
-  resize(source, productionIcon, 1024);
-
   const mobileAssets = join(root, "apps/mobile/assets");
   copyFileSync(source, join(mobileAssets, "rodge-mail-icon-source.png"));
   await createMobileAssets(source, mobileAssets);
-
-  const desktopResources = join(root, "apps/desktop/resources");
-  copyFileSync(productionIcon, join(desktopResources, "icon.png"));
-
-  const iconset = join(temporaryDirectory, "RodgeMail.iconset");
-  mkdirSync(iconset);
-  for (const [name, size] of [
-    ["icon_16x16.png", 16],
-    ["icon_16x16@2x.png", 32],
-    ["icon_32x32.png", 32],
-    ["icon_32x32@2x.png", 64],
-    ["icon_128x128.png", 128],
-    ["icon_128x128@2x.png", 256],
-    ["icon_256x256.png", 256],
-    ["icon_256x256@2x.png", 512],
-    ["icon_512x512.png", 512],
-    ["icon_512x512@2x.png", 1024],
-  ]) {
-    resize(source, join(iconset, name), size);
-  }
-  run("iconutil", [
-    "--convert",
-    "icns",
-    iconset,
-    "--output",
-    join(desktopResources, "icon.icns"),
-  ]);
 
   const icoEntries = [16, 24, 32, 48, 64, 128, 256].map((size) => {
     const path = join(temporaryDirectory, `icon-${size}.png`);
     resize(source, path, size);
     return { path, size };
   });
-  const desktopIco = join(desktopResources, "icon.ico");
-  createIco(icoEntries, desktopIco);
+  const faviconIco = join(temporaryDirectory, "favicon.ico");
+  createIco(icoEntries, faviconIco);
 
   const webPublic = join(root, "apps/web/public");
   for (const [name, size] of [
@@ -140,8 +110,8 @@ try {
   ]) {
     resize(source, join(webPublic, name), size);
   }
-  copyFileSync(desktopIco, join(webPublic, "favicon.ico"));
-  copyFileSync(desktopIco, join(root, "apps/web/src/app/favicon.ico"));
+  copyFileSync(faviconIco, join(webPublic, "favicon.ico"));
+  copyFileSync(faviconIco, join(root, "apps/web/src/app/favicon.ico"));
 } finally {
   rmSync(temporaryDirectory, { recursive: true, force: true });
 }

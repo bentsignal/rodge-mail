@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useRouteContext } from "@tanstack/react-router";
 import { createStore } from "rostra";
 
@@ -6,15 +5,8 @@ import { completeAuthSession } from "@rodge-mail/std/auth-session";
 import { useLoading } from "@rodge-mail/std/use-loading";
 import { toast } from "@rodge-mail/ui-web/toast";
 
+import { rememberCliAuthAfterSignIn } from "./lib/cli-auto-authorize";
 import { authClient } from "./lib/client";
-import { rememberDesktopAuthAfterSignIn } from "./lib/desktop-auto-authorize";
-import {
-  beginDesktopAuth,
-  cancelDesktopAuth,
-  exchangeDesktopAuth,
-  readPendingDesktopAuth,
-  usesDesktopBrowserAuth,
-} from "./lib/desktop-handoff";
 import { completeEmailCodeSignIn } from "./lib/email-code-sign-in";
 import { getSafeAppRedirect } from "./lib/safe-redirect";
 
@@ -42,7 +34,6 @@ interface NormalizedRegistrationVerification {
 }
 
 function useInternalStore() {
-  const [desktopAuthIsPending, setDesktopAuthIsPending] = useState(false);
   const { isLoading, run } = useLoading();
   const isAuthenticated = useRouteContext({
     from: "__root__",
@@ -52,43 +43,10 @@ function useInternalStore() {
   const recoveryActions = createRecoveryActions(isAuthenticated, run);
   function signInWithPasskey(redirectUri?: string) {
     if (isAuthenticated) return Promise.resolve(false);
-    if (usesDesktopBrowserAuth()) return startDesktopSignIn();
     return run({
       fn: () => authenticateWithPasskey(redirectUri),
       onError: (error) => {
         toast.error(getErrorMessage(error, "Could not sign in with a passkey"));
-      },
-    });
-  }
-
-  function startDesktopSignIn() {
-    if (isAuthenticated || desktopAuthIsPending) return Promise.resolve(false);
-    return run({
-      fn: async () => {
-        await beginDesktopAuth();
-        setDesktopAuthIsPending(true);
-        return true;
-      },
-      onError: (error) => {
-        toast.error(getErrorMessage(error, "Could not open browser sign-in"));
-      },
-    });
-  }
-
-  function cancelDesktopSignIn() {
-    setDesktopAuthIsPending(false);
-    void cancelDesktopAuth().catch(() => undefined);
-  }
-
-  function finishDesktopSignIn(requestId: string, authorizationCode: string) {
-    return run({
-      fn: async () => {
-        await exchangeDesktopAuth(requestId, authorizationCode);
-        window.location.replace("/");
-        return true;
-      },
-      onError: (error) => {
-        toast.error(getErrorMessage(error, "Could not finish desktop sign-in"));
       },
     });
   }
@@ -115,20 +73,15 @@ function useInternalStore() {
 
   return {
     addAuthenticatedPasskey,
-    cancelDesktopSignIn,
-    desktopAuthIsPending: desktopAuthIsPending || !!readPendingDesktopAuth(),
-    finishDesktopSignIn,
     finishRecovery: recoveryActions.finishRecovery,
     finishRegistration: registrationActions.finishRegistration,
     imSignedIn: isAuthenticated,
     imSignedOut: !isAuthenticated,
     isLoading,
-    usesDesktopBrowserAuth: usesDesktopBrowserAuth(),
     requestRegistrationCode: registrationActions.requestRegistrationCode,
     requestRecoveryCode: recoveryActions.requestRecoveryCode,
     signInWithPasskey,
     signOut,
-    startDesktopSignIn,
   };
 }
 
@@ -200,7 +153,7 @@ function normalizeRegistrationVerification(details: RegistrationVerification) {
 }
 
 async function authenticateWithPasskey(redirectUri: string | undefined) {
-  rememberDesktopAuthAfterSignIn({
+  rememberCliAuthAfterSignIn({
     origin: window.location.origin,
     redirectUri,
     storage: sessionStorage,

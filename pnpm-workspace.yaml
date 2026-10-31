@@ -50,8 +50,6 @@ linkWorkspacePackages: true
 onlyBuiltDependencies:
   - "@swc/core"
   - "@tailwindcss/oxide"
-  - electron
-  - electron-winstaller
   - esbuild
   - expo-better-auth-passkey
 

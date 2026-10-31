@@ -10,17 +10,14 @@ exploration round three.
 - Color mode: RGB
 - SHA-256: `6e90be38916cb180846b5072dccf5b37ddf42d30bb57d2831457596215a07e5c`
 
-The selected master is an unchanged copy of the approved concept. Shipping web,
-desktop, and mobile assets are generated from it by
+The selected master is an unchanged copy of the approved concept. Shipping web and
+mobile assets are generated from it by
 `node scripts/generate-brand-assets.mjs`.
 
 ## Production outputs
 
 - Expo iOS and Android icon: `apps/mobile/assets/rounded-icon.png`
 - Expo splash image: `apps/mobile/assets/splash-icon.png`
-- macOS application icon: `apps/desktop/resources/icon.icns`
-- Windows application icon: `apps/desktop/resources/icon.ico`
-- Linux application icon: `apps/desktop/resources/icon.png`
 - Web favicon and touch icons: `apps/web/public/`
 
 Android deliberately uses the full selected artwork as its application icon
