@@ -2,8 +2,8 @@ import type { FunctionReturnType } from "convex/server";
 import { useState } from "react";
 // eslint-disable-next-line no-restricted-imports -- Outbox status is a shell-level live query with no route loader and an intentional empty loading state.
 import { useQuery } from "@tanstack/react-query";
+import { useRouterState } from "@tanstack/react-router";
 import { convexQuery } from "@convex-dev/react-query";
-import { useMutation } from "convex/react";
 import {
   AlertCircle,
   Check,
@@ -16,7 +16,9 @@ import {
 
 import { api } from "@rodge-mail/convex/api";
 import { cn } from "@rodge-mail/std/cn";
-import { toast } from "@rodge-mail/ui-web/toast";
+
+import { QuickLink } from "~/components/quick-link";
+import { useRetryOutbox } from "../use-retry-outbox";
 
 type OutboxItem = FunctionReturnType<
   typeof api.outbox.queries.listRecent
@@ -24,17 +26,24 @@ type OutboxItem = FunctionReturnType<
 
 export function OutboxStatus() {
   const [isOpen, setIsOpen] = useState(false);
+  const isSentPage = useRouterState({
+    select: (state) => state.location.pathname.startsWith("/sent"),
+  });
   const query = useQuery({
     ...convexQuery(api.outbox.queries.listRecent, {}),
     select: (outboxes) => outboxes,
   });
   const outboxes = query.data ?? [];
 
-  if (query.isPending || outboxes.length === 0) return null;
+  if (isSentPage || query.isPending || outboxes.length === 0) return null;
 
   return (
     <aside className="fixed right-4 bottom-4 z-40 w-[min(340px,calc(100vw-2rem))] sm:right-6 sm:bottom-6">
-      <OutboxPanel isOpen={isOpen} outboxes={outboxes} />
+      <OutboxPanel
+        isOpen={isOpen}
+        outboxes={outboxes}
+        onNavigate={() => setIsOpen(false)}
+      />
       <button
         aria-expanded={isOpen}
         aria-controls="outbox-status-panel"
@@ -53,9 +62,11 @@ export function OutboxStatus() {
 
 function OutboxPanel({
   isOpen,
+  onNavigate,
   outboxes,
 }: {
   isOpen: boolean;
+  onNavigate: () => void;
   outboxes: OutboxItem[];
 }) {
   if (!isOpen) return null;
@@ -64,40 +75,43 @@ function OutboxPanel({
       className="bg-background text-popover-foreground absolute right-0 bottom-12 max-h-[min(520px,calc(100dvh-6rem))] w-full overflow-hidden rounded-[14px] border"
       id="outbox-status-panel"
     >
-      <div className="border-b px-4 py-3">
+      <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
         <h2 className="text-lg font-semibold">Delivery status</h2>
-        <p className="text-muted-foreground mt-0.5 text-[10px]">
-          Live delivery state from queue to provider.
-        </p>
+        <QuickLink
+          className="text-muted-foreground hover:text-foreground text-xs font-semibold"
+          onClick={onNavigate}
+          to="/sent"
+        >
+          View all sent
+        </QuickLink>
       </div>
       <div className="mail-scrollbar max-h-[420px] overflow-y-auto">
         {outboxes.map((outbox) => (
-          <OutboxRow key={outbox._id} outbox={outbox} />
+          <OutboxRow key={outbox._id} onNavigate={onNavigate} outbox={outbox} />
         ))}
       </div>
     </div>
   );
 }
 
-function OutboxRow({ outbox }: { outbox: OutboxItem }) {
-  const retryOutbox = useMutation(api.mail.mutations.retryOutbox);
-  const [isRetrying, setIsRetrying] = useState(false);
-
-  async function retry() {
-    if (isRetrying || outbox.status !== "failed") return;
-    setIsRetrying(true);
-    try {
-      const result = await retryOutbox({ outboxId: outbox._id });
-      if (result.retried) toast.success("Retry queued.");
-    } catch (error) {
-      toast.error(getRetryError(error));
-    }
-    setIsRetrying(false);
-  }
+function OutboxRow({
+  onNavigate,
+  outbox,
+}: {
+  onNavigate: () => void;
+  outbox: OutboxItem;
+}) {
+  const retry = useRetryOutbox();
 
   return (
-    <article className="border-border border-b px-4 py-3 last:border-b-0">
-      <div className="flex items-start gap-3">
+    <article className="border-border hover:bg-muted relative border-b last:border-b-0">
+      <QuickLink
+        aria-label={`${outbox.subject.trim() || "(no subject)"}, ${getStatusLabel(outbox.status)}`}
+        className="flex items-start gap-3 px-4 py-3"
+        onClick={onNavigate}
+        params={{ outboxId: outbox._id }}
+        to="/sent/$outboxId"
+      >
         <StatusIcon status={outbox.status} />
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-2">
@@ -111,7 +125,7 @@ function OutboxRow({ outbox }: { outbox: OutboxItem }) {
           <p className="text-muted-foreground mt-0.5 truncate text-[10px]">
             To {formatRecipients(outbox.to)} · {outbox.account.address}
           </p>
-          <div className="mt-2 flex items-center gap-2">
+          <div className="mt-2 flex h-7 items-center gap-2">
             <span
               className={cn(
                 "text-[10px] font-medium tracking-wide uppercase",
@@ -120,37 +134,33 @@ function OutboxRow({ outbox }: { outbox: OutboxItem }) {
             >
               {getStatusLabel(outbox.status)}
             </span>
-            <RetryButton
-              isRetrying={isRetrying}
-              onRetry={() => void retry()}
-              status={outbox.status}
-            />
           </div>
           <OutboxError error={outbox.error} status={outbox.status} />
         </div>
-      </div>
+      </QuickLink>
+      <RetryButton
+        onRetry={() => retry(outbox._id)}
+        status={outbox.status}
+      />
     </article>
   );
 }
 
 function RetryButton({
-  isRetrying,
   onRetry,
   status,
 }: {
-  isRetrying: boolean;
   onRetry: () => void;
   status: OutboxItem["status"];
 }) {
   if (status !== "failed") return null;
   return (
     <button
-      className="text-destructive hover:bg-destructive/8 ml-auto flex h-7 items-center gap-1.5 rounded-full border border-current/20 px-2.5 text-[10px] font-semibold disabled:opacity-50"
-      disabled={isRetrying}
+      className="text-destructive hover:bg-destructive/8 bg-background absolute top-[46px] right-4 flex h-7 items-center gap-1.5 rounded-full border border-current/20 px-2.5 text-[10px] font-semibold"
       onClick={onRetry}
       type="button"
     >
-      <RotateCcw className={cn("size-3", isRetrying && "animate-spin")} />
+      <RotateCcw className="size-3" />
       Retry
     </button>
   );
@@ -267,9 +277,4 @@ function formatStatusTime(outbox: OutboxItem) {
     hour: "numeric",
     minute: "2-digit",
   }).format(new Date(outbox.sentAt ?? outbox.updatedAt));
-}
-
-function getRetryError(error: unknown) {
-  if (error instanceof Error && error.message.trim()) return error.message;
-  return "Could not retry this message.";
 }

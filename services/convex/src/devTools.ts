@@ -14,6 +14,7 @@ import {
   ensureDemoAccount,
   ensureDemoMessage,
 } from "./devSeedWrites";
+import { seedSentMail } from "./devSeedSent";
 import { requireDevTools } from "./devSignIn";
 import { DEV_USER_EMAIL } from "./devToolsPolicy";
 
@@ -77,6 +78,7 @@ export const seed = internalMutation({
       if (!accountId) throw new ConvexError("Seed account not found");
       messages += await ensureDemoMessage(ctx, ownerId, accountId, fixture);
     }
+    await seedSentMail(ctx, ownerId, accountIds, Date.now());
     return { accounts: accountIds.size, messages };
   },
 });

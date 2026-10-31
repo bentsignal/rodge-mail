@@ -3,6 +3,7 @@ import { ConvexError } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import type { DemoAccount, DemoMessage } from "./devSeedFixtures";
+import { deleteAccountOutbox } from "./devSeedSent";
 import { ensureDemoThread } from "./devSeedThreads";
 
 const SEED_PROMPT_VERSION = "demo-v1";
@@ -168,6 +169,7 @@ export async function deleteDemoAccountRecords(
     .withIndex("by_account_created", (q) => q.eq("accountId", accountId))
     .collect();
   for (const run of syncRuns) await ctx.db.delete(run._id);
+  await deleteAccountOutbox(ctx, accountId);
   await ctx.db.delete(accountId);
 }
 

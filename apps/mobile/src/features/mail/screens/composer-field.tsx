@@ -1,53 +1,54 @@
-import { Text, TextInput, View } from "react-native";
+import { StyleSheet, Text, TextInput, View } from "react-native";
 
 import { useColor } from "~/hooks/use-color";
 
-export function ComposerField({
-  divider = true,
+/** One line of the composer's header, like Mail's: a label and a hairline. */
+export function ComposerRow({
+  children,
   error,
   label,
-  style,
-  ...props
 }: {
-  divider?: boolean;
+  children: React.ReactNode;
   error?: string;
-  label: string;
-} & React.ComponentProps<typeof TextInput>) {
-  const foreground = useColor("foreground");
-  const mutedForeground = useColor("muted-foreground");
-  const primary = useColor("primary");
-
+  label?: string;
+}) {
+  const border = useColor("border");
   return (
     <View
-      className={`min-h-14 flex-row items-center gap-3 py-1 ${divider ? "border-border border-b" : ""}`}
+      className="ml-4 pr-4"
+      style={{ borderBottomColor: border, borderBottomWidth: StyleSheet.hairlineWidth }}
     >
-      <Text className="text-muted-foreground w-14 text-sm font-medium">
-        {label}
-      </Text>
-      <View className="min-w-0 flex-1">
-        <TextInput
-          accessibilityLabel={label}
-          className="text-foreground min-h-12 text-base"
-          placeholderTextColor={mutedForeground}
-          selectionColor={primary}
-          style={[{ color: foreground }, style]}
-          {...props}
-        />
-        <ComposerFieldError error={error} />
+      <View className="min-h-11 flex-row flex-wrap items-center gap-x-1.5 gap-y-1 py-1.5">
+        {label ? (
+          <Text className="text-muted-foreground text-base">{label}</Text>
+        ) : null}
+        {children}
       </View>
+      {error ? (
+        <Text className="text-destructive -mt-0.5 pb-1.5 text-xs">{error}</Text>
+      ) : null}
     </View>
   );
 }
 
-export function ComposerSectionLabel({ children }: { children: string }) {
+export function ComposerTextField({
+  label,
+  style,
+  ...props
+}: { label: string } & React.ComponentProps<typeof TextInput>) {
+  const foreground = useColor("foreground");
+  const mutedForeground = useColor("muted-foreground");
+  const primary = useColor("primary");
   return (
-    <Text className="text-muted-foreground px-1 text-xs font-semibold tracking-[1.4px] uppercase">
-      {children}
-    </Text>
+    <ComposerRow label={`${label}:`}>
+      <TextInput
+        accessibilityLabel={label}
+        className="text-foreground min-h-8 min-w-0 flex-1 text-base"
+        placeholderTextColor={mutedForeground}
+        selectionColor={primary}
+        style={[{ color: foreground, paddingVertical: 4 }, style]}
+        {...props}
+      />
+    </ComposerRow>
   );
-}
-
-function ComposerFieldError({ error }: { error: string | undefined }) {
-  if (!error) return null;
-  return <Text className="text-destructive pb-1 text-xs">{error}</Text>;
 }

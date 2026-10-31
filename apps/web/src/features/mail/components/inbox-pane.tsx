@@ -12,6 +12,7 @@ import {
   BulkSelectionToolbar,
 } from "./bulk-selection-toolbar";
 import { ThreadList } from "./thread-list";
+import type { MailMode } from "../live-data-types";
 
 export function InboxPane() {
   const mobileReaderIsOpen = useMailStore((store) => store.mobileReaderIsOpen);
@@ -69,22 +70,23 @@ function InboxHeader() {
 function SearchInputSlot({
   mailMode,
 }: {
-  mailMode: "archive" | "inbox" | "spam";
+  mailMode: MailMode;
 }) {
   if (mailMode === "spam") return null;
   return <SearchInput />;
 }
 
-function getMailboxTitle(mailMode: "archive" | "inbox" | "spam") {
+function getMailboxTitle(mailMode: MailMode) {
   if (mailMode === "archive") return "Archive";
   if (mailMode === "spam") return "Spam";
+  if (mailMode === "sent") return "Sent";
   return "Inbox";
 }
 
 function MailboxFilterControl({
   mailMode,
 }: {
-  mailMode: "archive" | "inbox" | "spam";
+  mailMode: MailMode;
 }) {
   if (mailMode !== "inbox") return null;
   return <UnreadFilterButton />;

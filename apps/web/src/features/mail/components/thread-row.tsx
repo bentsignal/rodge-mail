@@ -11,6 +11,7 @@ import { useLiveMail } from "../live-data";
 import { useMailStore } from "../store";
 import { getThreadRowAccessibilityLabel } from "../thread-row-presentation";
 import { ThreadRowContent } from "./thread-row-content";
+import type { MailMode } from "../live-data-types";
 
 export function ThreadRow({
   message,
@@ -98,7 +99,7 @@ function ThreadRowTarget({
   accountFilter: MailAccountFilter;
   bulkSelectionIsActive: boolean;
   isBulkSelected: boolean;
-  mailMode: "archive" | "inbox" | "spam";
+  mailMode: MailMode;
   markMessageRead: (message: InboxMessage) => void;
   message: InboxMessage;
   preview: string;
@@ -165,7 +166,7 @@ function InboxThreadActions({
   togglePinned,
 }: {
   archiveThread: (message: Pick<InboxMessage, "threadId">) => Promise<void>;
-  mailMode: "archive" | "inbox" | "spam";
+  mailMode: MailMode;
   message: InboxMessage;
   pinLabel: string;
   togglePinned: (message: InboxMessage) => Promise<void>;
@@ -195,7 +196,7 @@ function ThreadLink({
 }: {
   accountFilter: MailAccountFilter;
   children: React.ReactNode;
-  mailMode: "archive" | "inbox" | "spam";
+  mailMode: MailMode;
   message: InboxMessage;
   onClick: () => void;
   senderName: string;

@@ -8,6 +8,7 @@ import {
   Inbox,
   Mail,
   PenLine,
+  Send,
   ShieldAlert,
 } from "lucide-react";
 
@@ -41,6 +42,9 @@ export function AccountRail() {
   const isSpam = useRouterState({
     select: (state) => state.location.pathname.startsWith("/spam"),
   });
+  const isSent = useRouterState({
+    select: (state) => state.location.pathname.startsWith("/sent"),
+  });
   const accountFilter = useMailStore((store) => store.accountFilter);
   const clearSelection = useMailStore((store) => store.clearSelection);
   const selectMailbox = useMailboxNavigation(getAccountRailMailboxTarget());
@@ -71,6 +75,7 @@ export function AccountRail() {
         accounts={accounts}
         isArchive={isArchive}
         isLoadingAccounts={isLoadingAccounts}
+        isSent={isSent}
         isSpam={isSpam}
         selectMailbox={selectMailbox}
         unreadCounts={unreadCounts}
@@ -96,6 +101,7 @@ function AccountRailNavigation({
   accounts,
   isArchive,
   isLoadingAccounts,
+  isSent,
   isSpam,
   onClearSelection,
   selectMailbox,
@@ -105,6 +111,7 @@ function AccountRailNavigation({
   accounts: MailAccountView[];
   isArchive: boolean;
   isLoadingAccounts: boolean;
+  isSent: boolean;
   isSpam: boolean;
   onClearSelection: () => void;
   selectMailbox: (accountId: MailAccountFilter) => void;
@@ -116,12 +123,27 @@ function AccountRailNavigation({
       className="mail-scrollbar mt-5 min-h-0 flex-1 space-y-1.5 overflow-x-hidden overflow-y-auto"
     >
       <AccountButton
-        active={!isArchive && !isSpam && accountFilter === "all"}
+        active={!isArchive && !isSent && !isSpam && accountFilter === "all"}
         count={unreadCounts.all}
         icon={Inbox}
         label="All Inboxes"
         onClick={() => selectMailbox("all")}
       />
+      <QuickLink
+        aria-label="Sent"
+        aria-current={isSent ? "page" : undefined}
+        className={cn(
+          "group relative flex h-11 w-full items-center justify-center gap-3 rounded-lg px-3 text-sm transition-colors xl:justify-start",
+          isSent
+            ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+            : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground",
+        )}
+        onClick={onClearSelection}
+        to="/sent"
+      >
+        <Send className="size-[18px]" strokeWidth={1.7} />
+        <span className="hidden truncate xl:block">Sent</span>
+      </QuickLink>
       <QuickLink
         aria-label="Archive"
         aria-current={isArchive ? "page" : undefined}
@@ -163,7 +185,9 @@ function AccountRailNavigation({
         const Icon = ACCOUNT_ICONS[account.provider];
         return (
           <AccountButton
-            active={!isArchive && !isSpam && accountFilter === account._id}
+            active={
+              !isArchive && !isSent && !isSpam && accountFilter === account._id
+            }
             count={unreadCounts[account._id]}
             icon={Icon}
             key={account._id}

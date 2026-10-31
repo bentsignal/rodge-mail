@@ -21,11 +21,12 @@ import {
   getUnsubscribeDialogMessage,
   ReaderUnsubscribeDialog,
 } from "./reader-unsubscribe-dialog";
+import type { MailMode } from "../live-data-types";
 
 interface ReaderToolbarProps {
   archiveThread: (message: ThreadMessageDetail) => Promise<void>;
   closeMobileReader: () => void;
-  mailMode: "archive" | "inbox" | "spam";
+  mailMode: MailMode;
   markNotSpam: (message: ThreadMessageDetail) => Promise<void>;
   permanentlyDeleteArchivedThread: (
     message: ThreadMessageDetail,

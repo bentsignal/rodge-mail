@@ -7,6 +7,7 @@ import type { InboxMessage } from "../types";
 import { useLiveMail } from "../live-data";
 import { useMailStore } from "../store";
 import { ThreadRow } from "./thread-row";
+import type { MailMode } from "../live-data-types";
 
 export function ThreadList() {
   const searchQuery = useMailStore((store) => store.searchQuery);
@@ -184,7 +185,7 @@ function EmptyThreadList({
   canSeedDemo: boolean;
   isSearch: boolean;
   isSeedingDemo: boolean;
-  mailMode: "archive" | "inbox" | "spam";
+  mailMode: MailMode;
   seedDemoMail: () => Promise<void>;
   unreadOnly: boolean;
 }) {
@@ -243,7 +244,7 @@ function getEmptyDescription(
   isSearch: boolean,
   canSeedDemo: boolean,
   unreadOnly: boolean,
-  mailMode: "archive" | "inbox" | "spam",
+  mailMode: MailMode,
 ) {
   if (isSearch) return "Try a sender, subject, or phrase from the message.";
   if (mailMode === "archive") return "Conversations you archive appear here.";

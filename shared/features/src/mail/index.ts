@@ -15,6 +15,13 @@ export {
   SEMANTIC_SEARCH_MIN_SCORE,
 } from "./search";
 export { sortPinnedMailRows } from "./order";
+export {
+  formatRecipientAddresses,
+  formatSentRecipients,
+  getSentStatusLabel,
+  getSentSubject,
+} from "./sent";
+export type { SentStatus } from "./sent";
 export { dedupeThreadRows } from "./thread-rows";
 export type {
   ComposerAttachment,
