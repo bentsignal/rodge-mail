@@ -3,7 +3,14 @@ import { Stack } from "expo-router";
 import type { MobileMailbox } from "../store";
 import { useColor } from "~/hooks/use-color";
 
+export interface CleanViewMenuAction {
+  disabled: boolean;
+  label: string;
+  onPress: () => void;
+}
+
 export function ThreadReaderToolbar({
+  cleanViewAction,
   isPinned,
   mailbox,
   onArchive,
@@ -15,6 +22,7 @@ export function ThreadReaderToolbar({
   title,
   unsubscribeName,
 }: {
+  cleanViewAction?: CleanViewMenuAction;
   isPinned: boolean;
   mailbox: MobileMailbox;
   onArchive: () => void;
@@ -34,19 +42,24 @@ export function ThreadReaderToolbar({
     <>
       <Stack.Screen options={{ title }} />
       <Stack.Toolbar placement="right">
-        <Stack.Toolbar.Menu
-          accessibilityLabel="More"
-          hidden={!isInbox}
-          icon="ellipsis"
-        >
+        <Stack.Toolbar.Menu accessibilityLabel="More" icon="ellipsis">
           <Stack.Toolbar.MenuAction
+            disabled={cleanViewAction?.disabled}
+            hidden={!cleanViewAction}
+            icon="sparkles"
+            onPress={() => cleanViewAction?.onPress()}
+          >
+            {cleanViewAction?.label ?? ""}
+          </Stack.Toolbar.MenuAction>
+          <Stack.Toolbar.MenuAction
+            hidden={!isInbox}
             icon={isPinned ? "pin.slash" : "pin"}
             onPress={onPin}
           >
             {pinLabel}
           </Stack.Toolbar.MenuAction>
           <Stack.Toolbar.MenuAction
-            hidden={!unsubscribeName}
+            hidden={!isInbox || !unsubscribeName}
             icon="envelope.badge.shield.half.filled"
             onPress={onUnsubscribe}
           >

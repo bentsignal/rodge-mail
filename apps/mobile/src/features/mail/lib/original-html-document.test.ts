@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { createOriginalHtmlDocument } from "./original-html-document";
+import {
+  createOriginalHtmlDocument,
+  parseOriginalHtmlMessage,
+} from "./original-html-document";
 
 describe("createOriginalHtmlDocument", () => {
   it("scales fixed-width email markup without rewriting its tables", () => {
@@ -48,7 +51,21 @@ describe("createOriginalHtmlDocument", () => {
     expect(document).toContain(
       "const scale=Math.min(1,deviceWidth/viewportWidth)",
     );
-    expect(document).toContain("document.documentElement.scrollHeight*scale+8");
+    expect(document).toContain(
+      'post("height:"+(document.documentElement.scrollHeight*scale+8))',
+    );
+  });
+
+  it("sends link taps to the app instead of navigating the web view", () => {
+    const document = createOriginalHtmlDocument({
+      background: "#fff",
+      foreground: "#111",
+      html: '<a href="https://example.com" target="_blank">Open</a>',
+    });
+
+    expect(document).toContain('document.addEventListener("click"');
+    expect(document).toContain('closest("a[href]")');
+    expect(document).toContain("event.preventDefault()");
   });
 
   it("upgrades remote images and resolves inline content IDs", () => {
@@ -65,5 +82,37 @@ describe("createOriginalHtmlDocument", () => {
       '<img src="https://images.example.com/barcode"><img src="https://files.example.com/logo">',
     );
     expect(document).toContain('image.addEventListener("load",fit)');
+  });
+});
+
+describe("parseOriginalHtmlMessage", () => {
+  it("reads height reports", () => {
+    expect(parseOriginalHtmlMessage("height:640.5")).toEqual({
+      type: "height",
+      height: 640.5,
+    });
+  });
+
+  it("reads web, mail, and phone links", () => {
+    for (const url of [
+      "https://example.com/a?b=c:d",
+      "http://example.com",
+      "mailto:hello@example.com",
+      "tel:+15555550100",
+    ]) {
+      expect(parseOriginalHtmlMessage(`link:${url}`)).toEqual({
+        type: "link",
+        url,
+      });
+    }
+  });
+
+  it("ignores other schemes and malformed messages", () => {
+    expect(
+      parseOriginalHtmlMessage("link:javascript:alert(1)"),
+    ).toBeUndefined();
+    expect(parseOriginalHtmlMessage("link:file:///etc/hosts")).toBeUndefined();
+    expect(parseOriginalHtmlMessage("height:tall")).toBeUndefined();
+    expect(parseOriginalHtmlMessage("640")).toBeUndefined();
   });
 });

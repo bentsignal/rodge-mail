@@ -68,9 +68,9 @@ const NEWSLETTER_HTML = [
   '<tr><td style="padding:20px">',
   "<p>Fall color is peaking along the ridge. We picked five hikes for every pace, from a flat lakeside loop to a full-day summit.</p>",
   '<p><a href="https://example.com/trails/ridge-loop" target="_blank">Ridge Loop, 4.2 miles</a> is the pick for families.</p>',
-  '<p><a href="https://example.com/trails/summit">Summit Trail, 9.8 miles</a> rewards an early start.</p>',
+  '<p><a href="https://example.com/trails/summit" target="_blank">Summit Trail, 9.8 miles</a> rewards an early start.</p>',
   '<p style="text-align:center;margin:28px 0"><a href="https://example.com/trails" target="_blank" style="display:inline-block;padding:12px 22px;background:#1f2933;color:#ffffff;text-decoration:none;border-radius:6px">See all five trails</a></p>',
-  '<p style="font-size:13px;color:#52606d">Questions? Write to <a href="mailto:hello@trailhead.example">hello@trailhead.example</a>.</p>',
+  '<p style="font-size:13px;color:#52606d">Questions? Write to <a href="mailto:hello@trailhead.example" target="_blank">hello@trailhead.example</a>.</p>',
   "</td></tr></table>",
 ].join("");
 
@@ -152,7 +152,7 @@ const SEEDS = [
     hoursAgo: 0.1,
     unread: true,
     body: "Use 482913 to finish signing in to Lumen. It expires in 10 minutes.\n\nIf you didn't try to sign in, you can ignore this email.",
-    html: '<div style="font-family:-apple-system,Helvetica,sans-serif;padding:16px"><p>Use this code to finish signing in to Lumen:</p><p style="font-size:30px;letter-spacing:6px;font-weight:700">482913</p><p>It expires in 10 minutes. If you didn\'t try to sign in, <a href="https://example.com/security">secure your account</a>.</p></div>',
+    html: '<div style="font-family:-apple-system,Helvetica,sans-serif;padding:16px"><p>Use this code to finish signing in to Lumen:</p><p style="font-size:30px;letter-spacing:6px;font-weight:700">482913</p><p>It expires in 10 minutes. If you didn\'t try to sign in, <a href="https://example.com/security" target="_blank">secure your account</a>.</p></div>',
     cleanView: {
       markdown:
         "A sign-in code for Lumen. It expires in 10 minutes. If you didn't try to sign in, you can ignore it.",
