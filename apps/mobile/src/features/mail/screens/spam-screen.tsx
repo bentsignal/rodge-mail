@@ -65,9 +65,6 @@ export function SpamMailbox({
       />
     );
   }
-  function loadMore() {
-    if (spam.status === "CanLoadMore") spam.loadMore(pageSize);
-  }
   return (
     <MailboxThreadList
       accountFilter={accountFilter}
@@ -87,10 +84,11 @@ export function SpamMailbox({
       selectionMode={false}
       onAccountChange={onAccountChange}
       onArchiveSelect={onArchiveSelect}
-      onEndReached={loadMore}
       onFilterChange={setFilter}
+      onLoadMore={() => spam.loadMore(pageSize)}
       onSpamSelect={() => undefined}
       onToggleSelection={() => undefined}
+      pageStatus={spam.status}
     />
   );
 }

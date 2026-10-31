@@ -60,6 +60,7 @@ import type * as cli_commands from "../cli/commands.js";
 import type * as crons from "../crons.js";
 import type * as desktopAuth from "../desktopAuth.js";
 import type * as devSeed from "../devSeed.js";
+import type * as devSeedBulk from "../devSeedBulk.js";
 import type * as devSeedFixtures from "../devSeedFixtures.js";
 import type * as devSeedMailbox from "../devSeedMailbox.js";
 import type * as devSeedSent from "../devSeedSent.js";
@@ -228,6 +229,7 @@ declare const fullApi: ApiFromModules<{
   crons: typeof crons;
   desktopAuth: typeof desktopAuth;
   devSeed: typeof devSeed;
+  devSeedBulk: typeof devSeedBulk;
   devSeedFixtures: typeof devSeedFixtures;
   devSeedMailbox: typeof devSeedMailbox;
   devSeedSent: typeof devSeedSent;

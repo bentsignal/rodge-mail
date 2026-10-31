@@ -12,6 +12,7 @@ scripts/sim.sh up             # Metro serves the app pointed at it
 scripts/sim.sh signin         # signed in as the test owner (alex.rivera@example.com)
 scripts/backend.sh push       # after changing services/convex/src
 scripts/backend.sh seed       # a fresh mailbox, dated now
+scripts/backend.sh seed 150   # the same, plus 150 older threads to page through
 scripts/backend.sh status     # which deployment this worktree talks to
 scripts/backend.sh teardown   # delete it; the worktree goes back to the default
 ```

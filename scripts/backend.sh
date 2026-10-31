@@ -5,7 +5,8 @@
 #   scripts/backend.sh isolate    give this worktree its own dev deployment,
 #                                 with a test owner and seeded fake mail
 #   scripts/backend.sh push       push Convex functions to it again
-#   scripts/backend.sh seed       replace its mail with a fresh seeded mailbox
+#   scripts/backend.sh seed [n]   replace its mail with a fresh seeded mailbox,
+#                                 plus n older filler threads for paging
 #   scripts/backend.sh teardown   delete it and go back to the default
 #
 # Without `isolate`, a worktree's apps talk to dazzling-dog-633, the one
@@ -177,7 +178,12 @@ push() {
 
 seed() {
   require_isolated
-  convex run devTools:seed
+  local bulk="${1:-0}"
+  [[ "$bulk" =~ ^[0-9]+$ ]] || {
+    echo "usage: scripts/backend.sh seed [filler-thread-count]" >&2
+    exit 2
+  }
+  convex run devTools:seed "{\"bulkThreads\": $bulk}"
 }
 
 teardown() {
@@ -209,10 +215,10 @@ case "${1:-status}" in
   status) status ;;
   isolate) isolate ;;
   push) push ;;
-  seed) seed ;;
+  seed) seed "${2:-0}" ;;
   teardown) teardown ;;
   *)
-    sed -n '2,22p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '2,23p' "$0" | sed 's/^# \{0,1\}//'
     exit 2
     ;;
 esac
