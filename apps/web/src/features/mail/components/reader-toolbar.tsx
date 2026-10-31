@@ -43,21 +43,21 @@ export function ReaderToolbar(props: ReaderToolbarProps) {
   const [unsubscribeIsOpen, setUnsubscribeIsOpen] = useState(false);
   return (
     <>
-      <header className="mail-reader-toolbar mail-paper-soft relative z-[3] flex h-16 shrink-0 items-center gap-1 border-b border-[var(--mail-seam)] px-4 sm:px-6">
+      <header className="bg-muted border-border relative z-[3] flex h-16 shrink-0 items-center gap-1 border-b px-4 sm:px-6">
         <ReaderIconButton
           className="lg:hidden"
           icon={ArrowLeft}
           label="Back to inbox"
           onClick={props.closeMobileReader}
         />
-        <div className="mx-1 h-5 w-px bg-[var(--mail-seam)] lg:hidden" />
+        <div className="bg-border mx-1 h-5 w-px lg:hidden" />
         <ReaderModeActions
           {...props}
           requestDelete={() => setDeleteIsOpen(true)}
           requestUnsubscribe={() => setUnsubscribeIsOpen(true)}
         />
         <button
-          className="mail-brass-button ml-auto flex h-11 items-center gap-2 rounded-lg px-4 text-xs font-bold transition-colors"
+          className="mail-primary-button ml-auto flex h-11 items-center gap-2 rounded-lg px-4 text-xs font-bold transition-colors"
           onClick={props.replyToSelectedThread}
           type="button"
         >
@@ -238,19 +238,19 @@ function ArchiveDeleteDialog({
   }
   return (
     <Dialog.Container onOpenChange={onOpenChange} open={message !== undefined}>
-      <Dialog.Content className="mail-dialog mail-workspace max-w-md overflow-hidden rounded-[18px] border p-0">
-        <div className="mail-chassis border-b p-6">
-          <Dialog.Title className="font-serif text-2xl tracking-[-0.03em]">
+      <Dialog.Content className="mail-dialog bg-background max-w-md overflow-hidden rounded-[18px] border p-0">
+        <div className="border-b p-6">
+          <Dialog.Title className="text-2xl font-semibold tracking-tight">
             Delete permanently?
           </Dialog.Title>
-          <Dialog.Description className="mt-2 text-xs leading-5 text-[var(--mail-chassis-foreground)]/70">
+          <Dialog.Description className="text-muted-foreground mt-2 text-xs leading-5">
             This permanently removes Rodge Mail’s archived copy and cannot be
             undone. Your provider copy is unchanged.
           </Dialog.Description>
         </div>
         <div className="flex justify-end gap-2 p-5">
           <button
-            className="mail-raised h-10 rounded-lg border border-[var(--mail-seam)] px-4 text-xs font-semibold"
+            className="bg-background border-border h-10 rounded-lg border px-4 text-xs font-semibold"
             disabled={isDeleting}
             onClick={() => onOpenChange(false)}
             type="button"
@@ -258,7 +258,7 @@ function ArchiveDeleteDialog({
             Cancel
           </button>
           <button
-            className="h-10 rounded-lg bg-[var(--mail-highlight)] px-4 text-xs font-bold text-white disabled:opacity-50"
+            className="bg-destructive text-destructive-foreground h-10 rounded-lg px-4 text-xs font-bold disabled:opacity-50"
             disabled={isDeleting}
             onClick={() => void confirmDelete()}
             type="button"
@@ -294,7 +294,7 @@ function ReaderIconButton({
       aria-label={label}
       className={cn(
         "mail-icon-button flex size-11 items-center justify-center rounded-lg transition disabled:cursor-not-allowed disabled:opacity-40",
-        active && "text-[var(--mail-highlight)]",
+        active && "bg-accent text-foreground",
         className,
       )}
       disabled={!onClick}

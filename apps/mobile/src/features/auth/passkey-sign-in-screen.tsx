@@ -44,7 +44,7 @@ function BrandHeader() {
     <View className="items-center gap-3">
       <Image
         accessibilityLabel="Rodge Mail"
-        className="border-brass/60 size-20 rounded-[22px] border"
+        className="size-20 rounded-[22px]"
         source={roundedIcon}
       />
       <Text className="text-foreground text-[28px] font-bold tracking-tight">

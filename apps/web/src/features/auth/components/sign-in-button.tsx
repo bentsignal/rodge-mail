@@ -14,7 +14,7 @@ export function SignInButton() {
 
   return (
     <button
-      className="mail-brass-button flex h-12 w-full items-center justify-center gap-2 rounded-[10px] px-5 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-55"
+      className="mail-primary-button flex h-12 w-full items-center justify-center gap-2 rounded-[10px] px-5 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-55"
       disabled={disabled}
       onClick={() => void signInWithPasskey(redirectUri)}
       type="button"

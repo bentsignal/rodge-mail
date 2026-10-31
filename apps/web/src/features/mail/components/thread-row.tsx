@@ -51,10 +51,10 @@ export function ThreadRow({
         aria-posinset={position}
         aria-setsize={-1}
         className={cn(
-          "mail-thread-row group relative overflow-hidden border-b border-[var(--mail-seam)] bg-[var(--mail-paper)] transition-[background-color,border-color,box-shadow] duration-150",
+          "group border-border bg-background relative overflow-hidden border-b transition-[background-color,border-color,box-shadow] duration-150",
           rowIsSelected
-            ? "z-[1] border-y border-[var(--mail-border-strong)] bg-[var(--mail-selected)] shadow-[var(--warm-shadow-raised)]"
-            : "hover:bg-[var(--mail-row-hover)]",
+            ? "border-input bg-accent z-[1] border-y"
+            : "hover:bg-muted",
         )}
       >
         <SelectedMarker selected={rowIsSelected} />
@@ -239,17 +239,17 @@ function ThreadRowMenu({
   togglePinned: (message: InboxMessage) => Promise<void>;
 }) {
   return (
-    <ContextMenu.Content className="mail-workspace text-foreground rounded-[10px] border border-[var(--mail-seam)] p-1.5 shadow-[var(--mail-shadow-ambient)]">
+    <ContextMenu.Content className="rounded-[10px] p-1.5">
       <ContextMenu.Item
-        className="data-[highlighted]:text-foreground rounded-[7px] data-[highlighted]:bg-[var(--mail-paper-soft)]"
+        className="data-[highlighted]:text-foreground data-[highlighted]:bg-accent rounded-[7px]"
         onSelect={() => void togglePinned(message)}
       >
         <Pin className="size-3.5" />
         {pinLabel}
       </ContextMenu.Item>
-      <ContextMenu.Separator className="bg-[var(--mail-seam)]" />
+      <ContextMenu.Separator className="bg-border" />
       <ContextMenu.Item
-        className="rounded-[7px] text-[var(--mail-highlight)] data-[highlighted]:bg-[var(--mail-paper-soft)] data-[highlighted]:text-[var(--mail-highlight)]"
+        className="data-[highlighted]:text-foreground data-[highlighted]:bg-accent rounded-[7px]"
         onSelect={() => void archiveThread(message)}
       >
         <Archive className="size-3.5" />
@@ -269,7 +269,7 @@ function PinMessageButton({
   return (
     <button
       aria-label={message.isPinned ? "Unpin message" : "Pin message"}
-      className="absolute right-3 bottom-2.5 flex size-8 items-center justify-center rounded-lg border border-[var(--mail-seam)] bg-[var(--mail-paper-soft)] text-[var(--mail-ink-soft)] opacity-0 shadow-[var(--mail-shadow-raised)] transition-[color,opacity] group-focus-within:opacity-100 group-hover:opacity-100 hover:text-[var(--mail-highlight)] focus:opacity-100"
+      className="border-border bg-muted text-muted-foreground hover:text-foreground absolute right-3 bottom-2.5 flex size-8 items-center justify-center rounded-lg border opacity-0 transition-[color,opacity] group-focus-within:opacity-100 group-hover:opacity-100 focus:opacity-100"
       onClick={() => void togglePinned(message)}
       type="button"
     >
@@ -287,7 +287,7 @@ function getSenderName(message: InboxMessage) {
 function SelectedMarker({ selected }: { selected: boolean }) {
   if (!selected) return null;
   return (
-    <span className="absolute inset-y-3 left-0 w-[3px] rounded-r bg-[var(--mail-highlight)]" />
+    <span className="bg-foreground absolute inset-y-3 left-0 w-[3px] rounded-r" />
   );
 }
 

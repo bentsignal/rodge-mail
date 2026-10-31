@@ -28,7 +28,6 @@ export function ThreadRow(props: ThreadRowProps) {
     thread,
   } = props;
   const togglePin = useMailStore((store) => store.togglePin);
-  const shadowColor = useColor("shadow-color");
 
   function pin() {
     void togglePin(thread.id, thread.isPinned);
@@ -70,7 +69,6 @@ export function ThreadRow(props: ThreadRowProps) {
         onPin={pin}
         selected={selected}
         selectionMode={selectionMode}
-        shadowColor={shadowColor}
         thread={thread}
       />
     </ReanimatedSwipeable>

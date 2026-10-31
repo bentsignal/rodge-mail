@@ -134,12 +134,12 @@ function ComposerBody({
   selectedAccountId: string | undefined;
   autoFocusBody: boolean;
 }) {
-  const paper = useColor("paper");
+  const background = useColor("background");
 
   return (
     <PostalPaperBackground
       className="min-h-0"
-      style={{ backgroundColor: paper }}
+      style={{ backgroundColor: background }}
     >
       <ScrollView
         className="flex-1"

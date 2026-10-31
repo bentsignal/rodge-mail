@@ -27,7 +27,7 @@ export function CleanViewCodeCard({
   }
 
   return (
-    <View className="bg-well border-primary/30 mx-1 flex-row items-center gap-4 rounded-xl border px-4 py-4">
+    <View className="bg-muted border-primary/30 mx-1 flex-row items-center gap-4 rounded-xl border px-4 py-4">
       <View className="min-w-0 flex-1 justify-center gap-1">
         <Text className="text-muted-foreground text-[10px] leading-[14px] font-bold tracking-widest uppercase">
           {code.label || "Code"}
@@ -43,7 +43,7 @@ export function CleanViewCodeCard({
         accessibilityLabel={copied ? "Code copied" : `Copy ${code.label}`}
         accessibilityRole="button"
         accessibilityState={{ selected: copied }}
-        className="bg-paper border-well-border h-11 flex-row items-center justify-center gap-2 self-center rounded-lg border px-3.5"
+        className="bg-background border-border h-11 flex-row items-center justify-center gap-2 self-center rounded-lg border px-3.5"
         onPress={() => void copyCode()}
       >
         <CodeCopyIcon color={primary} copied={copied} />

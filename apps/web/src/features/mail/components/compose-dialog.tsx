@@ -35,7 +35,7 @@ export function ComposeDialog() {
       open={composerIsOpen}
     >
       <Dialog.Content
-        className="mail-workspace top-auto! right-0! bottom-0! left-0! flex h-[calc(100dvh-1rem)] max-w-none! translate-x-0! translate-y-0! flex-col gap-0 overflow-hidden rounded-t-[20px] border p-0 sm:right-5! sm:bottom-5! sm:left-auto! sm:h-[min(720px,calc(100dvh-2.5rem))] sm:w-[min(720px,calc(100vw-2.5rem))] sm:rounded-[18px]"
+        className="bg-background top-auto! right-0! bottom-0! left-0! flex h-[calc(100dvh-1rem)] max-w-none! translate-x-0! translate-y-0! flex-col gap-0 overflow-hidden rounded-t-[20px] border p-0 sm:right-5! sm:bottom-5! sm:left-auto! sm:h-[min(720px,calc(100dvh-2.5rem))] sm:w-[min(720px,calc(100vw-2.5rem))] sm:rounded-[18px]"
         showCloseButton={false}
       >
         <ComposeContent />
@@ -81,7 +81,7 @@ function ComposeContent() {
         />
         <Textarea
           aria-label="Message body"
-          className="min-h-[310px] border-0 bg-transparent px-0 py-6 font-serif text-[18px] leading-8 shadow-none placeholder:text-[var(--mail-ink-soft)] focus-visible:ring-0"
+          className="placeholder:text-muted-foreground min-h-[310px] border-0 bg-transparent px-0 py-6 text-[18px] leading-8 shadow-none focus-visible:ring-0"
           onChange={(event) => updateDraft("body", event.target.value)}
           placeholder="Write simply…"
           value={draft.body}
@@ -98,9 +98,9 @@ function ComposeHeader() {
   const closeComposer = useMailStore((store) => store.closeComposer);
 
   return (
-    <header className="mail-chassis flex h-16 shrink-0 items-center border-b px-5">
+    <header className="flex h-16 shrink-0 items-center border-b px-5">
       <div>
-        <Dialog.Title className="font-serif text-xl font-semibold tracking-[-0.02em]">
+        <Dialog.Title className="text-xl font-semibold tracking-[-0.02em]">
           New message
         </Dialog.Title>
         <Dialog.Description className="sr-only">
@@ -109,7 +109,7 @@ function ComposeHeader() {
       </div>
       <button
         aria-label="Close new message"
-        className="ml-auto flex size-9 items-center justify-center rounded-[9px] border border-white/10 text-[var(--mail-chassis-foreground)]/70 transition hover:bg-white/10 hover:text-[var(--mail-chassis-foreground)]"
+        className="text-muted-foreground hover:bg-accent hover:text-foreground ml-auto flex size-9 items-center justify-center rounded-[9px] transition"
         onClick={closeComposer}
         type="button"
       >
@@ -183,7 +183,7 @@ function ComposeFooter() {
   }
 
   return (
-    <footer className="mail-paper-soft flex shrink-0 items-center gap-2 border-t border-[var(--mail-seam)] px-5 py-3.5 shadow-[0_-2px_7px_rgba(55,40,19,0.07)] sm:px-7">
+    <footer className="bg-background border-border flex shrink-0 items-center gap-2 border-t px-5 py-3.5 sm:px-7">
       <input
         className="sr-only"
         id={attachmentInputId}
@@ -204,11 +204,11 @@ function ComposeFooter() {
         <Paperclip className="size-4" />
         <span className="sr-only">Attach files</span>
       </label>
-      <span className="mail-label font-mono text-[8px] tracking-[0.12em] uppercase">
+      <span className="mail-label text-[10px] font-medium tracking-wide uppercase">
         {getUploadSummary(draft.attachments)}
       </span>
       <button
-        className="mail-brass-button ml-auto flex h-10 items-center gap-2 rounded-[9px] px-4 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-40"
+        className="mail-primary-button ml-auto flex h-10 items-center gap-2 rounded-[9px] px-4 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-40"
         disabled={!canSend || !attachmentsAreReady || isSending}
         onClick={() => void send()}
         type="button"
@@ -286,13 +286,13 @@ function ComposeField({
   value: string;
 }) {
   return (
-    <label className="flex min-h-12 items-center gap-4 border-b border-[var(--mail-seam)]">
-      <span className="mail-label w-12 shrink-0 font-mono text-[9px] tracking-[0.14em] uppercase">
+    <label className="border-border flex min-h-12 items-center gap-4 border-b">
+      <span className="mail-label w-12 shrink-0 text-[11px] font-medium tracking-wide uppercase">
         {label}
       </span>
       <input
         autoFocus={autoFocus}
-        className="h-12 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[var(--mail-ink-soft)]"
+        className="placeholder:text-muted-foreground h-12 min-w-0 flex-1 bg-transparent text-sm outline-none"
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         value={value}

@@ -17,7 +17,6 @@ export type MailThreadDetail = FunctionReturnType<
 export type ThreadMessageDetail = MailThreadDetail["messages"][number];
 
 export interface MailAccountView extends MailAccountDocument {
-  accent: string;
   initials: string;
   label: string;
 }

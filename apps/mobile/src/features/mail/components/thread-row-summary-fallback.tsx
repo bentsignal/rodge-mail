@@ -18,7 +18,6 @@ export function FallbackThreadSummary({
   onPin,
   selected,
   selectionMode,
-  shadowColor,
   thread,
 }: {
   mailbox: MobileMailbox;
@@ -26,7 +25,6 @@ export function FallbackThreadSummary({
   onPin: () => void;
   selected: boolean;
   selectionMode: boolean;
-  shadowColor: string;
   thread: MailThread;
 }) {
   return (
@@ -34,14 +32,9 @@ export function FallbackThreadSummary({
       accessibilityHint="Opens this email thread"
       accessibilityLabel={getThreadRowAccessibilityLabel(thread)}
       accessibilityRole="button"
-      className="bg-paper border-paper-border min-h-[94px] flex-row gap-3 rounded-xl border px-4 py-3"
+      className="bg-background border-border min-h-[94px] flex-row gap-3 rounded-xl border px-4 py-3"
       onPress={onOpen}
       style={({ pressed }) => ({
-        elevation: pressed ? 0 : 1,
-        shadowColor,
-        shadowOffset: { height: 1, width: 0 },
-        shadowOpacity: pressed ? 0.04 : 0.08,
-        shadowRadius: 2,
         transform: [{ translateY: pressed ? 1 : 0 }],
       })}
     >
@@ -60,7 +53,7 @@ export function FallbackThreadSummary({
 
 function SenderAvatar({ thread }: { thread: MailThread }) {
   return (
-    <View className="bg-paper-deep border-paper-border relative size-10 items-center justify-center rounded-lg border">
+    <View className="bg-muted border-border relative size-10 items-center justify-center rounded-lg border">
       <Text className="text-foreground text-xs font-semibold">
         {getSenderInitials(thread.sender.name)}
       </Text>
@@ -101,7 +94,7 @@ function AvatarIndicator({ isUnread }: { isUnread: boolean }) {
   return (
     <View
       accessibilityElementsHidden
-      className="border-paper bg-brass absolute -top-1 -right-1 size-2.5 rounded-full border"
+      className="border-background bg-primary absolute -top-1 -right-1 size-2.5 rounded-full border"
       importantForAccessibility="no-hide-descendants"
     />
   );

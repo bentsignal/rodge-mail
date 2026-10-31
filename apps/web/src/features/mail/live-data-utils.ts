@@ -5,13 +5,6 @@ import {
 
 import type { MailAccountDocument } from "./types";
 
-const ACCOUNT_ACCENTS = {
-  gmail: "#c95d3f",
-  hosted: "#5b5fc7",
-  icloud: "#b38736",
-  microsoft: "#397367",
-} as const;
-
 export function toAccountView(account: MailAccountDocument) {
   const providerLabel = getNonemptyValue(account.displayName, account.address);
   const accountLabel = getNonemptyValue(account.displayLabel, providerLabel);
@@ -20,7 +13,6 @@ export function toAccountView(account: MailAccountDocument) {
   const label = isDemo ? `${accountLabel} · Demo` : accountLabel;
   return {
     ...account,
-    accent: ACCOUNT_ACCENTS[account.provider],
     initials: getInitials(label),
     label,
   };

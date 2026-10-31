@@ -56,7 +56,6 @@ describe("mobile account connection status", () => {
 
 function account(values: Partial<MobileMailAccount> = {}) {
   return {
-    accent: "#397367",
     address: "person@example.com",
     displayLabel: undefined,
     displayName: "Person",

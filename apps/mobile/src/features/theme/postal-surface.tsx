@@ -1,29 +1,16 @@
 import type { ComponentProps } from "react";
 import { View } from "react-native";
 
-import { useColor } from "~/hooks/use-color";
-
 export function PostalSurface({
   className = "",
   style,
   transparent = false,
   ...props
 }: ComponentProps<typeof View> & { transparent?: boolean }) {
-  const shadowColor = useColor("shadow-color");
-
   return (
     <View
-      className={`${transparent ? "bg-transparent" : "bg-paper"} border-paper-border rounded-2xl border ${className}`}
-      style={[
-        {
-          elevation: transparent ? 0 : 2,
-          shadowColor,
-          shadowOffset: { height: 3, width: 0 },
-          shadowOpacity: transparent ? 0 : 0.12,
-          shadowRadius: 7,
-        },
-        style,
-      ]}
+      className={`${transparent ? "bg-transparent" : "bg-card"} border-border rounded-2xl border ${className}`}
+      style={style}
       {...props}
     />
   );
@@ -37,7 +24,7 @@ export function PostalPaperBackground({
 }: ComponentProps<typeof View>) {
   return (
     <View
-      className={`bg-paper flex-1 ${className}`}
+      className={`bg-background flex-1 ${className}`}
       style={[{ flex: 1, minHeight: 0 }, style]}
       {...props}
     >
@@ -52,7 +39,7 @@ export function PostalWell({
 }: ComponentProps<typeof View>) {
   return (
     <View
-      className={`bg-well border-well-border rounded-2xl border ${className}`}
+      className={`bg-muted border-border rounded-2xl border ${className}`}
       {...props}
     />
   );

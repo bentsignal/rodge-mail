@@ -83,7 +83,7 @@ export function MailboxThreadList({
   selectionMode,
   selectionEnabled = true,
 }: MailboxThreadListProps) {
-  const paper = useColor("paper");
+  const background = useColor("background");
   const transition = useInboxFilterTransition(data, filter);
   const feedback = getInboxListFeedback({
     emptyIsLoading,
@@ -99,7 +99,7 @@ export function MailboxThreadList({
   ) : undefined;
 
   return (
-    <View className="bg-paper flex-1">
+    <View className="bg-background flex-1">
       <MailboxHeaderSlot
         accountFilter={accountFilter}
         accounts={accounts}
@@ -137,7 +137,7 @@ export function MailboxThreadList({
         mailbox={mailbox}
         listVersion={`${accountFilter}:${filter}:${selectionMode}:${selectedCount}`}
         onEndReached={onEndReached}
-        paper={paper}
+        background={background}
         primary={primary}
         refreshControl={refreshControl}
         renderThread={renderThread}
@@ -160,7 +160,7 @@ function MailboxRows({
   mailbox,
   listVersion,
   onEndReached,
-  paper,
+  background,
   primary,
   refreshControl,
   renderThread,
@@ -173,7 +173,7 @@ function MailboxRows({
   mailbox: MobileMailbox;
   listVersion: string;
   onEndReached: () => void;
-  paper: string;
+  background: string;
   primary: string;
   refreshControl:
     | React.ReactElement<React.ComponentProps<typeof RefreshControl>>
@@ -202,7 +202,7 @@ function MailboxRows({
         contentInsetAdjustmentBehavior="automatic"
         keyboardDismissMode="on-drag"
         stickyHeaderIndices={headerInList ? [0] : undefined}
-        style={{ backgroundColor: paper, flex: 1 }}
+        style={{ backgroundColor: background, flex: 1 }}
         onEndReached={onEndReached}
         onEndReachedThreshold={0.6}
         ListEmptyComponent={

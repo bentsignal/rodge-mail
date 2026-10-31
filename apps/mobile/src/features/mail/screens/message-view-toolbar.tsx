@@ -38,7 +38,7 @@ function MessageViewSwitch({
   return (
     <View
       accessibilityLabel="Message view"
-      className="bg-well border-well-border flex-row self-start rounded-xl border p-1"
+      className="bg-muted border-border flex-row self-start rounded-xl border p-1"
     >
       <MessageViewButton
         color={value === "clean" ? foreground : muted}
@@ -117,7 +117,7 @@ function MessageViewButton({
       accessibilityState={{ selected }}
       className={
         selected
-          ? "bg-paper flex-row items-center gap-1.5 rounded-lg px-3 py-2"
+          ? "bg-background flex-row items-center gap-1.5 rounded-lg px-3 py-2"
           : "flex-row items-center gap-1.5 rounded-lg px-3 py-2"
       }
       onPress={onPress}

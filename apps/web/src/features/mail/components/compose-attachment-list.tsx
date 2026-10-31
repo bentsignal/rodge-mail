@@ -30,7 +30,7 @@ export function DraftAttachments() {
     <div className="flex flex-wrap gap-2 pb-5">
       {attachments.map((attachment) => (
         <span
-          className="mail-raised flex items-center gap-2 rounded-[9px] border py-1.5 pr-1.5 pl-3 text-xs"
+          className="bg-background flex items-center gap-2 rounded-[9px] border py-1.5 pr-1.5 pl-3 text-xs"
           key={attachment.id}
         >
           <AttachmentStatusIcon status={attachment.status} />
@@ -62,13 +62,13 @@ function AttachmentStatusIcon({
 }) {
   if (status === "uploading") {
     return (
-      <LoaderCircle className="size-3 animate-spin text-[var(--mail-ink-soft)]" />
+      <LoaderCircle className="text-muted-foreground size-3 animate-spin" />
     );
   }
   if (status === "error") {
-    return <AlertCircle className="size-3 text-red-600" />;
+    return <AlertCircle className="text-destructive size-3" />;
   }
-  return <Paperclip className="size-3 text-[var(--mail-ink-soft)]" />;
+  return <Paperclip className="text-muted-foreground size-3" />;
 }
 
 function getAttachmentStatus(attachment: WebComposerAttachment) {

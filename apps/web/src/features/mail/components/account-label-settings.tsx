@@ -74,13 +74,13 @@ export function AccountLabelForm({
     <form
       className={
         embedded
-          ? "border-t border-[var(--mail-seam)] pt-3"
-          : "mail-well rounded-xl border p-3"
+          ? "border-border border-t pt-3"
+          : "bg-muted rounded-xl border p-3"
       }
       onSubmit={(event) => void save(event)}
     >
       <label
-        className="mail-label text-[10px] font-semibold tracking-[0.08em] uppercase"
+        className="mail-label text-[10px] font-semibold tracking-wide uppercase"
         htmlFor={`account-label-${account._id}`}
       >
         Display name
@@ -88,7 +88,7 @@ export function AccountLabelForm({
       <div className="mt-1.5 flex gap-2">
         <input
           autoComplete="off"
-          className="mail-field h-9 min-w-0 flex-1 rounded-lg border border-[var(--mail-border-strong)] px-3 text-sm outline-none focus:border-[var(--mail-brass)]"
+          className="mail-field border-input focus:border-ring h-9 min-w-0 flex-1 rounded-lg border px-3 text-sm outline-none"
           id={`account-label-${account._id}`}
           maxLength={MAX_LABEL_LENGTH}
           onChange={(event) => setLabel(event.target.value)}
@@ -98,7 +98,7 @@ export function AccountLabelForm({
         <button
           aria-live="polite"
           aria-label={getSaveStatusLabel(saveStatus)}
-          className="mail-raised flex h-9 w-[4.5rem] items-center justify-center rounded-lg border px-3 text-xs font-semibold disabled:opacity-70"
+          className="bg-background flex h-9 w-[4.5rem] items-center justify-center rounded-lg border px-3 text-xs font-semibold disabled:opacity-70"
           disabled={saveStatus === "saving"}
           type="submit"
         >

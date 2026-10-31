@@ -65,7 +65,7 @@ function ActiveBulkSelectionToolbar() {
       className="mt-3 flex min-h-9 items-center gap-1.5 overflow-x-auto"
       role="toolbar"
     >
-      <span className="mail-label mr-auto shrink-0 font-mono text-[9px] tracking-[0.1em] uppercase">
+      <span className="mail-label mr-auto shrink-0 text-[11px] font-medium tracking-wide uppercase">
         {selectedMessages.length} selected
       </span>
       <BulkMailboxActions
@@ -223,18 +223,18 @@ function getSelectButtonLabel(isActive: boolean) {
 
 function getSelectButtonClass(isActive: boolean) {
   return cn(
-    "flex h-9 items-center gap-2 rounded-[9px] border px-3 font-mono text-[10px] font-semibold tracking-[0.04em] transition-[background-color,border-color,color,box-shadow] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--mail-brass-deep)]",
+    "focus-visible:outline-ring flex h-9 items-center gap-2 rounded-[9px] border px-3 text-[11px] font-semibold tracking-wide transition-[background-color,border-color,color,box-shadow] focus-visible:outline-2 focus-visible:outline-offset-2",
     isActive
-      ? "border-[var(--mail-brass-deep)] bg-[var(--mail-brass)] text-[#21190a] shadow-[var(--mail-shadow-raised)]"
-      : "mail-raised hover:text-foreground border-[var(--mail-seam)] text-[var(--mail-ink-soft)]",
+      ? "border-primary bg-primary text-primary-foreground"
+      : "bg-background hover:text-foreground border-border text-muted-foreground",
   );
 }
 
 function getBulkActionButtonClass(destructive: boolean) {
   return cn(
-    "mail-raised flex h-8 shrink-0 items-center gap-1.5 rounded-[8px] border border-[var(--mail-seam)] px-2.5 font-mono text-[9px] font-semibold tracking-[0.04em] disabled:cursor-not-allowed disabled:opacity-40",
+    "bg-background border-border flex h-8 shrink-0 items-center gap-1.5 rounded-[8px] border px-2.5 text-[11px] font-semibold tracking-wide disabled:cursor-not-allowed disabled:opacity-40",
     destructive
-      ? "text-[var(--mail-highlight)]"
-      : "hover:text-foreground text-[var(--mail-ink-soft)]",
+      ? "text-destructive"
+      : "hover:text-foreground text-muted-foreground",
   );
 }

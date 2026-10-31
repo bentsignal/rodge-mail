@@ -38,7 +38,7 @@ export function OutboxStatus() {
       <button
         aria-expanded={isOpen}
         aria-controls="outbox-status-panel"
-        className="mail-brass-button ml-auto flex h-10 items-center gap-2 rounded-[10px] px-3.5 text-xs font-bold"
+        className="mail-primary-button ml-auto flex h-10 items-center gap-2 rounded-[10px] px-3.5 text-xs font-bold"
         onClick={() => setIsOpen((current) => !current)}
         type="button"
       >
@@ -61,12 +61,12 @@ function OutboxPanel({
   if (!isOpen) return null;
   return (
     <div
-      className="mail-workspace text-popover-foreground absolute right-0 bottom-12 max-h-[min(520px,calc(100dvh-6rem))] w-full overflow-hidden rounded-[14px] border"
+      className="bg-background text-popover-foreground absolute right-0 bottom-12 max-h-[min(520px,calc(100dvh-6rem))] w-full overflow-hidden rounded-[14px] border"
       id="outbox-status-panel"
     >
-      <div className="mail-chassis border-b px-4 py-3">
-        <h2 className="font-serif text-lg font-semibold">Delivery status</h2>
-        <p className="mt-0.5 text-[10px] text-[var(--mail-chassis-foreground)]/70">
+      <div className="border-b px-4 py-3">
+        <h2 className="text-lg font-semibold">Delivery status</h2>
+        <p className="text-muted-foreground mt-0.5 text-[10px]">
           Live delivery state from queue to provider.
         </p>
       </div>
@@ -104,7 +104,7 @@ function OutboxRow({ outbox }: { outbox: OutboxItem }) {
             <p className="min-w-0 flex-1 truncate text-xs font-semibold">
               {outbox.subject.trim() || "(no subject)"}
             </p>
-            <time className="text-muted-foreground shrink-0 font-mono text-[8px]">
+            <time className="text-muted-foreground shrink-0 text-[10px] font-medium">
               {formatStatusTime(outbox)}
             </time>
           </div>
@@ -114,7 +114,7 @@ function OutboxRow({ outbox }: { outbox: OutboxItem }) {
           <div className="mt-2 flex items-center gap-2">
             <span
               className={cn(
-                "font-mono text-[8px] tracking-[0.1em] uppercase",
+                "text-[10px] font-medium tracking-wide uppercase",
                 getStatusTextClass(outbox.status),
               )}
             >
@@ -183,7 +183,7 @@ function OutboxSummary({ outboxes }: { outboxes: OutboxItem[] }) {
     <span
       aria-live="polite"
       className={cn(
-        "bg-muted text-muted-foreground rounded-full px-2 py-0.5 font-mono text-[8px] tracking-[0.08em] uppercase",
+        "bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-[10px] font-medium tracking-wide uppercase",
         hasFailure && "bg-destructive/10 text-destructive",
       )}
     >

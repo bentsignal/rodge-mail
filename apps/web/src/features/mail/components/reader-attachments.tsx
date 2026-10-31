@@ -36,7 +36,7 @@ export function ReaderAttachments({
   if (attachments.length === 0) return null;
   return (
     <div className="mt-9 sm:pl-[52px]">
-      <p className="mail-label mb-3 flex items-center gap-2 font-mono text-[9px] tracking-[0.14em] uppercase">
+      <p className="mail-label mb-3 flex items-center gap-2 text-[11px] font-medium tracking-wide uppercase">
         <Paperclip className="size-3" />
         {attachments.length} attachment
       </p>
@@ -71,23 +71,23 @@ function AttachmentButton({
   return (
     <button
       aria-label={`Download ${fileName}`}
-      className="mail-raised group flex items-center gap-3 rounded-[11px] border p-3 text-left transition hover:border-[var(--mail-brass)]"
+      className="bg-background group hover:bg-accent flex items-center gap-3 rounded-[11px] border p-3 text-left transition"
       disabled={disabled}
       onClick={onDownload}
       title={`Download ${fileName}`}
       type="button"
     >
-      <span className="mail-inset flex size-10 shrink-0 items-center justify-center rounded-[9px] border text-[var(--mail-brass-deep)] dark:text-[var(--mail-brass-bright)]">
+      <span className="bg-muted text-muted-foreground flex size-10 shrink-0 items-center justify-center rounded-[9px] border">
         <FileText className="size-4" />
       </span>
       <span className="min-w-0 flex-1">
         <span className="block truncate text-xs font-semibold">{fileName}</span>
-        <span className="mail-label mt-0.5 block font-mono text-[8px] tracking-[0.08em] uppercase">
+        <span className="mail-label mt-0.5 block text-[10px] font-medium tracking-wide uppercase">
           {attachment.contentType} · {formatFileSize(attachment.size)}
         </span>
       </span>
       <Download
-        className={`group-hover:text-foreground size-4 text-[var(--mail-ink-soft)] transition ${isDownloading ? "animate-bounce" : ""}`}
+        className={`group-hover:text-foreground text-muted-foreground size-4 transition ${isDownloading ? "animate-bounce" : ""}`}
       />
     </button>
   );

@@ -136,7 +136,7 @@ function SearchPendingState() {
       role="status"
     >
       <LoaderCircle className="size-3.5 animate-spin" />
-      <span className="font-mono text-[9px] tracking-[0.12em] uppercase">
+      <span className="text-[11px] font-medium tracking-wide uppercase">
         Searching
       </span>
     </div>
@@ -190,10 +190,10 @@ function EmptyThreadList({
 }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-8 text-center">
-      <span className="mail-inset mb-4 flex size-12 items-center justify-center rounded-[12px] border text-[var(--mail-ink-soft)]">
+      <span className="bg-muted text-muted-foreground mb-4 flex size-12 items-center justify-center rounded-[12px] border">
         <Inbox className="size-5" strokeWidth={1.5} />
       </span>
-      <p className="font-serif text-lg font-semibold">No messages</p>
+      <p className="text-lg font-semibold">No messages</p>
       <p className="mail-label mt-1 max-w-xs text-sm leading-6">
         {getEmptyDescription(isSearch, canSeedDemo, unreadOnly, mailMode)}
       </p>
@@ -218,7 +218,7 @@ function DevelopmentSeedButton({
   if (!canSeedDemo) return null;
   return (
     <button
-      className="mail-brass-button mt-5 flex h-9 items-center gap-2 rounded-[9px] px-4 text-xs font-bold transition disabled:cursor-wait disabled:opacity-60"
+      className="mail-primary-button mt-5 flex h-9 items-center gap-2 rounded-[9px] px-4 text-xs font-bold transition disabled:cursor-wait disabled:opacity-60"
       disabled={isSeedingDemo}
       onClick={() => void seedDemoMail()}
       type="button"
@@ -261,14 +261,14 @@ function ThreadListSkeleton() {
     <div aria-label="Loading inbox" className="min-h-0 flex-1 overflow-hidden">
       {[0, 1, 2, 3, 4, 5].map((index) => (
         <div
-          className="flex animate-pulse gap-2 border-b border-[var(--mail-seam)] px-5 py-4"
+          className="border-border flex animate-pulse gap-2 border-b px-5 py-4"
           key={index}
         >
-          <div className="size-8 shrink-0 rounded-[10px] bg-[var(--mail-avatar)] shadow-[var(--mail-shadow-raised)]" />
+          <div className="bg-muted size-8 shrink-0 rounded-[10px]" />
           <div className="flex-1 space-y-2.5">
-            <div className="h-2.5 w-2/5 rounded-full bg-[var(--mail-paper-deep)]" />
-            <div className="h-3.5 w-4/5 rounded-full bg-[var(--mail-paper-deep)]" />
-            <div className="h-2.5 w-full rounded-full bg-[var(--mail-paper)]" />
+            <div className="bg-muted h-2.5 w-2/5 rounded-full" />
+            <div className="bg-muted h-3.5 w-4/5 rounded-full" />
+            <div className="bg-background h-2.5 w-full rounded-full" />
           </div>
         </div>
       ))}
@@ -279,11 +279,11 @@ function ThreadListSkeleton() {
 function ThreadListEnd() {
   return (
     <div className="mail-label flex items-center gap-3 px-6 py-7">
-      <span className="h-px flex-1 bg-[var(--mail-seam)]" />
-      <span className="font-mono text-[8px] tracking-[0.18em] uppercase">
+      <span className="bg-border h-px flex-1" />
+      <span className="text-[10px] font-medium tracking-wide uppercase">
         End of view
       </span>
-      <span className="h-px flex-1 bg-[var(--mail-seam)]" />
+      <span className="bg-border h-px flex-1" />
     </div>
   );
 }
@@ -303,7 +303,7 @@ function ThreadListFooter({
   return (
     <div
       aria-live="polite"
-      className="mail-label flex h-16 items-center justify-center gap-2 font-mono text-[9px] tracking-[0.1em] uppercase"
+      className="mail-label flex h-16 items-center justify-center gap-2 text-[11px] font-medium tracking-wide uppercase"
       role="status"
     >
       <LoaderCircle className="size-3 animate-spin" />

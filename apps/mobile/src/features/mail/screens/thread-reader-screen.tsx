@@ -12,7 +12,6 @@ import { getReplyAddress } from "@rodge-mail/features/mail";
 import type { MobileMailbox } from "../store";
 import type { MessageViewMode } from "./thread-message-body";
 import { PostalPaperBackground } from "~/features/theme/postal-surface";
-import { postalDisplayFont } from "~/features/theme/postal-typography";
 import { useColor } from "~/hooks/use-color";
 import { toConvexId } from "../lib/convex-id";
 import { toMailThreadDetail } from "../lib/convex-mail";
@@ -203,14 +202,11 @@ function ThreadReplyAction({
 function ThreadHeader({ thread }: { thread: MailThread }) {
   return (
     <View className="gap-5 px-1 pt-2 pb-3">
-      <Text
-        className="text-foreground text-[30px] leading-[38px]"
-        style={{ fontFamily: postalDisplayFont }}
-      >
+      <Text className="text-foreground text-[28px] leading-[34px] font-bold">
         {thread.subject}
       </Text>
       <View className="flex-row items-center gap-3">
-        <View className="bg-paper-deep border-paper-border size-11 items-center justify-center rounded-lg border">
+        <View className="bg-muted border-border size-11 items-center justify-center rounded-lg border">
           <Text className="text-foreground text-base font-bold">
             {thread.sender.name.slice(0, 1)}
           </Text>

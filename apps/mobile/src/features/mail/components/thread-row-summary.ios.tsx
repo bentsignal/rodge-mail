@@ -19,14 +19,11 @@ import { getSenderInitials, isThreadUnread } from "./thread-row-presentation";
 const rowHeight = 100;
 
 export interface NativeThreadRowColors {
-  brass: string;
+  background: string;
   destructive: string;
   foreground: string;
-  forest: string;
   muted: string;
   mutedForeground: string;
-  paper: string;
-  paperDeep: string;
   primary: string;
 }
 
@@ -70,7 +67,7 @@ export function NativeThreadSummary({
           </Text>
           <Spacer />
           <PinIndicator
-            color={colors.brass}
+            color={colors.foreground}
             isPinned={mailbox === "inbox" && thread.isPinned}
           />
           <Text
@@ -124,7 +121,7 @@ function SenderAvatar({
           font({ size: 13, weight: "semibold" }),
           foregroundStyle(colors.foreground),
           background(
-            colors.paperDeep,
+            colors.muted,
             shapes.roundedRectangle({
               cornerRadius: 11,
               roundedCornerStyle: "continuous",
@@ -147,7 +144,7 @@ function AvatarIndicator({
   isUnread: boolean;
 }) {
   if (!isUnread) return null;
-  return <Image color={colors.brass} size={8} systemName="circle.fill" />;
+  return <Image color={colors.primary} size={8} systemName="circle.fill" />;
 }
 
 function PinIndicator({

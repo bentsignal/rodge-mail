@@ -151,14 +151,10 @@ function AuthPage({
   title: string;
 }) {
   return (
-    <main className="mail-atmosphere bg-background flex min-h-dvh items-center justify-center px-5 py-10">
-      <section className="mail-workspace w-full max-w-sm rounded-[18px] border p-8 text-center">
-        <p className="font-serif text-xl font-semibold tracking-[-0.03em]">
-          Rodge Mail
-        </p>
-        <h1 className="mt-8 font-serif text-2xl font-semibold tracking-[-0.03em]">
-          {title}
-        </h1>
+    <main className="bg-background flex min-h-dvh items-center justify-center px-5 py-10">
+      <section className="bg-background w-full max-w-sm rounded-[18px] border p-8 text-center">
+        <p className="text-xl font-semibold tracking-tight">Rodge Mail</p>
+        <h1 className="mt-8 text-2xl font-semibold tracking-tight">{title}</h1>
         <p className="mail-label mt-3 text-sm leading-6">{detail}</p>
         <CliAuthAction action={action} />
       </section>
@@ -174,7 +170,7 @@ function CliAuthAction({
   if (!action) return null;
   return (
     <button
-      className="mail-brass-button mt-6 flex h-12 w-full items-center justify-center rounded-[10px] px-5 text-sm font-bold"
+      className="mail-primary-button mt-6 flex h-12 w-full items-center justify-center rounded-[10px] px-5 text-sm font-bold"
       onClick={() => void action.onClick()}
       type="button"
     >

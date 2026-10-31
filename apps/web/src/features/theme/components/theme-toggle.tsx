@@ -31,12 +31,12 @@ export function AppearanceSettings() {
         </p>
       </div>
       <div className="mt-4">
-        <p className="mail-label mb-2 font-mono text-[9px] tracking-[0.12em] uppercase">
+        <p className="mail-label mb-2 text-[11px] font-medium tracking-wide uppercase">
           Color mode
         </p>
         <div
           aria-label="Color mode"
-          className="mail-inset grid grid-cols-3 rounded-[11px] border p-1"
+          className="bg-muted grid grid-cols-3 rounded-[11px] border p-1"
           role="radiogroup"
         >
           {MODE_OPTIONS.map((option) => (
@@ -69,7 +69,7 @@ function ModeOption({
       className={cn(
         "focus-visible:ring-ring flex h-9 cursor-pointer items-center justify-center gap-1.5 rounded-[8px] text-xs outline-none focus-visible:ring-2",
         active
-          ? "mail-raised text-foreground border"
+          ? "bg-background text-foreground border"
           : "text-muted-foreground hover:text-foreground",
       )}
       onClick={onSelect}
