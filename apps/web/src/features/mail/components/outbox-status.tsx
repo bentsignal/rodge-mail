@@ -138,10 +138,7 @@ function OutboxRow({
           <OutboxError error={outbox.error} status={outbox.status} />
         </div>
       </QuickLink>
-      <RetryButton
-        onRetry={() => retry(outbox._id)}
-        status={outbox.status}
-      />
+      <RetryButton onRetry={() => retry(outbox._id)} status={outbox.status} />
     </article>
   );
 }

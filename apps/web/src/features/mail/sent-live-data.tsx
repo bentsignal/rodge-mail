@@ -7,8 +7,8 @@ import type { Id } from "@rodge-mail/convex/model";
 import { api } from "@rodge-mail/convex/api";
 
 import type { LiveMailContextValue } from "./live-data-types";
-import { LiveMailContext } from "./live-data-context";
 import { useLiveMailActions } from "./live-data-actions";
+import { LiveMailContext } from "./live-data-context";
 import { useAccountsQuery, useUnreadCountQuery } from "./live-data-query-hooks";
 import { throwQueryError, useThreadQuery } from "./live-data-support";
 import { toAccountView, toUnreadCountRecord } from "./live-data-utils";
@@ -22,7 +22,9 @@ export function useSelectedOutboxId() {
   return outboxId as Id<"outboxMessages"> | undefined;
 }
 
-export function useSentMessageQuery(outboxId: Id<"outboxMessages"> | undefined) {
+export function useSentMessageQuery(
+  outboxId: Id<"outboxMessages"> | undefined,
+) {
   return useQuery({
     ...convexQuery(
       api.outbox.queries.getSentMessage,
@@ -81,6 +83,8 @@ export function SentLiveMailProvider({
 }) {
   const value = useSentLiveMailValue();
   return (
-    <LiveMailContext.Provider value={value}>{children}</LiveMailContext.Provider>
+    <LiveMailContext.Provider value={value}>
+      {children}
+    </LiveMailContext.Provider>
   );
 }

@@ -32,13 +32,13 @@ import {
 } from "../mailingLists/suppression";
 import { queueNewMailNotification } from "../notifications/internal";
 import { shouldNotifyForProviderMessage } from "../notifications/policy";
+import { toSentAttachments } from "../outbox/sent";
 import { GmailAdapter, GmailApiError } from "../providers/gmail/api";
 import { getUsableGmailTokens } from "../providers/gmail/tokenAccess";
 import {
   MicrosoftGraphAdapter,
   MicrosoftGraphError,
 } from "../providers/microsoft/api";
-import { toSentAttachments } from "../outbox/sent";
 import { getUsableMicrosoftTokens } from "../providers/microsoft/tokenAccess";
 import {
   canFinishSyncRun,

@@ -3,6 +3,7 @@ import { Archive, Pin } from "lucide-react";
 import { cn } from "@rodge-mail/std/cn";
 import * as ContextMenu from "@rodge-mail/ui-web/context-menu";
 
+import type { MailMode } from "../live-data-types";
 import type { MailRouteSearch } from "../mail-route-search";
 import type { MailAccountFilter } from "../store";
 import type { InboxMessage } from "../types";
@@ -11,7 +12,6 @@ import { useLiveMail } from "../live-data";
 import { useMailStore } from "../store";
 import { getThreadRowAccessibilityLabel } from "../thread-row-presentation";
 import { ThreadRowContent } from "./thread-row-content";
-import type { MailMode } from "../live-data-types";
 
 export function ThreadRow({
   message,

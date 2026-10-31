@@ -44,8 +44,7 @@ export function SentScreen() {
     { data: unsent ?? [], key: "outbox", title: "Outbox" },
     { data: sent.results, key: "sent", title: "Sent" },
   ].filter((section) => section.data.length > 0);
-  const isLoading =
-    unsent === undefined || sent.status === "LoadingFirstPage";
+  const isLoading = unsent === undefined || sent.status === "LoadingFirstPage";
 
   return (
     <>
@@ -55,7 +54,9 @@ export function SentScreen() {
         keyExtractor={(row) => row._id}
         ListEmptyComponent={<SentEmpty isLoading={isLoading} />}
         ListFooterComponent={
-          sent.status === "LoadingMore" ? <ActivityIndicator className="py-6" /> : null
+          sent.status === "LoadingMore" ? (
+            <ActivityIndicator className="py-6" />
+          ) : null
         }
         renderItem={({ item }) => (
           <SentListRow

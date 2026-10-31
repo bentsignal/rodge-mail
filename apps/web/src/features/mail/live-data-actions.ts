@@ -7,14 +7,14 @@ import { api } from "@rodge-mail/convex/api";
 import { getReplyAddress } from "@rodge-mail/features/mail";
 import { toast } from "@rodge-mail/ui-web/toast";
 
+import type { MailMode } from "./live-data-types";
 import type { InboxMessage, MailAccountView, MailThreadDetail } from "./types";
 import { env } from "~/env";
+import { getMailModePath } from "./live-data-types";
 import { getErrorMessage } from "./live-data-utils";
 import { useMailStore } from "./store";
 import { useSyncAll } from "./use-sync-all";
 import { useThreadActions } from "./use-thread-actions";
-import type { MailMode } from "./live-data-types";
-import { getMailModePath } from "./live-data-types";
 
 export function useLiveMailActions(
   accounts: MailAccountView[],

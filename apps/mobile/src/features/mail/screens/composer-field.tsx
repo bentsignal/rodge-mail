@@ -30,7 +30,9 @@ function RowLabel({ label }: { label: string | undefined }) {
 
 function RowError({ error }: { error: string | undefined }) {
   if (!error) return null;
-  return <Text className="text-destructive -mt-0.5 pb-1.5 text-xs">{error}</Text>;
+  return (
+    <Text className="text-destructive -mt-0.5 pb-1.5 text-xs">{error}</Text>
+  );
 }
 
 export function ComposerTextField({

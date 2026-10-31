@@ -16,12 +16,12 @@ import {
 import { cn } from "@rodge-mail/std/cn";
 import * as Dialog from "@rodge-mail/ui-web/dialog";
 
+import type { MailMode } from "../live-data-types";
 import type { ThreadMessageDetail } from "../types";
 import {
   getUnsubscribeDialogMessage,
   ReaderUnsubscribeDialog,
 } from "./reader-unsubscribe-dialog";
-import type { MailMode } from "../live-data-types";
 
 interface ReaderToolbarProps {
   archiveThread: (message: ThreadMessageDetail) => Promise<void>;

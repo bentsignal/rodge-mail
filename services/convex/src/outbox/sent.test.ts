@@ -40,7 +40,9 @@ describe("sent mail projection", () => {
     expect(getSentAttachmentCount({})).toBe(0);
     expect(
       getSentAttachmentCount({
-        sentAttachments: [{ contentType: "text/plain", fileName: "a", size: 1 }],
+        sentAttachments: [
+          { contentType: "text/plain", fileName: "a", size: 1 },
+        ],
       }),
     ).toBe(1);
   });
@@ -63,9 +65,9 @@ describe("sent mail projection", () => {
     const sent = { ownerId: "owner", status: "sent" } as const;
     expect(canOpenStoredMessage(sent, { ownerId: "owner" })).toBe(true);
     expect(canOpenStoredMessage(sent, { ownerId: "other" })).toBe(false);
-    expect(
-      canOpenStoredMessage(sent, { hiddenAt: 1, ownerId: "owner" }),
-    ).toBe(false);
+    expect(canOpenStoredMessage(sent, { hiddenAt: 1, ownerId: "owner" })).toBe(
+      false,
+    );
     expect(
       canOpenStoredMessage(
         { ownerId: "owner", status: "failed" },

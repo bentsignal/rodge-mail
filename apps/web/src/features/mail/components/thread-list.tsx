@@ -3,11 +3,11 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { LegendList } from "@legendapp/list/react";
 import { Inbox, LoaderCircle, Sparkles } from "lucide-react";
 
+import type { MailMode } from "../live-data-types";
 import type { InboxMessage } from "../types";
 import { useLiveMail } from "../live-data";
 import { useMailStore } from "../store";
 import { ThreadRow } from "./thread-row";
-import type { MailMode } from "../live-data-types";
 
 export function ThreadList() {
   const searchQuery = useMailStore((store) => store.searchQuery);

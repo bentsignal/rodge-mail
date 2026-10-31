@@ -339,7 +339,11 @@ export const vOutboxMessage = v.object({
   attachmentIds: v.optional(v.array(v.id("draftAttachments"))),
   sentAttachments: v.optional(
     v.array(
-      v.object({ fileName: v.string(), contentType: v.string(), size: v.number() }),
+      v.object({
+        fileName: v.string(),
+        contentType: v.string(),
+        size: v.number(),
+      }),
     ),
   ),
   status: vOutboxStatus,

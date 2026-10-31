@@ -32,7 +32,10 @@ export function getSentAttachmentCount(
 }
 
 export function getAccountLabel(
-  account: Pick<Doc<"mailAccounts">, "address" | "displayLabel" | "displayName">,
+  account: Pick<
+    Doc<"mailAccounts">,
+    "address" | "displayLabel" | "displayName"
+  >,
 ) {
   return (
     nonEmpty(account.displayLabel) ??
@@ -50,10 +53,7 @@ function nonEmpty(value: string | undefined) {
 /** A stored copy of a sent outbox message opens in the reader. */
 export function canOpenStoredMessage(
   outbox: Pick<Doc<"outboxMessages">, "ownerId" | "status">,
-  message:
-    | Pick<Doc<"messages">, "hiddenAt" | "ownerId">
-    | null
-    | undefined,
+  message: Pick<Doc<"messages">, "hiddenAt" | "ownerId"> | null | undefined,
 ): message is NonNullable<typeof message> {
   return (
     outbox.status === "sent" &&

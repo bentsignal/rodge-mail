@@ -5,9 +5,9 @@ import type { MailAccountFilter } from "./store";
 import type { InboxMessage } from "./types";
 import type { UnreadSessionSnapshot } from "./unread-session";
 import { useArchiveLiveMailValue } from "./archive-live-data";
-import { LiveMailContext } from "./live-data-context";
 import { MAIL_PAGE_SIZE } from "./constants";
 import { useLiveMailActions } from "./live-data-actions";
+import { LiveMailContext } from "./live-data-context";
 import { useAccountsQuery, useUnreadCountQuery } from "./live-data-query-hooks";
 import {
   canSeedDemoMail,
@@ -35,7 +35,6 @@ import {
   preserveUnreadSessionMessage,
 } from "./unread-session";
 import { useUnreadSelectionSync } from "./use-unread-selection-sync";
-
 
 export function LiveMailProvider({
   children,

@@ -9,12 +9,12 @@ import {
   ISOLATED_OWNER_NAME,
   isolatedMailbox,
 } from "./devSeedMailbox";
+import { seedSentMail } from "./devSeedSent";
 import {
   deleteDemoAccountRecords,
   ensureDemoAccount,
   ensureDemoMessage,
 } from "./devSeedWrites";
-import { seedSentMail } from "./devSeedSent";
 import { requireDevTools } from "./devSignIn";
 import { DEV_USER_EMAIL } from "./devToolsPolicy";
 

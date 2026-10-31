@@ -19,7 +19,9 @@ export function useRecipientTokens(
   const inputRef = useRef<TextInput>(null);
   const pending = useRef("");
   const changeCount = useRef(0);
-  const [tokens, setTokens] = useState(() => splitRecipientTokens(defaultValue));
+  const [tokens, setTokens] = useState(() =>
+    splitRecipientTokens(defaultValue),
+  );
   const tokensRef = useRef(tokens);
   const [selectedIndex, setSelectedIndex] = useState<number>();
 

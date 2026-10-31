@@ -65,7 +65,13 @@ async function seedSentMessage(
     plainText: seed.body,
     status,
     attempt: status === "pending" ? 0 : 1,
-    ...getSeedDelivery({ at, attachment, error: seed.error, remoteMessageId, status }),
+    ...getSeedDelivery({
+      at,
+      attachment,
+      error: seed.error,
+      remoteMessageId,
+      status,
+    }),
     createdAt: at,
     updatedAt: at,
   });
@@ -157,7 +163,11 @@ async function insertStoredSentMessage(
     bcc: [],
     subject: args.subject,
     snippet,
-    searchText: [account.address, ...args.to.map((r) => r.address), args.subject]
+    searchText: [
+      account.address,
+      ...args.to.map((r) => r.address),
+      args.subject,
+    ]
       .join(" ")
       .toLowerCase(),
     remoteLabelIds: ["SENT"],

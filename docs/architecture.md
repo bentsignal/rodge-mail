@@ -47,6 +47,16 @@ remote identifier.
 Remote state changes enter an outbox before an action calls a provider. This
 provides retry visibility and prevents a client retry from sending twice.
 
+Sent mail is read from the outbox (`outbox/queries`): `listUnsent` (queued,
+sending, failed), `listSent` (paginated), and `getSentMessage` (recipients,
+body, attachments). A delivered row carries the `messageId` and `threadId` of
+the provider's copy when it has synced into the mailbox (matched by account
+and remote message ID); the web and mobile apps open those in the reader and
+show the outbox copy otherwise. Delivery keeps a summary of the attachments
+(`sentAttachments`) because their uploads are deleted once sent. The web
+Sent view is `/sent`; on mobile it's the Sent entry in the mailbox menu.
+Mail sent from other clients isn't listed there yet.
+
 ## Synchronization
 
 Webhooks are wake-up hints; provider cursors are the source of truth.

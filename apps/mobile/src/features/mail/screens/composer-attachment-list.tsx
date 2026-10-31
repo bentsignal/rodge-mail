@@ -46,7 +46,9 @@ function AttachmentChip({
 }) {
   const mutedForeground = useColor("muted-foreground");
   const destructive = useColor("destructive");
-  const Icon = attachment.contentType.startsWith("image/") ? ImageIcon : FileText;
+  const Icon = attachment.contentType.startsWith("image/")
+    ? ImageIcon
+    : FileText;
   const failed = attachment.status === "error";
 
   return (

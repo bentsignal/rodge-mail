@@ -10,8 +10,8 @@ import {
   Send,
 } from "lucide-react";
 
-import type { Id } from "@rodge-mail/convex/model";
 import type { api } from "@rodge-mail/convex/api";
+import type { Id } from "@rodge-mail/convex/model";
 import {
   formatRecipientAddresses,
   getSentStatusLabel,

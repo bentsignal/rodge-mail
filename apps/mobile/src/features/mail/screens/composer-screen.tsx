@@ -132,54 +132,54 @@ function ComposerBody({
     // Not flattened: the form sheet lays out a ScrollView that is its direct child itself.
     <View className="min-h-0 flex-1" collapsable={false}>
       <ScrollView
-      automaticallyAdjustKeyboardInsets
-      className="flex-1"
-      contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
-      keyboardDismissMode="interactive"
-      keyboardShouldPersistTaps="handled"
-    >
-      <View style={{ height: headerHeight }} />
-      <ComposerRecipientField
-        autoFocus={focus === "to"}
-        defaultValue={draft.to}
-        error={recipientErrors.to}
-        label="To"
-        onChange={(value) => onChange("to", value)}
-      />
-      <CopiesAndSender
-        accounts={accounts}
-        draft={draft}
-        recipientErrors={recipientErrors}
-        selectedAccount={selectedAccount}
-        onChange={onChange}
-        onOpenSettings={onOpenSettings}
-        onSenderChange={onSenderChange}
-      />
-      <ComposerTextField
-        defaultValue={draft.subject}
-        label="Subject"
-        returnKeyType="next"
-        testID="composer-subject-field"
-        onChangeText={(value) => onChange("subject", value)}
-      />
-      <ComposerAttachmentList
-        attachments={draft.attachments}
-        onRemove={onRemoveAttachment}
-      />
-      <TextInput
-        accessibilityLabel="Message body"
-        autoFocus={focus === "body"}
-        className="text-foreground flex-1 px-4 pt-3 text-base leading-6"
-        defaultValue={draft.body}
-        multiline
-        scrollEnabled={false}
-        selectionColor={primary}
-        style={{ color: foreground, minHeight: 240 }}
-        testID="composer-body-field"
-        textAlignVertical="top"
-        placeholderTextColor={mutedForeground}
-        onChangeText={(value) => onChange("body", value)}
-      />
+        automaticallyAdjustKeyboardInsets
+        className="flex-1"
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
+        keyboardDismissMode="interactive"
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={{ height: headerHeight }} />
+        <ComposerRecipientField
+          autoFocus={focus === "to"}
+          defaultValue={draft.to}
+          error={recipientErrors.to}
+          label="To"
+          onChange={(value) => onChange("to", value)}
+        />
+        <CopiesAndSender
+          accounts={accounts}
+          draft={draft}
+          recipientErrors={recipientErrors}
+          selectedAccount={selectedAccount}
+          onChange={onChange}
+          onOpenSettings={onOpenSettings}
+          onSenderChange={onSenderChange}
+        />
+        <ComposerTextField
+          defaultValue={draft.subject}
+          label="Subject"
+          returnKeyType="next"
+          testID="composer-subject-field"
+          onChangeText={(value) => onChange("subject", value)}
+        />
+        <ComposerAttachmentList
+          attachments={draft.attachments}
+          onRemove={onRemoveAttachment}
+        />
+        <TextInput
+          accessibilityLabel="Message body"
+          autoFocus={focus === "body"}
+          className="text-foreground flex-1 px-4 pt-3 text-base leading-6"
+          defaultValue={draft.body}
+          multiline
+          scrollEnabled={false}
+          selectionColor={primary}
+          style={{ color: foreground, minHeight: 240 }}
+          testID="composer-body-field"
+          textAlignVertical="top"
+          placeholderTextColor={mutedForeground}
+          onChangeText={(value) => onChange("body", value)}
+        />
       </ScrollView>
     </View>
   );

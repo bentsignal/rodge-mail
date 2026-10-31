@@ -36,7 +36,8 @@ export const SENT_SEEDS = [
     body: "Attached are the quarterly numbers we discussed. Let me know if anything looks off.\n\nAlex",
     hoursAgo: 1.2,
     status: "failed",
-    error: "Microsoft 365 rejected the message: the connection needs to be renewed.",
+    error:
+      "Microsoft 365 rejected the message: the connection needs to be renewed.",
     attachment: {
       fileName: "q3-numbers.xlsx",
       contentType:
@@ -98,4 +99,3 @@ export const SENT_SEEDS = [
     stored: true,
   },
 ] satisfies SentSeed[];
-

@@ -36,8 +36,14 @@ export function ComposerNavigationHeader({
         />
       </Stack.Toolbar>
       <Stack.Toolbar placement="right">
-        <Stack.Toolbar.Menu accessibilityLabel="Add attachment" icon="paperclip">
-          <Stack.Toolbar.MenuAction icon="photo.on.rectangle" onPress={onAttachPhotos}>
+        <Stack.Toolbar.Menu
+          accessibilityLabel="Add attachment"
+          icon="paperclip"
+        >
+          <Stack.Toolbar.MenuAction
+            icon="photo.on.rectangle"
+            onPress={onAttachPhotos}
+          >
             Photo Library
           </Stack.Toolbar.MenuAction>
           <Stack.Toolbar.MenuAction icon="folder" onPress={onAttachFiles}>
