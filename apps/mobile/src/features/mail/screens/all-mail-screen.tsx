@@ -66,6 +66,7 @@ export function AllMailMailbox({
   const rows = useSettledRows(
     activePage.results,
     activePage.status === "LoadingFirstPage",
+    accountId,
   );
   const threads = filterMailboxThreads(toAllMailThreads(rows), filter);
 
@@ -119,7 +120,15 @@ export function AllMailMailbox({
   );
 }
 
-function useSettledRows<T>(rows: T[], isPending: boolean) {
+/**
+ * Keeps the last page on screen while the next one loads, narrowed to the
+ * chosen account the way the inbox narrows its cached page.
+ */
+function useSettledRows<T extends { accountId: string }>(
+  rows: T[],
+  isPending: boolean,
+  accountId: string | undefined,
+) {
   const [settled, setSettled] = useState<T[]>();
   // eslint-disable-next-line no-restricted-syntax -- Keep the last settled page on screen while the next Convex subscription loads.
   useEffect(() => {
@@ -128,5 +137,7 @@ function useSettledRows<T>(rows: T[], isPending: boolean) {
     setSettled(rows);
   }, [isPending, rows]);
   if (!isPending) return rows;
-  return settled ?? rows;
+  const visible = settled ?? rows;
+  if (!accountId) return visible;
+  return visible.filter((row) => row.accountId === accountId);
 }
