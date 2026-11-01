@@ -47,6 +47,9 @@ export const vMailImportFailure = v.object({
   folder: v.string(),
   reason: v.string(),
   at: v.number(),
+  subject: v.optional(v.string()),
+  from: v.optional(v.string()),
+  receivedAt: v.optional(v.number()),
 });
 
 export const vMailImport = v.object({

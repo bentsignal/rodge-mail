@@ -520,6 +520,12 @@ function importStatus(target) {
       console.log(
         `  ✗ ${failure.folder}: ${failure.reason} (${failure.remoteMessageId})`,
       );
+      const details = [
+        failure.subject && `"${failure.subject}"`,
+        failure.from && `from ${failure.from}`,
+        failure.receivedAt && new Date(failure.receivedAt).toISOString(),
+      ].filter(Boolean);
+      if (details.length > 0) console.log(`      ${details.join(", ")}`);
     }
   }
 }

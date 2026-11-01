@@ -14,7 +14,8 @@ import {
 } from "./api";
 
 const FOLDER_SELECT = "id,displayName,childFolderCount,totalItemCount";
-const MESSAGE_SELECT = "id,isRead,isDraft,receivedDateTime,sentDateTime";
+const MESSAGE_SELECT =
+  "id,isRead,isDraft,receivedDateTime,sentDateTime,subject,from";
 const MAX_PAGES_PER_CALL = 20;
 
 const FOLDER_KINDS = [
@@ -64,6 +65,8 @@ interface GraphImportMessage {
   isDraft?: boolean;
   receivedDateTime?: string;
   sentDateTime?: string;
+  subject?: string;
+  from?: { emailAddress?: { name?: string; address?: string } };
 }
 
 export class MicrosoftMailImportSource implements MailImportSource {
@@ -226,8 +229,15 @@ function toImportMessage(message: GraphImportMessage, folder: CursorFolder) {
       isRead: message.isRead ?? false,
       receivedAt:
         folder.kind === "sent" ? (sent ?? received) : (received ?? sent),
+      subject: message.subject,
+      from: formatSender(message.from?.emailAddress),
     } satisfies ImportSourceMessage,
   ];
+}
+
+function formatSender(sender: { name?: string; address?: string } | undefined) {
+  if (!sender?.address) return sender?.name;
+  return sender.name ? `${sender.name} <${sender.address}>` : sender.address;
 }
 
 function encodeCursor(state: ImportCursor) {

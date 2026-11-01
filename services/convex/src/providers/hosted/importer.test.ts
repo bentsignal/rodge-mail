@@ -1,4 +1,5 @@
 /* eslint-disable max-lines, max-lines-per-function -- The fixtures model a whole mailbox: a reply chain, an attachment, and every folder kind. */
+import { ConvexError } from "convex/values";
 import MailComposer from "nodemailer/lib/mail-composer";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -10,7 +11,7 @@ import type {
 import { MicrosoftGraphError } from "../microsoft/api";
 import { fetchHostedAttachment } from "./attachments";
 import { putRawMessage } from "./aws";
-import { importBatch, importDigest } from "./importer";
+import { describeError, importBatch, importDigest } from "./importer";
 
 vi.mock("../../convex.env", () => ({
   env: { AUTH_ALLOWED_USER_ID: "owner" },
@@ -159,9 +160,41 @@ describe("hosted mail import", () => {
       expect.objectContaining({
         remoteMessageId: "graph-reply",
         folder: "Sent Items",
-        reason: "Not found",
+        reason: "MicrosoftGraphError: Not found",
+        subject: "Re: Trip plan",
+        from: "Shawn <me@bentsignal.com>",
+        receivedAt: Date.parse("2024-03-01T12:00:00Z"),
       }),
     ]);
+  });
+
+  it("retries a failed message when the import runs again", async () => {
+    const mailbox = new Map<string, NormalizedMessage>();
+    await importAll(
+      await fixtureSource(
+        new Map([["graph-reply", new Error("Invalid arguments provided")]]),
+      ),
+      mailbox,
+    );
+    const source = await fixtureSource();
+
+    const totals = await importAll(source, mailbox);
+
+    expect(totals).toEqual({ imported: 1, skipped: 4, failures: [] });
+    expect(source.downloads).toEqual(["graph-reply"]);
+  });
+
+  it("describes an error with its ConvexError data and causes", () => {
+    const error = Object.assign(new Error("Invalid arguments provided"), {
+      cause: new ConvexError({ field: "snippet" }),
+    });
+
+    expect(describeError(error)).toBe(
+      'Invalid arguments provided; caused by {"field":"snippet"} (data: {"field":"snippet"})',
+    );
+    expect(describeError(new RangeError("x".repeat(2_000)))).toHaveLength(
+      1_000,
+    );
   });
 
   it("stops the batch on throttling so the same page is retried", async () => {
@@ -172,7 +205,10 @@ describe("hosted mail import", () => {
 
     const result = await importBatch(job, deps(source, mailbox));
 
-    expect(result).toMatchObject({ imported: 1, error: "Throttled" });
+    expect(result).toMatchObject({
+      imported: 1,
+      error: "MicrosoftGraphError: Throttled",
+    });
     expect(result).not.toHaveProperty("nextCursor");
   });
 });
@@ -233,6 +269,8 @@ async function fixtureSource(errors = new Map<string, Error>()) {
       folder: { kind: "sent", path: "Sent Items" },
       isRead: false,
       receivedAt: Date.parse("2024-03-01T12:00:00Z"),
+      subject: "Re: Trip plan",
+      from: "Shawn <me@bentsignal.com>",
       raw: await compose({
         from: "Shawn <me@bentsignal.com>",
         to: "Alex <alex@example.com>",

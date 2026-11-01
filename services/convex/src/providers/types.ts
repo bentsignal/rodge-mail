@@ -115,6 +115,8 @@ export interface ImportSourceMessage {
   folder: ImportFolder;
   isRead: boolean;
   receivedAt?: number;
+  subject?: string;
+  from?: string;
 }
 
 /**
