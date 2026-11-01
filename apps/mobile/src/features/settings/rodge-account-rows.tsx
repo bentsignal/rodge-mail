@@ -57,14 +57,18 @@ export function PasskeyRows() {
     passkeys: query.data,
   });
 
-  return passkeys.map((passkey) => (
-    <PasskeyRow
-      canRemove={canRemove}
-      key={passkey.id}
-      onRemove={() => void remove(passkey.id)}
-      passkey={passkey}
-    />
-  ));
+  return (
+    <>
+      {passkeys.map((passkey) => (
+        <PasskeyRow
+          canRemove={canRemove}
+          key={passkey.id}
+          onRemove={() => void remove(passkey.id)}
+          passkey={passkey}
+        />
+      ))}
+    </>
+  );
 }
 
 function PasskeyRow({
