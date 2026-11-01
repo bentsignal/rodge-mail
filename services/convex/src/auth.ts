@@ -18,6 +18,7 @@ import { env } from "./convex.env";
 import { desktopAuth } from "./desktopAuth";
 import { devSignIn, devToolsEnabled } from "./devSignIn";
 import { passkeyRecovery } from "./passkeyRecovery";
+import { passkeyRpIds } from "./passkeyRpIds";
 import { sendRegistrationEmail } from "./registrationEmail";
 import { urls } from "./urls";
 
@@ -96,6 +97,10 @@ export function createAuthOptions(
           residentKey: "required",
           userVerification: "required",
         },
+      }),
+      passkeyRpIds({
+        rpId: passkeyRpId,
+        rpIds: { app: nativePasskeyRpId, website: env.PASSKEY_RP_ID },
       }),
       expo(),
       ...(devToolsEnabled() ? [devSignIn()] : []),

@@ -5,6 +5,7 @@
   "exports": {
     "./auth-session": "./src/auth-session.ts",
     "./cn": "./src/cn.ts",
+    "./passkey-sign-in": "./src/passkey-sign-in.ts",
     "./passkeys": "./src/passkeys.ts",
     "./relative-time": "./src/relative-time.ts",
     "./use-debounced-input": "./src/use-debounced-input.ts",

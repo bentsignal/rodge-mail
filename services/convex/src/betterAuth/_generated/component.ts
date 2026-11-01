@@ -90,6 +90,7 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
                   deviceType: string;
                   name?: null | string;
                   publicKey: string;
+                  rpId?: null | string;
                   transports?: null | string;
                   userId: string;
                 };
@@ -273,6 +274,7 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
                     | "transports"
                     | "createdAt"
                     | "aaguid"
+                    | "rpId"
                     | "_id";
                   mode?: "sensitive" | "insensitive";
                   operator?:
@@ -504,6 +506,7 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
                     | "transports"
                     | "createdAt"
                     | "aaguid"
+                    | "rpId"
                     | "_id";
                   mode?: "sensitive" | "insensitive";
                   operator?:
@@ -855,6 +858,7 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
                   deviceType?: string;
                   name?: null | string;
                   publicKey?: string;
+                  rpId?: null | string;
                   transports?: null | string;
                   userId?: string;
                 };
@@ -871,6 +875,7 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
                     | "transports"
                     | "createdAt"
                     | "aaguid"
+                    | "rpId"
                     | "_id";
                   mode?: "sensitive" | "insensitive";
                   operator?:
@@ -1143,6 +1148,7 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
                   deviceType?: string;
                   name?: null | string;
                   publicKey?: string;
+                  rpId?: null | string;
                   transports?: null | string;
                   userId?: string;
                 };
@@ -1159,6 +1165,7 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
                     | "transports"
                     | "createdAt"
                     | "aaguid"
+                    | "rpId"
                     | "_id";
                   mode?: "sensitive" | "insensitive";
                   operator?:

@@ -1,12 +1,14 @@
 import { KeyRound, Loader, Plus } from "lucide-react";
 
-import type { PasskeyListItem } from "@rodge-mail/std/passkeys";
+import type { PasskeyListItem, PasskeyRow } from "@rodge-mail/std/passkeys";
 import {
   formatPasskeyAdded,
   getPasskeyLabel,
   useOptimisticPasskeys,
 } from "@rodge-mail/std/passkeys";
 import { toast } from "@rodge-mail/ui-web/toast";
+
+import { urls } from "~/urls";
 
 import { authClient } from "../lib/client";
 import { useAuthStore } from "../store";
@@ -19,11 +21,7 @@ export function RodgeAccountSettings() {
         Rodge Mail account
       </h2>
       <OwnerIdentity />
-      <p className="mail-label mt-6 mb-2 text-[11px] font-medium tracking-wide uppercase">
-        Passkeys
-      </p>
-      <PasskeyList />
-      <AddPasskeyButton />
+      <Passkeys />
       <div className="border-border mt-6 border-t pt-6">
         <SignOutLink variant="settings" />
       </div>
@@ -52,41 +50,101 @@ function OwnerIdentity() {
   );
 }
 
-function PasskeyList() {
+const appRpId = new URL(urls.convex.site).hostname;
+
+function Passkeys() {
   const query = authClient.useListPasskeys();
-  const { canRemove, passkeys, remove } = useOptimisticPasskeys({
+  const { groups, remove } = useOptimisticPasskeys({
+    appRpId,
     deletePasskey: async (id) => await authClient.passkey.deletePasskey({ id }),
     onRemoveError: (message) => toast.error(message),
     passkeys: query.data,
   });
 
-  if (query.isPending && !query.data) {
+  return (
+    <>
+      <PasskeyGroupLabel>Website passkeys</PasskeyGroupLabel>
+      <PasskeyList
+        isLoading={query.isPending && !query.data}
+        onRemove={remove}
+        rows={groups.website}
+      />
+      <AddPasskeyButton />
+      <PasskeyGroup
+        label="iPhone app passkeys"
+        onRemove={remove}
+        rows={groups.app}
+      />
+      <PasskeyGroup
+        label="Other passkeys"
+        onRemove={remove}
+        rows={groups.unknown}
+      />
+    </>
+  );
+}
+
+function PasskeyGroupLabel({ children }: { children: string }) {
+  return (
+    <p className="mail-label mt-6 mb-2 text-[11px] font-medium tracking-wide uppercase">
+      {children}
+    </p>
+  );
+}
+
+function PasskeyGroup({
+  label,
+  onRemove,
+  rows,
+}: {
+  label: string;
+  onRemove: (id: string) => Promise<void>;
+  rows: readonly PasskeyRow<PasskeyListItem>[];
+}) {
+  if (rows.length === 0) return null;
+  return (
+    <>
+      <PasskeyGroupLabel>{label}</PasskeyGroupLabel>
+      <PasskeyList onRemove={onRemove} rows={rows} />
+    </>
+  );
+}
+
+function PasskeyList({
+  isLoading = false,
+  onRemove,
+  rows,
+}: {
+  isLoading?: boolean;
+  onRemove: (id: string) => Promise<void>;
+  rows: readonly PasskeyRow<PasskeyListItem>[];
+}) {
+  if (isLoading) {
     return <div className="bg-muted h-14 animate-pulse rounded-[11px]" />;
   }
-  if (passkeys.length === 0) return null;
-
+  if (rows.length === 0) return null;
   return (
     <ul className="divide-border divide-y rounded-[11px] border">
-      {passkeys.map((passkey) => (
-        <PasskeyRow
-          canRemove={canRemove}
+      {rows.map(({ passkey, removalBlock }) => (
+        <PasskeyItem
           key={passkey.id}
-          onRemove={() => void remove(passkey.id)}
+          onRemove={() => void onRemove(passkey.id)}
           passkey={passkey}
+          removalBlock={removalBlock}
         />
       ))}
     </ul>
   );
 }
 
-function PasskeyRow({
-  canRemove,
+function PasskeyItem({
   onRemove,
   passkey,
+  removalBlock,
 }: {
-  canRemove: boolean;
   onRemove: () => void;
   passkey: PasskeyListItem;
+  removalBlock: string | undefined;
 }) {
   const label = getPasskeyLabel(passkey);
 
@@ -101,10 +159,10 @@ function PasskeyRow({
       </div>
       <button
         aria-label={`Remove ${label}`}
-        className="hover:bg-accent hover:text-destructive h-8 shrink-0 rounded-[8px] px-2.5 text-xs font-semibold transition-colors disabled:pointer-events-none disabled:opacity-40"
-        disabled={!canRemove}
+        className="enabled:hover:bg-accent enabled:hover:text-destructive h-8 shrink-0 rounded-[8px] px-2.5 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+        disabled={removalBlock !== undefined}
         onClick={onRemove}
-        title={canRemove ? undefined : "Your only passkey can't be removed"}
+        title={removalBlock}
         type="button"
       >
         Remove

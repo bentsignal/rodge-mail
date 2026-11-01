@@ -10,15 +10,27 @@ import {
   useOptimisticPasskeys,
 } from "./passkeys";
 
+const appRpId = "fake-deployment.convex.site";
 const phone = {
   aaguid: "fbfc3007-154e-4ecc-8c0b-6e020557d7bd",
   createdAt: "2026-10-03T15:00:00.000Z",
   id: "phone",
+  rpId: appRpId,
 };
 const laptop = {
   aaguid: "BADA5566-A7AA-401F-BD96-45619A55120D",
   createdAt: "2026-10-20T15:00:00.000Z",
   id: "laptop",
+  rpId: "mail.example.com",
+};
+const desktop = {
+  createdAt: "2026-10-21T15:00:00.000Z",
+  id: "desktop",
+  rpId: "mail.example.com",
+};
+const older = {
+  createdAt: "2026-09-01T15:00:00.000Z",
+  id: "older",
 };
 
 describe("getPasskeyLabel", () => {
@@ -58,6 +70,18 @@ describe("useOptimisticPasskeys", () => {
     vi.unstubAllGlobals();
   });
 
+  it("groups passkeys by where they sign in", () => {
+    const harness = renderHarness(
+      [phone, laptop, older],
+      vi.fn(() => Promise.resolve<DeleteResult>({ error: null })),
+    );
+
+    expect(ids(harness.current.groups.app)).toEqual(["phone"]);
+    expect(ids(harness.current.groups.website)).toEqual(["laptop"]);
+    expect(ids(harness.current.groups.unknown)).toEqual(["older"]);
+    act(() => harness.renderer.unmount());
+  });
+
   it("hides a passkey before the server answers", async () => {
     vi.useFakeTimers();
     const deletePasskey = vi.fn(
@@ -66,18 +90,18 @@ describe("useOptimisticPasskeys", () => {
           setTimeout(() => resolve({ error: null }), 500);
         }),
     );
-    const harness = renderHarness([phone, laptop], deletePasskey);
+    const harness = renderHarness([phone, laptop, desktop], deletePasskey);
 
     let removal: Promise<void> | undefined;
     act(() => {
-      removal = harness.current.remove("phone");
+      removal = harness.current.remove("desktop");
     });
 
-    expect(deletePasskey).toHaveBeenCalledWith("phone");
-    expect(harness.current.passkeys.map((passkey) => passkey.id)).toEqual([
-      "laptop",
-    ]);
-    expect(harness.current.canRemove).toBe(false);
+    expect(deletePasskey).toHaveBeenCalledWith("desktop");
+    expect(ids(harness.current.groups.website)).toEqual(["laptop"]);
+    expect(harness.current.groups.website[0]?.removalBlock).toBe(
+      "This is your only passkey for the website.",
+    );
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(500);
@@ -91,36 +115,39 @@ describe("useOptimisticPasskeys", () => {
     const deletePasskey = vi.fn(() =>
       Promise.resolve<DeleteResult>({ error: { message: "Session expired" } }),
     );
-    const harness = renderHarness([phone, laptop], deletePasskey);
+    const harness = renderHarness([phone, laptop, desktop], deletePasskey);
 
     await act(async () => {
-      await harness.current.remove("phone");
+      await harness.current.remove("desktop");
     });
 
-    expect(harness.current.passkeys.map((passkey) => passkey.id)).toEqual([
-      "phone",
-      "laptop",
-    ]);
+    expect(ids(harness.current.groups.website)).toEqual(["laptop", "desktop"]);
     expect(harness.onRemoveError).toHaveBeenCalledWith("Session expired");
     act(() => harness.renderer.unmount());
   });
 
-  it("refuses to remove the only passkey", async () => {
+  it("refuses to remove a platform's last passkey", async () => {
     const deletePasskey = vi.fn(() =>
       Promise.resolve<DeleteResult>({ error: null }),
     );
-    const harness = renderHarness([phone], deletePasskey);
+    const harness = renderHarness([phone, laptop, desktop], deletePasskey);
 
-    expect(harness.current.canRemove).toBe(false);
+    expect(harness.current.groups.app[0]?.removalBlock).toBe(
+      "This is your only passkey for the iPhone app.",
+    );
     await act(async () => {
       await harness.current.remove("phone");
     });
 
     expect(deletePasskey).not.toHaveBeenCalled();
-    expect(harness.current.passkeys).toHaveLength(1);
+    expect(ids(harness.current.groups.app)).toEqual(["phone"]);
     act(() => harness.renderer.unmount());
   });
 });
+
+function ids(rows: readonly { passkey: { id: string } }[]) {
+  return rows.map((row) => row.passkey.id);
+}
 
 interface DeleteResult {
   error: { message: string } | null;
@@ -137,6 +164,7 @@ function renderHarness(
 
   function Harness({ onRender }: { onRender: (state: State) => void }) {
     const state = useOptimisticPasskeys({
+      appRpId,
       deletePasskey,
       onRemoveError,
       passkeys,

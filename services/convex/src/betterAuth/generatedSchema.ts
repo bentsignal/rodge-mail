@@ -77,6 +77,7 @@ export const tables = {
     transports: v.optional(v.union(v.null(), v.string())),
     createdAt: v.optional(v.union(v.null(), v.number())),
     aaguid: v.optional(v.union(v.null(), v.string())),
+    rpId: v.optional(v.union(v.null(), v.string())),
   }).index("userId", ["userId"]),
   jwks: defineTable({
     publicKey: v.string(),

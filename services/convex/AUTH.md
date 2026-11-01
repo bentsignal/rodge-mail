@@ -40,8 +40,33 @@ usernameless and selects the account from the credential.
 Both sign-in screens, web and mobile, offer only **Sign in with passkey**.
 Passkeys are listed, added, and removed in Settings under **Rodge Mail
 account**, through Better Auth's passkey client
-(`/passkey/list-user-passkeys`, `/passkey/delete-passkey`). The apps disable
-Remove on the last passkey, so the owner can't remove the only one from the UI.
+(`/passkey/list-user-passkeys`, `/passkey/delete-passkey`).
+
+## Website and app passkeys
+
+Website passkeys and app passkeys belong to different relying parties:
+`PASSKEY_RP_ID` for the website, the Convex site host for the app. A website
+passkey can't sign the app in, and the reverse. Better Auth doesn't store a
+passkey's relying party, so `passkeyRpIds` (`src/passkeyRpIds.ts`) adds an
+`rpId` field to the passkey row and fills it in:
+
+- when a passkey is registered, with the relying party of the auth instance
+  that verified it (`/api/auth` or `/api/mobile-auth`);
+- on every successful passkey sign-in, since the signature proves which
+  relying party the passkey belongs to. Passkeys registered before `rpId`
+  existed get theirs the next time they sign in.
+
+Settings groups passkeys by where they sign in: Website, iPhone app, and
+Other for those with no `rpId` yet. Each platform keeps its last passkey: the
+apps disable Remove on it, and the delete endpoint refuses it with a message
+the apps show (a `before` hook, so a stale client can't remove it either).
+Passkeys without an `rpId` never count as a platform's spare, and one can only
+be removed once both platforms have a passkey with a known `rpId`. A passkey
+whose `rpId` matches neither current relying party (after `PASSKEY_RP_ID`
+changed) signs in nowhere and can be removed.
+
+The rules live in `@rodge-mail/std/passkey-sign-in`, shared by the server and
+both apps.
 
 ## Recovery: `/recover`
 
@@ -55,12 +80,9 @@ neither replaces nor adds a passkey: after it signs you in, open Settings →
 Rodge Mail account → **Add passkey**. Both recovery endpoints are rate limited
 to three requests per minute.
 
-The mobile app has no recovery screen. Its passkeys belong to a different
-relying party (the Convex site host) than the website's (`PASSKEY_RP_ID`), so a
-website passkey can't sign the app in, and only the signed-in app can add an
-app passkey. Settings lists both kinds together. Before removing the phone's
-passkey from the website, make sure the phone has another one (iCloud Keychain
-syncs them across Apple devices), or it can't sign in again after it signs out.
+The mobile app has no recovery screen, and `/recover` can't sign the app in.
+Only the signed-in app can add an app passkey, which is why the app's last
+passkey can't be removed from either platform.
 
 ## CLI sign-in
 
@@ -83,7 +105,9 @@ listed in `ANDROID_PASSKEY_ORIGINS`; the server rejects malformed entries.
 ## Schema changes
 
 After changing Better Auth plugins or options that affect its schema, regenerate
-the local component schema from `services/convex/src/betterAuth`:
+the local component schema from `services/convex/src/betterAuth`. Its
+`auth.ts` and `adapter.ts` list the schema-only `passkeyRpIdPlugin` next to
+`passkey()` so the `rpId` field stays in the component schema:
 
 ```sh
 pnpm dlx @better-auth/cli@1.4.22 generate --yes \
