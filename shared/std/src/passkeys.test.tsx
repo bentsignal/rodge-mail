@@ -1,5 +1,5 @@
 import type { ReactTestRenderer } from "react-test-renderer";
-import { act, createElement } from "react";
+import { act, createElement, useEffect } from "react";
 import { create } from "react-test-renderer";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -54,15 +54,16 @@ describe("useOptimisticPasskeys", () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.unstubAllGlobals();
   });
 
   it("hides a passkey before the server answers", async () => {
-    let finish: (value: { error: null }) => void = () => undefined;
+    vi.useFakeTimers();
     const deletePasskey = vi.fn(
       () =>
-        new Promise<{ error: null }>((resolve) => {
-          finish = resolve;
+        new Promise<DeleteResult>((resolve) => {
+          setTimeout(() => resolve({ error: null }), 500);
         }),
     );
     const harness = renderHarness([phone, laptop], deletePasskey);
@@ -79,7 +80,7 @@ describe("useOptimisticPasskeys", () => {
     expect(harness.current.canRemove).toBe(false);
 
     await act(async () => {
-      finish({ error: null });
+      await vi.advanceTimersByTimeAsync(500);
       await removal;
     });
     expect(harness.onRemoveError).not.toHaveBeenCalled();
@@ -88,7 +89,7 @@ describe("useOptimisticPasskeys", () => {
 
   it("puts the passkey back and reports the error when removal fails", async () => {
     const deletePasskey = vi.fn(() =>
-      Promise.resolve({ error: { message: "Session expired" } }),
+      Promise.resolve<DeleteResult>({ error: { message: "Session expired" } }),
     );
     const harness = renderHarness([phone, laptop], deletePasskey);
 
@@ -105,7 +106,9 @@ describe("useOptimisticPasskeys", () => {
   });
 
   it("refuses to remove the only passkey", async () => {
-    const deletePasskey = vi.fn(() => Promise.resolve({ error: null }));
+    const deletePasskey = vi.fn(() =>
+      Promise.resolve<DeleteResult>({ error: null }),
+    );
     const harness = renderHarness([phone], deletePasskey);
 
     expect(harness.current.canRemove).toBe(false);
@@ -119,28 +122,36 @@ describe("useOptimisticPasskeys", () => {
   });
 });
 
+interface DeleteResult {
+  error: { message: string } | null;
+}
+
 function renderHarness(
   passkeys: PasskeyListItem[],
-  deletePasskey: (id: string) => Promise<{ error: unknown }>,
+  deletePasskey: (id: string) => Promise<DeleteResult>,
 ) {
   type State = ReturnType<typeof useOptimisticPasskeys<PasskeyListItem>>;
   let current: State | undefined;
   let renderer: ReactTestRenderer | undefined;
   const onRemoveError = vi.fn();
 
-  function Harness() {
-    current = useOptimisticPasskeys({
-      deletePasskey: deletePasskey as (
-        id: string,
-      ) => Promise<{ error?: { message?: string | null } | null }>,
+  function Harness({ onRender }: { onRender: (state: State) => void }) {
+    const state = useOptimisticPasskeys({
+      deletePasskey,
       onRemoveError,
       passkeys,
     });
+    // eslint-disable-next-line no-restricted-syntax -- The test harness observes committed hook state outside React.
+    useEffect(() => onRender(state), [onRender, state]);
     return null;
   }
 
+  function captureState(state: State) {
+    current = state;
+  }
+
   act(() => {
-    renderer = create(createElement(Harness));
+    renderer = create(createElement(Harness, { onRender: captureState }));
   });
 
   if (!current || !renderer) throw new Error("Passkey harness did not mount");
