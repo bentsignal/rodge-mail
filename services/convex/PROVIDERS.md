@@ -127,6 +127,43 @@ Primary references:
 - [Convex actions](https://docs.convex.dev/functions/actions)
 - [Convex HTTP actions](https://docs.convex.dev/functions/http-actions)
 
+## Removing an account
+
+`accounts/mutations:remove` takes an account out of Rodge Mail: Settings → an
+account → Remove Account on the phone, or Remove on an account card in the web
+account manager. Nothing is deleted at the provider and the OAuth grant isn't
+revoked. Rodge Mail only drops its own copy and its stored tokens. To revoke
+access too, remove Rodge Mail at the provider (Google account permissions,
+Microsoft "My Apps", or delete the iCloud app-specific password).
+
+Removal happens in two steps:
+
+1. The mutation sets `deletingAt` on the account. From then on the account is
+   hidden everywhere: `accounts/queries:list` skips it, list queries drop its
+   threads and messages, per-account list queries return empty pages, and
+   `getThread` returns `null`. Sync crons, sync actions, provider writes
+   (`upsertProviderMessage` and friends), token refreshes, and outbox
+   delivery treat it as missing, so an in-flight sync stops at its next
+   write. For a hosted account the same mutation deletes its
+   `hostedAddresses` rows (aliases included) and clears it as a domain's
+   catch-all, so later inbound mail for those addresses is dropped. The
+   hosted domain stays registered.
+2. `accounts/removal:removeAccountBatch` deletes the rows, one bounded batch
+   per run, and reschedules itself until nothing is left: messages with their
+   contents, attachments, classifications, clean views, embedding jobs,
+   embeddings, notification deliveries and push tickets (20 messages a run,
+   including their cached files in Convex storage), then threads, folders,
+   archive tombstones, mailing-list suppressions, outbox rows with their
+   draft attachments and SES delivery events, sync runs, provider
+   credentials, per-account notification preferences, and hosted mail
+   imports it was the source or target of. It takes the account out of
+   agent credential allowlists and finally deletes the `mailAccounts` row.
+   Mail already imported into a hosted account belongs to that account and
+   stays when the source is removed; a running import stops.
+
+Reconnecting the same mailbox while a removal is still running creates a new
+account; the account upserts ignore rows with `deletingAt`.
+
 ## iCloud Mail
 
 Apple exposes iCloud Mail through IMAP and SMTP rather than a mail REST API.

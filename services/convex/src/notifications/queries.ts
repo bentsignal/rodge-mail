@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 
 import type { QueryCtx } from "../_generated/server";
-import { ensureOwnedAccount } from "../mail/helpers";
+import { ensureOwnedAccount, isActiveAccount } from "../mail/helpers";
 import { authedQuery } from "../utils";
 import { resolveNotificationPreferences } from "./preferences";
 
@@ -79,7 +79,7 @@ export const listAccountPreferences = authedQuery({
         preference,
       ]),
     );
-    return accounts.map((account) => ({
+    return accounts.filter(isActiveAccount).map((account) => ({
       accountId: account._id,
       address: account.address,
       displayName: account.displayName,

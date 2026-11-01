@@ -104,5 +104,7 @@ Header search remains available for every message.
 - HTML is sanitized before display. Remote images are blocked or proxied by
   default to avoid tracking pixels.
 - Attachments remain private and require an authorization check before access.
-- Provider disconnect revokes tokens where supported and makes encrypted local
-  credentials unusable before deletion.
+- Removing an account hides it at once and then deletes its mail, cached
+  files, and encrypted credentials in batches. It doesn't revoke the
+  provider's grant or delete anything at the provider
+  ([PROVIDERS.md](../services/convex/PROVIDERS.md#removing-an-account)).

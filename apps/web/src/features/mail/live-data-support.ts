@@ -17,7 +17,7 @@ export function useThreadQuery(threadId: InboxMessage["threadId"] | undefined) {
       api.mail.queries.getThread,
       threadId ? { threadId } : "skip",
     ),
-    select: (thread) => thread,
+    select: (thread) => thread ?? undefined,
   });
 }
 

@@ -2,6 +2,7 @@ import { v } from "convex/values";
 
 import type { Doc } from "../_generated/dataModel";
 import type { AuthedMutationCtx } from "../utils";
+import { getActiveAccount } from "../mail/helpers";
 import { createMessageSearchText } from "../mail/search";
 import { authedMutation } from "../utils";
 import { reconcileEmbeddingSelection } from "./internal";
@@ -60,7 +61,7 @@ async function processInboxMessage(
   apply: boolean,
 ) {
   const [account, classification, content, embedding, job] = await Promise.all([
-    ctx.db.get(message.accountId),
+    getActiveAccount(ctx, message.accountId),
     ctx.db
       .query("messageClassifications")
       .withIndex("by_message", (q) => q.eq("messageId", message._id))

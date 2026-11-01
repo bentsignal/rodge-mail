@@ -16,6 +16,7 @@ import { queueClassificationForMessage } from "../classification/queue";
 import { shouldRequestAutomaticCleanView } from "../cleanView/policy";
 import { reconcileEmbeddingSelection } from "../embedding/internal";
 import { isProviderMessageArchived } from "../mail/archive";
+import { getActiveAccount } from "../mail/helpers";
 import { createMessageSearchText } from "../mail/search";
 import { getThreadInboxState } from "../mail/threadState";
 import {
@@ -163,6 +164,7 @@ export const upsertGmailAccount = internalMutation({
           .eq("provider", "gmail")
           .eq("remoteAccountId", args.remoteAccountId),
       )
+      .filter((q) => q.eq(q.field("deletingAt"), undefined))
       .unique();
     const now = Date.now();
     if (existing) {
@@ -206,6 +208,7 @@ export const upsertMicrosoftAccount = internalMutation({
           .eq("provider", "microsoft")
           .eq("remoteAccountId", args.remoteAccountId),
       )
+      .filter((q) => q.eq(q.field("deletingAt"), undefined))
       .unique();
     const now = Date.now();
     if (existing) {
@@ -237,7 +240,7 @@ export const upsertMicrosoftAccount = internalMutation({
 export const getProviderCredential = internalQuery({
   args: { ownerId: v.string(), accountId: v.id("mailAccounts") },
   handler: async (ctx, args) => {
-    const account = await ctx.db.get(args.accountId);
+    const account = await getActiveAccount(ctx, args.accountId);
     if (!account || account.ownerId !== args.ownerId) return null;
     return await ctx.db
       .query("providerCredentials")
@@ -255,7 +258,7 @@ export const storeProviderCredential = internalMutation({
     grantedScopes: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
-    const account = await ctx.db.get(args.accountId);
+    const account = await getActiveAccount(ctx, args.accountId);
     if (!account || account.ownerId !== args.ownerId) {
       throw new ConvexError("Mail account not found");
     }
@@ -297,7 +300,7 @@ export const createRun = internalMutation({
     cursor: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const account = await ctx.db.get(args.accountId);
+    const account = await getActiveAccount(ctx, args.accountId);
     if (!account || account.ownerId !== args.ownerId) {
       throw new ConvexError("Mail account not found");
     }
@@ -336,8 +339,9 @@ export const startRun = internalMutation({
   args: { syncRunId: v.id("syncRuns") },
   handler: async (ctx, args) => {
     const run = await ctx.db.get(args.syncRunId);
-    if (!run) throw new ConvexError("Sync run not found");
+    if (!run) return false;
     if (!canStartSyncRun(run.status)) return false;
+    if (!(await getActiveAccount(ctx, run.accountId))) return false;
     const now = Date.now();
     await Promise.all([
       ctx.db.patch(run._id, {
@@ -365,10 +369,10 @@ export const finishRun = internalMutation({
   },
   handler: async (ctx, args) => {
     const run = await ctx.db.get(args.syncRunId);
-    if (!run) throw new ConvexError("Sync run not found");
+    if (!run) return;
     if (!canFinishSyncRun(run.status)) return;
-    const account = await ctx.db.get(run.accountId);
-    if (!account) throw new ConvexError("Mail account not found");
+    const account = await getActiveAccount(ctx, run.accountId);
+    if (!account) return;
     const now = Date.now();
     const failed = args.error !== undefined;
     await Promise.all([
@@ -454,7 +458,7 @@ export const recoverStaleRuns = internalMutation({
       ...new Set([...accountIds, ...orphanedAccountIds]),
     ];
     for (const accountId of recoveredAccountIds) {
-      const account = await ctx.db.get(accountId);
+      const account = await getActiveAccount(ctx, accountId);
       if (account?.status !== "syncing") continue;
       if (activeAccountIds.has(accountId)) continue;
       await ctx.db.patch(accountId, {
@@ -711,7 +715,7 @@ export const executeMicrosoftSync = internalAction({
 export const getGmailSyncContext = internalQuery({
   args: { ownerId: v.string(), accountId: v.id("mailAccounts") },
   handler: async (ctx, args) => {
-    const account = await ctx.db.get(args.accountId);
+    const account = await getActiveAccount(ctx, args.accountId);
     if (
       !account ||
       account.ownerId !== args.ownerId ||
@@ -730,7 +734,7 @@ export const getGmailSyncContext = internalQuery({
 export const getMicrosoftSyncContext = internalQuery({
   args: { ownerId: v.string(), accountId: v.id("mailAccounts") },
   handler: async (ctx, args) => {
-    const account = await ctx.db.get(args.accountId);
+    const account = await getActiveAccount(ctx, args.accountId);
     if (
       !account ||
       account.ownerId !== args.ownerId ||
@@ -855,7 +859,7 @@ export const listProviderRemoteMessageIdsPage = internalQuery({
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
-    const account = await ctx.db.get(args.accountId);
+    const account = await getActiveAccount(ctx, args.accountId);
     if (!account || account.ownerId !== args.ownerId) {
       return { continueCursor: "", isDone: true, page: [] };
     }
@@ -902,7 +906,7 @@ export const listProviderMessageStatesPage = internalQuery({
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
-    const account = await ctx.db.get(args.accountId);
+    const account = await getActiveAccount(ctx, args.accountId);
     if (!account || account.ownerId !== args.ownerId) {
       return { continueCursor: "", isDone: true, page: [] };
     }
@@ -930,6 +934,7 @@ export const listScheduledGmailAccounts = internalQuery({
         (account) =>
           account.provider === "gmail" &&
           !account.isDemo &&
+          account.deletingAt === undefined &&
           ["connected", "error"].includes(account.status) &&
           (account.lastSyncedAt ?? 0) < cutoff,
       )
@@ -950,6 +955,7 @@ export const listScheduledMicrosoftAccounts = internalQuery({
         (account) =>
           account.provider === "microsoft" &&
           !account.isDemo &&
+          account.deletingAt === undefined &&
           ["connected", "error"].includes(account.status) &&
           (account.lastSyncedAt ?? 0) < cutoff,
       )
@@ -986,7 +992,7 @@ export const listRecoverableProviderOutbox = internalQuery({
     );
     const providerOutboxIds: Id<"outboxMessages">[] = [];
     for (const outbox of recoverable) {
-      const account = await ctx.db.get(outbox.accountId);
+      const account = await getActiveAccount(ctx, outbox.accountId);
       if (
         account &&
         ["gmail", "microsoft", "icloud", "hosted"].includes(account.provider)
@@ -1409,7 +1415,7 @@ export const claimOutbox = internalMutation({
         !["pending", "failed"].includes(outbox.status))
     )
       return null;
-    const account = await ctx.db.get(outbox.accountId);
+    const account = await getActiveAccount(ctx, outbox.accountId);
     if (!account || account.ownerId !== outbox.ownerId) return null;
     const attachments = await Promise.all(
       (outbox.attachmentIds ?? []).map(async (attachmentId) => {
@@ -1540,7 +1546,7 @@ export const getOutboxProvider = internalQuery({
   handler: async (ctx, args) => {
     const outbox = await ctx.db.get(args.outboxId);
     if (!outbox) return null;
-    const account = await ctx.db.get(outbox.accountId);
+    const account = await getActiveAccount(ctx, outbox.accountId);
     if (!account || account.ownerId !== outbox.ownerId) return null;
     return account.provider;
   },
@@ -1686,7 +1692,7 @@ async function ensureInternalOwnedAccount(
   ownerId: string,
   accountId: Id<"mailAccounts">,
 ) {
-  const account = await ctx.db.get(accountId);
+  const account = await getActiveAccount(ctx, accountId);
   if (account?.ownerId !== ownerId) {
     throw new ConvexError("Mail account not found");
   }

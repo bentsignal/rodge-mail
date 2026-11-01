@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import type { Doc, Id } from "../../_generated/dataModel";
 import type { QueryCtx } from "../../_generated/server";
 import { internalMutation, internalQuery } from "../../_generated/server";
+import { getActiveAccount } from "../../mail/helpers";
 import { vMailboxAddress } from "../../mail/validators";
 import { vHostedDeliveryEventType } from "./validators";
 
@@ -31,7 +32,7 @@ export const getOutboxContext = internalQuery({
   handler: async (ctx, args) => {
     const outbox = await ctx.db.get(args.outboxId);
     if (!outbox) return null;
-    const account = await ctx.db.get(outbox.accountId);
+    const account = await getActiveAccount(ctx, outbox.accountId);
     if (account?.provider !== "hosted" || account.ownerId !== outbox.ownerId) {
       return null;
     }
@@ -75,7 +76,7 @@ async function findRecipientAccount(ctx: QueryCtx, recipient: string) {
     hostedAddress?.accountId ??
     (await findCatchAllAccountId(ctx, address.split("@")[1] ?? ""));
   if (!accountId) return null;
-  const account = await ctx.db.get(accountId);
+  const account = await getActiveAccount(ctx, accountId);
   return account?.provider === "hosted" && account.status !== "disconnected"
     ? account
     : null;

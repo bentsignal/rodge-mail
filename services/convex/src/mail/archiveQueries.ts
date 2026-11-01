@@ -2,7 +2,7 @@ import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 
 import { authedQuery } from "../utils";
-import { ensureOwnedAccount, toArchivedThreadListItem } from "./helpers";
+import { ensureListableAccount, toArchivedThreadListItem } from "./helpers";
 
 export const listArchive = authedQuery({
   args: {
@@ -12,7 +12,7 @@ export const listArchive = authedQuery({
   handler: async (ctx, args) => {
     const accountId = args.accountId;
     if (accountId) {
-      await ensureOwnedAccount(ctx, ctx.ownerId, accountId);
+      await ensureListableAccount(ctx, ctx.ownerId, accountId);
     }
     const result = accountId
       ? await ctx.db
@@ -50,7 +50,7 @@ export const searchArchive = authedQuery({
   handler: async (ctx, args) => {
     const accountId = args.accountId;
     if (accountId) {
-      await ensureOwnedAccount(ctx, ctx.ownerId, accountId);
+      await ensureListableAccount(ctx, ctx.ownerId, accountId);
     }
     const threads = accountId
       ? await ctx.db

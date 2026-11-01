@@ -13,6 +13,7 @@ import * as Dialog from "@rodge-mail/ui-web/dialog";
 import type { MailAccountView } from "../types";
 import { AccountLabelForm } from "./account-label-settings";
 import { AddAccountButton } from "./provider-connection-buttons";
+import { RemoveAccountButton } from "./remove-account-dialog";
 
 const ACCOUNT_ICONS = {
   gmail: Mail,
@@ -126,6 +127,10 @@ function AccountCard({ account }: { account: MailAccountView }) {
             {getProviderLabel(account.provider)} · {account.address}
           </p>
         </div>
+        <RemoveAccountButton
+          account={account}
+          providerLabel={getProviderLabel(account.provider)}
+        />
       </div>
       <div className="mt-3">
         <AccountLabelForm account={account} embedded showIdentity={false} />

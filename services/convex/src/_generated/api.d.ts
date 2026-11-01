@@ -11,6 +11,7 @@
 import type * as accounts_actions from "../accounts/actions.js";
 import type * as accounts_mutations from "../accounts/mutations.js";
 import type * as accounts_queries from "../accounts/queries.js";
+import type * as accounts_removal from "../accounts/removal.js";
 import type * as agent_audit from "../agent/audit.js";
 import type * as agent_internal from "../agent/internal.js";
 import type * as agent_policy from "../agent/policy.js";
@@ -184,6 +185,7 @@ declare const fullApi: ApiFromModules<{
   "accounts/actions": typeof accounts_actions;
   "accounts/mutations": typeof accounts_mutations;
   "accounts/queries": typeof accounts_queries;
+  "accounts/removal": typeof accounts_removal;
   "agent/audit": typeof agent_audit;
   "agent/internal": typeof agent_internal;
   "agent/policy": typeof agent_policy;

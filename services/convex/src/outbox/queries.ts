@@ -3,6 +3,7 @@ import { v } from "convex/values";
 
 import type { Doc } from "../_generated/dataModel";
 import type { AuthedQueryCtx } from "../utils";
+import { getActiveAccount } from "../mail/helpers";
 import { authedQuery } from "../utils";
 import {
   MAX_RECENT_OUTBOX_PER_UNRESOLVED_STATUS,
@@ -33,7 +34,7 @@ export const listRecent = authedQuery({
     const outboxes = mergeRecentOutboxes([...unresolvedGroups, sent]);
     const rows = await Promise.all(
       outboxes.map(async (outbox) => {
-        const account = await ctx.db.get(outbox.accountId);
+        const account = await getActiveAccount(ctx, outbox.accountId);
         if (!account || account.ownerId !== ctx.ownerId) return undefined;
         return {
           _id: outbox._id,
@@ -123,7 +124,7 @@ async function toSentRows(
 }
 
 async function toSentRow(ctx: AuthedQueryCtx, outbox: Doc<"outboxMessages">) {
-  const account = await ctx.db.get(outbox.accountId);
+  const account = await getActiveAccount(ctx, outbox.accountId);
   if (!account || account.ownerId !== ctx.ownerId) return undefined;
   const message = await findStoredMessage(ctx, outbox);
   return {

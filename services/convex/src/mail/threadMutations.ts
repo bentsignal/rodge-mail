@@ -1,7 +1,7 @@
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { deleteEmbeddingRecords } from "../embedding/storage";
-import { ensureOwnedThread } from "./helpers";
+import { ensureOwnedThread, getActiveAccount } from "./helpers";
 import { scheduleProviderReadUpdate } from "./readUpdates";
 
 export async function setOwnedThreadPinned(
@@ -42,7 +42,7 @@ export async function setOwnedThreadRead(
     .query("messages")
     .withIndex("by_thread_received", (q) => q.eq("threadId", thread._id))
     .collect();
-  const account = await ctx.db.get(thread.accountId);
+  const account = await getActiveAccount(ctx, thread.accountId);
   const now = Date.now();
   const changedMessages = messages.filter(
     (message) => message.isRead !== isRead,

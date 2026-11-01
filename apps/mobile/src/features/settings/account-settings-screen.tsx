@@ -1,11 +1,13 @@
 import { useState } from "react";
-import { Stack } from "expo-router";
+import { Alert } from "react-native";
+import { Stack, useRouter } from "expo-router";
 import { FieldGroup, Text, TextInput } from "@expo/ui";
 import { useMutation } from "convex/react";
 
 import { api } from "@rodge-mail/convex/api";
 
 import type { MobileMailAccount } from "~/features/mail/lib/convex-mail";
+import { optimisticallyRemoveAccount } from "~/features/mail/account-removal-optimistic";
 import { toConvexId } from "~/features/mail/lib/convex-id";
 import { getAccountConnectionPresentation } from "~/features/mail/screens/account-connection-status";
 import {
@@ -26,14 +28,23 @@ const PROVIDER_NAMES = {
 } as const;
 
 export function AccountSettingsScreen({ accountId }: { accountId: string }) {
-  const account = useMailStore((store) =>
+  const liveAccount = useMailStore((store) =>
     store.accounts.find((candidate) => candidate.id === accountId),
   );
+  // Keeps the page drawn while it pops back after the account is removed.
+  const [removedAccount, setRemovedAccount] = useState<MobileMailAccount>();
+  const account = liveAccount ?? removedAccount;
   if (!account) return <Stack.Title>Account</Stack.Title>;
-  return <AccountSettings account={account} />;
+  return <AccountSettings account={account} onRemove={setRemovedAccount} />;
 }
 
-function AccountSettings({ account }: { account: MobileMailAccount }) {
+function AccountSettings({
+  account,
+  onRemove,
+}: {
+  account: MobileMailAccount;
+  onRemove: (account: MobileMailAccount) => void;
+}) {
   const connection = getAccountConnectionPresentation(account);
   // A direct child of FieldGroup: Android wraps a section returned from a
   // component in a second card.
@@ -63,6 +74,9 @@ function AccountSettings({ account }: { account: MobileMailAccount }) {
             <InboxNameField account={account} />
           </FieldGroup.Section>
           {recoverySection}
+          <FieldGroup.Section>
+            <RemoveAccountRow account={account} onRemove={onRemove} />
+          </FieldGroup.Section>
         </FieldGroup>
       </NativeHost>
     </>
@@ -109,6 +123,47 @@ function InboxNameField({ account }: { account: MobileMailAccount }) {
       onSubmitEditing={save}
     />
   );
+}
+
+function RemoveAccountRow({
+  account,
+  onRemove,
+}: {
+  account: MobileMailAccount;
+  onRemove: (account: MobileMailAccount) => void;
+}) {
+  const router = useRouter();
+  const accountFilter = useMailStore((store) => store.accountFilter);
+  const setAccountFilter = useMailStore((store) => store.setAccountFilter);
+  const removeAccount = useMutation(
+    api.accounts.mutations.remove,
+  ).withOptimisticUpdate(optimisticallyRemoveAccount);
+
+  function remove() {
+    onRemove(account);
+    if (accountFilter === account.id) setAccountFilter("all");
+    removeAccount({ accountId: toConvexId<"mailAccounts">(account.id) }).catch(
+      () => Alert.alert("Couldn't Remove Account", "Try again in a moment."),
+    );
+    router.back();
+  }
+
+  function confirm() {
+    Alert.alert("Remove Account?", getRemovalMessage(account), [
+      { style: "cancel", text: "Cancel" },
+      { onPress: remove, style: "destructive", text: "Remove" },
+    ]);
+  }
+
+  return <ActionRow destructive label="Remove Account" onPress={confirm} />;
+}
+
+function getRemovalMessage(account: MobileMailAccount) {
+  const removes = `Removes ${account.address} and its mail from Rodge Mail.`;
+  if (account.provider === "hosted") {
+    return `${removes} The address stops receiving mail.`;
+  }
+  return `${removes} Nothing is deleted from ${PROVIDER_NAMES[account.provider]}.`;
 }
 
 function RecoveryRows({

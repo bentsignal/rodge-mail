@@ -12,6 +12,7 @@ import {
 import type { Doc, Id } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
 import { internalQuery } from "../_generated/server";
+import { getActiveAccount, isActiveAccount } from "../mail/helpers";
 import { matchesMailSearch, parseMailSearch } from "../mail/search";
 import { filterAllowedAccountIds } from "./policy";
 import {
@@ -227,7 +228,7 @@ export const hydrateSemantic = internalQuery({
     const allowed = new Set(args.allowedAccountIds);
     const accounts = await Promise.all(
       args.allowedAccountIds.map(
-        async (accountId) => await ctx.db.get(accountId),
+        async (accountId) => await getActiveAccount(ctx, accountId),
       ),
     );
     const accountById = new Map(
@@ -317,7 +318,9 @@ async function ownedAllowedAccounts(
 ) {
   if (access.mode === "allowlist") {
     const accounts = await Promise.all(
-      access.accountIds.map(async (accountId) => await ctx.db.get(accountId)),
+      access.accountIds.map(
+        async (accountId) => await getActiveAccount(ctx, accountId),
+      ),
     );
     return accounts.filter(
       (account): account is Doc<"mailAccounts"> => account?.ownerId === ownerId,
@@ -333,7 +336,9 @@ async function ownedAllowedAccounts(
       owned.map((account) => account._id),
     ),
   );
-  return owned.filter((account) => allowedIds.has(account._id));
+  return owned.filter(
+    (account) => isActiveAccount(account) && allowedIds.has(account._id),
+  );
 }
 
 async function ownedClassification(

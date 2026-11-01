@@ -5,6 +5,7 @@ import type { MutationCtx } from "../../_generated/server";
 import { internal } from "../../_generated/api";
 import { internalMutation, internalQuery } from "../../_generated/server";
 import { env } from "../../convex.env";
+import { getActiveAccount } from "../../mail/helpers";
 import { normalizeHostedAddress } from "./addresses";
 import { vMailImportFailure } from "./validators";
 
@@ -127,8 +128,8 @@ export const getRunContext = internalQuery({
     const job = await ctx.db.get(args.importId);
     if (job?.status !== "running" || job.runId !== args.runId) return null;
     const [source, target, credential] = await Promise.all([
-      ctx.db.get(job.sourceAccountId),
-      ctx.db.get(job.targetAccountId),
+      getActiveAccount(ctx, job.sourceAccountId),
+      getActiveAccount(ctx, job.targetAccountId),
       ctx.db
         .query("providerCredentials")
         .withIndex("by_account", (q) => q.eq("accountId", job.sourceAccountId))
@@ -267,7 +268,8 @@ async function findSourceAccount(
   const sources = accounts.filter(
     (account) =>
       IMPORT_SOURCE_PROVIDERS.includes(account.provider) &&
-      account.status !== "disconnected",
+      account.status !== "disconnected" &&
+      account.deletingAt === undefined,
   );
   const source = sources.at(0);
   if (!source) {

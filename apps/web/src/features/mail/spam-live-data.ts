@@ -42,7 +42,7 @@ export function useSpamLiveMailValue() {
       api.mail.queries.getThread,
       effectiveThreadId ? { threadId: effectiveThreadId } : "skip",
     ),
-    select: (thread) => thread,
+    select: (thread) => thread ?? undefined,
   });
   throwQueryError(accountQuery.error);
   throwQueryError(threadQuery.error);

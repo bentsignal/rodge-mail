@@ -1,12 +1,12 @@
 import { paginationOptsValidator } from "convex/server";
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 
 import type { Doc } from "../_generated/dataModel";
 import { authedQuery } from "../utils";
 import {
-  ensureOwnedAccount,
+  ensureListableAccount,
   ensureOwnedMessage,
-  ensureOwnedThread,
+  getActiveAccount,
   toMessageDetail,
   toMessageListItem,
 } from "./helpers";
@@ -32,7 +32,7 @@ export const listInbox = authedQuery({
   handler: async (ctx, args) => {
     const { accountId, paginationOpts } = args;
     if (accountId) {
-      await ensureOwnedAccount(ctx, ctx.ownerId, accountId);
+      await ensureListableAccount(ctx, ctx.ownerId, accountId);
       return await enrichThreadPage(
         ctx,
         await ctx.db
@@ -80,7 +80,7 @@ export const listPinned = authedQuery({
   handler: async (ctx, args) => {
     const { accountId, paginationOpts } = args;
     if (accountId) {
-      await ensureOwnedAccount(ctx, ctx.ownerId, accountId);
+      await ensureListableAccount(ctx, ctx.ownerId, accountId);
       return await enrichThreadPage(
         ctx,
         await ctx.db
@@ -145,22 +145,31 @@ export const getMessagesByIds = authedQuery({
         )
         .map(async (message) => await toMessageListItem(ctx, message)),
     );
-    return items.filter((message) => message.classification?.isSpam !== true);
+    return items.filter(
+      (message): message is NonNullable<typeof message> =>
+        message !== null && message.classification?.isSpam !== true,
+    );
   },
 });
 
 export const getThread = authedQuery({
   args: { threadId: v.id("threads") },
   handler: async (ctx, args) => {
-    const thread = await ensureOwnedThread(ctx, ctx.ownerId, args.threadId);
+    const thread = await ctx.db.get(args.threadId);
+    if (thread && thread.ownerId !== ctx.ownerId) {
+      throw new ConvexError("Thread not found");
+    }
+    // Gone, or its account is being removed: readers show "not found".
+    if (!thread) return null;
     const [account, messages] = await Promise.all([
-      ensureOwnedAccount(ctx, ctx.ownerId, thread.accountId),
+      getActiveAccount(ctx, thread.accountId),
       ctx.db
         .query("messages")
         .withIndex("by_thread_received", (q) => q.eq("threadId", thread._id))
         .order("asc")
         .collect(),
     ]);
+    if (!account) return null;
 
     return {
       ...thread,
@@ -209,7 +218,7 @@ export const searchHeaders = authedQuery({
   },
   handler: async (ctx, args) => {
     if (args.accountId) {
-      await ensureOwnedAccount(ctx, ctx.ownerId, args.accountId);
+      await ensureListableAccount(ctx, ctx.ownerId, args.accountId);
     }
     const searchPlan = parseMailSearch(args.searchTerm);
     if (

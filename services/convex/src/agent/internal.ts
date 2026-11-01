@@ -2,6 +2,7 @@ import { makeFunctionReference } from "convex/server";
 import { v } from "convex/values";
 
 import { internalMutation, internalQuery } from "../_generated/server";
+import { getActiveAccount } from "../mail/helpers";
 import {
   vAgentAccountAccess,
   vAgentAuditOutcome,
@@ -32,7 +33,7 @@ export const storeCredential = internalMutation({
   handler: async (ctx, args) => {
     if (args.accountAccess.mode === "allowlist") {
       for (const accountId of args.accountAccess.accountIds) {
-        const account = await ctx.db.get(accountId);
+        const account = await getActiveAccount(ctx, accountId);
         if (!account || account.ownerId !== args.ownerId) {
           throw new Error("Mail account not found");
         }
