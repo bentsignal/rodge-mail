@@ -5,6 +5,7 @@ import { usePaginatedQuery } from "convex/react";
 
 import type { MailAccountFilter, MailThread } from "@rodge-mail/features/mail";
 import { api } from "@rodge-mail/convex/api";
+import { readCachedAccountPage } from "@rodge-mail/features/mail";
 
 import type { OtherMailbox } from "../store";
 import type { MailboxFilter } from "./mailbox-controls";
@@ -63,11 +64,12 @@ export function AllMailMailbox({
     { initialNumItems: pageSize },
   );
   const activePage = isSearching ? search : allMail;
-  const rows = useSettledRows(
-    activePage.results,
-    activePage.status === "LoadingFirstPage",
+  const rows = useCachedRows({
     accountId,
-  );
+    isPending: activePage.status === "LoadingFirstPage",
+    rows: activePage.results,
+    searchTerm: activeSearchTerm,
+  });
   const threads = filterMailboxThreads(toAllMailThreads(rows), filter);
 
   function renderThread({ item }: LegendListRenderItemProps<MailThread>) {
@@ -121,23 +123,37 @@ export function AllMailMailbox({
 }
 
 /**
- * Keeps the last page on screen while the next one loads, narrowed to the
- * chosen account the way the inbox narrows its cached page.
+ * Each scope's last settled page, so switching accounts or searches shows
+ * rows at once while the next page loads, as the inbox does: an account
+ * reads the unified page narrowed to it until its own page arrives.
  */
-function useSettledRows<T extends { accountId: string }>(
-  rows: T[],
-  isPending: boolean,
-  accountId: string | undefined,
-) {
-  const [settled, setSettled] = useState<T[]>();
-  // eslint-disable-next-line no-restricted-syntax -- Keep the last settled page on screen while the next Convex subscription loads.
+function useCachedRows<T extends { accountId: string }>({
+  accountId,
+  isPending,
+  rows,
+  searchTerm,
+}: {
+  accountId: string | undefined;
+  isPending: boolean;
+  rows: T[];
+  searchTerm: string;
+}) {
+  const [cache, setCache] = useState(() => new Map<string, T[]>());
+  const key = `${accountId ?? "all"}:${searchTerm}`;
+  // eslint-disable-next-line no-restricted-syntax -- Cache the latest settled Convex page so switching scopes never blanks the list.
   useEffect(() => {
     if (isPending) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- Convex query settlement is an external subscription snapshot.
-    setSettled(rows);
-  }, [isPending, rows]);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- The Convex page is an external subscription snapshot.
+    setCache((current) => {
+      if (current.get(key) === rows) return current;
+      return new Map(current).set(key, rows);
+    });
+  }, [isPending, key, rows]);
   if (!isPending) return rows;
-  const visible = settled ?? rows;
-  if (!accountId) return visible;
-  return visible.filter((row) => row.accountId === accountId);
+  return readCachedAccountPage({
+    accountId,
+    cache,
+    key,
+    unifiedKey: searchTerm ? undefined : "all:",
+  }).items;
 }
