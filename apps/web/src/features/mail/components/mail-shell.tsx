@@ -3,10 +3,12 @@ import { useRouterState } from "@tanstack/react-router";
 import type { MailAccountFilter, ThreadSelection } from "../store";
 import type { InboxMessage } from "../types";
 import {
+  AllMailLiveMailProvider,
   ArchiveLiveMailProvider,
   LiveMailProvider,
   SpamLiveMailProvider,
 } from "../live-data";
+import { isAllMailPath } from "../live-data-types";
 import { SentLiveMailProvider } from "../sent-live-data";
 import { MailStore } from "../store";
 import { AccountRail } from "./account-rail";
@@ -72,6 +74,9 @@ function MailModeProvider({
   const isSent = useRouterState({
     select: (state) => state.location.pathname.startsWith("/sent"),
   });
+  const isAllMail = useRouterState({
+    select: (state) => isAllMailPath(state.location.pathname),
+  });
   if (isSpam) {
     return <SpamLiveMailProvider>{children}</SpamLiveMailProvider>;
   }
@@ -80,6 +85,9 @@ function MailModeProvider({
   }
   if (isArchive) {
     return <ArchiveLiveMailProvider>{children}</ArchiveLiveMailProvider>;
+  }
+  if (isAllMail) {
+    return <AllMailLiveMailProvider>{children}</AllMailLiveMailProvider>;
   }
   return (
     <LiveMailProvider

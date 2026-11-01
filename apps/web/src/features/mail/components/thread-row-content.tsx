@@ -12,12 +12,14 @@ export function ThreadRowContent({
   preview,
   senderName,
   showSelection,
+  tag,
 }: {
   isBulkSelected: boolean;
   message: InboxMessage;
   preview: string;
   senderName: string;
   showSelection: boolean;
+  tag: string | undefined;
 }) {
   return (
     <div className="flex min-h-[76px] items-center gap-3">
@@ -32,6 +34,7 @@ export function ThreadRowContent({
           <p className="text-foreground min-w-0 flex-1 truncate text-[13px] font-semibold">
             {senderName}
           </p>
+          <LocationTag tag={tag} />
           <ThreadMetadata message={message} />
           <time className="mail-label shrink-0 text-[11px] font-medium tabular-nums">
             {formatInboxDate(new Date(message.receivedAt).toISOString())}
@@ -85,6 +88,15 @@ function ThreadMetadata({ message }: { message: InboxMessage }) {
       <PinnedMarker isPinned={message.isPinned} />
       <AttachmentMarker hasAttachments={message.hasAttachments} />
     </div>
+  );
+}
+
+function LocationTag({ tag }: { tag: string | undefined }) {
+  if (!tag) return null;
+  return (
+    <span className="border-border text-muted-foreground max-w-[45%] shrink truncate rounded-[5px] border px-1.5 text-[10px] leading-4 font-medium">
+      {tag}
+    </span>
   );
 }
 

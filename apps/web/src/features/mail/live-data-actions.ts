@@ -12,6 +12,7 @@ import type { InboxMessage, MailAccountView, MailThreadDetail } from "./types";
 import { env } from "~/env";
 import { getMailModePath } from "./live-data-types";
 import { getErrorMessage } from "./live-data-utils";
+import { optimisticallyMoveThreadToInbox } from "./move-to-inbox-optimistic";
 import { useMailStore } from "./store";
 import { useSyncAll } from "./use-sync-all";
 import { useThreadActions } from "./use-thread-actions";
@@ -35,6 +36,9 @@ export function useLiveMailActions(
     mailMode,
     navigate,
   });
+  const moveToInbox = useMutation(
+    api.mail.archiveMutations.moveThreadToInbox,
+  ).withOptimisticUpdate(optimisticallyMoveThreadToInbox);
   const seed = useSeedDemoAction();
   const sync = useSyncAll(accounts);
   function replyToSelectedThread() {
@@ -52,11 +56,19 @@ export function useLiveMailActions(
       subject: selectedThread.subject,
     });
   }
+  function moveThreadToInbox(message: Pick<InboxMessage, "threadId">) {
+    void moveToInbox({ threadId: message.threadId }).catch((error) => {
+      toast.error(
+        getErrorMessage(error, "Could not move the conversation to the inbox."),
+      );
+    });
+  }
   return {
     ...archiveActions,
     ...seed,
     ...sync,
     ...threadActions,
+    moveThreadToInbox,
     replyToSelectedThread,
   };
 }

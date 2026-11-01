@@ -47,7 +47,7 @@ export function useMailboxPage({
   );
   const search = usePaginatedQuery(
     api.mail.queries.searchHeaders,
-    isSearching ? { accountId, searchTerm, unreadOnly } : "skip",
+    isSearching ? { accountId, scope: "all", searchTerm, unreadOnly } : "skip",
     { initialNumItems: MAIL_PAGE_SIZE },
   );
   const semantic = useSemanticMailSearch({
@@ -207,7 +207,7 @@ function useSemanticMailSearch({
   const messages = useQuery({
     ...convexQuery(
       api.mail.queries.getMessagesByIds,
-      ids.length > 0 ? { messageIds: ids, unreadOnly } : "skip",
+      ids.length > 0 ? { messageIds: ids, scope: "all", unreadOnly } : "skip",
     ),
     select: (data) => data,
   });

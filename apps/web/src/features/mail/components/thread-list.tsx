@@ -248,6 +248,7 @@ function getEmptyDescription(
 ) {
   if (isSearch) return "Try a sender, subject, or phrase from the message.";
   if (mailMode === "archive") return "Conversations you archive appear here.";
+  if (mailMode === "all") return "Mail from every folder appears here.";
   if (mailMode === "spam")
     return "High-confidence junk is kept here for review.";
   if (unreadOnly) return "Everything in this mailbox has been read.";

@@ -4,6 +4,10 @@ import { useMutation } from "convex/react";
 import { Code2, LoaderCircle, RefreshCw, Reply, Sparkles } from "lucide-react";
 
 import { api } from "@rodge-mail/convex/api";
+import {
+  canMoveMailThreadToInbox,
+  getMailThreadPlacement,
+} from "@rodge-mail/features/mail";
 import { cn } from "@rodge-mail/std/cn";
 
 import type { MailThreadDetail, ThreadMessageDetail } from "../types";
@@ -55,6 +59,7 @@ function ReaderContent() {
   const {
     archiveThread,
     mailMode,
+    moveThreadToInbox,
     permanentlyDeleteArchivedThread,
     replyToSelectedThread,
     restoreArchivedThread,
@@ -80,7 +85,14 @@ function ReaderContent() {
           });
         }}
         archiveThread={archiveThread}
+        canMoveToInbox={canMoveMailThreadToInbox({
+          archivedAt: selectedThread.archivedAt,
+          inInbox: selectedThread.inInbox,
+          provider: selectedThread.account.provider,
+        })}
         mailMode={mailMode}
+        moveToInbox={moveThreadToInbox}
+        placement={getMailThreadPlacement(selectedThread)}
         markNotSpam={async (message) => {
           await setSpamState({ messageId: message._id, isSpam: false });
           closeMobileReader();
