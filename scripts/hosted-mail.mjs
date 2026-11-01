@@ -51,9 +51,10 @@ async function bootstrap() {
   const ruleSetArn = `arn:aws:ses:${REGION}:${accountId}:receipt-rule-set/${NAME}:receipt-rule/*`;
 
   step(`S3 bucket ${bucket}`);
-  awsAllowing(["s3api", "create-bucket", "--bucket", bucket], [
-    "BucketAlreadyOwnedByYou",
-  ]);
+  awsAllowing(
+    ["s3api", "create-bucket", "--bucket", bucket],
+    ["BucketAlreadyOwnedByYou"],
+  );
   aws([
     "s3api",
     "put-public-access-block",
@@ -140,12 +141,9 @@ async function bootstrap() {
       },
     ],
   };
-  const existingRules = aws([
-    "ses",
-    "describe-receipt-rule-set",
-    "--rule-set-name",
-    NAME,
-  ]).Rules ?? [];
+  const existingRules =
+    aws(["ses", "describe-receipt-rule-set", "--rule-set-name", NAME]).Rules ??
+    [];
   aws([
     "ses",
     existingRules.some((item) => item.Name === rule.Name)
@@ -181,12 +179,13 @@ async function bootstrap() {
     ],
     SnsDestination: { TopicArn: topics.events },
   };
-  const destinations = aws([
-    "sesv2",
-    "get-configuration-set-event-destinations",
-    "--configuration-set-name",
-    NAME,
-  ]).EventDestinations ?? [];
+  const destinations =
+    aws([
+      "sesv2",
+      "get-configuration-set-event-destinations",
+      "--configuration-set-name",
+      NAME,
+    ]).EventDestinations ?? [];
   const hasDestination = destinations.some(
     (item) => item.Name === "convex-events",
   );
@@ -205,9 +204,10 @@ async function bootstrap() {
 
   step("IAM user for Convex");
   const userName = `${NAME}-convex`;
-  awsAllowing(["iam", "create-user", "--user-name", userName], [
-    "EntityAlreadyExists",
-  ]);
+  awsAllowing(
+    ["iam", "create-user", "--user-name", userName],
+    ["EntityAlreadyExists"],
+  );
   aws([
     "iam",
     "put-user-policy",
@@ -237,16 +237,23 @@ async function bootstrap() {
       ],
     }),
   ]);
-  const keys = aws(["iam", "list-access-keys", "--user-name", userName])
-    .AccessKeyMetadata ?? [];
+  const keys =
+    aws(["iam", "list-access-keys", "--user-name", userName])
+      .AccessKeyMetadata ?? [];
   if (keys.length === 0) {
-    const key = aws(["iam", "create-access-key", "--user-name", userName])
-      .AccessKey;
+    const key = aws([
+      "iam",
+      "create-access-key",
+      "--user-name",
+      userName,
+    ]).AccessKey;
     convexEnvSet("HOSTED_MAIL_AWS_ACCESS_KEY_ID", key.AccessKeyId);
     convexEnvSet("HOSTED_MAIL_AWS_SECRET_ACCESS_KEY", key.SecretAccessKey);
     console.log("  stored a new access key in Convex");
   } else {
-    console.log("  access key already exists; leaving Convex credentials as-is");
+    console.log(
+      "  access key already exists; leaving Convex credentials as-is",
+    );
   }
 
   step("Convex environment");
@@ -274,12 +281,9 @@ function connect() {
   }
   const endpoint = `${CONVEX_SITE_URL}${WEBHOOK_PATH}?token=${token}`;
   for (const topicArn of topicArns) {
-    const subscriptions = aws([
-      "sns",
-      "list-subscriptions-by-topic",
-      "--topic-arn",
-      topicArn,
-    ]).Subscriptions ?? [];
+    const subscriptions =
+      aws(["sns", "list-subscriptions-by-topic", "--topic-arn", topicArn])
+        .Subscriptions ?? [];
     const existing = subscriptions.find((item) => item.Endpoint === endpoint);
     if (existing && existing.SubscriptionArn !== "PendingConfirmation") {
       console.log(`✓ ${topicArn} is already confirmed`);
@@ -378,10 +382,14 @@ async function addDomain(rawDomain) {
       continue;
     }
     if (!onVercel) {
+      const verb = conflicting.length > 0 ? "replace with" : "add";
       console.log(
-        `  ! add ${record.type} ${fqdn} ${record.priority ?? ""} ${record.value}`,
+        `  ! ${verb} ${record.type} ${fqdn} ${record.priority ?? ""} ${record.value}`,
       );
       continue;
+    }
+    if (conflicting.length > 0) {
+      removeVercelRecords(domain, record, conflicting);
     }
     run("vercel", [
       "dns",
@@ -426,7 +434,8 @@ async function addDomain(rawDomain) {
 
 function addAddress(rawAddress) {
   const address = rawAddress?.trim().toLowerCase();
-  if (!address?.includes("@")) throw new Error("A full email address is required");
+  if (!address?.includes("@"))
+    throw new Error("A full email address is required");
   const result = convexRun("providers/hosted/admin:createAddress", {
     address,
     ...(options.name ? { displayName: options.name } : {}),
@@ -557,6 +566,36 @@ function conflictingRecords(existing, record) {
   return existing;
 }
 
+function removeVercelRecords(domain, record, conflicting) {
+  const name = record.name === "@" ? "" : record.name;
+  // --paginate returns the records of every page as one array.
+  const records = JSON.parse(
+    run("vercel", [
+      "api",
+      `/v4/domains/${domain}/records?limit=100`,
+      "--paginate",
+      "--raw",
+    ]),
+  );
+  const stale = records.filter(
+    (item) =>
+      item.type === record.type &&
+      item.name === name &&
+      conflicting.some((value) =>
+        value.includes(item.value.replace(/\.$/u, "")),
+      ),
+  );
+  if (stale.length !== conflicting.length) {
+    throw new Error(
+      `Found ${stale.length} of ${conflicting.length} ${record.type} records to replace on ${domain} in Vercel; fix them by hand`,
+    );
+  }
+  for (const item of stale) {
+    run("vercel", ["dns", "rm", item.id, "--yes"]);
+    console.log(`  - ${record.type} ${item.name || domain} ${item.value}`);
+  }
+}
+
 async function firstAddress(hostname) {
   return (await dnsLookup(hostname, { family: 4 })).address;
 }
@@ -592,4 +631,3 @@ function parseOptions(args) {
 function step(label) {
   console.log(`\n▸ ${label}`);
 }
-
