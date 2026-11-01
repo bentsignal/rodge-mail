@@ -54,7 +54,9 @@ the provider's copy when it has synced into the mailbox (matched by account
 and remote message ID); the web and mobile apps open those in the reader and
 show the outbox copy otherwise. Delivery keeps a summary of the attachments
 (`sentAttachments`) because their uploads are deleted once sent. The web
-Sent view is `/sent`; on mobile it's the Sent entry in the mailbox menu.
+Sent view is `/sent`; on mobile it's a mailbox like the others, in the
+toolbar's mailbox menu. Both clients can narrow it to one account: `listSent`
+takes an optional `accountId`, and the outbox rows are filtered on the client.
 Mail sent from other clients isn't listed there yet.
 
 ## Synchronization

@@ -3,12 +3,12 @@ import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
 import { usePaginatedQuery, useQuery } from "convex/react";
 
-import type { MailAccountFilter, MailThread } from "@rodge-mail/features/mail";
+import type { MailThread } from "@rodge-mail/features/mail";
 import { api } from "@rodge-mail/convex/api";
 
-import type { OtherMailbox } from "../store";
 import { useDebouncedValue } from "~/hooks/use-debounced-value";
 import { ThreadRow } from "../components/thread-row";
+import { useCachedMailboxPage } from "../hooks/use-cached-mailbox-page";
 import { toConvexId } from "../lib/convex-id";
 import { toMailThreads } from "../lib/convex-mail";
 import { useMailStore } from "../store";
@@ -20,8 +20,6 @@ import { useArchiveActions } from "./use-archive-actions";
 const pageSize = 30;
 
 interface ArchiveMailboxProps {
-  onAccountChange: (value: MailAccountFilter) => void;
-  onMailboxSelect: (mailbox: OtherMailbox) => void;
   primary: string;
   searchMode: boolean;
   searchTerm: string;
@@ -31,8 +29,6 @@ export function ArchiveMailbox({
   primary,
   searchMode,
   searchTerm,
-  onAccountChange,
-  onMailboxSelect,
 }: ArchiveMailboxProps) {
   const router = useRouter();
   const accounts = useMailStore((store) => store.accounts);
@@ -44,6 +40,13 @@ export function ArchiveMailbox({
     { accountId },
     { initialNumItems: pageSize },
   );
+  const archiveRows = useCachedMailboxPage({
+    accountId,
+    isPending: archive.status === "LoadingFirstPage",
+    mailbox: "archive",
+    rows: archive.results,
+    selectCache: (store) => store.mailboxPages,
+  });
   const normalizedSearchTerm = searchTerm.trim();
   const delayedSearchTerm = useDebouncedValue(
     normalizedSearchTerm,
@@ -66,8 +69,8 @@ export function ArchiveMailbox({
   }, [isSearching, searchResults]);
 
   const sourceRows = isSearching
-    ? (searchResults ?? settledSearchResults ?? archive.results)
-    : archive.results;
+    ? (searchResults ?? settledSearchResults ?? archiveRows)
+    : archiveRows;
   const threads = filterMailboxThreads(
     toMailThreads(sourceRows),
     actions.filter,
@@ -112,10 +115,8 @@ export function ArchiveMailbox({
       searchTerm={isSearching ? normalizedSearchTerm : undefined}
       selectedCount={actions.selectedIds.size}
       selectionMode={actions.selectionMode}
-      onAccountChange={onAccountChange}
       onFilterChange={actions.changeFilter}
       onLoadMore={() => archive.loadMore(pageSize)}
-      onMailboxSelect={onMailboxSelect}
       onToggleSelection={actions.toggleSelectionMode}
       pageStatus={isSearching ? "Exhausted" : archive.status}
     />

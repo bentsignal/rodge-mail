@@ -22,6 +22,11 @@ export function withMailboxSearch(
   };
 }
 
+/** Moving to another mailbox keeps the account and leaves everything else. */
+export function toMailboxLinkSearch({ mailbox }: MailRouteSearch) {
+  return { mailbox };
+}
+
 export function withUnreadSearch(search: MailRouteSearch, unreadOnly: boolean) {
   const next = {
     ...search,

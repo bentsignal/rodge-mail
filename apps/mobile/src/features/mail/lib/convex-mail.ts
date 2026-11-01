@@ -15,7 +15,7 @@ const attachmentTypes = {
 } satisfies Record<string, MailAttachment["type"]>;
 
 type InboxResult = FunctionReturnType<typeof api.mail.queries.listInbox>;
-type InboxItem = InboxResult["page"][number];
+export type InboxItem = InboxResult["page"][number];
 type ThreadDetail = NonNullable<
   FunctionReturnType<typeof api.mail.queries.getThread>
 >;

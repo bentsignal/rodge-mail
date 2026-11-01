@@ -5,63 +5,68 @@ import { ChevronDown } from "lucide-react-native";
 
 import type { MailAccount, MailAccountFilter } from "@rodge-mail/features/mail";
 
-import type { MobileMailbox, OtherMailbox } from "../store";
+import type { MobileMailbox } from "../store";
 import { useColor } from "~/hooks/use-color";
+import {
+  getAccountAddressDetail,
+  getMailboxTitle,
+  getSelectedAccountLabel,
+  MAILBOX_OPTIONS,
+} from "../screens/mailbox-scope";
+import { useMailStore } from "../store";
 
+const MAILBOX_ACTION_PREFIX = "mailbox:";
+
+/** The search screen's account and mailbox menu, the same choices as the toolbar's. */
 export function AccountFilter({
   value,
   accounts,
   mailbox,
-  onChange,
-  onMailboxSelect,
 }: {
   accounts: MailAccount[];
   mailbox: MobileMailbox;
   value: MailAccountFilter;
-  onChange: (value: MailAccountFilter) => void;
-  onMailboxSelect: (mailbox: OtherMailbox) => void;
 }) {
   const mutedForeground = useColor("muted-foreground");
-  const selectedAccount =
-    value === "all"
-      ? undefined
-      : accounts.find((account) => account.id === value);
-  const selectedLabel =
-    mailbox === "inbox"
-      ? selectedAccount
-        ? getAccountLabel(selectedAccount)
-        : "All Inboxes"
-      : MAILBOX_TITLES[mailbox];
-  const actions = [
+  const setAccountFilter = useMailStore((store) => store.setAccountFilter);
+  const setMailbox = useMailStore((store) => store.setMailbox);
+  const selectedLabel = [
+    getMailboxTitle(mailbox, value),
+    getSelectedAccountLabel(value, accounts),
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  const mailboxActions = MAILBOX_OPTIONS.map((option) => ({
+    id: `${MAILBOX_ACTION_PREFIX}${option.value}`,
+    image: option.icon,
+    state: selectionState(mailbox === option.value),
+    title: option.label,
+  }));
+  const accountActions = [
     {
       id: "all",
-      image: "tray.full" as const,
-      state: selectionState(mailbox === "inbox" && value === "all"),
-      title: "All Inboxes",
+      state: selectionState(value === "all"),
+      title: "All Accounts",
     },
     ...accounts.map((account) => ({
       id: account.id,
-      image: "tray" as const,
-      state: selectionState(mailbox === "inbox" && value === account.id),
-      title: getAccountLabel(account),
+      state: selectionState(value === account.id),
+      subtitle: getAccountAddressDetail(account),
+      title: account.label,
     })),
+  ];
+  const actions = [
     {
-      id: allMailboxId,
-      image: "mail.stack" as const,
-      state: selectionState(mailbox === "all"),
-      title: "All Mail",
+      id: "accounts",
+      image: "person.crop.circle",
+      subactions: accountActions,
+      title: "Account",
     },
     {
-      id: archiveMailboxId,
-      image: "archivebox" as const,
-      state: selectionState(mailbox === "archive"),
-      title: "Archive",
-    },
-    {
-      id: spamMailboxId,
-      image: "exclamationmark.shield" as const,
-      state: selectionState(mailbox === "spam"),
-      title: "Spam",
+      id: "mailboxes",
+      image: "tray",
+      subactions: mailboxActions,
+      title: "Mailbox",
     },
   ] satisfies MenuAction[];
 
@@ -73,15 +78,16 @@ export function AccountFilter({
         style={{ width: "100%" }}
         testID="mailbox-picker"
         onPressAction={(event) => {
-          const nextValue = event.nativeEvent.event;
-          if (nextValue === allMailboxId) onMailboxSelect("all");
-          else if (nextValue === archiveMailboxId) onMailboxSelect("archive");
-          else if (nextValue === spamMailboxId) onMailboxSelect("spam");
-          else onChange(nextValue);
+          const id = event.nativeEvent.event;
+          const option = MAILBOX_OPTIONS.find(
+            ({ value: next }) => id === `${MAILBOX_ACTION_PREFIX}${next}`,
+          );
+          if (option) setMailbox(option.value);
+          else setAccountFilter(id);
         }}
       >
         <Pressable
-          accessibilityHint="Choose which inbox to show"
+          accessibilityHint="Choose which account and mailbox to show"
           accessibilityLabel={`Mailbox: ${selectedLabel}`}
           accessibilityRole="button"
           className="bg-muted border-border h-11 min-w-0 flex-row items-center gap-2 rounded-xl border px-3"
@@ -99,21 +105,6 @@ export function AccountFilter({
   );
 }
 
-const MAILBOX_TITLES = {
-  all: "All Mail",
-  archive: "Archive",
-  spam: "Spam",
-} satisfies Record<OtherMailbox, string>;
-
-const allMailboxId = "__all__";
-const archiveMailboxId = "__archive__";
-const spamMailboxId = "__spam__";
-
 function selectionState(selected: boolean) {
   return selected ? ("on" as const) : ("off" as const);
-}
-
-function getAccountLabel(account: MailAccount) {
-  if (account.label === account.address) return account.address;
-  return `${account.label} · ${account.address}`;
 }

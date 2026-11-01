@@ -7,7 +7,7 @@ import { Check, ListChecks, ListFilter } from "lucide-react-native";
 import type { MailAccountFilter } from "@rodge-mail/features/mail";
 
 import type { MobileMailAccount } from "../lib/convex-mail";
-import type { MobileMailbox, OtherMailbox } from "../store";
+import type { MobileMailbox } from "../store";
 import type { MailboxFilter } from "./mailbox-controls";
 import { useColor } from "~/hooks/use-color";
 import { AccountFilter } from "../components/account-filter";
@@ -18,10 +18,9 @@ export function InboxHeader({
   accountFilter,
   accounts,
   filter,
+  filterEnabled = true,
   includeTopSafeArea = true,
   mailbox,
-  onAccountChange,
-  onMailboxSelect,
   onFilterChange,
   onToggleSelection,
   refreshError,
@@ -31,10 +30,9 @@ export function InboxHeader({
   accountFilter: MailAccountFilter;
   accounts: MobileMailAccount[];
   filter: MailboxFilter;
+  filterEnabled?: boolean;
   includeTopSafeArea?: boolean;
   mailbox: MobileMailbox;
-  onAccountChange: (value: MailAccountFilter) => void;
-  onMailboxSelect: (mailbox: OtherMailbox) => void;
   onFilterChange: (value: MailboxFilter) => void;
   onToggleSelection: () => void;
   refreshError: string | undefined;
@@ -52,10 +50,12 @@ export function InboxHeader({
             accounts={accounts}
             mailbox={mailbox}
             value={accountFilter}
-            onChange={onAccountChange}
-            onMailboxSelect={onMailboxSelect}
           />
-          <MailboxFilterMenu filter={filter} onChange={onFilterChange} />
+          <MailboxFilterSlot
+            enabled={filterEnabled}
+            filter={filter}
+            onChange={onFilterChange}
+          />
           <SelectionButtonSlot
             enabled={selectionEnabled}
             selectionMode={selectionMode}
@@ -66,6 +66,14 @@ export function InboxHeader({
       </View>
     </SafeAreaView>
   );
+}
+
+function MailboxFilterSlot({
+  enabled,
+  ...props
+}: React.ComponentProps<typeof MailboxFilterMenu> & { enabled: boolean }) {
+  if (!enabled) return null;
+  return <MailboxFilterMenu {...props} />;
 }
 
 function SelectionButtonSlot({

@@ -9,6 +9,9 @@ import {
   sortPinnedMailRows,
 } from "@rodge-mail/features/mail";
 
+import type { InboxItem } from "./lib/convex-mail";
+import type { SentRow } from "./sent/sent-row";
+import { useAccountPageCache } from "./hooks/use-account-page-cache";
 import { toConvexId } from "./lib/convex-id";
 import { toMailAccount, toMailThreads } from "./lib/convex-mail";
 
@@ -17,12 +20,13 @@ interface ThreadOverride {
   isRead?: boolean;
 }
 
-export type MobileMailbox = "all" | "archive" | "inbox" | "spam";
-export type OtherMailbox = Exclude<MobileMailbox, "inbox">;
+export type MobileMailbox = "all" | "archive" | "inbox" | "sent" | "spam";
 
 function useInternalStore() {
   const [accountFilter, setAccountFilter] = useState<MailAccountFilter>("all");
-  const [mailbox, setMailbox] = useState<MobileMailbox>("inbox");
+  const [mailbox, setMailboxState] = useState<MobileMailbox>("inbox");
+  const mailboxPages = useAccountPageCache<InboxItem>();
+  const sentPages = useAccountPageCache<SentRow>();
   // Shared so the tab bar can make way for the selection toolbar.
   const [selectionMode, setSelectionMode] = useState(false);
   const inbox = usePaginatedQuery(
@@ -101,6 +105,11 @@ function useInternalStore() {
     if (inbox.status === "CanLoadMore") inbox.loadMore(30);
   }
 
+  function setMailbox(next: MobileMailbox) {
+    setMailboxState(next);
+    setSelectionMode(false);
+  }
+
   return {
     accountFilter,
     accounts,
@@ -111,7 +120,9 @@ function useInternalStore() {
     loadMore,
     pageStatus: inbox.status,
     mailbox,
+    mailboxPages,
     markRead,
+    sentPages,
     selectionMode,
     setAccountFilter,
     setMailbox,
@@ -121,6 +132,8 @@ function useInternalStore() {
     toggleRead,
   };
 }
+
+export type MailStoreValue = ReturnType<typeof useInternalStore>;
 
 export const { Store: MailStore, useStore: useMailStore } =
   createStore(useInternalStore);

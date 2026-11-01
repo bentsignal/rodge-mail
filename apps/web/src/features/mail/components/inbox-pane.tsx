@@ -7,11 +7,11 @@ import type { MailMode } from "../live-data-types";
 import { useLiveMail } from "../live-data";
 import { withUnreadSearch } from "../mail-route-search";
 import { useMailStore } from "../store";
-import { useMailboxNavigation } from "../use-mailbox-navigation";
 import {
   BulkSelectButton,
   BulkSelectionToolbar,
 } from "./bulk-selection-toolbar";
+import { MobileScopeFilters } from "./mobile-scope-filters";
 import { ThreadList } from "./thread-list";
 
 export function InboxPane() {
@@ -61,7 +61,7 @@ function InboxHeader() {
       </div>
       <SearchInputSlot mailMode={mailMode} />
       <BulkSelectionToolbar />
-      <MobileAccountFilters />
+      <MobileScopeFilters />
       <SearchResultsLabel />
     </header>
   );
@@ -167,42 +167,6 @@ export function ClearSearchButton({ query }: { query: string }) {
   );
 }
 
-function MobileAccountFilters() {
-  const accountFilter = useMailStore((store) => store.accountFilter);
-  const { accounts, mailMode } = useLiveMail();
-  const selectMailbox = useMailboxNavigation(getAccountFilterPath(mailMode));
-  if (mailMode === "spam") return null;
-
-  return (
-    <div
-      className={cn(
-        "mail-scrollbar mt-3 flex gap-2 overflow-x-auto pb-1",
-        mailMode !== "all" && "md:hidden",
-      )}
-    >
-      <MobileAccountChip
-        active={accountFilter === "all"}
-        label={mailMode === "all" ? "All Accounts" : "All Inboxes"}
-        onClick={() => selectMailbox("all")}
-      />
-      {accounts.map((account) => (
-        <MobileAccountChip
-          active={accountFilter === account._id}
-          key={account._id}
-          label={account.label}
-          onClick={() => selectMailbox(account._id)}
-        />
-      ))}
-    </div>
-  );
-}
-
-function getAccountFilterPath(mailMode: MailMode) {
-  if (mailMode === "all") return "/all";
-  if (mailMode === "archive") return "/archive";
-  return "/";
-}
-
 function SearchResultsLabel() {
   const debouncedSearchQuery = useMailStore(
     (store) => store.debouncedSearchQuery,
@@ -230,30 +194,5 @@ function MobileBrand() {
       className="size-6 rounded-[7px] md:hidden"
       src="/icon-192.png"
     />
-  );
-}
-
-function MobileAccountChip({
-  active,
-  label,
-  onClick,
-}: {
-  active: boolean;
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      className={cn(
-        "flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs transition",
-        active
-          ? "border-primary bg-primary text-primary-foreground"
-          : "border-border bg-background text-muted-foreground",
-      )}
-      onClick={onClick}
-      type="button"
-    >
-      {label}
-    </button>
   );
 }

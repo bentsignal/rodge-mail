@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { usePaginatedQuery } from "convex/react";
 
 import { api } from "@rodge-mail/convex/api";
@@ -9,7 +9,11 @@ import type { InboxMessage } from "./types";
 import { MAIL_PAGE_SIZE } from "./constants";
 import { useLiveMailActions } from "./live-data-actions";
 import { useAccountsQuery, useUnreadCountQuery } from "./live-data-query-hooks";
-import { throwQueryError, useThreadQuery } from "./live-data-support";
+import {
+  throwQueryError,
+  useSettledResults,
+  useThreadQuery,
+} from "./live-data-support";
 import { toAccountView, toUnreadCountRecord } from "./live-data-utils";
 import { useMailStore } from "./store";
 
@@ -98,7 +102,7 @@ function useAllMailPage({
     searchQuery.trim() !== searchTerm ||
     activePage.status === "LoadingFirstPage";
   const results = dedupeThreadRows(
-    useSettledResults(activePage.results, isPending),
+    useSettledResults(activePage.results, isPending, accountId),
   );
   return {
     canLoadMore: activePage.status === "CanLoadMore",
@@ -108,16 +112,4 @@ function useAllMailPage({
     loadMore: () => activePage.loadMore(MAIL_PAGE_SIZE),
     results,
   };
-}
-
-function useSettledResults(results: InboxMessage[], isPending: boolean) {
-  const [settled, setSettled] = useState<InboxMessage[]>();
-  // eslint-disable-next-line no-restricted-syntax -- Keep the last settled page on screen while the next Convex subscription loads.
-  useEffect(() => {
-    if (isPending) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- Query settlement is an external subscription snapshot.
-    setSettled(results);
-  }, [isPending, results]);
-  if (!isPending) return results;
-  return settled ?? results;
 }

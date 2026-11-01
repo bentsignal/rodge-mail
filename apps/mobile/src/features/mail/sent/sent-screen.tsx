@@ -1,4 +1,3 @@
-import type { FunctionReturnType } from "convex/server";
 import {
   ActivityIndicator,
   Pressable,
@@ -6,11 +5,10 @@ import {
   Text,
   View,
 } from "react-native";
-import { Stack, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { usePaginatedQuery, useQuery } from "convex/react";
 import { Paperclip, RotateCcw } from "lucide-react-native";
 
-import type { api as Api } from "@rodge-mail/convex/api";
 import { api } from "@rodge-mail/convex/api";
 import {
   formatSentRecipients,
@@ -18,48 +16,71 @@ import {
   getSentSubject,
 } from "@rodge-mail/features/mail";
 
+import type { SentRow } from "./sent-row";
 import { ContentReveal } from "~/components/content-reveal";
 import { useColor } from "~/hooks/use-color";
+import { useDebouncedValue } from "~/hooks/use-debounced-value";
+import { useCachedMailboxPage } from "../hooks/use-cached-mailbox-page";
+import { toConvexId } from "../lib/convex-id";
 import { formatInboxMessageTime } from "../lib/mail-format";
 import { isOptimisticOutboxId } from "../outgoing/outbox-optimistic";
 import { useOutgoingMail } from "../outgoing/outgoing-store";
+import { MAIL_SEARCH_DEBOUNCE_MS } from "../screens/inbox-list-state";
+import {
+  MailboxHeaderSlot,
+  SelectedAccountLabel,
+} from "../screens/mailbox-list-header";
+import { useMailStore } from "../store";
 import { getSentRowTarget } from "./sent-navigation";
-
-export type SentRow = FunctionReturnType<
-  typeof Api.outbox.queries.listUnsent
->[number];
+import { filterSentRows } from "./sent-row";
 
 const PAGE_SIZE = 30;
 
 /** Mail you've sent, with anything still in the outbox on top. */
-export function SentScreen() {
+export function SentMailbox({
+  searchMode,
+  searchTerm,
+}: {
+  searchMode: boolean;
+  searchTerm: string;
+}) {
   const router = useRouter();
-  const unsent = useQuery(api.outbox.queries.listUnsent, {});
-  const sent = usePaginatedQuery(
-    api.outbox.queries.listSent,
-    {},
-    { initialNumItems: PAGE_SIZE },
-  );
+  const accounts = useMailStore((store) => store.accounts);
+  const accountFilter = useMailStore((store) => store.accountFilter);
   const retry = useOutgoingMail((store) => store.retryOutboxMessage);
-  const sections = [
-    { data: unsent ?? [], key: "outbox", title: "Outbox" },
-    { data: sent.results, key: "sent", title: "Sent" },
-  ].filter((section) => section.data.length > 0);
-  const isLoading = unsent === undefined || sent.status === "LoadingFirstPage";
+  const { activeSearchTerm, isLoading, sections, sent } =
+    useSentSections(searchTerm);
 
   return (
     <>
-      <Stack.Screen options={{ headerLargeTitle: true, title: "Sent" }} />
+      <MailboxHeaderSlot
+        accountFilter={accountFilter}
+        accounts={accounts}
+        bulkActions={[]}
+        filter="all"
+        filterEnabled={false}
+        headerInList={false}
+        mailbox="sent"
+        onFilterChange={() => undefined}
+        onToggleSelection={() => undefined}
+        refreshError={undefined}
+        searchMode={searchMode}
+        selectedCount={0}
+        selectionEnabled={false}
+        selectionMode={false}
+      />
       <ContentReveal isReady={!isLoading}>
         <SectionList
+          key={accountFilter}
           contentInsetAdjustmentBehavior="automatic"
           keyExtractor={(row) => row._id}
-          ListEmptyComponent={<SentEmpty />}
+          ListEmptyComponent={<SentEmpty searchTerm={activeSearchTerm} />}
           ListFooterComponent={
             sent.status === "LoadingMore" ? (
               <ActivityIndicator className="py-6" />
             ) : null
           }
+          ListHeaderComponent={<SentListHeader searchMode={searchMode} />}
           renderItem={({ item }) => (
             <SentListRow
               row={item}
@@ -85,6 +106,65 @@ export function SentScreen() {
   );
 }
 
+function useSentSections(searchTerm: string) {
+  const accountFilter = useMailStore((store) => store.accountFilter);
+  const accountId =
+    accountFilter === "all"
+      ? undefined
+      : toConvexId<"mailAccounts">(accountFilter);
+  const unsent = useQuery(api.outbox.queries.listUnsent, {});
+  const sent = usePaginatedQuery(
+    api.outbox.queries.listSent,
+    { accountId },
+    { initialNumItems: PAGE_SIZE },
+  );
+  const sentRows = useCachedMailboxPage({
+    accountId,
+    isPending: sent.status === "LoadingFirstPage",
+    mailbox: "sent",
+    rows: sent.results,
+    selectCache: (store) => store.sentPages,
+  });
+  const normalizedSearchTerm = searchTerm.trim();
+  const delayedSearchTerm = useDebouncedValue(
+    normalizedSearchTerm,
+    MAIL_SEARCH_DEBOUNCE_MS,
+  );
+  const activeSearchTerm = normalizedSearchTerm ? delayedSearchTerm : "";
+  const unsentRows = (unsent ?? []).filter(
+    (row) => !accountId || row.accountId === accountId,
+  );
+  const sections = [
+    {
+      data: filterSentRows(unsentRows, activeSearchTerm),
+      key: "outbox",
+      title: "Outbox",
+    },
+    {
+      data: filterSentRows(sentRows, activeSearchTerm),
+      key: "sent",
+      title: "Sent",
+    },
+  ].filter((section) => section.data.length > 0);
+  return {
+    activeSearchTerm,
+    isLoading:
+      sections.length === 0 &&
+      (unsent === undefined || sent.status === "LoadingFirstPage"),
+    sections,
+    sent,
+  };
+}
+
+function SentListHeader({ searchMode }: { searchMode: boolean }) {
+  const accounts = useMailStore((store) => store.accounts);
+  const accountFilter = useMailStore((store) => store.accountFilter);
+  if (searchMode) return null;
+  return (
+    <SelectedAccountLabel accountFilter={accountFilter} accounts={accounts} />
+  );
+}
+
 function SectionHeader({ title }: { title: string }) {
   return (
     <Text className="text-muted-foreground px-4 pt-5 pb-1.5 text-[13px] font-semibold uppercase">
@@ -93,10 +173,11 @@ function SectionHeader({ title }: { title: string }) {
   );
 }
 
-function SentEmpty() {
+function SentEmpty({ searchTerm }: { searchTerm: string }) {
+  const label = searchTerm ? "No matching mail" : "No sent mail";
   return (
     <Text className="text-muted-foreground py-16 text-center text-base">
-      No sent mail
+      {label}
     </Text>
   );
 }

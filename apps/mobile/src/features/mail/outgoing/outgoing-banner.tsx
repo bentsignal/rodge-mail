@@ -11,6 +11,7 @@ import { getSentSubject } from "@rodge-mail/features/mail";
 
 import type { OutgoingBannerState } from "./outgoing-status";
 import { useColor } from "~/hooks/use-color";
+import { useMailStore } from "../store";
 import { getOutgoingBannerState } from "./outgoing-status";
 import { useOutgoingMail } from "./outgoing-store";
 
@@ -24,6 +25,8 @@ export function OutgoingMailBanner() {
   const sends = useOutgoingMail((store) => store.sends);
   const dismiss = useOutgoingMail((store) => store.dismiss);
   const retry = useOutgoingMail((store) => store.retry);
+  const setAccountFilter = useMailStore((store) => store.setAccountFilter);
+  const setMailbox = useMailStore((store) => store.setMailbox);
   const latest = sends.at(-1);
   const outbox = useQuery(api.outbox.queries.listRecent, latest ? {} : "skip");
   const state = getOutgoingBannerState(latest, outbox);
@@ -60,11 +63,13 @@ export function OutgoingMailBanner() {
           subject={getSentSubject(latest.subject)}
           onDismiss={() => dismiss(latest.key)}
           onOpen={() => {
-            router.push(
-              state.outboxId
-                ? `/(tabs)/(inbox)/sent/${state.outboxId}`
-                : "/(tabs)/(inbox)/sent",
-            );
+            if (state.outboxId) {
+              router.push(`/(tabs)/(inbox)/sent/${state.outboxId}`);
+              return;
+            }
+            setAccountFilter("all");
+            setMailbox("sent");
+            router.navigate("/(tabs)/(inbox)");
           }}
           onRetry={() => retry(latest.key)}
         />

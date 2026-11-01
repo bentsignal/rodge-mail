@@ -103,6 +103,7 @@ function SentMessageView({ message }: { message: SentMessage }) {
         <QuickLink
           aria-label="Back to Sent"
           className="hover:bg-muted flex size-10 items-center justify-center rounded-lg lg:hidden"
+          search={(previous) => previous}
           to="/sent"
         >
           <ArrowLeft className="size-4" />

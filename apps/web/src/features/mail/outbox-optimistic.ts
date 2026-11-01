@@ -49,6 +49,7 @@ export function addSendingOutboxRow(
     store.setQuery(api.outbox.queries.listUnsent, {}, [
       {
         ...row,
+        accountId: args.accountId,
         account: {
           _id: account._id,
           address: account.address,
