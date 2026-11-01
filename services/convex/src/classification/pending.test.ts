@@ -67,4 +67,12 @@ describe("pending classification metadata", () => {
       summary: "Legacy preview",
     });
   });
+
+  it("cuts a long snippet before an emoji rather than through it", () => {
+    const snippet = `${"a".repeat(279)}\u{1F600}`;
+
+    expect(pendingClassificationMetadata(null, snippet).summary).toBe(
+      "a".repeat(279),
+    );
+  });
 });

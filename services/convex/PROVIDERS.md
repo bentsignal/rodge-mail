@@ -195,6 +195,16 @@ SES configuration-set events ─> SNS ─> hostedDeliveryEvents
   `quarantine`/`reject` policy are stored outside the inbox with a `junk` label.
 - SES replaces the outgoing `Message-ID`; the sent copy records
   `<sesMessageId@email.amazonses.com>` so replies thread correctly.
+- `normalize.ts` makes every parsed string valid for Convex. Convex parses
+  arguments and documents with serde_json, which rejects a lone UTF-16
+  surrogate with only "Invalid arguments provided". A lone surrogate can come
+  from a decoded header or from cutting text through an emoji, so lone
+  surrogates become U+FFFD and truncation never splits a pair
+  (`src/mail/text.ts`). Bodies are capped at 100,000 characters, the subject
+  at 2,000, each recipient list at 500 addresses, and headers at 500 lines,
+  4,000 characters a value, and 64,000 characters in all. mailparser drops
+  every header and the body of a message whose header block is over 1 MB.
+  That message is still stored, with no subject or sender.
 - Read state and archive are local-only; there is no provider to synchronize.
 - Convex uses the `rodge-mail-convex` IAM user, limited to the mail bucket and
   sending from verified identities.
@@ -261,7 +271,10 @@ stay under half the classification rate limit.
 
 `importer:run` handles 25 messages per batch and schedules the next one. The
 `mailImports` row keeps the cursor and the imported, skipped, and failed
-counts, plus the last 100 failures with their reasons. Graph throttling and
+counts, plus the last 100 failures with their reasons. Each failure also
+keeps the subject, sender, and date from the source listing (Graph's
+`$select` already returns them), and the reason includes the error's class,
+ConvexError data, and causes, up to 1,000 characters. Graph throttling and
 5xx errors retry the same page with backoff and fail the import after five in
 a row; a missing or oversized (over 40 MB) message is recorded as a failure
 and skipped. Running `import` again resumes a failed or stalled import from

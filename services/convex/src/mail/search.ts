@@ -1,3 +1,5 @@
+import { truncateText } from "./text";
+
 interface MailSearchConstraints {
   after?: number;
   before?: number;
@@ -87,7 +89,7 @@ export function createMessageSearchText(input: {
       input.accountAddress,
       input.subject,
       input.snippet,
-      input.body?.slice(0, 20_000),
+      input.body && truncateText(input.body, 20_000),
     ]
       .filter(Boolean)
       .join(" "),

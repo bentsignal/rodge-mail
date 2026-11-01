@@ -1,8 +1,9 @@
 "use node";
 
 import { createHash } from "node:crypto";
+import { inspect } from "node:util";
 import type { ParsedMail } from "mailparser";
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 
 import type { Doc } from "../../_generated/dataModel";
 import type { ActionCtx } from "../../_generated/server";
@@ -14,6 +15,7 @@ import type {
 } from "../types";
 import { internal } from "../../_generated/api";
 import { internalAction } from "../../_generated/server";
+import { toWellFormed, truncateText } from "../../mail/text";
 import { MicrosoftGraphError } from "../microsoft/api";
 import { MicrosoftMailImportSource } from "../microsoft/mailImport";
 import { getUsableMicrosoftTokens } from "../microsoft/tokenAccess";
@@ -38,6 +40,9 @@ interface ImportFailure {
   folder: string;
   reason: string;
   at: number;
+  subject?: string;
+  from?: string;
+  receivedAt?: number;
 }
 
 export interface ImportBatchJob {
@@ -122,12 +127,7 @@ export async function importBatch(job: ImportBatchJob, deps: ImportBatchDeps) {
       if (isTransientError(error)) {
         return { ...tally, error: describeError(error) };
       }
-      tally.failures.push({
-        remoteMessageId: message.remoteMessageId,
-        folder: message.folder.path,
-        reason: describeError(error),
-        at: Date.now(),
-      });
+      tally.failures.push(importFailure(message, error));
     }
   }
   return {
@@ -136,6 +136,18 @@ export async function importBatch(job: ImportBatchJob, deps: ImportBatchDeps) {
     estimatedTotal: page.estimatedTotal,
     currentFolder: page.messages.at(-1)?.folder.path,
   };
+}
+
+function importFailure(message: ImportSourceMessage, error: unknown) {
+  return {
+    remoteMessageId: message.remoteMessageId,
+    folder: message.folder.path,
+    reason: describeError(error),
+    at: Date.now(),
+    subject: message.subject && clip(message.subject, 200),
+    from: message.from && clip(message.from, 200),
+    receivedAt: message.receivedAt,
+  } satisfies ImportFailure;
 }
 
 export function importDigest(sourceAccountId: string, remoteMessageId: string) {
@@ -256,6 +268,27 @@ function isTransientError(error: unknown) {
   return error instanceof TypeError && error.message === "fetch failed";
 }
 
-function describeError(error: unknown) {
-  return (error instanceof Error ? error.message : String(error)).slice(0, 500);
+export function describeError(error: unknown) {
+  const parts = new Array<string>();
+  let current = error;
+  for (let depth = 0; depth < 3 && current !== undefined; depth += 1) {
+    if (!(current instanceof Error)) {
+      parts.push(inspect(current));
+      break;
+    }
+    const name = ["Error", "ConvexError"].includes(current.name)
+      ? ""
+      : `${current.name}: `;
+    const data =
+      current instanceof ConvexError && typeof current.data !== "string"
+        ? ` (data: ${JSON.stringify(current.data)})`
+        : "";
+    parts.push(`${name}${current.message}${data}`);
+    current = "cause" in current ? current.cause : undefined;
+  }
+  return clip(parts.join("; caused by "), 1_000);
+}
+
+function clip(value: string, maxLength: number) {
+  return truncateText(toWellFormed(value), maxLength);
 }

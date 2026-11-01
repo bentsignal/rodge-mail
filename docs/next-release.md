@@ -50,3 +50,27 @@ section here in that PR (see AGENTS.md → Releases), in this form:
   and an attachment downloads. `aws s3 ls s3://<bucket>/import/ --recursive | wc -l`
   roughly matches the imported count. Until the Microsoft account is removed
   (a separate PR), its synced inbox mail shows up twice.
+
+## Retry the Microsoft 365 import's failed message (#PR)
+
+- When: after the Convex deploy, and after the #24 import above has finished.
+- Why: one Inbox message failed on every run with "Invalid arguments
+  provided", which Convex returns when it can't parse a function's
+  arguments. The likeliest cause is a lone UTF-16 surrogate in the
+  normalized message, such as a snippet cut through an emoji. This PR makes
+  normalization produce only values Convex accepts.
+- Commands:
+  ```sh
+  node scripts/hosted-mail.mjs import me@bentsignal.com me@bentsignal.com
+  node scripts/hosted-mail.mjs import-status me@bentsignal.com
+  ```
+  Only a `completed` import starts over from the beginning. It skips
+  everything already imported without downloading it and retries the
+  failure. A `failed` or stalled import resumes from its cursor instead and
+  won't reach the earlier failure, so if `import-status` doesn't say
+  `completed` first, run `import` until it does, then run it once more. Run
+  `import-status` until the new run says `completed`.
+- Verify: `import-status` shows `failed 0`. If a message still fails, the line
+  under it now has its subject, sender, and date, and the reason carries the
+  error's class and causes. Use those to find the message and fix it in a
+  follow-up PR rather than rerunning.

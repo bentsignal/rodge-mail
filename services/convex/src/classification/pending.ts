@@ -1,4 +1,5 @@
 import type { ClassificationCategory } from "./constants";
+import { truncateText } from "../mail/text";
 
 export type StoredClassificationCategory =
   | ClassificationCategory
@@ -39,7 +40,7 @@ export function pendingClassificationMetadata(
     importance: source.importance,
     reason: definedOr(source.reason, PENDING_REASON),
     shouldEmbed: source.shouldEmbed,
-    summary: definedOr(source.summary, messageSnippet).slice(0, 280),
+    summary: truncateText(definedOr(source.summary, messageSnippet), 280),
   } satisfies ClassificationMetadata;
 }
 
@@ -50,7 +51,10 @@ export function requiredClassificationMetadata(
   return {
     category: definedOr(classification.category, "unclassified"),
     reason: definedOr(classification.reason, PENDING_REASON),
-    summary: definedOr(classification.summary, messageSnippet).slice(0, 280),
+    summary: truncateText(
+      definedOr(classification.summary, messageSnippet),
+      280,
+    ),
   } satisfies Pick<ClassificationMetadata, "category" | "reason" | "summary">;
 }
 

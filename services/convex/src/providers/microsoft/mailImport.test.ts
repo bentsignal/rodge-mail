@@ -36,7 +36,15 @@ const MESSAGES = new Map<string, Record<string, unknown>[][]>([
   [
     "inbox-id",
     [
-      [{ id: "m1", isRead: false, receivedDateTime: "2024-03-01T10:00:00Z" }],
+      [
+        {
+          id: "m1",
+          isRead: false,
+          receivedDateTime: "2024-03-01T10:00:00Z",
+          subject: "Trip plan",
+          from: { emailAddress: { name: "Alex", address: "alex@example.com" } },
+        },
+      ],
       [
         { id: "m2", isRead: true, receivedDateTime: "2024-03-02T10:00:00Z" },
         {
@@ -102,6 +110,8 @@ describe("Microsoft mail import source", () => {
         folder: { kind: "inbox", path: "Inbox" },
         isRead: false,
         receivedAt: Date.parse("2024-03-01T10:00:00Z"),
+        subject: "Trip plan",
+        from: "Alex <alex@example.com>",
       },
       {
         remoteMessageId: "m2",
@@ -134,6 +144,13 @@ describe("Microsoft mail import source", () => {
         receivedAt: Date.parse("2023-06-01T08:00:00Z"),
       },
     ]);
+    expect(
+      requested.some((url) =>
+        url.includes(
+          "$select=id,isRead,isDraft,receivedDateTime,sentDateTime,subject,from&",
+        ),
+      ),
+    ).toBe(true);
     expect(requested.some((url) => url.includes("deleted-id"))).toBe(false);
     expect(requested.some((url) => url.includes("drafts-id/messages"))).toBe(
       false,
