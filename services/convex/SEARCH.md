@@ -61,3 +61,38 @@ It is therefore a relevance aid rather than an exhaustive structured-query
 engine: a constrained match outside those 50 candidates is not returned. The
 deterministic exact-search query remains the exhaustive path exposed to the
 current clients.
+
+## All Mail and where mail lives
+
+`searchHeaders` and `getMessagesByIds` take an optional `scope`. Without it
+they search the inbox, as builds before All Mail expect. With
+`scope: "all"` they search every stored message: inbox, sent, Rodge's
+archive, imported folders, and provider folders. The full-text query drops
+its `inInbox` filter; date-only searches use `by_owner_received` or
+`by_account_received` instead of the inbox indexes. Web and mobile always
+search with `scope: "all"`.
+
+Junk, trash, Rodge's spam classification, and hidden repairs stay out of
+All Mail and search. They are filtered from each page after the index
+lookup, so a page can come back short while later pages exist, as with the
+structured filters above.
+
+Every list row carries a `location`: `{ kind, name? }`, where `kind` is a
+folder kind (`inbox`, `sent`, `drafts`, `archive`, `junk`, `trash`,
+`custom`) and `name` is a custom folder's path. `mail/location.ts` resolves
+it from the message: inbox and Rodge's `archivedAt` first, then the hosted
+import labels (`archive`, `junk`, `sent`, `folder:<path>`), Gmail's system
+labels, and otherwise the account's `mailFolders` row for the label
+(Microsoft folder IDs, iCloud mailbox paths). Mail with no known folder
+reads as `archive`, or `sent` when outgoing.
+
+`listAllMail` pages threads by `latestMessageAt`, newest first, for the
+owner or one account. A thread in the inbox shows its inbox row; any other
+thread shows its newest message that isn't junk, trash, or spam, and is
+dropped when it has none.
+
+`archiveMutations:moveThreadToInbox` puts a thread back in the inbox. It
+works for Rodge-archived threads on any account, and for any thread on a
+hosted account, where Rodge holds the only copy. Gmail, Microsoft, and
+iCloud own their folders, and their next sync would move the mail back out,
+so it refuses those.

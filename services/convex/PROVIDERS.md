@@ -300,9 +300,9 @@ from S3 on demand), and search work as they do for other hosted mail:
 
 Dates come from the source (`receivedDateTime`, or `sentDateTime` for sent
 mail). Archived mail doesn't get Rodge's `archivedAt`, which deletes mail
-after 30 days. Rodge has no folder or label views yet and search covers inbox
-mail only, so imported mail outside the inbox shows up only inside threads
-that also have inbox mail, until those views exist. Imports never notify, never request a clean view, and never
+after 30 days. Imported mail outside the inbox shows up in All Mail and in
+search, tagged with its folder ([SEARCH.md](SEARCH.md#all-mail-and-where-mail-lives)).
+Imports never notify, never request a clean view, and never
 send. Inbox mail is still classified, so batches wait 2 s per inbox message to
 stay under half the classification rate limit.
 
