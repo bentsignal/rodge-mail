@@ -9,7 +9,6 @@ import {
 import { toast } from "@rodge-mail/ui-web/toast";
 
 import { urls } from "~/urls";
-
 import { authClient } from "../lib/client";
 import { useAuthStore } from "../store";
 import { SignOutLink } from "./sign-out-link";

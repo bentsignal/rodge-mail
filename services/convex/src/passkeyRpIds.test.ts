@@ -5,7 +5,10 @@ import { describe, expect, it } from "vitest";
 
 import { passkeyRpIds, recordPasskeyRpId } from "./passkeyRpIds";
 
-const rpIds = { app: "fake-deployment.convex.site", website: "mail.example.com" };
+const rpIds = {
+  app: "fake-deployment.convex.site",
+  website: "mail.example.com",
+};
 
 async function createAuth(rpIdsByPasskey: Record<string, string | undefined>) {
   const db = Object.fromEntries(

@@ -84,7 +84,10 @@ export function passkeyRpIds(options: { rpId: string; rpIds: PasskeyRpIds }) {
               body.data.response.id,
               options.rpId,
             ).catch((error: unknown) => {
-              ctx.context.logger.error("Couldn't record a passkey's rpId", error);
+              ctx.context.logger.error(
+                "Couldn't record a passkey's rpId",
+                error,
+              );
             });
           }),
         },

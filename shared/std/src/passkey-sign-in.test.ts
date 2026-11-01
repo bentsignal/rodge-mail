@@ -3,7 +3,10 @@ import { describe, expect, it } from "vitest";
 import type { PasskeySignIn } from "./passkey-sign-in";
 import { getPasskeyRemovalBlock, getPasskeySignIn } from "./passkey-sign-in";
 
-const rpIds = { app: "fake-deployment.convex.site", website: "mail.example.com" };
+const rpIds = {
+  app: "fake-deployment.convex.site",
+  website: "mail.example.com",
+};
 
 function passkeys(...signsInTo: PasskeySignIn[]) {
   return signsInTo.map((target, index) => ({
@@ -46,12 +49,18 @@ describe("getPasskeyRemovalBlock", () => {
 
   it("keeps unknown passkeys until both platforms have a known one", () => {
     expect(
-      getPasskeyRemovalBlock(passkeys("app", "unknown", "unknown"), "unknown-1"),
+      getPasskeyRemovalBlock(
+        passkeys("app", "unknown", "unknown"),
+        "unknown-1",
+      ),
     ).toBe(
       "This might be your only passkey for the website. Sign in to the website with it once, or add another passkey there first.",
     );
     expect(
-      getPasskeyRemovalBlock(passkeys("website", "app", "unknown"), "unknown-2"),
+      getPasskeyRemovalBlock(
+        passkeys("website", "app", "unknown"),
+        "unknown-2",
+      ),
     ).toBeUndefined();
   });
 

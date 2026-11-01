@@ -1,9 +1,8 @@
 import { passkey } from "@better-auth/passkey";
 import { createApi } from "@convex-dev/better-auth";
 
-import schema from "./schema";
-
 import { passkeyRpIdPlugin } from "./passkeyRpIdPlugin";
+import schema from "./schema";
 
 export const {
   create,
