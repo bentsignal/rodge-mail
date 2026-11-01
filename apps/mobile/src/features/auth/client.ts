@@ -2,7 +2,6 @@ import { expoPasskeyClient } from "expo-better-auth-passkey";
 import * as SecureStore from "expo-secure-store";
 import { expoClient } from "@better-auth/expo/client";
 import { convexClient } from "@convex-dev/better-auth/client/plugins";
-import { emailOTPClient } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
 import { ConvexReactClient } from "convex/react";
 
@@ -24,7 +23,6 @@ export const authClient = createAuthClient({
       storage: SecureStore,
       storagePrefix: "rodge-mail",
     }),
-    emailOTPClient(),
     expoPasskeyClient(),
     convexClient(),
   ],

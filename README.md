@@ -52,8 +52,9 @@ Registration is closed. Convex's `AUTH_ALLOWED_USER_ID` must identify the
 existing owner account; session creation and authenticated functions reject
 all other users. `WEB_URL=https://mail.rodgers.dev` and
 `PASSKEY_RP_ID=mail.rodgers.dev` configure web authentication. Native passkeys
-continue to use `dazzling-dog-633.convex.site`. Sign in with email on the new
-website before adding its domain-specific passkey.
+continue to use `dazzling-dog-633.convex.site`. To add a passkey when none
+works, recover at `/recover` on the website, then use Settings → Rodge Mail
+account → Add passkey ([services/convex/AUTH.md](services/convex/AUTH.md)).
 
 ## Validation
 

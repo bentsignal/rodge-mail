@@ -37,12 +37,32 @@ users who already have a passkey. Users with no passkeys can request another
 registration code to resume interrupted onboarding. Passkey sign-in remains
 usernameless and selects the account from the credential.
 
-The separate **Sign in with email** flow sends a five-minute, three-attempt code
-only for an existing account, without revealing whether an address exists. A
-valid code verifies ownership of that address, atomically consumes the hashed
-code, and creates a normal authenticated session. It neither replaces nor adds
-a passkey. Users can add another passkey later from Settings. Both email sign-in
-endpoints are rate limited to three requests per minute.
+Both sign-in screens, web and mobile, offer only **Sign in with passkey**.
+Passkeys are listed, added, and removed in Settings under **Rodge Mail
+account**, through Better Auth's passkey client
+(`/passkey/list-user-passkeys`, `/passkey/delete-passkey`). The apps disable
+Remove on the last passkey, so the owner can't remove the only one from the UI.
+
+## Recovery: `/recover`
+
+When no passkey works (a new device, a lost phone, a changed `PASSKEY_RP_ID`),
+open `https://mail.rodgers.dev/recover`. Nothing links to it. It sends a
+five-minute, three-attempt code to an existing account's address, without
+revealing whether an address exists (`/passkey-recovery/request`). A valid code
+(`/passkey-recovery/verify`) verifies ownership of that address, atomically
+consumes the hashed code, and creates a normal authenticated session. It
+neither replaces nor adds a passkey: after it signs you in, open Settings →
+Rodge Mail account → **Add passkey**. Both recovery endpoints are rate limited
+to three requests per minute.
+
+The mobile app has no recovery screen. Its passkeys belong to a different
+relying party (the Convex site host) than the website's (`PASSKEY_RP_ID`), so a
+website passkey can't sign the app in, and only the signed-in app can add an
+app passkey. Settings lists both kinds together. Before removing the phone's
+passkey from the website, make sure the phone has another one (iCloud Keychain
+syncs them across Apple devices), or it can't sign in again after it signs out.
+
+## CLI sign-in
 
 CLI authentication uses a five-minute, PKCE-bound handoff stored in Better
 Auth's verification table under the `/desktop-auth/*` endpoints. The
@@ -53,10 +73,14 @@ factors are submitted in the final POST. The server stores only their
 hashes and atomically consumes the verification record before a separate
 client session is issued, preventing interception and replay.
 
+## Android
+
 Android also requires `https://<PASSKEY_RP_ID>/.well-known/assetlinks.json`
 with the package `com.bentsignal.rodgemail` and each signing certificate's raw
 SHA-256 fingerprint. The same certificates must be converted to base64 and
 listed in `ANDROID_PASSKEY_ORIGINS`; the server rejects malformed entries.
+
+## Schema changes
 
 After changing Better Auth plugins or options that affect its schema, regenerate
 the local component schema from `services/convex/src/betterAuth`:

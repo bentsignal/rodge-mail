@@ -17,7 +17,7 @@ import { cn } from "@rodge-mail/std/cn";
 import type { MailAccountFilter } from "../store";
 import type { MailAccountView } from "../types";
 import { QuickLink } from "~/components/quick-link";
-import { PasskeyManagementButton } from "~/features/auth/components/passkey-management-button";
+import { SettingsButton } from "~/features/auth/components/settings-button";
 import { useLiveMail } from "../live-data";
 import { useMailStore } from "../store";
 import { useMailboxNavigation } from "../use-mailbox-navigation";
@@ -89,7 +89,7 @@ export function AccountRail() {
             isSyncing={isSyncingAccounts}
             onSync={syncAllAccounts}
           />
-          <PasskeyManagementButton compact />
+          <SettingsButton />
         </div>
       </div>
     </aside>
