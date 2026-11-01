@@ -1,11 +1,12 @@
 /* eslint-disable @typescript-eslint/consistent-type-assertions -- Select values are validated against the loaded owner-scoped account list before sending. */
-import { ChevronDown } from "lucide-react";
+import { ChevronsUpDown } from "lucide-react";
 
 import type { Id } from "@rodge-mail/convex/model";
 
 import type { MailAccountView } from "../types";
 import { useLiveMail } from "../live-data";
 import { useMailStore } from "../store";
+import { ComposeRow } from "./compose-row";
 
 export function ComposeAccountField() {
   const { accounts } = useLiveMail();
@@ -20,28 +21,30 @@ export function ComposeAccountField() {
   );
 
   return (
-    <label className="border-border flex min-h-12 items-center gap-4 border-b">
-      <span className="mail-label w-12 shrink-0 text-[11px] font-medium tracking-wide uppercase">
-        From
-      </span>
-      <span className="relative min-w-0 flex-1">
-        <select
-          aria-label="From account"
-          className="disabled:text-muted-foreground h-12 w-full appearance-none bg-transparent pr-7 text-sm outline-none"
-          disabled={sendableAccounts.length === 0}
-          onChange={(event) =>
-            setComposerAccountId(toMailAccountId(event.target.value))
-          }
-          value={selectedAccount?._id ?? ""}
-        >
-          <AccountOptions accounts={sendableAccounts} />
-        </select>
-        <ChevronDown
-          aria-hidden="true"
-          className="text-muted-foreground pointer-events-none absolute top-1/2 right-0 size-3.5 -translate-y-1/2"
-        />
-      </span>
-    </label>
+    <ComposeRow>
+      <label className="flex min-w-0 flex-1 items-center gap-1.5">
+        <span className="text-muted-foreground shrink-0 text-[15px]">
+          From:
+        </span>
+        <span className="relative min-w-0 flex-1">
+          <select
+            aria-label="From account"
+            className="disabled:text-muted-foreground h-11 w-full appearance-none truncate bg-transparent pr-6 text-[15px] outline-none"
+            disabled={sendableAccounts.length === 0}
+            onChange={(event) =>
+              setComposerAccountId(toMailAccountId(event.target.value))
+            }
+            value={selectedAccount?._id ?? ""}
+          >
+            <AccountOptions accounts={sendableAccounts} />
+          </select>
+          <ChevronsUpDown
+            aria-hidden="true"
+            className="text-muted-foreground pointer-events-none absolute top-1/2 right-0 size-3.5 -translate-y-1/2"
+          />
+        </span>
+      </label>
+    </ComposeRow>
   );
 }
 

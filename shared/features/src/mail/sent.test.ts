@@ -9,8 +9,8 @@ import {
 
 describe("sent mail presentation", () => {
   it("labels every delivery state", () => {
-    expect(getSentStatusLabel("pending")).toBe("Queued");
-    expect(getSentStatusLabel("sending")).toBe("Sending");
+    expect(getSentStatusLabel("pending")).toBe("Sending…");
+    expect(getSentStatusLabel("sending")).toBe("Sending…");
     expect(getSentStatusLabel("failed")).toBe("Not sent");
     expect(getSentStatusLabel("sent")).toBe("Sent");
   });

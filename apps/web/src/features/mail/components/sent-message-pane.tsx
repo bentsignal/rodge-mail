@@ -3,7 +3,6 @@ import {
   AlertCircle,
   ArrowLeft,
   Check,
-  Clock3,
   LoaderCircle,
   Paperclip,
   RotateCcw,
@@ -135,7 +134,7 @@ function SentMessageView({ message }: { message: SentMessage }) {
               value={formatRecipientAddresses(message.bcc)}
             />
             <SentHeaderRow
-              label={message.sentAt ? "Sent" : "Queued"}
+              label={message.sentAt ? "Sent" : "Date"}
               value={formatFullDate(
                 new Date(message.sentAt ?? message.createdAt).toISOString(),
               )}
@@ -248,7 +247,10 @@ export function SentStatusBadge({ status }: { status: SentMessage["status"] }) {
       )}
     >
       <Icon
-        className={cn("size-3.5", status === "sending" && "animate-spin")}
+        className={cn(
+          "size-3.5",
+          (status === "pending" || status === "sending") && "animate-spin",
+        )}
       />
       {getSentStatusLabel(status)}
     </span>
@@ -257,7 +259,7 @@ export function SentStatusBadge({ status }: { status: SentMessage["status"] }) {
 
 const STATUS_ICONS = {
   failed: AlertCircle,
-  pending: Clock3,
+  pending: LoaderCircle,
   sending: LoaderCircle,
   sent: Check,
 } satisfies Record<SentMessage["status"], typeof Check>;

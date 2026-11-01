@@ -16,6 +16,7 @@ import { cn } from "@rodge-mail/std/cn";
 import { QuickLink } from "~/components/quick-link";
 import { MAIL_PAGE_SIZE } from "../constants";
 import { formatInboxDate, getInitials } from "../format";
+import { isOptimisticOutboxId } from "../outbox-optimistic";
 import { useSelectedOutboxId } from "../sent-live-data";
 import { RetryOutboxButton } from "./sent-message-pane";
 
@@ -123,12 +124,10 @@ function SentListRow({ row, selected }: { row: SentRow; selected: boolean }) {
         selected ? "bg-accent" : "hover:bg-muted",
       )}
     >
-      <QuickLink
-        aria-current={selected ? "page" : undefined}
-        aria-label={`To ${recipients}, ${getSentSubject(row.subject)}, ${getSentStatusLabel(row.status)}`}
-        className="block px-4 py-3.5 sm:px-5"
-        params={{ outboxId: row._id }}
-        to="/sent/$outboxId"
+      <SentRowLink
+        label={`To ${recipients}, ${getSentSubject(row.subject)}, ${getSentStatusLabel(row.status)}`}
+        outboxId={row._id}
+        selected={selected}
       >
         <div className="flex min-h-[76px] items-center gap-3">
           <div className="border-border bg-muted text-foreground flex size-8 shrink-0 items-center justify-center rounded-[10px] border text-[11px] font-semibold">
@@ -161,9 +160,41 @@ function SentListRow({ row, selected }: { row: SentRow; selected: boolean }) {
             <SentRowStatus status={row.status} />
           </div>
         </div>
-      </QuickLink>
+      </SentRowLink>
       <RowRetry row={row} />
     </article>
+  );
+}
+
+function SentRowLink({
+  children,
+  label,
+  outboxId,
+  selected,
+}: {
+  children: React.ReactNode;
+  label: string;
+  outboxId: SentRow["_id"];
+  selected: boolean;
+}) {
+  const className = "block px-4 py-3.5 sm:px-5";
+  if (isOptimisticOutboxId(outboxId)) {
+    return (
+      <div aria-label={label} className={className} role="group">
+        {children}
+      </div>
+    );
+  }
+  return (
+    <QuickLink
+      aria-current={selected ? "page" : undefined}
+      aria-label={label}
+      className={className}
+      params={{ outboxId }}
+      to="/sent/$outboxId"
+    >
+      {children}
+    </QuickLink>
   );
 }
 

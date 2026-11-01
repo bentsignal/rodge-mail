@@ -1,18 +1,8 @@
-/* eslint-disable @typescript-eslint/consistent-type-assertions -- Convex upload responses contain runtime-validated branded storage IDs. */
 import { useId, useState } from "react";
-import { useMutation } from "convex/react";
-import { ArrowUp, Paperclip, Send, X } from "lucide-react";
+import { ArrowUp, Paperclip, X } from "lucide-react";
 
-import type { Id } from "@rodge-mail/convex/model";
-import { api } from "@rodge-mail/convex/api";
-import {
-  getProviderAttachmentError,
-  MAX_ATTACHMENT_COUNT,
-} from "@rodge-mail/convex/attachments/constants";
-import { parseRecipientFields } from "@rodge-mail/features/mail";
+import { MAX_ATTACHMENT_COUNT } from "@rodge-mail/convex/attachments/constants";
 import * as Dialog from "@rodge-mail/ui-web/dialog";
-import { Textarea } from "@rodge-mail/ui-web/textarea";
-import { toast } from "@rodge-mail/ui-web/toast";
 
 import { useLiveMail } from "../live-data";
 import { useMailStore } from "../store";
@@ -20,8 +10,9 @@ import {
   ComposeAccountField,
   getSendingAccount,
 } from "./compose-account-field";
-import { DraftAttachments, getUploadSummary } from "./compose-attachment-list";
-import { useComposeAttachments } from "./use-compose-attachments";
+import { DraftAttachments } from "./compose-attachment-list";
+import { ComposeRow } from "./compose-row";
+import { useComposeSend } from "./use-compose-send";
 
 export function ComposeDialog() {
   const composerIsOpen = useMailStore((store) => store.composerIsOpen);
@@ -35,7 +26,7 @@ export function ComposeDialog() {
       open={composerIsOpen}
     >
       <Dialog.Content
-        className="bg-background top-auto! right-0! bottom-0! left-0! flex h-[calc(100dvh-1rem)] max-w-none! translate-x-0! translate-y-0! flex-col gap-0 overflow-hidden rounded-t-[20px] border p-0 sm:right-5! sm:bottom-5! sm:left-auto! sm:h-[min(720px,calc(100dvh-2.5rem))] sm:w-[min(720px,calc(100vw-2.5rem))] sm:rounded-[18px]"
+        className="bg-background top-auto! right-0! bottom-0! left-0! flex h-[calc(100dvh-1rem)] max-w-none! translate-x-0! translate-y-0! flex-col gap-0 overflow-hidden rounded-t-[20px] border p-0 sm:right-5! sm:bottom-5! sm:left-auto! sm:h-[min(640px,calc(100dvh-2.5rem))] sm:w-[min(640px,calc(100vw-2.5rem))] sm:rounded-[16px]"
         showCloseButton={false}
       >
         <ComposeContent />
@@ -47,256 +38,209 @@ export function ComposeDialog() {
 function ComposeContent() {
   const draft = useMailStore((store) => store.composerDraft);
   const updateDraft = useMailStore((store) => store.updateComposerDraft);
+  const { attachFiles, canSend, recipientErrors, send } = useComposeSend();
 
   return (
-    <>
-      <ComposeHeader />
-
-      <div className="min-h-0 flex-1 overflow-y-auto px-5 sm:px-7">
-        <ComposeAccountField />
+    <div
+      className="flex min-h-0 flex-1 flex-col"
+      onKeyDown={(event) => {
+        if (event.key !== "Enter" || !(event.metaKey || event.ctrlKey)) return;
+        event.preventDefault();
+        send();
+      }}
+    >
+      <ComposeHeader
+        canSend={canSend}
+        onAttach={(files) => void attachFiles(files)}
+        onSend={send}
+      />
+      <div className="mail-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto">
         <ComposeField
-          autoFocus
+          autoFocus={!draft.to}
+          error={recipientErrors.to}
           label="To"
           onChange={(value) => updateDraft("to", value)}
-          placeholder="name@example.com"
           value={draft.to}
         />
-        <ComposeField
-          label="Cc"
-          onChange={(value) => updateDraft("cc", value)}
-          placeholder="Optional"
-          value={draft.cc}
-        />
-        <ComposeField
-          label="Bcc"
-          onChange={(value) => updateDraft("bcc", value)}
-          placeholder="Optional"
-          value={draft.bcc}
-        />
+        <CopiesAndSender recipientErrors={recipientErrors} />
         <ComposeField
           label="Subject"
           onChange={(value) => updateDraft("subject", value)}
-          placeholder="What is this about?"
           value={draft.subject}
         />
-        <Textarea
+        <DraftAttachments />
+        <textarea
           aria-label="Message body"
-          className="placeholder:text-muted-foreground min-h-[310px] border-0 bg-transparent px-0 py-6 text-[18px] leading-8 shadow-none focus-visible:ring-0"
+          autoFocus={Boolean(draft.to)}
+          className="min-h-[240px] flex-1 resize-none bg-transparent px-5 pt-4 pb-6 text-[15px] leading-6 outline-none"
           onChange={(event) => updateDraft("body", event.target.value)}
-          placeholder="Write simply…"
           value={draft.body}
         />
-        <DraftAttachments />
       </div>
-
-      <ComposeFooter />
-    </>
+    </div>
   );
 }
 
-function ComposeHeader() {
+function ComposeHeader({
+  canSend,
+  onAttach,
+  onSend,
+}: {
+  canSend: boolean;
+  onAttach: (files: File[]) => void;
+  onSend: () => void;
+}) {
   const closeComposer = useMailStore((store) => store.closeComposer);
+  const subject = useMailStore((store) => store.composerDraft.subject);
 
   return (
-    <header className="flex h-16 shrink-0 items-center border-b px-5">
-      <div>
-        <Dialog.Title className="text-xl font-semibold tracking-[-0.02em]">
-          New message
-        </Dialog.Title>
-        <Dialog.Description className="sr-only">
-          Write a new email message.
-        </Dialog.Description>
-      </div>
+    <header className="border-border flex h-14 shrink-0 items-center gap-1 border-b-[0.5px] pr-3 pl-2">
       <button
-        aria-label="Close new message"
-        className="text-muted-foreground hover:bg-accent hover:text-foreground ml-auto flex size-9 items-center justify-center rounded-[9px] transition"
+        aria-label="Close"
+        className="mail-icon-button flex size-9 items-center justify-center rounded-full transition"
         onClick={closeComposer}
+        title="Close (Esc)"
         type="button"
       >
         <X className="size-4" />
+      </button>
+      <Dialog.Title className="min-w-0 flex-1 truncate px-1 text-[15px] font-semibold">
+        {subject.trim() || "New Message"}
+      </Dialog.Title>
+      <Dialog.Description className="sr-only">
+        Write a new email message.
+      </Dialog.Description>
+      <AttachButton onAttach={onAttach} />
+      <button
+        aria-keyshortcuts="Meta+Enter"
+        className="mail-primary-button ml-1 flex h-8 items-center gap-1.5 rounded-full pr-3 pl-3.5 text-[13px] font-semibold disabled:cursor-not-allowed disabled:opacity-35"
+        disabled={!canSend}
+        onClick={onSend}
+        title="Send (⌘↩)"
+        type="button"
+      >
+        Send
+        <ArrowUp className="size-3.5" strokeWidth={2.5} />
       </button>
     </header>
   );
 }
 
-function ComposeFooter() {
-  const attachmentInputId = useId();
-  const canSend = useMailStore((store) => store.composerCanSend);
-  const completeEnqueue = useMailStore(
-    (store) => store.completeComposerEnqueue,
+function AttachButton({ onAttach }: { onAttach: (files: File[]) => void }) {
+  const inputId = useId();
+  const attachmentCount = useMailStore(
+    (store) => store.composerDraft.attachments.length,
   );
-  const composerAccountId = useMailStore((store) => store.composerAccountId);
-  const replyToMessageId = useMailStore(
-    (store) => store.composerReplyToMessageId,
-  );
-  const draft = useMailStore((store) => store.composerDraft);
-  const idempotencyKey = useMailStore((store) => store.idempotencyKey);
-  const enqueuePlainText = useMutation(api.mail.mutations.enqueuePlainText);
-  const { accounts } = useLiveMail();
-  const account = getSendingAccount(accounts, composerAccountId);
-  const [isSending, setIsSending] = useState(false);
-  const { attachFiles, attachmentsAreReady } = useComposeAttachments(
-    account?.provider,
-  );
-
-  async function send() {
-    if (!account) {
-      toast.error("Connect a mail account before sending.");
-      return;
-    }
-    const attachmentError = getProviderAttachmentError(
-      account.provider,
-      draft.attachments,
-    );
-    if (attachmentError) {
-      toast.error(attachmentError);
-      return;
-    }
-    if (!attachmentsAreReady) {
-      toast.error("Wait for every attachment to finish uploading.");
-      return;
-    }
-    const parsedRecipients = getValidRecipients(draft);
-    if (!parsedRecipients) return;
-    setIsSending(true);
-    try {
-      const result = await enqueuePlainText({
-        accountId: account._id,
-        idempotencyKey,
-        to: parsedRecipients.recipients.to,
-        cc: parsedRecipients.recipients.cc,
-        bcc: parsedRecipients.recipients.bcc,
-        subject: draft.subject.trim(),
-        plainText: draft.body,
-        replyToMessageId,
-        attachmentIds: draft.attachments.map((attachment) =>
-          toDraftAttachmentId(requireDraftAttachmentId(attachment)),
-        ),
-      });
-      setIsSending(false);
-      completeEnqueue();
-      toast.success(getEnqueueSuccessMessage(result.status));
-    } catch (error) {
-      toast.error(getSendError(error));
-      setIsSending(false);
-    }
-  }
 
   return (
-    <footer className="bg-background border-border flex shrink-0 items-center gap-2 border-t px-5 py-3.5 sm:px-7">
+    <>
       <input
         className="sr-only"
-        id={attachmentInputId}
+        disabled={attachmentCount >= MAX_ATTACHMENT_COUNT}
+        id={inputId}
         multiple
-        disabled={draft.attachments.length >= MAX_ATTACHMENT_COUNT}
         onChange={(event) => {
-          const files = Array.from(event.target.files ?? []);
-          void attachFiles(files);
+          onAttach(Array.from(event.target.files ?? []));
           event.target.value = "";
         }}
         type="file"
       />
       <label
-        className="mail-icon-button flex size-9 cursor-pointer items-center justify-center rounded-[9px] transition"
-        htmlFor={attachmentInputId}
+        className="mail-icon-button flex size-9 cursor-pointer items-center justify-center rounded-full transition"
+        htmlFor={inputId}
         title="Attach files"
       >
         <Paperclip className="size-4" />
         <span className="sr-only">Attach files</span>
       </label>
-      <span className="mail-label text-[10px] font-medium tracking-wide uppercase">
-        {getUploadSummary(draft.attachments)}
-      </span>
-      <button
-        className="mail-primary-button ml-auto flex h-10 items-center gap-2 rounded-[9px] px-4 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-40"
-        disabled={!canSend || !attachmentsAreReady || isSending}
-        onClick={() => void send()}
-        type="button"
-      >
-        <Send className="size-3.5" />
-        Send
-        <ArrowUp className="size-3" />
-      </button>
-    </footer>
+    </>
   );
 }
 
-function getEnqueueSuccessMessage(status: "pending" | "sending" | "sent") {
-  if (status === "sent") return "Message already delivered.";
-  if (status === "sending") return "Message delivery is already in progress.";
-  return "Message queued for delivery.";
-}
-
-function getValidRecipients(draft: { bcc: string; cc: string; to: string }) {
-  const result = parseRecipientFields(draft);
-  const error = getRecipientError(result);
-  if (!error) return result;
-  toast.error(error);
-  return undefined;
-}
-
-function toDraftAttachmentId(value: string) {
-  return value as Id<"draftAttachments">;
-}
-
-function requireDraftAttachmentId(attachment: {
-  draftAttachmentId?: string;
-  fileName: string;
+/** Cc, Bcc, and From fold into one row until clicked, like Mail. */
+function CopiesAndSender({
+  recipientErrors,
+}: {
+  recipientErrors: { bcc?: string; cc?: string };
 }) {
-  if (!attachment.draftAttachmentId) {
-    throw new Error(`${attachment.fileName} has not finished uploading.`);
+  const draft = useMailStore((store) => store.composerDraft);
+  const updateDraft = useMailStore((store) => store.updateComposerDraft);
+  const composerAccountId = useMailStore((store) => store.composerAccountId);
+  const { accounts } = useLiveMail();
+  const account = getSendingAccount(accounts, composerAccountId);
+  const [isExpanded, setIsExpanded] = useState(
+    () => draft.cc.trim().length > 0 || draft.bcc.trim().length > 0,
+  );
+  const [focusCopies, setFocusCopies] = useState(false);
+
+  if (!isExpanded) {
+    return (
+      <ComposeRow>
+        <button
+          className="text-muted-foreground hover:text-foreground h-11 min-w-0 flex-1 truncate text-left text-[15px] transition-colors"
+          onClick={() => {
+            setIsExpanded(true);
+            setFocusCopies(true);
+          }}
+          type="button"
+        >
+          {getCollapsedSummary(account?.address)}
+        </button>
+      </ComposeRow>
+    );
   }
-  return attachment.draftAttachmentId;
+
+  return (
+    <>
+      <ComposeField
+        autoFocus={focusCopies}
+        error={recipientErrors.cc}
+        label="Cc"
+        onChange={(value) => updateDraft("cc", value)}
+        value={draft.cc}
+      />
+      <ComposeField
+        error={recipientErrors.bcc}
+        label="Bcc"
+        onChange={(value) => updateDraft("bcc", value)}
+        value={draft.bcc}
+      />
+      <ComposeAccountField />
+    </>
+  );
 }
 
-function getRecipientError(result: ReturnType<typeof parseRecipientFields>) {
-  const errors = new Array<string>();
-  for (const [field, label] of [
-    ["to", "To"],
-    ["cc", "CC"],
-    ["bcc", "BCC"],
-  ] as const) {
-    const invalid = result.invalid[field];
-    if (invalid.length > 0) {
-      errors.push(`${label}: invalid ${invalid.join(", ")}`);
-    }
-  }
-  if (result.recipients.to.length === 0 && result.invalid.to.length === 0) {
-    errors.push("To: add at least one valid email address");
-  }
-  return errors.length > 0 ? errors.join(". ") : undefined;
-}
-
-function getSendError(error: unknown) {
-  if (error instanceof Error && error.message.trim()) return error.message;
-  return "Could not queue this message.";
+function getCollapsedSummary(fromAddress: string | undefined) {
+  return fromAddress ? `Cc/Bcc, From: ${fromAddress}` : "Cc/Bcc";
 }
 
 function ComposeField({
   autoFocus,
+  error,
   label,
   onChange,
-  placeholder,
   value,
 }: {
   autoFocus?: boolean;
+  error?: string;
   label: string;
   onChange: (value: string) => void;
-  placeholder: string;
   value: string;
 }) {
   return (
-    <label className="border-border flex min-h-12 items-center gap-4 border-b">
-      <span className="mail-label w-12 shrink-0 text-[11px] font-medium tracking-wide uppercase">
-        {label}
-      </span>
-      <input
-        autoFocus={autoFocus}
-        className="placeholder:text-muted-foreground h-12 min-w-0 flex-1 bg-transparent text-sm outline-none"
-        onChange={(event) => onChange(event.target.value)}
-        placeholder={placeholder}
-        value={value}
-      />
-    </label>
+    <ComposeRow error={error}>
+      <label className="flex min-w-0 flex-1 items-center gap-1.5">
+        <span className="text-muted-foreground shrink-0 text-[15px]">
+          {label}:
+        </span>
+        <input
+          aria-invalid={error ? true : undefined}
+          autoFocus={autoFocus}
+          className="h-11 min-w-0 flex-1 bg-transparent text-[15px] outline-none"
+          onChange={(event) => onChange(event.target.value)}
+          value={value}
+        />
+      </label>
+    </ComposeRow>
   );
 }
