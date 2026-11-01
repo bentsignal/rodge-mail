@@ -42,7 +42,7 @@ slug() {
 
 env_value() {
   [ -f "$2" ] || return 0
-  grep -E "^$1=" "$2" | tail -1 | cut -d= -f2- | sed -E 's/[[:space:]]*#.*$//; s/^"//; s/"$//'
+  { grep -E "^$1=" "$2" || true; } | tail -1 | cut -d= -f2- | sed -E 's/[[:space:]]*#.*$//; s/^"//; s/"$//'
 }
 
 # Never with a deploy key: one in the shell would point the CLI at whatever
@@ -125,8 +125,11 @@ create_deployment() {
   fi
   deployment="$(env_value CONVEX_DEPLOYMENT "$CONVEX_ENV")"
   deployment="${deployment#*:}"
+  # The CLI prefixes these with VITE_ because vite is a dev dependency.
   cloud="$(env_value CONVEX_URL "$CONVEX_ENV")"
+  cloud="${cloud:-$(env_value VITE_CONVEX_URL "$CONVEX_ENV")}"
   site="$(env_value CONVEX_SITE_URL "$CONVEX_ENV")"
+  site="${site:-$(env_value VITE_CONVEX_SITE_URL "$CONVEX_ENV")}"
   if [ -z "$deployment" ] || [ "$deployment" = "$PRODUCTION" ] || [ -z "$cloud" ] || [ -z "$site" ]; then
     echo "the new deployment wasn't selected; restoring services/convex/.env.local" >&2
     exit 1
