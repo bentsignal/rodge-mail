@@ -38,9 +38,11 @@ section here in that PR (see AGENTS.md → Releases), in this form:
   ```
   The first address picks the Microsoft account, the second the hosted one.
   Run `import-status` until the status is `completed`. It handles 25 messages
-  per batch and slows to one inbox message every 2 s, so a large mailbox takes
-  hours. If it ends `failed`, read `last error` (for example, Microsoft needs
-  reconnecting), fix that, and run `import` again; it resumes where it stopped.
+  per batch and slows to one inbox message every 2 s, so a large mailbox can
+  take hours. If it ends `failed`, read `last error` (for example, Microsoft
+  needs reconnecting), fix that, and run `import` again; it resumes where it
+  stopped. If it says `running` but `updated` hasn't moved for 15 minutes, a
+  batch died without finishing; run `import` again to resume it.
 - Verify: `import-status` shows `completed`, imported plus skipped close to
   the estimated total, and `failed` 0 or only failures whose reasons are
   acceptable (an over-40 MB message, say). On mail.rodgers.dev, open an old

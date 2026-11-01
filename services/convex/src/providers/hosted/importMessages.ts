@@ -95,7 +95,7 @@ async function hasCutoverCopy(
         .gte("receivedAt", message.receivedAt - CUTOVER_WINDOW_MS)
         .lte("receivedAt", message.receivedAt + CUTOVER_WINDOW_MS),
     )
-    .take(500);
+    .take(200);
   return nearby.some(
     (item) =>
       item.internetMessageId === internetMessageId &&
