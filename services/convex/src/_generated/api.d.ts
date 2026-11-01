@@ -100,6 +100,7 @@ import type * as mail_queryEnrichment from "../mail/queryEnrichment.js";
 import type * as mail_readUpdates from "../mail/readUpdates.js";
 import type * as mail_replies from "../mail/replies.js";
 import type * as mail_search from "../mail/search.js";
+import type * as mail_text from "../mail/text.js";
 import type * as mail_threadMutations from "../mail/threadMutations.js";
 import type * as mail_threadState from "../mail/threadState.js";
 import type * as mail_types from "../mail/types.js";
@@ -274,6 +275,7 @@ declare const fullApi: ApiFromModules<{
   "mail/readUpdates": typeof mail_readUpdates;
   "mail/replies": typeof mail_replies;
   "mail/search": typeof mail_search;
+  "mail/text": typeof mail_text;
   "mail/threadMutations": typeof mail_threadMutations;
   "mail/threadState": typeof mail_threadState;
   "mail/types": typeof mail_types;
