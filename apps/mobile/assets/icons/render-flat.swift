@@ -6,7 +6,7 @@
 //   <name>-android-notification.png  Android notification small icon (white plane)
 //   ../icon.png                      square, opaque fallback icon
 //   apps/web/public icons            touch, PWA, and favicon PNGs
-// A thin transparent gap separates the wings, standing in for the glass edges.
+// The white plane shades its far wing with alpha, from the tinted fills.
 // Usage: swift render-flat.swift "$PWD" rodge-mail (build-icons.py runs it).
 import AppKit
 import ImageIO
@@ -19,7 +19,7 @@ let space = CGColorSpace(name: CGColorSpace.sRGB)!
 let document = try! JSONSerialization.jsonObject(
   with: Data(contentsOf: bundle.appendingPathComponent("icon.json"))) as! [String: Any]
 
-enum Appearance { case light, dark }
+enum Appearance: String { case light, dark, tinted }
 
 /// A fill as gradient stops (one stop for a solid color).
 func stops(_ value: [String: Any]) -> [CGColor] {
@@ -32,7 +32,7 @@ func stops(_ value: [String: Any]) -> [CGColor] {
 
 /// The fill for an appearance: its specialization, else the unqualified one.
 func fill(_ specializations: [[String: Any]], _ appearance: Appearance) -> [CGColor] {
-  let name = appearance == .dark ? "dark" : nil
+  let name = appearance == .light ? nil : appearance.rawValue
   let match = specializations.first { ($0["appearance"] as? String) == name }
     ?? specializations.first { $0["appearance"] == nil }!
   return stops(match["value"] as! [String: Any])
@@ -59,7 +59,11 @@ func paths(_ image: String) -> [CGPath] {
   }
 }
 
-struct Layer { let paths: [CGPath]; let fills: [[String: Any]] }
+struct Layer {
+  let paths: [CGPath]
+  let fills: [[String: Any]]
+  var bounds: CGRect { paths.reduce(CGRect.null) { $0.union($1.boundingBoxOfPath) } }
+}
 
 // Back to front: Icon Composer lists groups and their layers front to back.
 let layers: [Layer] = (document["groups"] as! [[String: Any]]).reversed().flatMap { group in
@@ -69,6 +73,8 @@ let layers: [Layer] = (document["groups"] as! [[String: Any]]).reversed().flatMa
   }
 }
 let box = layers.flatMap(\.paths).reduce(CGRect.null) { $0.union($1.boundingBoxOfPath) }
+let full = CGRect(x: 0, y: 0, width: 1024, height: 1024)
+let iconWidth = max(box.width, box.height) // Its size on the Icon Composer canvas.
 
 func context(_ size: Int, opaque: Bool = false) -> CGContext {
   CGContext(data: nil, width: size, height: size, bitsPerComponent: 8, bytesPerRow: 0, space: space,
@@ -85,26 +91,25 @@ func gradient(_ ctx: CGContext, _ colors: [CGColor], _ rect: CGRect) {
                          options: [.drawsBeforeStartLocation, .drawsAfterEndLocation])
 }
 
-/// The plane on a transparent canvas, `width` pixels across, centered.
-/// `white` draws it white (the monochrome icon).
+/// The plane on a transparent canvas, `width` pixels across, placed as on the
+/// Icon Composer canvas (optically centered). `white` draws it white, each
+/// wing as opaque as its tinted fill is light (the monochrome icons).
 func leaves(size: Int, width: CGFloat, appearance: Appearance, white: Bool = false) -> CGImage {
   let ctx = context(size)
-  let s = width / max(box.width, box.height), c = CGFloat(size) / 2
+  let s = width / iconWidth, c = CGFloat(size) / 2
   ctx.translateBy(x: 0, y: CGFloat(size)); ctx.scaleBy(x: 1, y: -1)
-  ctx.translateBy(x: c, y: c); ctx.scaleBy(x: s, y: s); ctx.translateBy(x: -box.midX, y: -box.midY)
-  for layer in layers {
-    let bounds = layer.paths.reduce(CGRect.null) { $0.union($1.boundingBoxOfPath) }
-    for path in layer.paths {
-      // Cut a gap around the wing into the wing behind it.
-      ctx.saveGState()
-      ctx.setBlendMode(.clear)
-      ctx.addPath(path); ctx.setLineWidth(12); ctx.setLineJoin(.round); ctx.strokePath()
-      ctx.restoreGState()
-      ctx.saveGState()
-      ctx.addPath(path); ctx.clip()
-      gradient(ctx, white ? [CGColor(colorSpace: space, components: [1, 1, 1, 1])!] : fill(layer.fills, appearance), bounds)
-      ctx.restoreGState()
-    }
+  ctx.translateBy(x: c, y: c); ctx.scaleBy(x: s, y: s); ctx.translateBy(x: -full.midX, y: -full.midY)
+  for (i, layer) in layers.enumerated() {
+    // Each wing also fills the wings in front of it, so the fold, where they
+    // meet, has no antialiasing seam.
+    ctx.saveGState()
+    for path in layers[i...].flatMap(\.paths) { ctx.addPath(path) }
+    ctx.clip()
+    let colors = white
+      ? fill(layer.fills, .tinted).map { CGColor(colorSpace: space, components: [1, 1, 1, $0.components![0]])! }
+      : fill(layer.fills, appearance)
+    gradient(ctx, colors, layer.bounds)
+    ctx.restoreGState()
   }
   return ctx.makeImage()!
 }
@@ -114,8 +119,6 @@ func drawBackground(_ ctx: CGContext, _ size: Int) {
   let g = CGGradient(colorsSpace: space, colors: background as CFArray, locations: nil)!
   ctx.drawLinearGradient(g, start: CGPoint(x: 0, y: size), end: .zero, options: [])
 }
-let full = CGRect(x: 0, y: 0, width: 1024, height: 1024)
-let iconWidth = max(box.width, box.height) // Their size on the Icon Composer canvas.
 
 // Android: the plane inside the 66% safe zone of the adaptive icon.
 let foreground = context(1024)
