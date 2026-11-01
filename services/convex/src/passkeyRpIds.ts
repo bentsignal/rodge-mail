@@ -78,11 +78,14 @@ export function passkeyRpIds(options: { rpId: string; rpIds: PasskeyRpIds }) {
             if (isAPIError(ctx.context.returned)) return;
             const body = credentialBodySchema.safeParse(ctx.body);
             if (!body.success) return;
+            // The passkey already worked; a failed write mustn't undo that.
             await recordPasskeyRpId(
               ctx.context.adapter,
               body.data.response.id,
               options.rpId,
-            );
+            ).catch((error: unknown) => {
+              ctx.context.logger.error("Couldn't record a passkey's rpId", error);
+            });
           }),
         },
       ],
