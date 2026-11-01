@@ -11,17 +11,15 @@ import { getEmptyMailboxCopy } from "./mailbox-empty-state";
 export function EmptyInbox({
   isLoading,
   mailbox = "inbox",
-  primary,
   searchTerm,
   filter,
 }: {
   filter: MailboxFilter;
   isLoading: boolean;
   mailbox?: MobileMailbox;
-  primary: string;
   searchTerm?: string;
 }) {
-  if (isLoading) return <DelayedInboxLoader color={primary} />;
+  if (isLoading) return <DelayedInboxLoader />;
   const copy = getEmptyMailboxCopy({ filter, mailbox, searchTerm });
   return <InboxMessage {...copy} mailbox={mailbox} />;
 }
@@ -44,7 +42,7 @@ function FooterSpinner({ isLoading }: { isLoading: boolean }) {
   return <ActivityIndicator />;
 }
 
-function DelayedInboxLoader({ color }: { color: string }) {
+function DelayedInboxLoader() {
   const [isVisible, setIsVisible] = useState(false);
 
   // eslint-disable-next-line no-restricted-syntax -- The timeout prevents a transient Convex subscription from flashing a spinner.
@@ -56,7 +54,7 @@ function DelayedInboxLoader({ color }: { color: string }) {
   if (!isVisible) return <View className="py-24" />;
   return (
     <View className="items-center py-24">
-      <ActivityIndicator color={color} size="large" />
+      <ActivityIndicator />
     </View>
   );
 }
