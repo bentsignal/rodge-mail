@@ -1,3 +1,4 @@
+import type { FunctionReturnType } from "convex/server";
 import { Alert, Platform } from "react-native";
 import { FieldGroup, Picker, Row, Spacer, Switch, Text } from "@expo/ui";
 import { frame } from "@expo/ui/swift-ui/modifiers";
@@ -7,6 +8,7 @@ import type { Id } from "@rodge-mail/convex/model";
 import { api } from "@rodge-mail/convex/api";
 
 import type { NotificationSetupState } from "~/features/notifications/notification-setup";
+import { ContentReveal } from "~/components/content-reveal";
 import {
   registerForNewMailNotifications,
   useNotificationSetupState,
@@ -23,18 +25,40 @@ const ACCOUNT_CHOICES = [
 ] as const;
 type AccountChoice = (typeof ACCOUNT_CHOICES)[number]["value"];
 
+type Preferences = FunctionReturnType<
+  typeof api.notifications.queries.getPreferences
+>;
+type AccountPreferences = FunctionReturnType<
+  typeof api.notifications.queries.listAccountPreferences
+>;
+
 export function NotificationSettingsScreen() {
   const preferences = useQuery(api.notifications.queries.getPreferences, {});
   const accountPreferences = useQuery(
     api.notifications.queries.listAccountPreferences,
     {},
   );
+  return (
+    <ContentReveal isReady={!!preferences && !!accountPreferences}>
+      <NotificationSettings
+        accountPreferences={accountPreferences}
+        preferences={preferences}
+      />
+    </ContentReveal>
+  );
+}
+
+function NotificationSettings({
+  accountPreferences,
+  preferences,
+}: {
+  accountPreferences: AccountPreferences | undefined;
+  preferences: Preferences | undefined;
+}) {
   const { setAccountPreferences, setPreferences } = useNotificationMutations();
   const { enableDevice, setupState } = useDeviceNotifications();
 
-  if (!preferences || !accountPreferences) {
-    return null;
-  }
+  if (!preferences || !accountPreferences) return null;
   const current = preferences;
   const deliveryEnabled =
     setupState !== undefined &&

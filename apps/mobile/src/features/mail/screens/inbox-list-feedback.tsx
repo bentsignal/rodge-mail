@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
 import { ShieldCheck } from "lucide-react-native";
 
@@ -19,7 +18,7 @@ export function EmptyInbox({
   mailbox?: MobileMailbox;
   searchTerm?: string;
 }) {
-  if (isLoading) return <DelayedInboxLoader />;
+  if (isLoading) return null;
   const copy = getEmptyMailboxCopy({ filter, mailbox, searchTerm });
   return <InboxMessage {...copy} mailbox={mailbox} />;
 }
@@ -40,23 +39,6 @@ export function InboxFooter({
 function FooterSpinner({ isLoading }: { isLoading: boolean }) {
   if (!isLoading) return null;
   return <ActivityIndicator />;
-}
-
-function DelayedInboxLoader() {
-  const [isVisible, setIsVisible] = useState(false);
-
-  // eslint-disable-next-line no-restricted-syntax -- The timeout prevents a transient Convex subscription from flashing a spinner.
-  useEffect(() => {
-    const timeout = setTimeout(() => setIsVisible(true), 180);
-    return () => clearTimeout(timeout);
-  }, []);
-
-  if (!isVisible) return <View className="py-24" />;
-  return (
-    <View className="items-center py-24">
-      <ActivityIndicator />
-    </View>
-  );
 }
 
 function InboxMessage({

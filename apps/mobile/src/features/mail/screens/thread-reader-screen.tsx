@@ -1,3 +1,4 @@
+import type { FunctionReturnType } from "convex/server";
 import type { LayoutChangeEvent } from "react-native";
 import { useEffect, useRef, useState } from "react";
 import { Alert, ScrollView, Text, View } from "react-native";
@@ -11,6 +12,7 @@ import { getReplyAddress } from "@rodge-mail/features/mail";
 import type { MobileMailbox } from "../store";
 import type { MessageViewMode } from "./thread-message-body";
 import type { CleanViewMenuAction } from "./thread-reader-toolbar";
+import { ContentReveal } from "~/components/content-reveal";
 import { PostalPaperBackground } from "~/features/theme/postal-surface";
 import { toConvexId } from "../lib/convex-id";
 import { toMailThreadDetail } from "../lib/convex-mail";
@@ -26,6 +28,10 @@ import { ThreadMessageBody } from "./thread-message-body";
 import { ThreadReaderToolbar } from "./thread-reader-toolbar";
 import { useThreadReaderActions } from "./use-thread-reader-actions";
 
+type ThreadQueryResult =
+  | FunctionReturnType<typeof api.mail.queries.getThread>
+  | undefined;
+
 export function ThreadReaderScreen() {
   const {
     id,
@@ -36,10 +42,7 @@ export function ThreadReaderScreen() {
     mailbox?: string | string[];
     messageId?: string | string[];
   }>();
-  const [departingReader, setDepartingReader] = useState<{
-    accountAddress: string;
-    thread: MailThread;
-  }>();
+  const [departingReader, setDepartingReader] = useState<DepartingReader>();
   const mailbox = parseMobileMailbox(firstParam(mailboxParam));
   const threadId = id ? toConvexId<"threads">(id) : undefined;
   const queryArgs = threadId && !departingReader ? { threadId } : "skip";
@@ -52,28 +55,63 @@ export function ThreadReaderScreen() {
     void setThreadRead({ threadId, isRead: true }).catch(() => undefined);
   }, [setThreadRead, thread, threadId]);
 
+  const isLoading = !departingReader && thread === undefined && !!threadId;
+  return (
+    <ContentReveal isReady={!isLoading}>
+      <ThreadScreenBody
+        departingReader={departingReader}
+        isLoading={isLoading}
+        mailbox={mailbox}
+        targetMessageId={firstParam(messageId)}
+        thread={thread}
+        onPermanentDeleteStart={setDepartingReader}
+      />
+    </ContentReveal>
+  );
+}
+
+interface DepartingReader {
+  accountAddress: string;
+  thread: MailThread;
+}
+
+function ThreadScreenBody({
+  departingReader,
+  isLoading,
+  mailbox,
+  onPermanentDeleteStart,
+  targetMessageId,
+  thread,
+}: {
+  departingReader: DepartingReader | undefined;
+  isLoading: boolean;
+  mailbox: MobileMailbox;
+  onPermanentDeleteStart: (reader: DepartingReader) => void;
+  targetMessageId: string | undefined;
+  thread: ThreadQueryResult;
+}) {
   if (departingReader) {
     return (
       <ThreadReader
         accountAddress={departingReader.accountAddress}
         mailbox={mailbox}
-        targetMessageId={firstParam(messageId)}
+        targetMessageId={targetMessageId}
         thread={departingReader.thread}
         onPermanentDeleteStart={() => undefined}
       />
     );
   }
-  if (thread === undefined && threadId) return <ThreadLoading />;
+  if (isLoading) return null;
   if (!thread) return <ThreadNotFound />;
   const mailThread = toMailThreadDetail(thread);
   return (
     <ThreadReader
       accountAddress={thread.account.address}
       mailbox={mailbox}
-      targetMessageId={firstParam(messageId)}
+      targetMessageId={targetMessageId}
       thread={mailThread}
       onPermanentDeleteStart={() =>
-        setDepartingReader({
+        onPermanentDeleteStart({
           accountAddress: thread.account.address,
           thread: mailThread,
         })
@@ -223,14 +261,6 @@ function ThreadNotFound() {
       <Text className="text-muted-foreground mt-2 text-center">
         This thread is no longer in the local mailbox.
       </Text>
-    </View>
-  );
-}
-
-function ThreadLoading() {
-  return (
-    <View className="bg-background flex-1 items-center justify-center">
-      <Text className="text-muted-foreground">Loading message…</Text>
     </View>
   );
 }

@@ -16,9 +16,10 @@ export function shouldHoldSplash({
 }
 
 /**
- * Keeps the native splash up until the first real screen is known, so
- * launch never shows a loading screen. A session check that runs past
- * AUTH_SPLASH_LIMIT_MS (offline, a slow network) lets the splash go.
+ * Keeps the native splash up until the first real screen is known. A
+ * session check that runs past AUTH_SPLASH_LIMIT_MS (offline, a slow
+ * network) lets it go to the same blank background, which stays until the
+ * session is known.
  */
 export function useLaunchSplash({
   appIsReady,

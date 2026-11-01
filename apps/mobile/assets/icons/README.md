@@ -30,7 +30,7 @@ because the nose carries most of the area.
   Android adaptive icon layers.
 - `rodge-mail-android-notification.png`: Android's notification small icon.
 - `../icon.png`: square, opaque, flat icon (the Expo fallback and the in-app
-  logo). `../splash-icon.png` and `../splash-icon-dark.png`: the splash plane.
+  logo). The splash has no logo: `../splash-blank.png` is a transparent pixel.
 - `apps/web/public`: touch, PWA, and favicon PNGs. `favicon.ico` comes from
   the 32px PNG: `sips -s format ico favicon-32x32.png --out favicon.ico`.
 

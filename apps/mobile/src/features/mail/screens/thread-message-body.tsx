@@ -1,6 +1,6 @@
 import type { LayoutChangeEvent } from "react-native";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import { WebView } from "@expo/dom-webview";
 import { useAction } from "convex/react";
 
@@ -167,13 +167,7 @@ function OriginalHtml({
     html,
     inlineImageUrls: inlineImages.urls,
   });
-  if (inlineImages.isResolving) {
-    return (
-      <View className="h-60 items-center justify-center">
-        <ActivityIndicator size="small" />
-      </View>
-    );
-  }
+  if (inlineImages.isResolving) return <View className="h-60" />;
   return (
     <WebView
       automaticallyAdjustContentInsets={false}

@@ -19,6 +19,7 @@ import {
   getSentSubject,
 } from "@rodge-mail/features/mail";
 
+import { ContentReveal } from "~/components/content-reveal";
 import { useColor } from "~/hooks/use-color";
 import { toConvexId } from "../lib/convex-id";
 import { formatMessageTime } from "../lib/mail-format";
@@ -35,14 +36,19 @@ export function SentMessageScreen() {
     api.outbox.queries.getSentMessage,
     id ? { outboxId: toConvexId<"outboxMessages">(id) } : "skip",
   );
-  if (message === undefined) {
-    return (
-      <>
-        <Stack.Screen options={{ title: "" }} />
-        <ActivityIndicator className="flex-1" />
-      </>
-    );
-  }
+  return (
+    <ContentReveal isReady={message !== undefined}>
+      <SentMessageBody message={message} />
+    </ContentReveal>
+  );
+}
+
+function SentMessageBody({
+  message,
+}: {
+  message: SentMessage | null | undefined;
+}) {
+  if (message === undefined) return <Stack.Screen options={{ title: "" }} />;
   if (!message) {
     return (
       <>
