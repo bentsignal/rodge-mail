@@ -13,6 +13,7 @@ import { Route as AuthedRouteImport } from './app/_authed'
 import { Route as DesktopAuthRouteImport } from './app/desktop-auth'
 import { Route as LoginRouteImport } from './app/login'
 import { Route as ProviderCompleteRouteImport } from './app/provider-complete'
+import { Route as RecoverRouteImport } from './app/recover'
 import { Route as AuthedIndexRouteImport } from './app/_authed/index'
 import { Route as AuthedArchiveRouteImport } from './app/_authed.archive'
 import { Route as AuthedSentRouteImport } from './app/_authed.sent'
@@ -41,6 +42,11 @@ const LoginRoute = LoginRouteImport.update({
 const ProviderCompleteRoute = ProviderCompleteRouteImport.update({
   id: '/provider-complete',
   path: '/provider-complete',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RecoverRoute = RecoverRouteImport.update({
+  id: '/recover',
+  path: '/recover',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthedIndexRoute = AuthedIndexRouteImport.update({
@@ -101,6 +107,7 @@ export interface FileRoutesByFullPath {
   '/desktop-auth': typeof DesktopAuthRoute
   '/login': typeof LoginRoute
   '/provider-complete': typeof ProviderCompleteRoute
+  '/recover': typeof RecoverRoute
   '/archive': typeof AuthedArchiveRouteWithChildren
   '/sent': typeof AuthedSentRouteWithChildren
   '/spam': typeof AuthedSpamRouteWithChildren
@@ -115,6 +122,7 @@ export interface FileRoutesByTo {
   '/desktop-auth': typeof DesktopAuthRoute
   '/login': typeof LoginRoute
   '/provider-complete': typeof ProviderCompleteRoute
+  '/recover': typeof RecoverRoute
   '/archive': typeof AuthedArchiveRouteWithChildren
   '/sent': typeof AuthedSentRouteWithChildren
   '/spam': typeof AuthedSpamRouteWithChildren
@@ -132,6 +140,7 @@ export interface FileRoutesById {
   '/desktop-auth': typeof DesktopAuthRoute
   '/login': typeof LoginRoute
   '/provider-complete': typeof ProviderCompleteRoute
+  '/recover': typeof RecoverRoute
   '/_authed/archive': typeof AuthedArchiveRouteWithChildren
   '/_authed/sent': typeof AuthedSentRouteWithChildren
   '/_authed/spam': typeof AuthedSpamRouteWithChildren
@@ -150,6 +159,7 @@ export interface FileRouteTypes {
     | '/desktop-auth'
     | '/login'
     | '/provider-complete'
+    | '/recover'
     | '/archive'
     | '/sent'
     | '/spam'
@@ -164,6 +174,7 @@ export interface FileRouteTypes {
     | '/desktop-auth'
     | '/login'
     | '/provider-complete'
+    | '/recover'
     | '/archive'
     | '/sent'
     | '/spam'
@@ -180,6 +191,7 @@ export interface FileRouteTypes {
     | '/desktop-auth'
     | '/login'
     | '/provider-complete'
+    | '/recover'
     | '/_authed/archive'
     | '/_authed/sent'
     | '/_authed/spam'
@@ -197,6 +209,7 @@ export interface RootRouteChildren {
   DesktopAuthRoute: typeof DesktopAuthRoute
   LoginRoute: typeof LoginRoute
   ProviderCompleteRoute: typeof ProviderCompleteRoute
+  RecoverRoute: typeof RecoverRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
@@ -229,6 +242,13 @@ declare module '@tanstack/react-router' {
       path: '/provider-complete'
       fullPath: '/provider-complete'
       preLoaderRoute: typeof ProviderCompleteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/recover': {
+      id: '/recover'
+      path: '/recover'
+      fullPath: '/recover'
+      preLoaderRoute: typeof RecoverRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authed/': {
@@ -364,6 +384,7 @@ const rootRouteChildren: RootRouteChildren = {
   DesktopAuthRoute: DesktopAuthRoute,
   LoginRoute: LoginRoute,
   ProviderCompleteRoute: ProviderCompleteRoute,
+  RecoverRoute: RecoverRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }

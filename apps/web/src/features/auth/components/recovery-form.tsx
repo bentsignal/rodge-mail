@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useSearch } from "@tanstack/react-router";
 
 import { useAuthStore } from "../store";
 import {
@@ -57,9 +56,9 @@ function RecoveryEmailStep({
 
   return (
     <div>
-      <StepHeading step="Email sign-in" title="Sign in with email" />
+      <StepHeading step="Recovery" title="Recover your account" />
       <p className="mail-label mt-2 text-sm leading-6">
-        We’ll email a short code so you can sign in on this device.
+        We'll email a code to sign you in. Then add a new passkey in Settings.
       </p>
       <form
         className="mt-6 space-y-4"
@@ -98,19 +97,14 @@ function RecoveryCodeStep({
   const [code, setCode] = useState("");
   const finishRecovery = useAuthStore((store) => store.finishRecovery);
   const isLoading = useAuthStore((store) => store.isLoading);
-  const redirectUri = useSearch({
-    from: "/login",
-    select: (search) => search.redirect_uri,
-  });
-
   async function handleSubmit() {
-    const wasRecovered = await finishRecovery({ code, email, redirectUri });
+    const wasRecovered = await finishRecovery({ code, email });
     if (wasRecovered) onComplete();
   }
 
   return (
     <div>
-      <StepHeading step="Email sign-in" title="Check your email" />
+      <StepHeading step="Recovery" title="Check your email" />
       <p className="mail-label mt-2 text-sm leading-6">
         Enter the six-digit code sent to {email}.
       </p>

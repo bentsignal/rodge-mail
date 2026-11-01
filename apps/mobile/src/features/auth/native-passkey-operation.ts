@@ -7,7 +7,7 @@ const authorizationCanceled =
   /AuthenticationServices\.AuthorizationError(?:,| error)\s*1001/i;
 
 export const incompatiblePasskeyMessage =
-  "No compatible passkey was selected. Passkeys from the earlier local development domain cannot be reused here. Sign in with email, then add a new passkey in Settings.";
+  "No compatible passkey was selected. Choose a Rodge Mail passkey saved on this device.";
 
 export async function retryTransientPasskeyAssociation<
   Result extends PasskeyOperationResult,

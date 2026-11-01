@@ -20,7 +20,7 @@ export function SignInButton() {
       type="button"
     >
       <SignInLoadingIndicator isLoading={isLoading} />
-      Sign in
+      Sign in with passkey
     </button>
   );
 }
