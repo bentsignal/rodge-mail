@@ -214,5 +214,7 @@ node scripts/hosted-mail.mjs status
 `add-domain` writes DNS records directly for domains on Vercel DNS (DKIM
 CNAMEs, root MX and SPF, `bounce.` MAIL FROM MX and SPF, and DMARC) and prints
 them for other DNS hosts. It refuses to replace existing MX, SPF, or DMARC
-records without `--force`. While the SES account is in the sandbox, mail can be
-received from anyone but only sent to verified identities.
+records without `--force`; with it, the old records are deleted on Vercel
+before the new ones are added (moving a domain off another mail host stops
+its mail there, so create its addresses right after). The SES account has
+production access, so it sends to anyone.
