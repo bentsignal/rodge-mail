@@ -4,6 +4,7 @@ import { v } from "convex/values";
 import type { Doc } from "../_generated/dataModel";
 import { authedQuery } from "../utils";
 import {
+  ensureListableAccount,
   ensureOwnedAccount,
   ensureOwnedMessage,
   ensureOwnedThread,
@@ -32,7 +33,7 @@ export const listInbox = authedQuery({
   handler: async (ctx, args) => {
     const { accountId, paginationOpts } = args;
     if (accountId) {
-      await ensureOwnedAccount(ctx, ctx.ownerId, accountId);
+      await ensureListableAccount(ctx, ctx.ownerId, accountId);
       return await enrichThreadPage(
         ctx,
         await ctx.db
@@ -80,7 +81,7 @@ export const listPinned = authedQuery({
   handler: async (ctx, args) => {
     const { accountId, paginationOpts } = args;
     if (accountId) {
-      await ensureOwnedAccount(ctx, ctx.ownerId, accountId);
+      await ensureListableAccount(ctx, ctx.ownerId, accountId);
       return await enrichThreadPage(
         ctx,
         await ctx.db
@@ -145,7 +146,10 @@ export const getMessagesByIds = authedQuery({
         )
         .map(async (message) => await toMessageListItem(ctx, message)),
     );
-    return items.filter((message) => message.classification?.isSpam !== true);
+    return items.filter(
+      (message): message is NonNullable<typeof message> =>
+        message !== null && message.classification?.isSpam !== true,
+    );
   },
 });
 
@@ -209,7 +213,7 @@ export const searchHeaders = authedQuery({
   },
   handler: async (ctx, args) => {
     if (args.accountId) {
-      await ensureOwnedAccount(ctx, ctx.ownerId, args.accountId);
+      await ensureListableAccount(ctx, ctx.ownerId, args.accountId);
     }
     const searchPlan = parseMailSearch(args.searchTerm);
     if (

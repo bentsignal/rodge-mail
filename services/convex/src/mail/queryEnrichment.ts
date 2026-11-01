@@ -1,6 +1,10 @@
 import type { Doc } from "../_generated/dataModel";
 import type { AuthedQueryCtx } from "../utils";
-import { toMessageListItem, toThreadListItem } from "./helpers";
+import {
+  isActiveAccount,
+  toMessageListItem,
+  toThreadListItem,
+} from "./helpers";
 import { getUnreadCountSummary } from "./unreadCounts";
 
 export async function getVisibleUnreadCountSummary(ctx: AuthedQueryCtx) {
@@ -11,11 +15,23 @@ export async function getVisibleUnreadCountSummary(ctx: AuthedQueryCtx) {
     )
     .filter((q) => q.neq(q.field("inInbox"), false))
     .collect();
+  const activeAccountIds = new Set(
+    (
+      await ctx.db
+        .query("mailAccounts")
+        .withIndex("by_owner", (q) => q.eq("ownerId", ctx.ownerId))
+        .collect()
+    )
+      .filter(isActiveAccount)
+      .map((account) => account._id),
+  );
   const visibleThreads = await Promise.all(
-    threads.map(async (thread) => ({
-      item: await toThreadListItem(ctx, thread),
-      thread,
-    })),
+    threads
+      .filter((thread) => activeAccountIds.has(thread.accountId))
+      .map(async (thread) => ({
+        item: await toThreadListItem(ctx, thread),
+        thread,
+      })),
   );
   return getUnreadCountSummary(
     visibleThreads
@@ -35,7 +51,10 @@ export async function enrichMessagePage<T extends { page: Doc<"messages">[] }>(
   );
   return {
     ...results,
-    page: page.filter((message) => message.classification?.isSpam !== true),
+    page: page.filter(
+      (message): message is NonNullable<typeof message> =>
+        message !== null && message.classification?.isSpam !== true,
+    ),
   };
 }
 

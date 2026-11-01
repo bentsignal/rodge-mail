@@ -10,6 +10,7 @@ import {
   findEmbeddingJob,
   findMessageEmbedding,
 } from "./storage";
+import { getActiveAccount } from "../mail/helpers";
 
 const BACKFILL_BATCH_SIZE = 25;
 const INDEXING_STAT_KEYS = [
@@ -60,7 +61,7 @@ async function processInboxMessage(
   apply: boolean,
 ) {
   const [account, classification, content, embedding, job] = await Promise.all([
-    ctx.db.get(message.accountId),
+    getActiveAccount(ctx, message.accountId),
     ctx.db
       .query("messageClassifications")
       .withIndex("by_message", (q) => q.eq("messageId", message._id))

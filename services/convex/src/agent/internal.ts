@@ -8,6 +8,7 @@ import {
   vAgentScope,
   vAgentToolName,
 } from "./validators";
+import { getActiveAccount } from "../mail/helpers";
 
 const CLEANUP_AGENT_AUDITS = makeFunctionReference<
   "mutation",
@@ -32,7 +33,7 @@ export const storeCredential = internalMutation({
   handler: async (ctx, args) => {
     if (args.accountAccess.mode === "allowlist") {
       for (const accountId of args.accountAccess.accountIds) {
-        const account = await ctx.db.get(accountId);
+        const account = await getActiveAccount(ctx, accountId);
         if (!account || account.ownerId !== args.ownerId) {
           throw new Error("Mail account not found");
         }

@@ -69,6 +69,7 @@ export const vMailAccount = v.object({
   connectedAt: v.optional(v.number()),
   lastSyncedAt: v.optional(v.number()),
   lastSyncError: v.optional(v.string()),
+  deletingAt: v.optional(v.number()),
   createdAt: v.number(),
   updatedAt: v.number(),
 });

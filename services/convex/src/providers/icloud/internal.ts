@@ -1,6 +1,7 @@
 import { ConvexError, v } from "convex/values";
 
 import { internalMutation, internalQuery } from "../../_generated/server";
+import { getActiveAccount } from "../../mail/helpers";
 
 export const upsertAccount = internalMutation({
   args: {
@@ -17,6 +18,7 @@ export const upsertAccount = internalMutation({
           .eq("provider", "icloud")
           .eq("remoteAccountId", args.address),
       )
+      .filter((q) => q.eq(q.field("deletingAt"), undefined))
       .unique();
     const now = Date.now();
     if (existing) {
@@ -48,7 +50,7 @@ export const upsertAccount = internalMutation({
 export const getConnection = internalQuery({
   args: { ownerId: v.string(), accountId: v.id("mailAccounts") },
   handler: async (ctx, args) => {
-    const account = await ctx.db.get(args.accountId);
+    const account = await getActiveAccount(ctx, args.accountId);
     if (
       !account ||
       account.ownerId !== args.ownerId ||
@@ -71,7 +73,7 @@ export const markReauthorizationRequired = internalMutation({
     error: v.string(),
   },
   handler: async (ctx, args) => {
-    const account = await ctx.db.get(args.accountId);
+    const account = await getActiveAccount(ctx, args.accountId);
     if (account?.ownerId !== args.ownerId || account.provider !== "icloud") {
       throw new ConvexError("iCloud account not found");
     }
@@ -93,6 +95,7 @@ export const listScheduledAccounts = internalQuery({
         (account) =>
           account.provider === "icloud" &&
           !account.isDemo &&
+          account.deletingAt === undefined &&
           ["connected", "error"].includes(account.status) &&
           (account.lastSyncedAt ?? 0) < cutoff,
       )

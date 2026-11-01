@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 
 import { internalMutation, internalQuery } from "../_generated/server";
+import { getActiveAccount } from "../mail/helpers";
 
 const DRAFT_RETENTION_MS = 24 * 60 * 60 * 1000;
 
@@ -11,7 +12,7 @@ export const getDownloadContext = internalQuery({
     if (!attachment || attachment.ownerId !== args.ownerId) return null;
     const message = await ctx.db.get(attachment.messageId);
     if (!message || message.ownerId !== args.ownerId) return null;
-    const account = await ctx.db.get(message.accountId);
+    const account = await getActiveAccount(ctx, message.accountId);
     if (!account || account.ownerId !== args.ownerId) return null;
     const credential = await ctx.db
       .query("providerCredentials")

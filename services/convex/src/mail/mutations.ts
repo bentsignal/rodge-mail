@@ -2,7 +2,11 @@ import { ConvexError, v } from "convex/values";
 
 import { internal } from "../_generated/api";
 import { authedMutation } from "../utils";
-import { ensureOwnedAccount, ensureOwnedMessage } from "./helpers";
+import {
+  ensureOwnedAccount,
+  ensureOwnedMessage,
+  getActiveAccount,
+} from "./helpers";
 import {
   canRetryOutbox,
   getIdempotentEnqueueResult,
@@ -51,7 +55,7 @@ export const setRead = authedMutation({
     const thread = await ctx.db.get(message.threadId);
     if (!thread || thread.ownerId !== ctx.ownerId) return;
 
-    const account = await ctx.db.get(message.accountId);
+    const account = await getActiveAccount(ctx, message.accountId);
     const providerUpdate = scheduleProviderReadUpdate({
       ctx,
       ownerId: ctx.ownerId,

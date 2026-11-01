@@ -7,16 +7,46 @@ import { getThreadRowFlags } from "./threadState";
 
 type ReadCtx = Pick<QueryCtx, "db"> | Pick<MutationCtx, "db">;
 
+/** An account being removed is hidden everywhere until its rows are gone. */
+export function isActiveAccount(
+  account: Doc<"mailAccounts"> | null,
+): account is Doc<"mailAccounts"> {
+  return account !== null && account.deletingAt === undefined;
+}
+
+export async function getActiveAccount(
+  ctx: ReadCtx,
+  accountId: Id<"mailAccounts">,
+) {
+  const account = await ctx.db.get(accountId);
+  return isActiveAccount(account) ? account : null;
+}
+
 export async function ensureOwnedAccount(
   ctx: ReadCtx,
   ownerId: string,
   accountId: Id<"mailAccounts">,
 ) {
-  const account = await ctx.db.get(accountId);
+  const account = await getActiveAccount(ctx, accountId);
   if (account?.ownerId !== ownerId) {
     throw new ConvexError("Mail account not found");
   }
   return account;
+}
+
+/**
+ * For list queries: a removed account reads as empty instead of failing, so a
+ * client still filtered to it keeps rendering.
+ */
+export async function ensureListableAccount(
+  ctx: ReadCtx,
+  ownerId: string,
+  accountId: Id<"mailAccounts">,
+) {
+  const account = await ctx.db.get(accountId);
+  if (account && account.ownerId !== ownerId) {
+    throw new ConvexError("Mail account not found");
+  }
 }
 
 export async function ensureOwnedMessage(
@@ -25,7 +55,10 @@ export async function ensureOwnedMessage(
   messageId: Id<"messages">,
 ) {
   const message = await ctx.db.get(messageId);
-  if (message?.ownerId !== ownerId) {
+  if (
+    message?.ownerId !== ownerId ||
+    !(await getActiveAccount(ctx, message.accountId))
+  ) {
     throw new ConvexError("Message not found");
   }
   return message;
@@ -37,7 +70,10 @@ export async function ensureOwnedThread(
   threadId: Id<"threads">,
 ) {
   const thread = await ctx.db.get(threadId);
-  if (thread?.ownerId !== ownerId) {
+  if (
+    thread?.ownerId !== ownerId ||
+    !(await getActiveAccount(ctx, thread.accountId))
+  ) {
     throw new ConvexError("Thread not found");
   }
   return thread;
@@ -84,6 +120,7 @@ export async function toMessageListItem(
   if (!account) {
     throw new ConvexError("Message account not found");
   }
+  if (!isActiveAccount(account)) return null;
 
   return {
     ...message,
@@ -142,6 +179,7 @@ export async function toThreadListItem(
           .first()
       : null,
   ]);
+  if (!listItem) return null;
   return {
     ...listItem,
     ...getThreadRowFlags(thread, legacyPinnedMessage !== null),
@@ -160,8 +198,10 @@ export async function toArchivedThreadListItem(
     .filter((q) => q.neq(q.field("archivedAt"), undefined))
     .first();
   if (!latestArchivedMessage || thread.archivedAt === undefined) return null;
+  const listItem = await toMessageListItem(ctx, latestArchivedMessage);
+  if (!listItem) return null;
   return {
-    ...(await toMessageListItem(ctx, latestArchivedMessage)),
+    ...listItem,
     archivedAt: thread.archivedAt,
     isPinned: false,
     isRead: thread.unreadCount === 0,
@@ -182,6 +222,7 @@ export async function toMessageDetail(
       .withIndex("by_message", (q) => q.eq("messageId", message._id))
       .collect(),
   ]);
+  if (!listItem) throw new ConvexError("Message not found");
 
   return { ...listItem, attachments, cleanView, content };
 }

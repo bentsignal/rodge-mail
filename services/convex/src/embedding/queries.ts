@@ -2,6 +2,7 @@ import { v } from "convex/values";
 
 import { internalQuery } from "../_generated/server";
 import { matchesMailSearch } from "../mail/search";
+import { getActiveAccount } from "../mail/helpers";
 
 const vScoredEmbedding = v.object({
   embeddingId: v.id("messageEmbeddings"),
@@ -15,7 +16,7 @@ export const validateScope = internalQuery({
   },
   handler: async (ctx, args) => {
     if (!args.accountId) return true;
-    const account = await ctx.db.get(args.accountId);
+    const account = await getActiveAccount(ctx, args.accountId);
     return account?.ownerId === args.ownerId;
   },
 });

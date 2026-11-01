@@ -3,6 +3,7 @@ import { ConvexError, v } from "convex/values";
 import { internal } from "../_generated/api";
 import { ensureOwnedAccount } from "../mail/helpers";
 import { authedMutation } from "../utils";
+import { startAccountRemoval } from "./removal";
 
 export const MAX_ACCOUNT_DISPLAY_LABEL_LENGTH = 80;
 
@@ -113,6 +114,7 @@ export const syncAllNow = authedMutation({
     const syncable = accounts.filter(
       (account) =>
         !account.isDemo &&
+        account.deletingAt === undefined &&
         account.provider !== "hosted" &&
         account.status !== "disconnected" &&
         account.status !== "reauthorization_required",
@@ -154,5 +156,21 @@ export const syncAllNow = authedMutation({
       scheduled: syncable.length,
       skipped: accounts.length - syncable.length,
     };
+  },
+});
+
+/**
+ * Removes the account and everything Rodge Mail stored for it. Nothing is
+ * deleted at the provider.
+ */
+export const remove = authedMutation({
+  args: { accountId: v.id("mailAccounts") },
+  handler: async (ctx, args) => {
+    const account = await ctx.db.get(args.accountId);
+    if (account?.ownerId !== ctx.ownerId) {
+      throw new ConvexError("Mail account not found");
+    }
+    if (account.deletingAt !== undefined) return;
+    await startAccountRemoval(ctx, account);
   },
 });
