@@ -1,4 +1,5 @@
 import type { LegendListRenderItemProps } from "@legendapp/list/react-native";
+import { useState } from "react";
 import { Animated, RefreshControl, View } from "react-native";
 import { Easing, LinearTransition } from "react-native-reanimated";
 import { AnimatedLegendList } from "@legendapp/list/reanimated";
@@ -10,6 +11,7 @@ import type { PageStatus } from "../lib/next-page";
 import type { MobileMailbox } from "../store";
 import type { InboxHeader } from "./inbox-header";
 import type { MailboxFilter } from "./mailbox-controls";
+import { ContentReveal } from "~/components/content-reveal";
 import { useColor } from "~/hooks/use-color";
 import { useNextPage } from "../hooks/use-next-page";
 import { useSteadyData } from "../hooks/use-steady-data";
@@ -220,61 +222,70 @@ function MailboxRows({
     rowExtent,
     rowsPending: steady.rowsPending,
   });
+  // LegendList keeps its rows hidden until it has laid them out.
+  const [listIsLoaded, setListIsLoaded] = useState(false);
   return (
-    <Animated.View style={{ flex: 1, opacity: transition.opacity }}>
-      <AnimatedLegendList
-        contentContainerStyle={{ paddingBottom: 24 }}
-        {...steady.listProps}
-        ref={listRef}
-        data={steady.data}
-        estimatedItemSize={rowExtent}
-        extraData={listVersion}
-        itemLayoutAnimation={rowMove}
-        keyExtractor={threadKey}
-        recycleItems={false}
-        refreshControl={refreshControl}
-        renderItem={renderThread}
-        contentInsetAdjustmentBehavior="automatic"
-        keyboardDismissMode="on-drag"
-        stickyHeaderIndices={headerInList ? [0] : undefined}
-        style={{ backgroundColor: background, flex: 1 }}
-        onEndReached={request}
-        onEndReachedThreshold={NEXT_PAGE_THRESHOLD}
-        onScroll={(event) => {
-          steady.listProps.onScroll(event);
-          request();
-        }}
-        onScrollBeginDrag={() => {
-          steady.listProps.onScrollBeginDrag();
-          resetOnDrag();
-        }}
-        ListEmptyComponent={
-          <EmptyInbox
-            filter={transition.filter}
-            isLoading={feedback.emptyIsLoading}
-            mailbox={mailbox}
-            searchTerm={searchTerm}
-          />
-        }
-        ListHeaderComponent={
-          <ListHeader
-            accounts={accounts}
-            headerInList={headerInList}
-            headerProps={headerProps}
-            refreshError={refreshError}
-            searchMode={searchMode}
-          />
-        }
-        ListFooterComponent={
-          <InboxFooter
-            state={getPageFooter({
-              isLoading: feedback.footerIsLoading,
-              status: transition.data.length === 0 ? "Exhausted" : pageStatus,
-            })}
-          />
-        }
-      />
-    </Animated.View>
+    <ContentReveal
+      isReady={
+        feedback.isReady && (listIsLoaded || transition.data.length === 0)
+      }
+    >
+      <Animated.View style={{ flex: 1, opacity: transition.opacity }}>
+        <AnimatedLegendList
+          contentContainerStyle={{ paddingBottom: 24 }}
+          {...steady.listProps}
+          ref={listRef}
+          data={steady.data}
+          estimatedItemSize={rowExtent}
+          extraData={listVersion}
+          itemLayoutAnimation={rowMove}
+          keyExtractor={threadKey}
+          recycleItems={false}
+          refreshControl={refreshControl}
+          renderItem={renderThread}
+          contentInsetAdjustmentBehavior="automatic"
+          keyboardDismissMode="on-drag"
+          stickyHeaderIndices={headerInList ? [0] : undefined}
+          style={{ backgroundColor: background, flex: 1 }}
+          onEndReached={request}
+          onLoad={() => setListIsLoaded(true)}
+          onEndReachedThreshold={NEXT_PAGE_THRESHOLD}
+          onScroll={(event) => {
+            steady.listProps.onScroll(event);
+            request();
+          }}
+          onScrollBeginDrag={() => {
+            steady.listProps.onScrollBeginDrag();
+            resetOnDrag();
+          }}
+          ListEmptyComponent={
+            <EmptyInbox
+              filter={transition.filter}
+              isLoading={feedback.emptyIsLoading}
+              mailbox={mailbox}
+              searchTerm={searchTerm}
+            />
+          }
+          ListHeaderComponent={
+            <ListHeader
+              accounts={accounts}
+              headerInList={headerInList}
+              headerProps={headerProps}
+              refreshError={refreshError}
+              searchMode={searchMode}
+            />
+          }
+          ListFooterComponent={
+            <InboxFooter
+              state={getPageFooter({
+                isLoading: feedback.footerIsLoading,
+                status: transition.data.length === 0 ? "Exhausted" : pageStatus,
+              })}
+            />
+          }
+        />
+      </Animated.View>
+    </ContentReveal>
   );
 }
 

@@ -88,12 +88,15 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       [
         "expo-splash-screen",
         {
+          // A blank splash in the app's background color. The image is a
+          // transparent pixel: without one, the plugin leaves iOS
+          // constraints and an Android drawable pointing at nothing.
           backgroundColor: "#ffffff",
-          image: "./assets/splash-icon.png",
-          imageWidth: 190,
+          image: "./assets/splash-blank.png",
+          imageWidth: 1,
           dark: {
             backgroundColor: "#000000",
-            image: "./assets/splash-icon-dark.png",
+            image: "./assets/splash-blank.png",
           },
         },
       ],

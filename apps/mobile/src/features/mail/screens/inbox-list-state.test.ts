@@ -63,14 +63,14 @@ describe("getVisibleInboxThreads", () => {
 });
 
 describe("getInboxListFeedback", () => {
-  it("uses the empty slot for loading when there are no rows", () => {
+  it("stays blank while the first rows load", () => {
     expect(
       getInboxListFeedback({
         emptyIsLoading: false,
         footerIsLoading: true,
         resultCount: 0,
       }),
-    ).toEqual({ emptyIsLoading: true, footerIsLoading: false });
+    ).toEqual({ emptyIsLoading: true, footerIsLoading: false, isReady: false });
   });
 
   it("keeps pagination loading in the footer when rows are visible", () => {
@@ -80,16 +80,26 @@ describe("getInboxListFeedback", () => {
         footerIsLoading: true,
         resultCount: 4,
       }),
-    ).toEqual({ emptyIsLoading: false, footerIsLoading: true });
+    ).toEqual({ emptyIsLoading: false, footerIsLoading: true, isReady: true });
   });
 
-  it("shows a settled empty state without either loader", () => {
+  it("shows the empty state only once the query has returned empty", () => {
     expect(
       getInboxListFeedback({
         emptyIsLoading: false,
         footerIsLoading: false,
         resultCount: 0,
       }),
-    ).toEqual({ emptyIsLoading: false, footerIsLoading: false });
+    ).toEqual({ emptyIsLoading: false, footerIsLoading: false, isReady: true });
+  });
+
+  it("shows rows that are already here while more load", () => {
+    expect(
+      getInboxListFeedback({
+        emptyIsLoading: true,
+        footerIsLoading: false,
+        resultCount: 3,
+      }).isReady,
+    ).toBe(true);
   });
 });

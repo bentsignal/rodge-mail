@@ -4,7 +4,6 @@
 //   <name>-android-background.png    Android adaptive background
 //   <name>-android-monochrome.png    Android themed icon (white plane)
 //   <name>-android-notification.png  Android notification small icon (white plane)
-//   ../splash-icon.png, ../splash-icon-dark.png  the plane alone, per appearance
 //   ../icon.png                      square, opaque fallback icon
 //   apps/web/public icons            touch, PWA, and favicon PNGs
 // A thin transparent gap separates the wings, standing in for the glass edges.
@@ -135,13 +134,6 @@ write(monochrome, "\(name)-android-monochrome.png")
 let notification = context(1024)
 notification.draw(leaves(size: 1024, width: 1024 * 20 / 24, appearance: .light, white: true), in: full)
 write(notification, "\(name)-android-notification.png")
-
-// Splash: the plane alone, in each appearance, on a transparent canvas.
-for (appearance, suffix) in [(Appearance.light, ""), (.dark, "-dark")] {
-  let splash = context(1024)
-  splash.draw(leaves(size: 1024, width: 600, appearance: appearance), in: full)
-  write(splash, "../splash-icon\(suffix).png")
-}
 
 /// The light appearance without glass, square and opaque.
 func flatIcon(_ size: Int, cornerRadius: CGFloat = 0) -> CGContext {

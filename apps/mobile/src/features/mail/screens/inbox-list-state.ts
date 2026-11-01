@@ -94,10 +94,12 @@ export function getInboxListFeedback({
   resultCount: number;
 }) {
   if (resultCount === 0) {
+    const isLoading = emptyIsLoading || footerIsLoading;
     return {
-      emptyIsLoading: emptyIsLoading || footerIsLoading,
+      emptyIsLoading: isLoading,
       footerIsLoading: false,
+      isReady: !isLoading,
     };
   }
-  return { emptyIsLoading, footerIsLoading };
+  return { emptyIsLoading, footerIsLoading, isReady: true };
 }

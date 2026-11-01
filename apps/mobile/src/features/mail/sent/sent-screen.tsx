@@ -18,6 +18,7 @@ import {
   getSentSubject,
 } from "@rodge-mail/features/mail";
 
+import { ContentReveal } from "~/components/content-reveal";
 import { useColor } from "~/hooks/use-color";
 import { formatInboxMessageTime } from "../lib/mail-format";
 import { isOptimisticOutboxId } from "../outgoing/outbox-optimistic";
@@ -49,35 +50,37 @@ export function SentScreen() {
   return (
     <>
       <Stack.Screen options={{ headerLargeTitle: true, title: "Sent" }} />
-      <SectionList
-        contentInsetAdjustmentBehavior="automatic"
-        keyExtractor={(row) => row._id}
-        ListEmptyComponent={<SentEmpty isLoading={isLoading} />}
-        ListFooterComponent={
-          sent.status === "LoadingMore" ? (
-            <ActivityIndicator className="py-6" />
-          ) : null
-        }
-        renderItem={({ item }) => (
-          <SentListRow
-            row={item}
-            onOpen={() => {
-              const target = getSentRowTarget(item);
-              if (target) router.push(target);
-            }}
-            onRetry={() => retry(item._id)}
-          />
-        )}
-        renderSectionHeader={({ section }) =>
-          sections.length > 1 ? <SectionHeader title={section.title} /> : null
-        }
-        sections={sections}
-        stickySectionHeadersEnabled={false}
-        testID="sent-list"
-        onEndReached={() => {
-          if (sent.status === "CanLoadMore") sent.loadMore(PAGE_SIZE);
-        }}
-      />
+      <ContentReveal isReady={!isLoading}>
+        <SectionList
+          contentInsetAdjustmentBehavior="automatic"
+          keyExtractor={(row) => row._id}
+          ListEmptyComponent={<SentEmpty />}
+          ListFooterComponent={
+            sent.status === "LoadingMore" ? (
+              <ActivityIndicator className="py-6" />
+            ) : null
+          }
+          renderItem={({ item }) => (
+            <SentListRow
+              row={item}
+              onOpen={() => {
+                const target = getSentRowTarget(item);
+                if (target) router.push(target);
+              }}
+              onRetry={() => retry(item._id)}
+            />
+          )}
+          renderSectionHeader={({ section }) =>
+            sections.length > 1 ? <SectionHeader title={section.title} /> : null
+          }
+          sections={sections}
+          stickySectionHeadersEnabled={false}
+          testID="sent-list"
+          onEndReached={() => {
+            if (sent.status === "CanLoadMore") sent.loadMore(PAGE_SIZE);
+          }}
+        />
+      </ContentReveal>
     </>
   );
 }
@@ -90,8 +93,7 @@ function SectionHeader({ title }: { title: string }) {
   );
 }
 
-function SentEmpty({ isLoading }: { isLoading: boolean }) {
-  if (isLoading) return <ActivityIndicator className="py-16" />;
+function SentEmpty() {
   return (
     <Text className="text-muted-foreground py-16 text-center text-base">
       No sent mail
