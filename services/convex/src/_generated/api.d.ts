@@ -132,6 +132,7 @@ import type * as outbox_queries from "../outbox/queries.js";
 import type * as outbox_recent from "../outbox/recent.js";
 import type * as outbox_sent from "../outbox/sent.js";
 import type * as passkeyRecovery from "../passkeyRecovery.js";
+import type * as passkeyRpIds from "../passkeyRpIds.js";
 import type * as providers_crypto from "../providers/crypto.js";
 import type * as providers_env from "../providers/env.js";
 import type * as providers_gmail_api from "../providers/gmail/api.js";
@@ -307,6 +308,7 @@ declare const fullApi: ApiFromModules<{
   "outbox/recent": typeof outbox_recent;
   "outbox/sent": typeof outbox_sent;
   passkeyRecovery: typeof passkeyRecovery;
+  passkeyRpIds: typeof passkeyRpIds;
   "providers/crypto": typeof providers_crypto;
   "providers/env": typeof providers_env;
   "providers/gmail/api": typeof providers_gmail_api;

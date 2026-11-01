@@ -537,6 +537,9 @@ importers:
       '@rodge-mail/features':
         specifier: workspace:*
         version: link:../../shared/features
+      '@rodge-mail/std':
+        specifier: workspace:*
+        version: link:../../shared/std
       aws4fetch:
         specifier: ^1.0.20
         version: 1.0.20

@@ -52,6 +52,7 @@
     "@rodge-mail/agent-contract": "workspace:*",
     "@rodge-mail/config": "workspace:*",
     "@rodge-mail/features": "workspace:*",
+    "@rodge-mail/std": "workspace:*",
     "aws4fetch": "^1.0.20",
     "better-auth": "catalog:",
     "convex": "catalog:",

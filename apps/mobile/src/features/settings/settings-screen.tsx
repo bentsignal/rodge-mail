@@ -18,8 +18,9 @@ import { NativeHost } from "./native-host";
 import {
   AddPasskeyRow,
   OwnerRow,
-  PasskeyRows,
+  PasskeyItem,
   SignOutRow,
+  usePasskeyGroups,
 } from "./rodge-account-rows";
 import { ActionRow, NavigationRow } from "./settings-rows";
 
@@ -41,6 +42,12 @@ const APPEARANCE_MODES = [
 export function SettingsScreen() {
   const router = useRouter();
   const accounts = useMailStore((store) => store.accounts);
+  const passkeys = usePasskeyGroups();
+  function passkeyItems(group: keyof typeof passkeys.groups) {
+    return passkeys.groups[group].map((row) => (
+      <PasskeyItem key={row.passkey.id} onRemove={passkeys.remove} row={row} />
+    ));
+  }
   // Sections stay direct children of FieldGroup: Android wraps a section
   // returned from a component in a second card.
   const developerSection = __DEV__ ? (
@@ -49,6 +56,18 @@ export function SettingsScreen() {
       <NotificationPreviewRow />
     </FieldGroup.Section>
   ) : null;
+  const websitePasskeySection =
+    passkeys.groups.website.length > 0 ? (
+      <FieldGroup.Section title="Website Passkeys">
+        {passkeyItems("website")}
+      </FieldGroup.Section>
+    ) : null;
+  const otherPasskeySection =
+    passkeys.groups.unknown.length > 0 ? (
+      <FieldGroup.Section title="Other Passkeys">
+        {passkeyItems("unknown")}
+      </FieldGroup.Section>
+    ) : null;
 
   return (
     <NativeHost style={{ flex: 1 }}>
@@ -84,8 +103,14 @@ export function SettingsScreen() {
         </FieldGroup.Section>
         <FieldGroup.Section title="Rodge Mail Account">
           <OwnerRow />
-          <PasskeyRows />
+        </FieldGroup.Section>
+        <FieldGroup.Section title="iPhone App Passkeys">
+          {passkeyItems("app")}
           <AddPasskeyRow />
+        </FieldGroup.Section>
+        {websitePasskeySection}
+        {otherPasskeySection}
+        <FieldGroup.Section>
           <SignOutRow />
         </FieldGroup.Section>
         {developerSection}

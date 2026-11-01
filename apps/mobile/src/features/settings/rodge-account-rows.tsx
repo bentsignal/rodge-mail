@@ -4,7 +4,7 @@ import { useFocusEffect } from "expo-router";
 import { Icon, ListItem, Text } from "@expo/ui";
 import { useMutation } from "convex/react";
 
-import type { PasskeyListItem } from "@rodge-mail/std/passkeys";
+import type { PasskeyListItem, PasskeyRow } from "@rodge-mail/std/passkeys";
 import { api } from "@rodge-mail/convex/api";
 import {
   formatPasskeyAdded,
@@ -12,7 +12,7 @@ import {
   useOptimisticPasskeys,
 } from "@rodge-mail/std/passkeys";
 
-import { authClient } from "~/features/auth/client";
+import { authClient, convexUrls } from "~/features/auth/client";
 import { retryTransientPasskeyAssociation } from "~/features/auth/native-passkey-operation";
 import {
   registerForNewMailNotifications,
@@ -46,39 +46,27 @@ export function OwnerRow() {
   );
 }
 
-export function PasskeyRows() {
+const appRpId = new URL(convexUrls.site).hostname;
+
+export function usePasskeyGroups() {
   const query = authClient.useListPasskeys();
   useFocusEffect(() => {
     authClient.$store.notify("$listPasskeys");
   });
-  const { canRemove, passkeys, remove } = useOptimisticPasskeys({
+  return useOptimisticPasskeys({
+    appRpId,
     deletePasskey: async (id) => await authClient.passkey.deletePasskey({ id }),
     onRemoveError: (message) => Alert.alert("Couldn't Remove Passkey", message),
     passkeys: query.data,
   });
-
-  return (
-    <>
-      {passkeys.map((passkey) => (
-        <PasskeyRow
-          canRemove={canRemove}
-          key={passkey.id}
-          onRemove={() => void remove(passkey.id)}
-          passkey={passkey}
-        />
-      ))}
-    </>
-  );
 }
 
-function PasskeyRow({
-  canRemove,
+export function PasskeyItem({
   onRemove,
-  passkey,
+  row: { passkey, removalBlock },
 }: {
-  canRemove: boolean;
-  onRemove: () => void;
-  passkey: PasskeyListItem;
+  onRemove: (id: string) => Promise<void>;
+  row: PasskeyRow<PasskeyListItem>;
 }) {
   const destructive = useColor("destructive");
   const foreground = useColor("foreground");
@@ -86,12 +74,20 @@ function PasskeyRow({
   const label = getPasskeyLabel(passkey);
 
   function confirm() {
+    if (removalBlock !== undefined) {
+      Alert.alert("Can't Remove Passkey", removalBlock);
+      return;
+    }
     Alert.alert(
       "Remove Passkey?",
       `${label} won't sign you in to Rodge Mail anymore.`,
       [
         { style: "cancel", text: "Cancel" },
-        { onPress: onRemove, style: "destructive", text: "Remove" },
+        {
+          onPress: () => void onRemove(passkey.id),
+          style: "destructive",
+          text: "Remove",
+        },
       ],
     );
   }
@@ -109,11 +105,15 @@ function PasskeyRow({
         </Text>
       }
       trailing={
-        <Text textStyle={{ color: canRemove ? destructive : muted }}>
+        <Text
+          textStyle={{
+            color: removalBlock === undefined ? destructive : muted,
+          }}
+        >
           Remove
         </Text>
       }
-      onPress={canRemove ? confirm : undefined}
+      onPress={confirm}
     >
       <Text>{label}</Text>
     </ListItem>

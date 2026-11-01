@@ -1,10 +1,20 @@
 import { useState } from "react";
 
+import type { PasskeySignIn } from "./passkey-sign-in";
+import { getPasskeyRemovalBlock, getPasskeySignIn } from "./passkey-sign-in";
+
 export interface PasskeyListItem {
   aaguid?: string | null;
   createdAt: Date | string;
   id: string;
   name?: string | null;
+  rpId?: string | null;
+}
+
+export interface PasskeyRow<Passkey extends PasskeyListItem> {
+  passkey: Passkey;
+  removalBlock: string | undefined;
+  signsInTo: PasskeySignIn;
 }
 
 interface DeleteResult {
@@ -44,15 +54,18 @@ export function formatPasskeyAdded(createdAt: Date | string) {
 }
 
 /**
- * Hides a passkey as soon as its removal starts and shows it again if the
- * server refuses. The last passkey can't be removed: without one, only the
- * email recovery route can sign the owner in.
+ * Groups passkeys by where they sign in, hides one as soon as its removal
+ * starts, and shows it again if the server refuses. Each platform keeps its
+ * last passkey: without one, only the email recovery route can sign the
+ * owner in there.
  */
 export function useOptimisticPasskeys<Passkey extends PasskeyListItem>({
+  appRpId,
   deletePasskey,
   onRemoveError,
   passkeys,
 }: {
+  appRpId: string;
   deletePasskey: (id: string) => Promise<DeleteResult>;
   onRemoveError: (message: string) => void;
   passkeys: readonly Passkey[] | null | undefined;
@@ -60,13 +73,29 @@ export function useOptimisticPasskeys<Passkey extends PasskeyListItem>({
   const [removedIds, setRemovedIds] = useState<ReadonlySet<string>>(
     () => new Set(),
   );
-  const visible = (passkeys ?? []).filter(
-    (passkey) => !removedIds.has(passkey.id),
-  );
-  const canRemove = visible.length > 1;
+  const visible = (passkeys ?? [])
+    .filter((passkey) => !removedIds.has(passkey.id))
+    .map((passkey) => ({
+      passkey,
+      signsInTo: getPasskeySignIn(passkey.rpId, { app: appRpId }),
+    }));
+  const rules = visible.map(({ passkey, signsInTo }) => ({
+    id: passkey.id,
+    signsInTo,
+  }));
+  const rows = visible.map(({ passkey, signsInTo }) => ({
+    passkey,
+    removalBlock: getPasskeyRemovalBlock(rules, passkey.id),
+    signsInTo,
+  }));
+  const groups = {
+    app: rows.filter((row) => row.signsInTo === "app"),
+    unknown: rows.filter((row) => row.signsInTo === "unknown"),
+    website: rows.filter((row) => row.signsInTo === "website"),
+  };
 
   async function remove(id: string) {
-    if (!canRemove) return;
+    if (getPasskeyRemovalBlock(rules, id) !== undefined) return;
     setRemovedIds((current) => new Set(current).add(id));
     const message = await deleteAndReadError(deletePasskey, id);
     if (message === undefined) return;
@@ -78,7 +107,7 @@ export function useOptimisticPasskeys<Passkey extends PasskeyListItem>({
     onRemoveError(message);
   }
 
-  return { canRemove, passkeys: visible, remove };
+  return { groups, remove };
 }
 
 async function deleteAndReadError(
