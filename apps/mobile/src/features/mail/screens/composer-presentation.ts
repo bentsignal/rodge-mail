@@ -61,7 +61,3 @@ export function getRecipientToken(token: string) {
   if (!recipient) return { label: token, valid: false };
   return { label: recipient.name ?? recipient.address, valid: true };
 }
-
-export function getCollapsedRecipientSummary(fromAddress: string | undefined) {
-  return fromAddress ? `Cc/Bcc, From: ${fromAddress}` : "Cc/Bcc";
-}

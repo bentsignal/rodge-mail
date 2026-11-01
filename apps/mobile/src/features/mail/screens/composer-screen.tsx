@@ -18,9 +18,8 @@ import {
   getSelectedAccount,
 } from "./composer-helpers";
 import { ComposerNavigationHeader } from "./composer-navigation-header";
-import { getCollapsedRecipientSummary } from "./composer-presentation";
 import { ComposerRecipientField } from "./composer-recipient-field";
-import { ComposerSenderField } from "./composer-sender-field";
+import { ComposerSenderField, SenderPicker } from "./composer-sender-field";
 import { useNativeAttachments } from "./use-native-attachments";
 import { useSendMessage } from "./use-send-message";
 
@@ -185,7 +184,7 @@ function ComposerBody({
   );
 }
 
-/** Cc, Bcc, and From fold into one row until tapped, like Mail. */
+/** Cc, Bcc, and From fold into one row until Cc/Bcc is tapped, like Mail. */
 function CopiesAndSender({
   accounts,
   draft,
@@ -208,20 +207,49 @@ function CopiesAndSender({
   );
   const [focusCopies, setFocusCopies] = useState(false);
 
+  function expand() {
+    setExpanded(true);
+    setFocusCopies(true);
+  }
+
+  if (!expanded && selectedAccount && accounts.length > 1) {
+    return (
+      <ComposerRow>
+        <Pressable
+          accessibilityHint="Shows the Cc and Bcc fields"
+          accessibilityLabel="Cc/Bcc"
+          accessibilityRole="button"
+          className="min-h-8 justify-center"
+          hitSlop={{ bottom: 6, top: 6 }}
+          testID="composer-copies-row"
+          onPress={expand}
+        >
+          <Text className="text-muted-foreground text-base">Cc/Bcc, From:</Text>
+        </Pressable>
+        <SenderPicker
+          muted
+          accounts={accounts}
+          selectedAccount={selectedAccount}
+          onChange={onSenderChange}
+        />
+      </ComposerRow>
+    );
+  }
+
   if (!expanded) {
+    const summary = selectedAccount
+      ? `Cc/Bcc, From: ${selectedAccount.address}`
+      : "Cc/Bcc";
     return (
       <Pressable
-        accessibilityHint="Shows the Cc, Bcc, and From fields"
+        accessibilityHint="Shows the Cc and Bcc fields"
         accessibilityRole="button"
         testID="composer-copies-row"
-        onPress={() => {
-          setExpanded(true);
-          setFocusCopies(true);
-        }}
+        onPress={expand}
       >
         <ComposerRow>
           <Text className="text-muted-foreground text-base" numberOfLines={1}>
-            {getCollapsedRecipientSummary(selectedAccount?.address)}
+            {summary}
           </Text>
         </ComposerRow>
       </Pressable>

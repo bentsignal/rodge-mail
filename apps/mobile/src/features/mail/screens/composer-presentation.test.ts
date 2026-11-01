@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import {
   addRecipientTokens,
-  getCollapsedRecipientSummary,
   getComposerAccountLabel,
   getRecipientToken,
   joinRecipientTokens,
@@ -89,12 +88,5 @@ describe("recipient tokens", () => {
       valid: true,
     });
     expect(getRecipientToken("maya")).toEqual({ label: "maya", valid: false });
-  });
-
-  it("summarizes the collapsed Cc, Bcc, and From row", () => {
-    expect(getCollapsedRecipientSummary("a@example.com")).toBe(
-      "Cc/Bcc, From: a@example.com",
-    );
-    expect(getCollapsedRecipientSummary(undefined)).toBe("Cc/Bcc");
   });
 });
