@@ -1,7 +1,9 @@
+import type { PaginationOptions } from "convex/server";
 import { paginationOptsValidator } from "convex/server";
 import { ConvexError, v } from "convex/values";
 
-import type { Doc } from "../_generated/dataModel";
+import type { Doc, Id } from "../_generated/dataModel";
+import type { AuthedQueryCtx } from "../utils";
 import { authedQuery } from "../utils";
 import {
   ensureListableAccount,
@@ -11,12 +13,16 @@ import {
   toMessageListItem,
 } from "./helpers";
 import {
+  enrichAllMailPage,
   enrichMessagePage,
   enrichThreadPage,
   getVisibleUnreadCountSummary,
 } from "./queryEnrichment";
+import { isAllMailLocation } from "./location";
 import { emptyMessagePage, matchesMailSearch, parseMailSearch } from "./search";
 import { matchesUnreadScope } from "./unread";
+
+const vMailSearchScope = v.union(v.literal("all"), v.literal("inbox"));
 
 export const getUnreadCounts = authedQuery({
   args: {},
@@ -117,6 +123,35 @@ export const listPinned = authedQuery({
   },
 });
 
+export const listAllMail = authedQuery({
+  args: {
+    accountId: v.optional(v.id("mailAccounts")),
+    paginationOpts: paginationOptsValidator,
+  },
+  handler: async (ctx, args) => {
+    const { accountId, paginationOpts } = args;
+    if (accountId) {
+      await ensureListableAccount(ctx, ctx.ownerId, accountId);
+      return await enrichAllMailPage(
+        ctx,
+        await ctx.db
+          .query("threads")
+          .withIndex("by_account_latest", (q) => q.eq("accountId", accountId))
+          .order("desc")
+          .paginate(paginationOpts),
+      );
+    }
+    return await enrichAllMailPage(
+      ctx,
+      await ctx.db
+        .query("threads")
+        .withIndex("by_owner_latest", (q) => q.eq("ownerId", ctx.ownerId))
+        .order("desc")
+        .paginate(paginationOpts),
+    );
+  },
+});
+
 export const getMessage = authedQuery({
   args: { messageId: v.id("messages") },
   handler: async (ctx, args) => {
@@ -129,9 +164,11 @@ export const getMessagesByIds = authedQuery({
   args: {
     messageIds: v.array(v.id("messages")),
     unreadOnly: v.optional(v.boolean()),
+    scope: v.optional(vMailSearchScope),
   },
   handler: async (ctx, args) => {
     const messageIds = args.messageIds.slice(0, 50);
+    const inboxOnly = args.scope !== "all";
     const messages = await Promise.all(
       messageIds.map(async (messageId) => await ctx.db.get(messageId)),
     );
@@ -140,14 +177,16 @@ export const getMessagesByIds = authedQuery({
         .filter(
           (message): message is Doc<"messages"> =>
             message?.ownerId === ctx.ownerId &&
-            message.inInbox &&
+            (message.inInbox || !inboxOnly) &&
             matchesUnreadScope(args.unreadOnly, message),
         )
         .map(async (message) => await toMessageListItem(ctx, message)),
     );
     return items.filter(
       (message): message is NonNullable<typeof message> =>
-        message !== null && message.classification?.isSpam !== true,
+        message !== null &&
+        message.classification?.isSpam !== true &&
+        (inboxOnly || isAllMailLocation(message, message.location)),
     );
   },
 });
@@ -215,6 +254,7 @@ export const searchHeaders = authedQuery({
     searchTerm: v.string(),
     paginationOpts: paginationOptsValidator,
     unreadOnly: v.optional(v.boolean()),
+    scope: v.optional(vMailSearchScope),
   },
   handler: async (ctx, args) => {
     if (args.accountId) {
@@ -230,75 +270,29 @@ export const searchHeaders = authedQuery({
     }
 
     const accountId = args.accountId;
+    const inboxOnly = args.scope !== "all";
     const results = searchPlan.lexicalQuery
       ? await ctx.db
           .query("messages")
           .withSearchIndex("search_headers", (q) => {
             const byOwner = q
               .search("searchText", searchPlan.lexicalQuery)
-              .eq("ownerId", ctx.ownerId)
-              .eq("inInbox", true);
+              .eq("ownerId", ctx.ownerId);
+            const byScope = inboxOnly ? byOwner.eq("inInbox", true) : byOwner;
             const byAccount = accountId
-              ? byOwner.eq("accountId", accountId)
-              : byOwner;
+              ? byScope.eq("accountId", accountId)
+              : byScope;
             return args.unreadOnly ? byAccount.eq("isRead", false) : byAccount;
           })
           .paginate(args.paginationOpts)
-      : accountId
-        ? await ctx.db
-            .query("messages")
-            .withIndex("by_account_inbox_received", (q) => {
-              const range = q.eq("accountId", accountId).eq("inInbox", true);
-              if (
-                searchPlan.after !== undefined &&
-                searchPlan.before !== undefined
-              ) {
-                return range
-                  .gte("receivedAt", searchPlan.after)
-                  .lt("receivedAt", searchPlan.before);
-              }
-              if (searchPlan.after !== undefined) {
-                return range.gte("receivedAt", searchPlan.after);
-              }
-              if (searchPlan.before !== undefined) {
-                return range.lt("receivedAt", searchPlan.before);
-              }
-              return range;
-            })
-            .order("desc")
-            .filter((q) =>
-              args.unreadOnly
-                ? q.eq(q.field("isRead"), false)
-                : q.eq(q.field("inInbox"), true),
-            )
-            .paginate(args.paginationOpts)
-        : await ctx.db
-            .query("messages")
-            .withIndex("by_owner_inbox_received", (q) => {
-              const range = q.eq("ownerId", ctx.ownerId).eq("inInbox", true);
-              if (
-                searchPlan.after !== undefined &&
-                searchPlan.before !== undefined
-              ) {
-                return range
-                  .gte("receivedAt", searchPlan.after)
-                  .lt("receivedAt", searchPlan.before);
-              }
-              if (searchPlan.after !== undefined) {
-                return range.gte("receivedAt", searchPlan.after);
-              }
-              if (searchPlan.before !== undefined) {
-                return range.lt("receivedAt", searchPlan.before);
-              }
-              return range;
-            })
-            .order("desc")
-            .filter((q) =>
-              args.unreadOnly
-                ? q.eq(q.field("isRead"), false)
-                : q.eq(q.field("inInbox"), true),
-            )
-            .paginate(args.paginationOpts);
+      : await paginateByReceivedDate(ctx, {
+          accountId,
+          after: searchPlan.after ?? 0,
+          before: searchPlan.before ?? Number.MAX_SAFE_INTEGER,
+          inboxOnly,
+          paginationOpts: args.paginationOpts,
+          unreadOnly: args.unreadOnly === true,
+        });
 
     const filtered = {
       ...results,
@@ -307,6 +301,65 @@ export const searchHeaders = authedQuery({
       ),
     };
 
-    return await enrichMessagePage(ctx, filtered);
+    return await enrichMessagePage(
+      ctx,
+      filtered,
+      inboxOnly ? "inbox" : "all",
+    );
   },
 });
+
+async function paginateByReceivedDate(
+  ctx: AuthedQueryCtx,
+  args: {
+    accountId: Id<"mailAccounts"> | undefined;
+    after: number;
+    before: number;
+    inboxOnly: boolean;
+    paginationOpts: PaginationOptions;
+    unreadOnly: boolean;
+  },
+) {
+  const { accountId, after, before } = args;
+  const messages = ctx.db.query("messages");
+  const range = accountId
+    ? args.inboxOnly
+      ? messages.withIndex("by_account_inbox_received", (q) =>
+          q
+            .eq("accountId", accountId)
+            .eq("inInbox", true)
+            .gte("receivedAt", after)
+            .lt("receivedAt", before),
+        )
+      : messages.withIndex("by_account_received", (q) =>
+          q
+            .eq("accountId", accountId)
+            .gte("receivedAt", after)
+            .lt("receivedAt", before),
+        )
+    : args.inboxOnly
+      ? messages.withIndex("by_owner_inbox_received", (q) =>
+          q
+            .eq("ownerId", ctx.ownerId)
+            .eq("inInbox", true)
+            .gte("receivedAt", after)
+            .lt("receivedAt", before),
+        )
+      : messages.withIndex("by_owner_received", (q) =>
+          q
+            .eq("ownerId", ctx.ownerId)
+            .gte("receivedAt", after)
+            .lt("receivedAt", before),
+        );
+  return await range
+    .order("desc")
+    .filter((q) => {
+      const visible = args.inboxOnly
+        ? q.eq(q.field("inInbox"), true)
+        : q.eq(q.field("hiddenAt"), undefined);
+      return args.unreadOnly
+        ? q.and(visible, q.eq(q.field("isRead"), false))
+        : visible;
+    })
+    .paginate(args.paginationOpts);
+}

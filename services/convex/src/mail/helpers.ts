@@ -3,6 +3,7 @@ import { ConvexError } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { getMailingListInfo } from "../mailingLists/policy";
+import { getMessageLocation, isAllMailLocation } from "./location";
 import { getThreadRowFlags } from "./threadState";
 
 type ReadCtx = Pick<QueryCtx, "db"> | Pick<MutationCtx, "db">;
@@ -121,9 +122,11 @@ export async function toMessageListItem(
     throw new ConvexError("Message account not found");
   }
   if (!isActiveAccount(account)) return null;
+  const location = await getMessageLocation(ctx, message, account.provider);
 
   return {
     ...message,
+    location,
     account: {
       _id: account._id,
       address: account.address,
@@ -185,6 +188,45 @@ export async function toThreadListItem(
     ...getThreadRowFlags(thread, legacyPinnedMessage !== null),
     receivedAt: thread.latestInboxMessageAt ?? latestMessage.receivedAt,
   };
+}
+
+const ALL_MAIL_THREAD_SCAN = 20;
+
+/**
+ * An All Mail row: the inbox row when the thread is in the inbox, otherwise
+ * its newest message that isn't junk, trash, or spam.
+ */
+export async function toAllMailThreadListItem(
+  ctx: Pick<QueryCtx, "db">,
+  thread: Doc<"threads">,
+) {
+  if (thread.inInbox !== false) {
+    const inboxItem = await toThreadListItem(ctx, thread);
+    if (inboxItem) return inboxItem;
+  }
+  const messages = await ctx.db
+    .query("messages")
+    .withIndex("by_thread_received", (q) => q.eq("threadId", thread._id))
+    .order("desc")
+    .take(ALL_MAIL_THREAD_SCAN);
+  for (const message of messages) {
+    if (message.hiddenAt !== undefined) continue;
+    const listItem = await toMessageListItem(ctx, message);
+    if (!listItem) return null;
+    if (
+      !isAllMailLocation(message, listItem.location) ||
+      listItem.classification?.isSpam === true
+    ) {
+      continue;
+    }
+    return {
+      ...listItem,
+      isPinned: false,
+      isRead: thread.unreadCount === 0,
+      receivedAt: message.receivedAt,
+    };
+  }
+  return null;
 }
 
 export async function toArchivedThreadListItem(
