@@ -2,6 +2,7 @@ import type { ViewModifier } from "@expo/ui/swift-ui/modifiers";
 import { HStack, Image, Spacer, Text, VStack, ZStack } from "@expo/ui/swift-ui";
 import {
   background,
+  contentShape,
   font,
   foregroundStyle,
   frame,
@@ -46,6 +47,8 @@ export function NativeThreadSummary({
       modifiers={[
         frame({ height: rowHeight, maxWidth: Infinity, alignment: "leading" }),
         padding({ leading: 12, trailing: 12 }),
+        // A plain button only hit-tests what it draws; this makes the gaps tappable.
+        contentShape(shapes.rectangle()),
         ...(modifiers ?? []),
       ]}
     >
