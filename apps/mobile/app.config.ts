@@ -84,7 +84,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             "Allow Rodge Mail to access photos you choose to attach to email.",
         },
       ],
-      "./expo-plugins/with-android-user-certs.cjs",
+      "./expo-plugins/with-android-network-security.cjs",
       [
         "expo-splash-screen",
         {
