@@ -15,7 +15,9 @@ const attachmentTypes = {
 
 type InboxResult = FunctionReturnType<typeof api.mail.queries.listInbox>;
 type InboxItem = InboxResult["page"][number];
-type ThreadDetail = FunctionReturnType<typeof api.mail.queries.getThread>;
+type ThreadDetail = NonNullable<
+  FunctionReturnType<typeof api.mail.queries.getThread>
+>;
 type ThreadMessage = ThreadDetail["messages"][number];
 type Account = FunctionReturnType<typeof api.accounts.queries.list>[number];
 

@@ -10,8 +10,8 @@ export type InboxMessage = FunctionReturnType<
   typeof api.mail.queries.listInbox
 >["page"][number];
 
-export type MailThreadDetail = FunctionReturnType<
-  typeof api.mail.queries.getThread
+export type MailThreadDetail = NonNullable<
+  FunctionReturnType<typeof api.mail.queries.getThread>
 >;
 
 export type ThreadMessageDetail = MailThreadDetail["messages"][number];

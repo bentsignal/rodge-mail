@@ -7,6 +7,7 @@ import { toast } from "@rodge-mail/ui-web/toast";
 
 import type { MailAccountView } from "../types";
 import { optimisticallyRemoveAccount } from "../account-removal-optimistic";
+import { useLiveMail } from "../live-data";
 import { getErrorMessage } from "../live-data-utils";
 import { useMailStore } from "../store";
 import { useMailboxNavigation } from "../use-mailbox-navigation";
@@ -20,14 +21,18 @@ export function RemoveAccountButton({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const accountFilter = useMailStore((store) => store.accountFilter);
-  const showAllMail = useMailboxNavigation();
+  const { selectedThread } = useLiveMail();
+  const showMailbox = useMailboxNavigation();
   const removeAccount = useMutation(
     api.accounts.mutations.remove,
   ).withOptimisticUpdate(optimisticallyRemoveAccount);
 
   function remove() {
     setIsOpen(false);
-    if (accountFilter === account._id) showAllMail("all");
+    if (accountFilter === account._id) showMailbox("all");
+    else if (selectedThread?.accountId === account._id) {
+      showMailbox(accountFilter);
+    }
     removeAccount({ accountId: account._id }).catch((error: unknown) =>
       toast.error(getErrorMessage(error, "Could not remove this account.")),
     );

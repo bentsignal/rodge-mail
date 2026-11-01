@@ -12,6 +12,7 @@ import {
 import type { Doc, Id } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
 import { internalQuery } from "../_generated/server";
+import { getActiveAccount, isActiveAccount } from "../mail/helpers";
 import { matchesMailSearch, parseMailSearch } from "../mail/search";
 import { filterAllowedAccountIds } from "./policy";
 import {
@@ -21,7 +22,6 @@ import {
   untrustedMailContent,
 } from "./projections";
 import { vAgentAccountAccess } from "./validators";
-import { getActiveAccount, isActiveAccount } from "../mail/helpers";
 
 export const listAccounts = internalQuery({
   args: { ownerId: v.string(), accountAccess: vAgentAccountAccess },
@@ -318,7 +318,9 @@ async function ownedAllowedAccounts(
 ) {
   if (access.mode === "allowlist") {
     const accounts = await Promise.all(
-      access.accountIds.map(async (accountId) => await getActiveAccount(ctx, accountId)),
+      access.accountIds.map(
+        async (accountId) => await getActiveAccount(ctx, accountId),
+      ),
     );
     return accounts.filter(
       (account): account is Doc<"mailAccounts"> => account?.ownerId === ownerId,

@@ -164,9 +164,11 @@ it("hides the account and its mail before the batches run", async () => {
     paginationOpts: { cursor: null, numItems: 20 },
   });
   expect(filtered.page).toEqual([]);
-  await expect(
-    owner.query(api.mail.queries.getThread, { threadId: removed.threadId }),
-  ).rejects.toThrow("Thread not found");
+  expect(
+    await owner.query(api.mail.queries.getThread, {
+      threadId: removed.threadId,
+    }),
+  ).toBeNull();
   expect(
     await t.query(internal.sync.internal.getGmailSyncContext, {
       ownerId: OWNER,

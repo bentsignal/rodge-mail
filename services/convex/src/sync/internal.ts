@@ -16,6 +16,7 @@ import { queueClassificationForMessage } from "../classification/queue";
 import { shouldRequestAutomaticCleanView } from "../cleanView/policy";
 import { reconcileEmbeddingSelection } from "../embedding/internal";
 import { isProviderMessageArchived } from "../mail/archive";
+import { getActiveAccount } from "../mail/helpers";
 import { createMessageSearchText } from "../mail/search";
 import { getThreadInboxState } from "../mail/threadState";
 import {
@@ -49,7 +50,6 @@ import {
   STALE_SYNC_ERROR,
   SYNC_RUN_STALE_AFTER_MS,
 } from "./stale";
-import { getActiveAccount } from "../mail/helpers";
 
 const vNormalizedAttachment = v.object({
   remoteAttachmentId: v.string(),

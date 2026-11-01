@@ -3,9 +3,9 @@ import { v } from "convex/values";
 import type { Doc, Id } from "../../_generated/dataModel";
 import type { QueryCtx } from "../../_generated/server";
 import { internalMutation, internalQuery } from "../../_generated/server";
+import { getActiveAccount } from "../../mail/helpers";
 import { vMailboxAddress } from "../../mail/validators";
 import { vHostedDeliveryEventType } from "./validators";
-import { getActiveAccount } from "../../mail/helpers";
 
 export const resolveRecipients = internalQuery({
   args: { recipients: v.array(v.string()) },

@@ -3,6 +3,7 @@ import { v } from "convex/values";
 
 import type { Doc } from "../_generated/dataModel";
 import type { AuthedQueryCtx } from "../utils";
+import { getActiveAccount } from "../mail/helpers";
 import { authedQuery } from "../utils";
 import {
   MAX_RECENT_OUTBOX_PER_UNRESOLVED_STATUS,
@@ -16,7 +17,6 @@ import {
   toSentAttachment,
   toSentSnippet,
 } from "./sent";
-import { getActiveAccount } from "../mail/helpers";
 
 const UNRESOLVED_STATUSES = ["pending", "sending", "failed"] as const;
 

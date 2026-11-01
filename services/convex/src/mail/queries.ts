@@ -1,13 +1,12 @@
 import { paginationOptsValidator } from "convex/server";
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 
 import type { Doc } from "../_generated/dataModel";
 import { authedQuery } from "../utils";
 import {
   ensureListableAccount,
-  ensureOwnedAccount,
   ensureOwnedMessage,
-  ensureOwnedThread,
+  getActiveAccount,
   toMessageDetail,
   toMessageListItem,
 } from "./helpers";
@@ -156,15 +155,21 @@ export const getMessagesByIds = authedQuery({
 export const getThread = authedQuery({
   args: { threadId: v.id("threads") },
   handler: async (ctx, args) => {
-    const thread = await ensureOwnedThread(ctx, ctx.ownerId, args.threadId);
+    const thread = await ctx.db.get(args.threadId);
+    if (thread && thread.ownerId !== ctx.ownerId) {
+      throw new ConvexError("Thread not found");
+    }
+    // Gone, or its account is being removed: readers show "not found".
+    if (!thread) return null;
     const [account, messages] = await Promise.all([
-      ensureOwnedAccount(ctx, ctx.ownerId, thread.accountId),
+      getActiveAccount(ctx, thread.accountId),
       ctx.db
         .query("messages")
         .withIndex("by_thread_received", (q) => q.eq("threadId", thread._id))
         .order("asc")
         .collect(),
     ]);
+    if (!account) return null;
 
     return {
       ...thread,

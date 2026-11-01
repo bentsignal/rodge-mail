@@ -2,13 +2,13 @@ import { makeFunctionReference } from "convex/server";
 import { v } from "convex/values";
 
 import { internalMutation, internalQuery } from "../_generated/server";
+import { getActiveAccount } from "../mail/helpers";
 import {
   vAgentAccountAccess,
   vAgentAuditOutcome,
   vAgentScope,
   vAgentToolName,
 } from "./validators";
-import { getActiveAccount } from "../mail/helpers";
 
 const CLEANUP_AGENT_AUDITS = makeFunctionReference<
   "mutation",

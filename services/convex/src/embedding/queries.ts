@@ -1,8 +1,8 @@
 import { v } from "convex/values";
 
 import { internalQuery } from "../_generated/server";
-import { matchesMailSearch } from "../mail/search";
 import { getActiveAccount } from "../mail/helpers";
+import { matchesMailSearch } from "../mail/search";
 
 const vScoredEmbedding = v.object({
   embeddingId: v.id("messageEmbeddings"),

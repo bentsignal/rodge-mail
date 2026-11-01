@@ -2,6 +2,7 @@ import { v } from "convex/values";
 
 import type { Doc } from "../_generated/dataModel";
 import type { AuthedMutationCtx } from "../utils";
+import { getActiveAccount } from "../mail/helpers";
 import { createMessageSearchText } from "../mail/search";
 import { authedMutation } from "../utils";
 import { reconcileEmbeddingSelection } from "./internal";
@@ -10,7 +11,6 @@ import {
   findEmbeddingJob,
   findMessageEmbedding,
 } from "./storage";
-import { getActiveAccount } from "../mail/helpers";
 
 const BACKFILL_BATCH_SIZE = 25;
 const INDEXING_STAT_KEYS = [
