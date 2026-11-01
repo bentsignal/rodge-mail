@@ -1,8 +1,7 @@
 export type SentStatus = "failed" | "pending" | "sending" | "sent";
 
 export function getSentStatusLabel(status: SentStatus) {
-  if (status === "pending") return "Queued";
-  if (status === "sending") return "Sending";
+  if (status === "pending" || status === "sending") return "Sending…";
   if (status === "failed") return "Not sent";
   return "Sent";
 }

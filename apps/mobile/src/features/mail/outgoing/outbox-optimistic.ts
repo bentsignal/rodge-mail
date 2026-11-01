@@ -68,7 +68,7 @@ function nonEmpty(value: string | undefined) {
   return trimmed;
 }
 
-/** A retried message shows as queued again before the server answers. */
+/** A retried message shows as sending again before the server answers. */
 export function markOutboxQueued(
   store: OptimisticLocalStore,
   { outboxId }: { outboxId: Id<"outboxMessages"> },

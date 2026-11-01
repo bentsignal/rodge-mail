@@ -30,6 +30,13 @@ export interface WebComposerAttachment extends ComposerAttachment {
 
 type WebComposerDraft = ComposerDraft<WebComposerAttachment>;
 
+export interface ComposerSnapshot {
+  accountId: Id<"mailAccounts">;
+  draft: WebComposerDraft;
+  idempotencyKey: string;
+  replyToMessageId: Id<"messages"> | undefined;
+}
+
 function createEmptyDraft() {
   return {
     attachments: [],
@@ -101,6 +108,15 @@ function useComposerState() {
     setIdempotencyKey(createIdempotencyKey());
   }
 
+  /** Reopens a message whose send failed, as it was when Send was pressed. */
+  function restoreComposer(snapshot: ComposerSnapshot) {
+    setComposerDraft(snapshot.draft);
+    setComposerAccountId(snapshot.accountId);
+    setComposerReplyToMessageId(snapshot.replyToMessageId);
+    setIdempotencyKey(snapshot.idempotencyKey);
+    setComposerIsOpen(true);
+  }
+
   return {
     addComposerAttachments,
     completeComposerEnqueue,
@@ -125,6 +141,7 @@ function useComposerState() {
           (attachment) => attachment.id !== attachmentId,
         ),
       })),
+    restoreComposer,
     setComposerAccountId,
     updateComposerAttachment,
     updateComposerDraft,

@@ -181,7 +181,7 @@ function SentRowStatus({
 }
 
 function SendingIndicator({ status }: { status: SentRow["status"] }) {
-  if (status !== "sending") return null;
+  if (status !== "pending" && status !== "sending") return null;
   return <ActivityIndicator size="small" />;
 }
 

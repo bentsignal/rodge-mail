@@ -8,7 +8,6 @@ import {
   AlertCircle,
   Check,
   ChevronDown,
-  Clock3,
   LoaderCircle,
   RotateCcw,
   Send,
@@ -18,6 +17,7 @@ import { api } from "@rodge-mail/convex/api";
 import { cn } from "@rodge-mail/std/cn";
 
 import { QuickLink } from "~/components/quick-link";
+import { isOptimisticOutboxId } from "../outbox-optimistic";
 import { useRetryOutbox } from "../use-retry-outbox";
 
 type OutboxItem = FunctionReturnType<
@@ -105,13 +105,7 @@ function OutboxRow({
 
   return (
     <article className="border-border hover:bg-muted relative border-b last:border-b-0">
-      <QuickLink
-        aria-label={`${outbox.subject.trim() || "(no subject)"}, ${getStatusLabel(outbox.status)}`}
-        className="flex items-start gap-3 px-4 py-3"
-        onClick={onNavigate}
-        params={{ outboxId: outbox._id }}
-        to="/sent/$outboxId"
-      >
+      <OutboxRowLink onNavigate={onNavigate} outbox={outbox}>
         <StatusIcon status={outbox.status} />
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-2">
@@ -137,9 +131,45 @@ function OutboxRow({
           </div>
           <OutboxError error={outbox.error} status={outbox.status} />
         </div>
-      </QuickLink>
+      </OutboxRowLink>
       <RetryButton onRetry={() => retry(outbox._id)} status={outbox.status} />
     </article>
+  );
+}
+
+function OutboxRowLink({
+  children,
+  onNavigate,
+  outbox,
+}: {
+  children: React.ReactNode;
+  onNavigate: () => void;
+  outbox: OutboxItem;
+}) {
+  const label = `${outbox.subject.trim() || "(no subject)"}, ${getStatusLabel(outbox.status)}`;
+  const className = "flex items-start gap-3 px-4 py-3";
+  if (isOptimisticOutboxId(outbox._id)) {
+    return (
+      <QuickLink
+        aria-label={label}
+        className={className}
+        onClick={onNavigate}
+        to="/sent"
+      >
+        {children}
+      </QuickLink>
+    );
+  }
+  return (
+    <QuickLink
+      aria-label={label}
+      className={className}
+      onClick={onNavigate}
+      params={{ outboxId: outbox._id }}
+      to="/sent/$outboxId"
+    >
+      {children}
+    </QuickLink>
   );
 }
 
@@ -204,7 +234,7 @@ function StatusIcon({ status }: { status: OutboxItem["status"] }) {
     "mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full",
     getStatusIconClass(status),
   );
-  if (status === "sending") {
+  if (status === "pending" || status === "sending") {
     return (
       <span className={className}>
         <LoaderCircle className="size-3.5 animate-spin" />
@@ -218,16 +248,9 @@ function StatusIcon({ status }: { status: OutboxItem["status"] }) {
       </span>
     );
   }
-  if (status === "failed") {
-    return (
-      <span className={className}>
-        <AlertCircle className="size-3.5" />
-      </span>
-    );
-  }
   return (
     <span className={className}>
-      <Clock3 className="size-3.5" />
+      <AlertCircle className="size-3.5" />
     </span>
   );
 }
@@ -235,20 +258,14 @@ function StatusIcon({ status }: { status: OutboxItem["status"] }) {
 function getSummaryLabel(outboxes: OutboxItem[]) {
   const failed = outboxes.filter((outbox) => outbox.status === "failed").length;
   if (failed > 0) return `${failed} failed`;
-  const sending = outboxes.filter(
-    (outbox) => outbox.status === "sending",
-  ).length;
-  if (sending > 0) return "Sending";
-  const pending = outboxes.filter(
-    (outbox) => outbox.status === "pending",
-  ).length;
-  if (pending > 0) return `${pending} queued`;
-  return null;
+  const isSending = outboxes.some(
+    (outbox) => outbox.status === "pending" || outbox.status === "sending",
+  );
+  return isSending ? "Sending…" : null;
 }
 
 function getStatusLabel(status: OutboxItem["status"]) {
-  if (status === "pending") return "Queued";
-  if (status === "sending") return "Sending";
+  if (status === "pending" || status === "sending") return "Sending…";
   if (status === "failed") return "Failed";
   return "Sent";
 }

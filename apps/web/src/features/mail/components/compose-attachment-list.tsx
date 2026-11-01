@@ -27,10 +27,10 @@ export function DraftAttachments() {
   }
 
   return (
-    <div className="flex flex-wrap gap-2 pb-5">
+    <div className="border-border ml-5 flex flex-wrap gap-1.5 border-b-[0.5px] py-2.5 pr-5">
       {attachments.map((attachment) => (
         <span
-          className="bg-background flex items-center gap-2 rounded-[9px] border py-1.5 pr-1.5 pl-3 text-xs"
+          className="bg-muted flex items-center gap-2 rounded-full py-1 pr-1 pl-3 text-xs"
           key={attachment.id}
         >
           <AttachmentStatusIcon status={attachment.status} />
@@ -42,7 +42,7 @@ export function DraftAttachments() {
           </span>
           <button
             aria-label={`Remove ${attachment.fileName}`}
-            className="mail-icon-button flex size-5 items-center justify-center rounded-md"
+            className="mail-icon-button flex size-5 items-center justify-center rounded-full"
             disabled={attachment.status === "uploading"}
             onClick={() => remove(attachment)}
             type="button"
@@ -75,19 +75,6 @@ function getAttachmentStatus(attachment: WebComposerAttachment) {
   if (attachment.status === "uploading") return "uploading";
   if (attachment.status === "error") return attachment.error ?? "failed";
   return formatAttachmentSize(attachment.size);
-}
-
-export function getUploadSummary(attachments: WebComposerAttachment[]) {
-  const uploading = attachments.filter(
-    (attachment) => attachment.status === "uploading",
-  ).length;
-  if (uploading > 0) return `Uploading ${uploading}…`;
-  const total = attachments.reduce(
-    (bytes, attachment) => bytes + attachment.size,
-    0,
-  );
-  if (attachments.length === 0) return "Up to 5 files · 18 MB";
-  return `${attachments.length}/5 · ${formatAttachmentSize(total)}`;
 }
 
 function formatAttachmentSize(bytes: number) {

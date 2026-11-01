@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useQuery } from "convex/react";
-import { AlertCircle, Check, Clock3, Paperclip } from "lucide-react-native";
+import { AlertCircle, Check, Paperclip } from "lucide-react-native";
 
 import type { api as Api } from "@rodge-mail/convex/api";
 import { api } from "@rodge-mail/convex/api";
@@ -161,10 +161,9 @@ function StatusIcon({
   color: string;
   status: SentMessage["status"];
 }) {
-  if (status === "sending") return <ActivityIndicator size="small" />;
   if (status === "failed") return <AlertCircle color={color} size={15} />;
   if (status === "sent") return <Check color={color} size={15} />;
-  return <Clock3 color={color} size={15} />;
+  return <ActivityIndicator size="small" />;
 }
 
 function SentHeaders({ message }: { message: SentMessage }) {
