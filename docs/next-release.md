@@ -51,7 +51,7 @@ section here in that PR (see AGENTS.md → Releases), in this form:
   roughly matches the imported count. Until the Microsoft account is removed
   (a separate PR), its synced inbox mail shows up twice.
 
-## Retry the Microsoft 365 import's failed message (#PR)
+## Retry the Microsoft 365 import's failed message (#27)
 
 - When: after the Convex deploy, and after the #24 import above has finished.
 - Why: one Inbox message failed on every run with "Invalid arguments
