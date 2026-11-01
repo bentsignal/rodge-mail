@@ -1,7 +1,7 @@
 import { Pressable, Text, TextInput } from "react-native";
 
 import { useColor } from "~/hooks/use-color";
-import { ComposerRow } from "./composer-field";
+import { composerInputTextClassName, ComposerRow } from "./composer-field";
 import { getRecipientToken } from "./composer-presentation";
 import { useRecipientTokens } from "./use-recipient-tokens";
 
@@ -52,7 +52,7 @@ export function ComposerRecipientField({
         autoComplete="email"
         autoCorrect={false}
         autoFocus={autoFocus}
-        className="text-foreground min-h-8 min-w-12 flex-1 text-base"
+        className={`${composerInputTextClassName} min-h-8 min-w-12 flex-1`}
         keyboardType="email-address"
         placeholderTextColor={mutedForeground}
         returnKeyType="next"

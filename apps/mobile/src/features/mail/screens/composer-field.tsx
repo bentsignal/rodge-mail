@@ -35,6 +35,10 @@ function RowError({ error }: { error: string | undefined }) {
   );
 }
 
+// Font size only: with a line height, iOS draws a single-line TextInput's
+// typed text lower than its placeholder and cursor.
+export const composerInputTextClassName = "text-foreground text-[16px]";
+
 export function ComposerTextField({
   label,
   style,
@@ -47,7 +51,7 @@ export function ComposerTextField({
     <ComposerRow label={`${label}:`}>
       <TextInput
         accessibilityLabel={label}
-        className="text-foreground min-h-8 min-w-0 flex-1 text-base"
+        className={`${composerInputTextClassName} min-h-8 min-w-0 flex-1`}
         placeholderTextColor={mutedForeground}
         selectionColor={primary}
         style={[{ color: foreground, paddingVertical: 0 }, style]}

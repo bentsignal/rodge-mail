@@ -163,7 +163,6 @@ export function MailboxThreadList({
         pageStatus={pageStatus}
         onLoadMore={onLoadMore}
         background={background}
-        primary={primary}
         refreshControl={refreshControl}
         refreshError={refreshError}
         renderThread={renderThread}
@@ -185,7 +184,6 @@ interface MailboxRowsProps {
   onLoadMore: () => void;
   pageStatus: PageStatus;
   background: string;
-  primary: string;
   refreshControl:
     | React.ReactElement<React.ComponentProps<typeof RefreshControl>>
     | undefined;
@@ -208,7 +206,6 @@ function MailboxRows({
   onLoadMore,
   pageStatus,
   background,
-  primary,
   refreshControl,
   refreshError,
   renderThread,
@@ -256,7 +253,6 @@ function MailboxRows({
             filter={transition.filter}
             isLoading={feedback.emptyIsLoading}
             mailbox={mailbox}
-            primary={primary}
             searchTerm={searchTerm}
           />
         }
