@@ -4,6 +4,7 @@ import type { LiveMailContextValue } from "./live-data-types";
 import type { MailAccountFilter } from "./store";
 import type { InboxMessage } from "./types";
 import type { UnreadSessionSnapshot } from "./unread-session";
+import { useAllMailLiveMailValue } from "./all-mail-live-data";
 import { useArchiveLiveMailValue } from "./archive-live-data";
 import { MAIL_PAGE_SIZE } from "./constants";
 import { useLiveMailActions } from "./live-data-actions";
@@ -65,6 +66,19 @@ export function ArchiveLiveMailProvider({
   children: React.ReactNode;
 }) {
   const value = useArchiveLiveMailValue();
+  return (
+    <LiveMailContext.Provider value={value}>
+      {children}
+    </LiveMailContext.Provider>
+  );
+}
+
+export function AllMailLiveMailProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const value = useAllMailLiveMailValue();
   return (
     <LiveMailContext.Provider value={value}>
       {children}

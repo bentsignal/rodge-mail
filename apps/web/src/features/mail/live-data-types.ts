@@ -1,12 +1,17 @@
 import type { InboxMessage, MailAccountView, MailThreadDetail } from "./types";
 
-export type MailMode = "archive" | "inbox" | "sent" | "spam";
+export type MailMode = "all" | "archive" | "inbox" | "sent" | "spam";
 
 export function getMailModePath(mailMode: MailMode) {
+  if (mailMode === "all") return "/all";
   if (mailMode === "archive") return "/archive";
   if (mailMode === "spam") return "/spam";
   if (mailMode === "sent") return "/sent";
   return "/";
+}
+
+export function isAllMailPath(pathname: string) {
+  return pathname === "/all" || pathname.startsWith("/all/");
 }
 
 export interface LiveMailContextValue {
@@ -25,6 +30,7 @@ export interface LiveMailContextValue {
   loadMore: () => void;
   mailMode: MailMode;
   markMessageRead: (message: InboxMessage) => void;
+  moveThreadToInbox: (message: Pick<InboxMessage, "threadId">) => void;
   archiveThread: (message: Pick<InboxMessage, "threadId">) => Promise<void>;
   archiveThreads: (messages: Pick<InboxMessage, "threadId">[]) => Promise<void>;
   permanentlyDeleteArchivedThread: (

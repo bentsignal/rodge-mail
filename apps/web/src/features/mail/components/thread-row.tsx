@@ -1,5 +1,3 @@
-import { Archive, Pin } from "lucide-react";
-
 import { cn } from "@rodge-mail/std/cn";
 import * as ContextMenu from "@rodge-mail/ui-web/context-menu";
 
@@ -10,7 +8,11 @@ import type { InboxMessage } from "../types";
 import { QuickLink } from "~/components/quick-link";
 import { useLiveMail } from "../live-data";
 import { useMailStore } from "../store";
-import { getThreadRowAccessibilityLabel } from "../thread-row-presentation";
+import {
+  getThreadRowAccessibilityLabel,
+  getThreadRowTag,
+} from "../thread-row-presentation";
+import { ThreadRowActions } from "./thread-row-actions";
 import { ThreadRowContent } from "./thread-row-content";
 
 export function ThreadRow({
@@ -21,13 +23,18 @@ export function ThreadRow({
   position: number;
 }) {
   const {
+    accounts,
     markMessageRead,
+    moveThreadToInbox,
     archiveThread,
     mailMode,
     selectedThreadId,
     togglePinned,
   } = useLiveMail();
   const accountFilter = useMailStore((store) => store.accountFilter);
+  const debouncedSearchQuery = useMailStore(
+    (store) => store.debouncedSearchQuery,
+  );
   const bulkSelectedThreadIds = useMailStore(
     (store) => store.bulkSelectedThreadIds,
   );
@@ -46,6 +53,13 @@ export function ThreadRow({
   const senderName = getSenderName(message);
   const pinLabel = message.isPinned ? "Unpin message" : "Pin message";
   const preview = message.classification?.summary ?? message.snippet;
+  const tag = getThreadRowTag({
+    accountFilter,
+    accounts,
+    isSearch: debouncedSearchQuery.length > 0,
+    mailMode,
+    message,
+  });
   return (
     <ContextMenu.Container>
       <article
@@ -68,6 +82,7 @@ export function ThreadRow({
           message={message}
           preview={preview}
           senderName={senderName}
+          tag={tag}
           toggleBulkThread={toggleBulkThread}
           unreadOnly={unreadOnly}
         />
@@ -76,6 +91,7 @@ export function ThreadRow({
           bulkSelectionIsActive={bulkSelectionIsActive}
           mailMode={mailMode}
           message={message}
+          moveThreadToInbox={moveThreadToInbox}
           pinLabel={pinLabel}
           togglePinned={togglePinned}
         />
@@ -93,6 +109,7 @@ function ThreadRowTarget({
   message,
   preview,
   senderName,
+  tag,
   toggleBulkThread,
   unreadOnly,
 }: {
@@ -104,6 +121,7 @@ function ThreadRowTarget({
   message: InboxMessage;
   preview: string;
   senderName: string;
+  tag: string | undefined;
   toggleBulkThread: (threadId: InboxMessage["threadId"]) => void;
   unreadOnly: boolean;
 }) {
@@ -122,6 +140,7 @@ function ThreadRowTarget({
           preview={preview}
           senderName={senderName}
           showSelection={true}
+          tag={tag}
         />
       </button>
     );
@@ -142,46 +161,10 @@ function ThreadRowTarget({
           preview={preview}
           senderName={senderName}
           showSelection={false}
+          tag={tag}
         />
       </ThreadLink>
     </ContextMenu.Trigger>
-  );
-}
-
-function ThreadRowActions({
-  bulkSelectionIsActive,
-  ...props
-}: React.ComponentProps<typeof InboxThreadActions> & {
-  bulkSelectionIsActive: boolean;
-}) {
-  if (bulkSelectionIsActive) return null;
-  return <InboxThreadActions {...props} />;
-}
-
-function InboxThreadActions({
-  archiveThread,
-  mailMode,
-  message,
-  pinLabel,
-  togglePinned,
-}: {
-  archiveThread: (message: Pick<InboxMessage, "threadId">) => Promise<void>;
-  mailMode: MailMode;
-  message: InboxMessage;
-  pinLabel: string;
-  togglePinned: (message: InboxMessage) => Promise<void>;
-}) {
-  if (mailMode === "archive") return null;
-  return (
-    <>
-      <PinMessageButton message={message} togglePinned={togglePinned} />
-      <ThreadRowMenu
-        message={message}
-        pinLabel={pinLabel}
-        archiveThread={archiveThread}
-        togglePinned={togglePinned}
-      />
-    </>
   );
 }
 
@@ -225,58 +208,10 @@ function ThreadLink({
   if (mailMode === "spam") {
     return <QuickLink {...props} to="/spam/messages/$messageId" />;
   }
+  if (mailMode === "all") {
+    return <QuickLink {...props} to="/all/messages/$messageId" />;
+  }
   return <QuickLink {...props} to="/messages/$messageId" />;
-}
-
-function ThreadRowMenu({
-  message,
-  pinLabel,
-  archiveThread,
-  togglePinned,
-}: {
-  message: InboxMessage;
-  pinLabel: string;
-  archiveThread: (message: Pick<InboxMessage, "threadId">) => Promise<void>;
-  togglePinned: (message: InboxMessage) => Promise<void>;
-}) {
-  return (
-    <ContextMenu.Content className="rounded-[10px] p-1.5">
-      <ContextMenu.Item
-        className="data-[highlighted]:text-foreground data-[highlighted]:bg-accent rounded-[7px]"
-        onSelect={() => void togglePinned(message)}
-      >
-        <Pin className="size-3.5" />
-        {pinLabel}
-      </ContextMenu.Item>
-      <ContextMenu.Separator className="bg-border" />
-      <ContextMenu.Item
-        className="data-[highlighted]:text-foreground data-[highlighted]:bg-accent rounded-[7px]"
-        onSelect={() => void archiveThread(message)}
-      >
-        <Archive className="size-3.5" />
-        Archive
-      </ContextMenu.Item>
-    </ContextMenu.Content>
-  );
-}
-
-function PinMessageButton({
-  message,
-  togglePinned,
-}: {
-  message: InboxMessage;
-  togglePinned: (message: InboxMessage) => Promise<void>;
-}) {
-  return (
-    <button
-      aria-label={message.isPinned ? "Unpin message" : "Pin message"}
-      className="border-border bg-muted text-muted-foreground hover:text-foreground absolute right-3 bottom-2.5 flex size-8 items-center justify-center rounded-lg border opacity-0 transition-[color,opacity] group-focus-within:opacity-100 group-hover:opacity-100 focus:opacity-100"
-      onClick={() => void togglePinned(message)}
-      type="button"
-    >
-      <Pin className="size-3.5" />
-    </button>
-  );
 }
 
 function getSenderName(message: InboxMessage) {

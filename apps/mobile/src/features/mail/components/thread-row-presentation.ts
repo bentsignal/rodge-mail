@@ -1,4 +1,7 @@
-import type { MailThread } from "@rodge-mail/features/mail";
+import type { MailAccount, MailThread } from "@rodge-mail/features/mail";
+import { getMailLocationTag } from "@rodge-mail/features/mail";
+
+import type { MobileMailbox } from "../store";
 
 export function getSenderInitials(sender: string) {
   return sender
@@ -40,6 +43,38 @@ export function getThreadRowNativeKey(
   thread: Pick<MailThread, "id" | "isPinned" | "isRead">,
 ) {
   return `${thread.id}:${thread.isPinned ? "pinned" : "unpinned"}:${thread.isRead ? "read" : "unread"}`;
+}
+
+/** A search hit filed outside the inbox gets All Mail's actions, not Archive. */
+export function getRowMailbox(
+  mailbox: MobileMailbox,
+  thread: Pick<MailThread, "location">,
+) {
+  if (mailbox !== "inbox") return mailbox;
+  const kind = thread.location?.kind ?? "inbox";
+  return kind === "inbox" ? "inbox" : "all";
+}
+
+export function getThreadTag({
+  accountFilter,
+  accounts,
+  isSearch,
+  thread,
+}: {
+  accountFilter: string;
+  accounts: MailAccount[];
+  isSearch: boolean;
+  thread: Pick<MailThread, "accountId" | "location">;
+}) {
+  const isElsewhere = (thread.location?.kind ?? "inbox") !== "inbox";
+  return getMailLocationTag({
+    accountLabel: accounts.find((account) => account.id === thread.accountId)
+      ?.label,
+    location: thread.location,
+    showAccount:
+      isSearch ||
+      (isElsewhere && accountFilter === "all" && accounts.length > 1),
+  });
 }
 
 export function runAfterSwipeAnimation(action: () => void) {

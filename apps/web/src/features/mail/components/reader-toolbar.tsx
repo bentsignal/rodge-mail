@@ -5,6 +5,7 @@ import {
   ArchiveRestore,
   ArrowLeft,
   CheckCheck,
+  Inbox,
   MailOpen,
   MailX,
   Pin,
@@ -13,11 +14,12 @@ import {
   Trash2,
 } from "lucide-react";
 
+import type { MailThreadPlacement } from "@rodge-mail/features/mail";
 import { cn } from "@rodge-mail/std/cn";
-import * as Dialog from "@rodge-mail/ui-web/dialog";
 
 import type { MailMode } from "../live-data-types";
 import type { ThreadMessageDetail } from "../types";
+import { ArchiveDeleteDialog } from "./reader-delete-dialog";
 import {
   getUnsubscribeDialogMessage,
   ReaderUnsubscribeDialog,
@@ -25,9 +27,12 @@ import {
 
 interface ReaderToolbarProps {
   archiveThread: (message: ThreadMessageDetail) => Promise<void>;
+  canMoveToInbox: boolean;
   closeMobileReader: () => void;
   mailMode: MailMode;
   markNotSpam: (message: ThreadMessageDetail) => Promise<void>;
+  moveToInbox: (message: ThreadMessageDetail) => void;
+  placement: MailThreadPlacement;
   permanentlyDeleteArchivedThread: (
     message: ThreadMessageDetail,
   ) => Promise<void>;
@@ -93,8 +98,11 @@ function getDeleteMessage(
 
 function ReaderModeActions({
   archiveThread,
+  canMoveToInbox,
   mailMode,
   markNotSpam,
+  moveToInbox,
+  placement,
   requestDelete,
   restoreArchivedThread,
   selectedMessage,
@@ -136,6 +144,18 @@ function ReaderModeActions({
       </>
     );
   }
+  if (placement !== "inbox") {
+    return (
+      <>
+        <MoveToInboxReaderAction
+          canMoveToInbox={canMoveToInbox}
+          message={selectedMessage}
+          moveToInbox={moveToInbox}
+        />
+        <ReadReaderAction message={selectedMessage} toggleRead={toggleRead} />
+      </>
+    );
+  }
   return (
     <>
       <UnsubscribeReaderAction
@@ -165,6 +185,25 @@ function UnsubscribeReaderAction({
       icon={MailX}
       label={`Unsubscribe from ${message.mailingList.displayName}`}
       onClick={requestUnsubscribe}
+    />
+  );
+}
+
+function MoveToInboxReaderAction({
+  canMoveToInbox,
+  message,
+  moveToInbox,
+}: {
+  canMoveToInbox: boolean;
+  message: ThreadMessageDetail | undefined;
+  moveToInbox: (message: ThreadMessageDetail) => void;
+}) {
+  if (!canMoveToInbox) return null;
+  return (
+    <ReaderIconButton
+      icon={Inbox}
+      label="Move to Inbox"
+      onClick={message ? () => moveToInbox(message) : undefined}
     />
   );
 }
@@ -218,63 +257,6 @@ function ReadReaderAction({
       onClick={() => void toggleRead(message)}
     />
   );
-}
-
-function ArchiveDeleteDialog({
-  message,
-  onOpenChange,
-  permanentlyDelete,
-}: {
-  message: ThreadMessageDetail | undefined;
-  onOpenChange: (open: boolean) => void;
-  permanentlyDelete: (message: ThreadMessageDetail) => Promise<void>;
-}) {
-  const [isDeleting, setIsDeleting] = useState(false);
-  async function confirmDelete() {
-    if (!message) return;
-    setIsDeleting(true);
-    await permanentlyDelete(message);
-    setIsDeleting(false);
-    onOpenChange(false);
-  }
-  return (
-    <Dialog.Container onOpenChange={onOpenChange} open={message !== undefined}>
-      <Dialog.Content className="mail-dialog bg-background max-w-md overflow-hidden rounded-[18px] border p-0">
-        <div className="border-b p-6">
-          <Dialog.Title className="text-2xl font-semibold tracking-tight">
-            Delete permanently?
-          </Dialog.Title>
-          <Dialog.Description className="text-muted-foreground mt-2 text-xs leading-5">
-            This permanently removes Rodge Mail’s archived copy and cannot be
-            undone. Your provider copy is unchanged.
-          </Dialog.Description>
-        </div>
-        <div className="flex justify-end gap-2 p-5">
-          <button
-            className="bg-background border-border h-10 rounded-lg border px-4 text-xs font-semibold"
-            disabled={isDeleting}
-            onClick={() => onOpenChange(false)}
-            type="button"
-          >
-            Cancel
-          </button>
-          <button
-            className="bg-destructive text-destructive-foreground h-10 rounded-lg px-4 text-xs font-bold disabled:opacity-50"
-            disabled={isDeleting}
-            onClick={() => void confirmDelete()}
-            type="button"
-          >
-            {getDeleteLabel(isDeleting)}
-          </button>
-        </div>
-      </Dialog.Content>
-    </Dialog.Container>
-  );
-}
-
-function getDeleteLabel(isDeleting: boolean) {
-  if (isDeleting) return "Deleting…";
-  return "Delete permanently";
 }
 
 function ReaderIconButton({

@@ -45,7 +45,9 @@ export interface DemoMessage {
   summary: string;
   shouldEmbed: boolean;
   attachment?: DemoAttachment;
-  placement?: "archive" | "spam";
+  /** `folder`: stored outside the inbox under `labels`, as an import leaves it. */
+  placement?: "archive" | "folder" | "spam";
+  labels?: string[];
   recipientName?: string;
 }
 

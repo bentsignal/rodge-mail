@@ -9,7 +9,8 @@ import type {
 /**
  * The isolated backend's seeded mailbox (`scripts/backend.sh seed`): three
  * fake accounts and about forty threads dated relative to now, with pinned,
- * unread, read, archived, and spam mail. Every address uses a reserved
+ * unread, read, archived, and spam mail, plus mail filed outside the inbox the
+ * way an import leaves it. Every address uses a reserved
  * domain, so screenshots of it are safe to publish.
  */
 export const ISOLATED_OWNER_NAME = "Alex Rivera";
@@ -47,7 +48,13 @@ export const ISOLATED_ACCOUNTS = [
 
 type Seed = Pick<
   DemoMessage,
-  "account" | "subject" | "snippet" | "category" | "attachment" | "placement"
+  | "account"
+  | "subject"
+  | "snippet"
+  | "category"
+  | "attachment"
+  | "labels"
+  | "placement"
 > & {
   from: [name: string, address: string];
   hoursAgo: number;
@@ -522,6 +529,77 @@ const SEEDS = [
     hoursAgo: 46,
     placement: "spam",
   },
+  {
+    account: "hosted",
+    from: ["Casa Alfama", "stay@alfama.example"],
+    subject: "Lisbon itinerary",
+    snippet: "Check-in is at 3pm. The tram stop is two minutes away.",
+    category: "transactional",
+    hoursAgo: 400,
+    placement: "folder",
+    labels: ["folder:Projects/Trips"],
+  },
+  {
+    account: "hosted",
+    from: ["Sintra Ferries", "tickets@ferries.example"],
+    subject: "Your ferry tickets to Sintra",
+    snippet: "Two adult tickets, departing 9:40am from Cais do Sodré.",
+    category: "transactional",
+    hoursAgo: 410,
+    placement: "folder",
+    labels: ["folder:Projects/Trips"],
+  },
+  {
+    account: "hosted",
+    from: ["Oak Street Property", "leasing@oakstreet.example"],
+    subject: "Lease renewal signed",
+    snippet:
+      "Your signed renewal is attached. Thanks for staying another year.",
+    category: "transactional",
+    hoursAgo: 520,
+    placement: "folder",
+    labels: ["archive"],
+  },
+  {
+    account: "hosted",
+    from: ["Lens Repair Co", "service@lensrepair.example"],
+    subject: "Camera repair invoice",
+    snippet: "Sensor cleaning and a new shutter button: $112.00, paid.",
+    category: "transactional",
+    hoursAgo: 640,
+    placement: "folder",
+    labels: ["folder:Receipts"],
+  },
+  {
+    account: "hosted",
+    from: ["Cruise Rewards", "prize@cruise.example"],
+    subject: "Claim your free Lisbon cruise",
+    snippet: "You were picked for a free cruise. Reply with your card number.",
+    category: "noise",
+    hoursAgo: 300,
+    placement: "folder",
+    labels: ["junk"],
+  },
+  {
+    account: "icloud",
+    from: ["City Library", "holds@library.example"],
+    subject: "Your hold is ready",
+    snippet: "Pick up 'The Lisbon Traviata' by Friday.",
+    category: "notification",
+    hoursAgo: 700,
+    placement: "folder",
+    labels: ["Library"],
+  },
+  {
+    account: "gmail",
+    from: ["Sam Okafor", "sam@example.org"],
+    subject: "Reunion photos",
+    snippet: "Finally uploaded everything from the reunion. Lisbon next year?",
+    category: "personal",
+    hoursAgo: 800,
+    placement: "folder",
+    labels: [],
+  },
 ] satisfies Seed[];
 
 export function isolatedMailbox(now: number) {
@@ -550,6 +628,7 @@ export function isolatedMailbox(now: number) {
       shouldEmbed: false,
       ...(seed.attachment ? { attachment: seed.attachment } : {}),
       ...(seed.placement ? { placement: seed.placement } : {}),
+      ...(seed.labels ? { labels: seed.labels } : {}),
       recipientName: ISOLATED_OWNER_NAME,
     } satisfies DemoMessage;
   });

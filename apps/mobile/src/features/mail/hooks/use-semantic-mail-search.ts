@@ -51,7 +51,7 @@ export function useSemanticMailSearch({
   const ids = result.term === searchTerm ? result.ids : [];
   const semanticResults = useQuery(
     api.mail.queries.getMessagesByIds,
-    ids.length > 0 ? { messageIds: ids } : "skip",
+    ids.length > 0 ? { messageIds: ids, scope: "all" } : "skip",
   );
   const results = useMemo(
     () =>

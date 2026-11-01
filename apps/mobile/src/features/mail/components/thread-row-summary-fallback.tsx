@@ -17,6 +17,7 @@ export function FallbackThreadSummary({
   onOpen,
   onPin,
   selected,
+  locationTag,
   selectionMode,
   thread,
 }: {
@@ -24,6 +25,7 @@ export function FallbackThreadSummary({
   onOpen: () => void;
   onPin: () => void;
   selected: boolean;
+  locationTag: string | undefined;
   selectionMode: boolean;
   thread: MailThread;
 }) {
@@ -40,7 +42,7 @@ export function FallbackThreadSummary({
     >
       <SelectionIndicator selected={selected} selectionMode={selectionMode} />
       <SenderAvatar thread={thread} />
-      <ThreadText thread={thread} />
+      <ThreadText tag={locationTag} thread={thread} />
       <ThreadPinSlot
         mailbox={mailbox}
         onPin={onPin}
@@ -62,7 +64,13 @@ function SenderAvatar({ thread }: { thread: MailThread }) {
   );
 }
 
-function ThreadText({ thread }: { thread: MailThread }) {
+function ThreadText({
+  tag,
+  thread,
+}: {
+  tag: string | undefined;
+  thread: MailThread;
+}) {
   return (
     <View className="min-w-0 flex-1 gap-1">
       <View className="flex-row items-center gap-2">
@@ -72,6 +80,7 @@ function ThreadText({ thread }: { thread: MailThread }) {
         >
           {thread.sender.name}
         </Text>
+        <LocationTag tag={tag} />
         <Text className="text-muted-foreground text-xs">
           {formatInboxMessageTime(thread.receivedAt)}
         </Text>
@@ -86,6 +95,18 @@ function ThreadText({ thread }: { thread: MailThread }) {
         {thread.preview}
       </Text>
     </View>
+  );
+}
+
+function LocationTag({ tag }: { tag: string | undefined }) {
+  if (!tag) return null;
+  return (
+    <Text
+      className="border-border text-muted-foreground max-w-[45%] shrink rounded-md border px-1.5 text-[11px]"
+      numberOfLines={1}
+    >
+      {tag}
+    </Text>
   );
 }
 

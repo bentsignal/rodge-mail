@@ -8,6 +8,17 @@ export {
   parseRecipientFields,
   parseRecipientList,
 } from "./recipients";
+export {
+  canMoveMailThreadToInbox,
+  getMailLocationLabel,
+  getMailLocationTag,
+  getMailThreadPlacement,
+} from "./location";
+export type {
+  MailLocation,
+  MailLocationKind,
+  MailThreadPlacement,
+} from "./location";
 export { getReplyAddress } from "./reply";
 export {
   getStrongSemanticMessageIds,

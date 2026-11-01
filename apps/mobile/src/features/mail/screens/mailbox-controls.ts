@@ -5,11 +5,12 @@ import type { MobileMailbox } from "../store";
 export type MailboxFilter = "all" | "unread";
 
 export function parseMobileMailbox(value: string | undefined) {
-  if (value === "archive" || value === "spam") return value;
+  if (value === "all" || value === "archive" || value === "spam") return value;
   return "inbox";
 }
 
 export function getMailboxSearchPlaceholder(mailbox: MobileMailbox) {
+  if (mailbox === "all") return "Search all mail";
   if (mailbox === "archive") return "Search archive";
   if (mailbox === "spam") return "Search spam";
   return undefined;

@@ -30,12 +30,14 @@ export interface NativeThreadRowColors {
 
 export function NativeThreadSummary({
   colors,
+  locationTag,
   mailbox,
   modifiers,
   thread,
 }: {
   colors: NativeThreadRowColors;
   mailbox: MobileMailbox;
+  locationTag?: string;
   modifiers?: ViewModifier[];
   thread: MailThread;
 }) {
@@ -69,6 +71,7 @@ export function NativeThreadSummary({
             {thread.sender.name}
           </Text>
           <Spacer />
+          <LocationTag colors={colors} tag={locationTag} />
           <PinIndicator
             color={colors.foreground}
             isPinned={mailbox === "inbox" && thread.isPinned}
@@ -148,6 +151,35 @@ function AvatarIndicator({
 }) {
   if (!isUnread) return null;
   return <Image color={colors.primary} size={8} systemName="circle.fill" />;
+}
+
+function LocationTag({
+  colors,
+  tag,
+}: {
+  colors: NativeThreadRowColors;
+  tag: string | undefined;
+}) {
+  if (!tag) return null;
+  return (
+    <Text
+      modifiers={[
+        font({ size: 11, weight: "medium" }),
+        foregroundStyle(colors.mutedForeground),
+        lineLimit(1),
+        padding({ leading: 6, trailing: 6, top: 1, bottom: 1 }),
+        background(
+          colors.muted,
+          shapes.roundedRectangle({
+            cornerRadius: 5,
+            roundedCornerStyle: "continuous",
+          }),
+        ),
+      ]}
+    >
+      {tag}
+    </Text>
+  );
 }
 
 function PinIndicator({

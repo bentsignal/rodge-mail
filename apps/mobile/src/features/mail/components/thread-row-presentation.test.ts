@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   getPinAction,
   getReadAction,
+  getRowMailbox,
   getSenderInitials,
   getThreadRowAccessibilityLabel,
   getThreadRowNativeKey,
@@ -69,5 +70,22 @@ describe("thread row presentation", () => {
 
     vi.advanceTimersByTime(1);
     expect(action).toHaveBeenCalledOnce();
+  });
+});
+
+describe("row mailbox", () => {
+  it("gives search hits outside the inbox All Mail's actions", () => {
+    expect(getRowMailbox("inbox", { location: { kind: "inbox" } })).toBe(
+      "inbox",
+    );
+    expect(getRowMailbox("inbox", {})).toBe("inbox");
+    expect(
+      getRowMailbox("inbox", {
+        location: { kind: "custom", name: "Projects/Trips" },
+      }),
+    ).toBe("all");
+    expect(getRowMailbox("archive", { location: { kind: "archive" } })).toBe(
+      "archive",
+    );
   });
 });

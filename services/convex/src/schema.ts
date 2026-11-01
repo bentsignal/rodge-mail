@@ -79,6 +79,7 @@ export default defineSchema(
     messages: defineTable(vMessage)
       .index("by_account_remote", ["accountId", "remoteMessageId"])
       .index("by_account_received", ["accountId", "receivedAt"])
+      .index("by_owner_received", ["ownerId", "receivedAt"])
       .index("by_thread_received", ["threadId", "receivedAt"])
       .index("by_owner_inbox_received", ["ownerId", "inInbox", "receivedAt"])
       .index("by_account_inbox_received", [

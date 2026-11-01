@@ -2,6 +2,10 @@ import type { Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import type { DemoMessage } from "./devSeedFixtures";
 
+export function isDemoInboxMessage(fixture: Pick<DemoMessage, "placement">) {
+  return fixture.placement !== "archive" && fixture.placement !== "folder";
+}
+
 export async function ensureDemoThread({
   ctx,
   ownerId,
@@ -17,7 +21,7 @@ export async function ensureDemoThread({
 }) {
   const archivedAt =
     fixture.placement === "archive" ? fixture.receivedAt : undefined;
-  const inInbox = archivedAt === undefined;
+  const inInbox = isDemoInboxMessage(fixture);
   const unread = fixture.isRead ? 0 : 1;
   const existing = await ctx.db
     .query("threads")

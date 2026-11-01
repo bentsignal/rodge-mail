@@ -17,6 +17,7 @@ export function optimisticallySetThreadRead(
 
   updateUnreadCountQuery(store, source.accountId, args.isRead);
   updateInboxQueries(store, args);
+  updateAllMailQueries(store, args);
   updateSearchQueries(store, args);
   updateMessageHydrationQueries(store, args);
   updateThreadQuery(store, args);
@@ -28,6 +29,10 @@ function findThreadRow(store: OptimisticLocalStore, threadId: Id<"threads">) {
     if (row) return row;
   }
   for (const query of store.getAllQueries(api.mail.queries.searchHeaders)) {
+    const row = query.value?.page.find((item) => item.threadId === threadId);
+    if (row) return row;
+  }
+  for (const query of store.getAllQueries(api.mail.queries.listAllMail)) {
     const row = query.value?.page.find((item) => item.threadId === threadId);
     if (row) return row;
   }
@@ -58,6 +63,19 @@ function updateInboxQueries(
     store.setQuery(api.mail.queries.listInbox, query.args, {
       ...query.value,
       page,
+    });
+  }
+}
+
+function updateAllMailQueries(
+  store: OptimisticLocalStore,
+  args: SetThreadReadArgs,
+) {
+  for (const query of store.getAllQueries(api.mail.queries.listAllMail)) {
+    if (!query.value) continue;
+    store.setQuery(api.mail.queries.listAllMail, query.args, {
+      ...query.value,
+      page: updateOptimisticThreadRows(query.value.page, args),
     });
   }
 }

@@ -39,7 +39,9 @@ export function useInboxMailboxControls(threads: MailThread[]) {
   }
   async function archiveSelected() {
     await Promise.all(
-      getSelectedThreads().map(async (thread) => archiveThread(thread.id)),
+      getSelectedThreads()
+        .filter((thread) => (thread.location?.kind ?? "inbox") === "inbox")
+        .map(async (thread) => archiveThread(thread.id)),
     );
     toggleSelectionMode();
   }

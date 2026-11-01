@@ -66,6 +66,7 @@ function MailLayout() {
         (match) =>
           match.routeId === "/_authed/messages/$messageId" ||
           match.routeId === "/_authed/archive/messages/$messageId" ||
+          match.routeId === "/_authed/all/messages/$messageId" ||
           match.routeId === "/_authed/spam/messages/$messageId" ||
           match.routeId === "/_authed/sent/$outboxId",
       );

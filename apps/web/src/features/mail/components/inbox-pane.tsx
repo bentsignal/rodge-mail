@@ -48,7 +48,7 @@ function InboxHeader() {
         </div>
         <div className="flex items-center gap-2">
           <MailboxFilterControl mailMode={mailMode} />
-          <BulkSelectButton />
+          <BulkSelectSlot mailMode={mailMode} />
           <button
             aria-label="New message"
             className="mail-primary-button flex size-10 items-center justify-center rounded-[10px] transition-colors md:hidden"
@@ -72,7 +72,13 @@ function SearchInputSlot({ mailMode }: { mailMode: MailMode }) {
   return <SearchInput />;
 }
 
+function BulkSelectSlot({ mailMode }: { mailMode: MailMode }) {
+  if (mailMode === "all") return null;
+  return <BulkSelectButton />;
+}
+
 function getMailboxTitle(mailMode: MailMode) {
+  if (mailMode === "all") return "All Mail";
   if (mailMode === "archive") return "Archive";
   if (mailMode === "spam") return "Spam";
   if (mailMode === "sent") return "Sent";
@@ -164,16 +170,19 @@ export function ClearSearchButton({ query }: { query: string }) {
 function MobileAccountFilters() {
   const accountFilter = useMailStore((store) => store.accountFilter);
   const { accounts, mailMode } = useLiveMail();
-  const selectMailbox = useMailboxNavigation(
-    mailMode === "archive" ? "/archive" : "/",
-  );
+  const selectMailbox = useMailboxNavigation(getAccountFilterPath(mailMode));
   if (mailMode === "spam") return null;
 
   return (
-    <div className="mail-scrollbar mt-3 flex gap-2 overflow-x-auto pb-1 md:hidden">
+    <div
+      className={cn(
+        "mail-scrollbar mt-3 flex gap-2 overflow-x-auto pb-1",
+        mailMode !== "all" && "md:hidden",
+      )}
+    >
       <MobileAccountChip
         active={accountFilter === "all"}
-        label="All Inboxes"
+        label={mailMode === "all" ? "All Accounts" : "All Inboxes"}
         onClick={() => selectMailbox("all")}
       />
       {accounts.map((account) => (
@@ -186,6 +195,12 @@ function MobileAccountFilters() {
       ))}
     </div>
   );
+}
+
+function getAccountFilterPath(mailMode: MailMode) {
+  if (mailMode === "all") return "/all";
+  if (mailMode === "archive") return "/archive";
+  return "/";
 }
 
 function SearchResultsLabel() {

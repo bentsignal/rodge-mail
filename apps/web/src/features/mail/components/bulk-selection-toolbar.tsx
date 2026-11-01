@@ -148,14 +148,17 @@ function InboxBulkActions({
   messages,
   run,
 }: BulkActionsProps) {
+  const inboxMessages = messages.filter(
+    (message) => message.location.kind === "inbox",
+  );
   return (
     <>
       <BulkActionButton
-        disabled={disabled}
+        disabled={disabled || inboxMessages.length === 0}
         icon={Archive}
         label="Archive"
         onClick={() =>
-          void run(async () => await liveMail.archiveThreads(messages))
+          void run(async () => await liveMail.archiveThreads(inboxMessages))
         }
       />
       <BulkActionButton

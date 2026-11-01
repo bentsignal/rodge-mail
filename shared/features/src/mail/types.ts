@@ -1,3 +1,5 @@
+import type { MailLocation } from "./location";
+
 export type MailAccountId = string;
 
 export type MailAccountFilter = string;
@@ -55,9 +57,11 @@ export interface MailMessage {
 
 export interface MailThread {
   accountId: MailAccountId;
+  canMoveToInbox?: boolean;
   id: string;
   isPinned: boolean;
   isRead: boolean;
+  location?: MailLocation;
   messages: MailMessage[];
   preview: string;
   receivedAt: string;

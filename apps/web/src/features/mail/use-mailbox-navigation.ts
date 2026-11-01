@@ -4,7 +4,7 @@ import type { MailAccountFilter } from "./store";
 import { withMailboxSearch } from "./mail-route-search";
 import { useMailStore } from "./store";
 
-export function useMailboxNavigation(to: "/" | "/archive" = "/") {
+export function useMailboxNavigation(to: "/" | "/all" | "/archive" = "/") {
   const navigate = useNavigate();
   const clearSelection = useMailStore((store) => store.clearSelection);
   const setAccountFilter = useMailStore((store) => store.setAccountFilter);

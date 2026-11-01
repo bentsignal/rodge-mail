@@ -6,6 +6,7 @@ import { usePaginatedQuery } from "convex/react";
 import type { MailAccountFilter, MailThread } from "@rodge-mail/features/mail";
 import { api } from "@rodge-mail/convex/api";
 
+import type { OtherMailbox } from "../store";
 import type { MailboxFilter } from "./mailbox-controls";
 import { useDebouncedValue } from "~/hooks/use-debounced-value";
 import { ThreadRow } from "../components/thread-row";
@@ -20,13 +21,13 @@ const pageSize = 30;
 
 export function SpamMailbox({
   onAccountChange,
-  onArchiveSelect,
+  onMailboxSelect,
   primary,
   searchMode,
   searchTerm,
 }: {
   onAccountChange: (value: MailAccountFilter) => void;
-  onArchiveSelect: () => void;
+  onMailboxSelect: (mailbox: OtherMailbox) => void;
   primary: string;
   searchMode: boolean;
   searchTerm: string;
@@ -83,10 +84,9 @@ export function SpamMailbox({
       selectionEnabled={false}
       selectionMode={false}
       onAccountChange={onAccountChange}
-      onArchiveSelect={onArchiveSelect}
       onFilterChange={setFilter}
       onLoadMore={() => spam.loadMore(pageSize)}
-      onSpamSelect={() => undefined}
+      onMailboxSelect={onMailboxSelect}
       onToggleSelection={() => undefined}
       pageStatus={spam.status}
     />

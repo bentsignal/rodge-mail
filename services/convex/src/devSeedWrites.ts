@@ -4,7 +4,7 @@ import type { Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import type { DemoAccount, DemoMessage } from "./devSeedFixtures";
 import { deleteAccountOutbox } from "./devSeedSent";
-import { ensureDemoThread } from "./devSeedThreads";
+import { ensureDemoThread, isDemoInboxMessage } from "./devSeedThreads";
 
 const SEED_PROMPT_VERSION = "demo-v1";
 
@@ -101,7 +101,7 @@ export async function ensureDemoMessage(
   };
   const archivedAt =
     fixture.placement === "archive" ? fixture.receivedAt : undefined;
-  const inInbox = archivedAt === undefined;
+  const inInbox = isDemoInboxMessage(fixture);
   const messageId = await ctx.db.insert("messages", {
     ownerId,
     accountId,
@@ -122,7 +122,7 @@ export async function ensureDemoMessage(
       { name: "Subject", value: fixture.subject },
       { name: "Message-ID", value: fixture.internetMessageId },
     ],
-    remoteLabelIds: ["INBOX"],
+    remoteLabelIds: fixture.labels ?? ["INBOX"],
     bodyState: "available",
     receivedAt: fixture.receivedAt,
     hasAttachments: fixture.attachment !== undefined,

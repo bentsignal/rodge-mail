@@ -26,6 +26,7 @@ import { useMailStore } from "../store";
 import {
   getPinAction,
   getReadAction,
+  getRowMailbox,
   getThreadRowAccessibilityLabel,
   runAfterSwipeAnimation,
 } from "./thread-row-presentation";
@@ -86,17 +87,21 @@ function NativeRowContent({
   colors: NativeThreadRowColors;
   props: ThreadRowProps;
 }) {
-  const mailbox = props.mailbox ?? "inbox";
+  const mailbox = getRowMailbox(props.mailbox ?? "inbox", props.thread);
+  const rowProps = { ...props, mailbox } satisfies ThreadRowProps;
   if (props.selectionMode) {
-    return <NativeSelectableThread colors={colors} props={props} />;
+    return <NativeSelectableThread colors={colors} props={rowProps} />;
   }
   if (mailbox === "archive") {
-    return <ArchiveSwipeRow colors={colors} props={props} />;
+    return <ArchiveSwipeRow colors={colors} props={rowProps} />;
   }
-  if (mailbox === "spam") {
-    return <NativeThreadButton colors={colors} props={props} />;
+  if (mailbox === "all" && props.thread.canMoveToInbox) {
+    return <AllMailSwipeRow colors={colors} props={rowProps} />;
   }
-  return <InboxSwipeRow colors={colors} props={props} />;
+  if (mailbox === "spam" || mailbox === "all") {
+    return <NativeThreadButton colors={colors} props={rowProps} />;
+  }
+  return <InboxSwipeRow colors={colors} props={rowProps} />;
 }
 
 function NativeSelectableThread({
@@ -106,11 +111,12 @@ function NativeSelectableThread({
   colors: NativeThreadRowColors;
   props: ThreadRowProps;
 }) {
-  const { mailbox = "inbox", thread } = props;
+  const { locationTag, mailbox = "inbox", thread } = props;
   return (
     <NativeThreadSummary
       colors={colors}
       mailbox={mailbox}
+      locationTag={locationTag}
       modifiers={[
         tag(thread.id),
         accessibilityElement("ignore"),
@@ -130,7 +136,7 @@ function NativeThreadButton({
   colors: NativeThreadRowColors;
   props: ThreadRowProps;
 }) {
-  const { mailbox = "inbox", onOpen, thread } = props;
+  const { locationTag, mailbox = "inbox", onOpen, thread } = props;
   return (
     <Button
       modifiers={[
@@ -143,7 +149,12 @@ function NativeThreadButton({
       ]}
       onPress={onOpen}
     >
-      <NativeThreadSummary colors={colors} mailbox={mailbox} thread={thread} />
+      <NativeThreadSummary
+        colors={colors}
+        mailbox={mailbox}
+        locationTag={locationTag}
+        thread={thread}
+      />
     </Button>
   );
 }
@@ -193,6 +204,28 @@ function InboxSwipeRow({
               () => void toggleRead(props.thread.id, props.thread.isRead),
             )
           }
+        />
+      </SwipeActions.Actions>
+    </SwipeActions>
+  );
+}
+
+function AllMailSwipeRow({
+  colors,
+  props,
+}: {
+  colors: NativeThreadRowColors;
+  props: ThreadRowProps;
+}) {
+  return (
+    <SwipeActions modifiers={rowModifiers(colors.background)}>
+      <NativeThreadButton colors={colors} props={props} />
+      <SwipeActions.Actions edge="trailing">
+        <Button
+          label="Move to Inbox"
+          modifiers={[tint(colors.mutedForeground)]}
+          systemImage="tray.and.arrow.down"
+          onPress={() => runAfterSwipeAnimation(() => props.onMoveToInbox?.())}
         />
       </SwipeActions.Actions>
     </SwipeActions>

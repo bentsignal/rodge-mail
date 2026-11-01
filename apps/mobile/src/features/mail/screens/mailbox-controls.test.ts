@@ -26,6 +26,7 @@ function makeThread(id: string, isRead: boolean) {
 
 describe("mailbox controls", () => {
   it("preserves supported mailbox routes", () => {
+    expect(parseMobileMailbox("all")).toBe("all");
     expect(parseMobileMailbox("archive")).toBe("archive");
     expect(parseMobileMailbox("spam")).toBe("spam");
     expect(parseMobileMailbox("unknown")).toBe("inbox");
@@ -33,6 +34,7 @@ describe("mailbox controls", () => {
   });
 
   it("uses mailbox-specific search language", () => {
+    expect(getMailboxSearchPlaceholder("all")).toBe("Search all mail");
     expect(getMailboxSearchPlaceholder("archive")).toBe("Search archive");
     expect(getMailboxSearchPlaceholder("spam")).toBe("Search spam");
     expect(getMailboxSearchPlaceholder("inbox")).toBeUndefined();

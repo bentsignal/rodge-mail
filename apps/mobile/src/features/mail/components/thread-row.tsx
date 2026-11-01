@@ -3,6 +3,7 @@ import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeabl
 import {
   Archive,
   ArchiveRestore,
+  Inbox,
   Mail,
   MailOpen,
   Pin,
@@ -15,18 +16,21 @@ import type { MobileMailbox } from "../store";
 import type { ThreadRowProps } from "./thread-row-types";
 import { useColor } from "~/hooks/use-color";
 import { useMailStore } from "../store";
-import { runAfterSwipeAnimation } from "./thread-row-presentation";
+import {
+  getRowMailbox,
+  runAfterSwipeAnimation,
+} from "./thread-row-presentation";
 import { FallbackThreadSummary } from "./thread-row-summary-fallback";
 
 export function ThreadRow(props: ThreadRowProps) {
   const {
-    mailbox = "inbox",
     onOpen,
     onSelect,
     selected = false,
     selectionMode = false,
     thread,
   } = props;
+  const mailbox = getRowMailbox(props.mailbox ?? "inbox", thread);
   const togglePin = useMailStore((store) => store.togglePin);
 
   function pin() {
@@ -38,7 +42,7 @@ export function ThreadRow(props: ThreadRowProps) {
     <ReanimatedSwipeable
       key={thread.id}
       containerStyle={{ marginBottom: -1, marginHorizontal: 14 }}
-      enabled={!selectionMode && mailbox !== "spam"}
+      enabled={!selectionMode && hasSwipeActions(mailbox, thread)}
       enableTrackpadTwoFingerGesture
       friction={1.6}
       leftThreshold={48}
@@ -58,6 +62,7 @@ export function ThreadRow(props: ThreadRowProps) {
           close={swipeable.close}
           mailbox={mailbox}
           onDelete={props.onDelete}
+          onMoveToInbox={props.onMoveToInbox}
           thread={thread}
         />
       )}
@@ -68,11 +73,18 @@ export function ThreadRow(props: ThreadRowProps) {
         onOpen={open}
         onPin={pin}
         selected={selected}
+        locationTag={props.locationTag}
         selectionMode={selectionMode}
         thread={thread}
       />
     </ReanimatedSwipeable>
   );
+}
+
+function hasSwipeActions(mailbox: MobileMailbox, thread: MailThread) {
+  if (mailbox === "spam") return false;
+  if (mailbox === "all") return thread.canMoveToInbox === true;
+  return true;
 }
 
 function ThreadLeftAction({
@@ -89,7 +101,7 @@ function ThreadLeftAction({
   thread: MailThread;
 }) {
   const foreground = useColor("primary-foreground");
-  if (mailbox === "spam") return null;
+  if (mailbox === "spam" || mailbox === "all") return null;
   if (mailbox === "archive") {
     return (
       <SwipeAction
@@ -124,11 +136,13 @@ function ThreadRightActions({
   close,
   mailbox,
   onDelete,
+  onMoveToInbox,
   thread,
 }: {
   close: () => void;
   mailbox: MobileMailbox;
   onDelete?: () => void;
+  onMoveToInbox?: () => void;
   thread: MailThread;
 }) {
   const archiveThread = useMailStore((store) => store.archiveThread);
@@ -137,6 +151,20 @@ function ThreadRightActions({
   const destructive = useColor("destructive");
   const destructiveForeground = useColor("destructive-foreground");
   if (mailbox === "spam") return null;
+  if (mailbox === "all") {
+    if (!thread.canMoveToInbox) return null;
+    return (
+      <SwipeAction
+        label="Inbox"
+        onPress={() => {
+          close();
+          runAfterSwipeAnimation(() => onMoveToInbox?.());
+        }}
+      >
+        <Inbox color={foreground} size={19} />
+      </SwipeAction>
+    );
+  }
   if (mailbox === "archive") {
     return (
       <SwipeAction

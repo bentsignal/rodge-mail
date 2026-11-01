@@ -3,10 +3,11 @@ import { Stack, useRouter } from "expo-router";
 import type { MailAccountFilter } from "@rodge-mail/features/mail";
 
 import type { MobileMailAccount } from "../lib/convex-mail";
-import type { MobileMailbox } from "../store";
+import type { MobileMailbox, OtherMailbox } from "../store";
 import type { MailboxFilter } from "./mailbox-controls";
 import type { MailboxBulkAction } from "./mailbox-thread-list";
 import { useColor } from "~/hooks/use-color";
+import { useMailStore } from "../store";
 
 export interface MailboxToolbarProps {
   accountFilter: MailAccountFilter;
@@ -15,9 +16,8 @@ export interface MailboxToolbarProps {
   filter: MailboxFilter;
   mailbox: MobileMailbox;
   onAccountChange: (value: MailAccountFilter) => void;
-  onArchiveSelect: () => void;
   onFilterChange: (value: MailboxFilter) => void;
-  onSpamSelect: () => void;
+  onMailboxSelect: (mailbox: OtherMailbox) => void;
   onToggleSelection: () => void;
   selectedCount: number;
   selectionEnabled: boolean;
@@ -32,6 +32,7 @@ export interface MailboxToolbarProps {
 export function MailboxToolbar(props: MailboxToolbarProps) {
   const { selectionMode } = props;
   const router = useRouter();
+  const setAccountFilter = useMailStore((store) => store.setAccountFilter);
   const selectLabel = selectionMode ? "Done" : "Select";
   return (
     <>
@@ -62,7 +63,7 @@ export function MailboxToolbar(props: MailboxToolbarProps) {
             isOn={props.filter === "all"}
             onPress={() => props.onFilterChange("all")}
           >
-            All Mail
+            All Messages
           </Stack.Toolbar.MenuAction>
           <Stack.Toolbar.MenuAction
             key={`unread:${props.filter}`}
@@ -72,6 +73,7 @@ export function MailboxToolbar(props: MailboxToolbarProps) {
           >
             Unread
           </Stack.Toolbar.MenuAction>
+          {allMailAccountActions(props, setAccountFilter)}
         </Stack.Toolbar.Menu>
         <Stack.Toolbar.Button
           hidden={!props.selectionEnabled}
@@ -97,8 +99,7 @@ function mailboxMenu(
     accounts,
     mailbox,
     onAccountChange,
-    onArchiveSelect,
-    onSpamSelect,
+    onMailboxSelect,
     selectionMode,
   }: MailboxToolbarProps,
   onSentSelect: () => void,
@@ -132,10 +133,18 @@ function mailboxMenu(
         Sent
       </Stack.Toolbar.MenuAction>
       <Stack.Toolbar.MenuAction
+        key={`all-mail:${mailbox === "all"}`}
+        icon="mail.stack"
+        isOn={mailbox === "all"}
+        onPress={() => onMailboxSelect("all")}
+      >
+        All Mail
+      </Stack.Toolbar.MenuAction>
+      <Stack.Toolbar.MenuAction
         key={`archive:${mailbox === "archive"}`}
         icon="archivebox"
         isOn={mailbox === "archive"}
-        onPress={onArchiveSelect}
+        onPress={() => onMailboxSelect("archive")}
       >
         Archive
       </Stack.Toolbar.MenuAction>
@@ -143,12 +152,29 @@ function mailboxMenu(
         key={`spam:${mailbox === "spam"}`}
         icon="xmark.bin"
         isOn={mailbox === "spam"}
-        onPress={onSpamSelect}
+        onPress={() => onMailboxSelect("spam")}
       >
         Spam
       </Stack.Toolbar.MenuAction>
     </Stack.Toolbar.Menu>
   );
+}
+
+function allMailAccountActions(
+  { accountFilter, accounts, mailbox }: MailboxToolbarProps,
+  onChange: (value: MailAccountFilter) => void,
+) {
+  if (mailbox !== "all" || accounts.length < 2) return null;
+  return [{ id: "all", label: "All Accounts" }, ...accounts].map((account) => (
+    <Stack.Toolbar.MenuAction
+      key={`account:${account.id}:${accountFilter === account.id}`}
+      icon={account.id === "all" ? "tray.2" : "tray"}
+      isOn={accountFilter === account.id}
+      onPress={() => onChange(account.id)}
+    >
+      {account.label}
+    </Stack.Toolbar.MenuAction>
+  ));
 }
 
 export function SelectionToolbar({
@@ -192,6 +218,10 @@ function getMailboxTitle({
   accounts,
   mailbox,
 }: MailboxToolbarProps) {
+  if (mailbox === "all") {
+    const account = accounts.find((item) => item.id === accountFilter);
+    return account ? `All Mail · ${account.label}` : "All Mail";
+  }
   if (mailbox === "archive") return "Archive";
   if (mailbox === "spam") return "Spam";
   if (accountFilter === "all") return "All Inboxes";

@@ -7,13 +7,14 @@ import { usePaginatedQuery } from "convex/react";
 import type { MailAccountFilter, MailThread } from "@rodge-mail/features/mail";
 import { api } from "@rodge-mail/convex/api";
 
-import type { MobileMailbox } from "../store";
+import type { MobileMailbox, OtherMailbox } from "../store";
 import { useColor } from "~/hooks/use-color";
 import { useDebouncedValue } from "~/hooks/use-debounced-value";
 import { useSemanticMailSearch } from "../hooks/use-semantic-mail-search";
 import { toConvexId } from "../lib/convex-id";
 import { toMailThreads } from "../lib/convex-mail";
 import { useMailStore } from "../store";
+import { AllMailMailbox } from "./all-mail-screen";
 import { ArchiveMailbox } from "./archive-screen";
 import {
   getEmptyIsLoading,
@@ -27,6 +28,7 @@ import { MailboxThreadList } from "./mailbox-thread-list";
 import { SpamMailbox } from "./spam-screen";
 import { useInboxMailboxControls } from "./use-inbox-mailbox-controls";
 import { useInboxRefresh } from "./use-inbox-refresh";
+import { useMoveToInbox } from "./use-move-to-inbox";
 
 const skippedSearch = "skip";
 
@@ -43,13 +45,8 @@ export function InboxScreen({ searchMode = false }: { searchMode?: boolean }) {
     setAccountFilter(value);
     setSearchTerm("");
   }
-  function selectArchive() {
-    setMailbox("archive");
-    setAccountFilter("all");
-    setSearchTerm("");
-  }
-  function selectSpam() {
-    setMailbox("spam");
+  function selectMailbox(value: OtherMailbox) {
+    setMailbox(value);
     setAccountFilter("all");
     setSearchTerm("");
   }
@@ -68,8 +65,7 @@ export function InboxScreen({ searchMode = false }: { searchMode?: boolean }) {
         searchMode={searchMode}
         searchTerm={searchTerm}
         onAccountChange={selectInbox}
-        onArchiveSelect={selectArchive}
-        onSpamSelect={selectSpam}
+        onMailboxSelect={selectMailbox}
       />
     </>
   );
@@ -78,65 +74,48 @@ export function InboxScreen({ searchMode = false }: { searchMode?: boolean }) {
 function ActiveMailbox({
   mailbox,
   onAccountChange,
-  onArchiveSelect,
-  onSpamSelect,
+  onMailboxSelect,
   primary,
   searchMode,
   searchTerm,
 }: {
   mailbox: MobileMailbox;
   onAccountChange: (value: MailAccountFilter) => void;
-  onArchiveSelect: () => void;
-  onSpamSelect: () => void;
+  onMailboxSelect: (mailbox: OtherMailbox) => void;
   primary: string;
   searchMode: boolean;
   searchTerm: string;
 }) {
-  if (mailbox === "archive") {
-    return (
-      <ArchiveMailbox
-        primary={primary}
-        searchMode={searchMode}
-        searchTerm={searchTerm}
-        onAccountChange={onAccountChange}
-        onSpamSelect={onSpamSelect}
-      />
-    );
-  }
-  if (mailbox === "spam") {
-    return (
-      <SpamMailbox
-        primary={primary}
-        searchMode={searchMode}
-        searchTerm={searchTerm}
-        onAccountChange={onAccountChange}
-        onArchiveSelect={onArchiveSelect}
-      />
-    );
-  }
+  const props = {
+    primary,
+    searchMode,
+    searchTerm,
+    onAccountChange,
+    onMailboxSelect,
+  };
+  if (mailbox === "all") return <AllMailMailbox {...props} />;
+  if (mailbox === "archive") return <ArchiveMailbox {...props} />;
+  if (mailbox === "spam") return <SpamMailbox {...props} />;
   return (
     <InboxMailbox
       searchMode={searchMode}
       searchTerm={searchTerm}
       onAccountChange={onAccountChange}
-      onArchiveSelect={onArchiveSelect}
-      onSpamSelect={onSpamSelect}
+      onMailboxSelect={onMailboxSelect}
     />
   );
 }
 
 interface InboxMailboxProps {
   onAccountChange: (value: MailAccountFilter) => void;
-  onArchiveSelect: () => void;
-  onSpamSelect: () => void;
+  onMailboxSelect: (mailbox: OtherMailbox) => void;
   searchMode: boolean;
   searchTerm: string;
 }
 
 function InboxMailbox({
   onAccountChange,
-  onArchiveSelect,
-  onSpamSelect,
+  onMailboxSelect,
   searchMode,
   searchTerm,
 }: InboxMailboxProps) {
@@ -152,6 +131,7 @@ function InboxMailbox({
   const debouncedSearchTerm = useMailSearchTerm(searchTerm);
   const primary = useColor("primary");
   const { isRefreshing, refresh, refreshError } = useInboxRefresh(accounts);
+  const moveToInbox = useMoveToInbox();
   const search = usePaginatedQuery(
     api.mail.queries.searchHeaders,
     getSearchArgs(debouncedSearchTerm, getSelectedAccountId(accountFilter)),
@@ -190,7 +170,13 @@ function InboxMailbox({
   }
   function renderThread({ item }: LegendListRenderItemProps<MailThread>) {
     return (
-      <InboxThreadRow controls={controls} thread={item} onOpen={openThread} />
+      <InboxThreadRow
+        controls={controls}
+        isSearch={isSearching}
+        thread={item}
+        onMoveToInbox={moveToInbox}
+        onOpen={openThread}
+      />
     );
   }
   function loadNextPage() {
@@ -216,11 +202,10 @@ function InboxMailbox({
       selectedCount={controls.selectedCount}
       selectionMode={controls.selectionMode}
       onAccountChange={onAccountChange}
-      onArchiveSelect={onArchiveSelect}
       onFilterChange={controls.changeFilter}
       onLoadMore={loadNextPage}
+      onMailboxSelect={onMailboxSelect}
       onRefresh={() => void refresh()}
-      onSpamSelect={onSpamSelect}
       onToggleSelection={controls.toggleSelectionMode}
       pageStatus={isSearching ? search.status : inboxPageStatus}
     />
@@ -297,5 +282,5 @@ function getSearchArgs(
   accountId: ReturnType<typeof getSelectedAccountId>,
 ) {
   if (!searchTerm) return skippedSearch;
-  return { accountId, searchTerm };
+  return { accountId, scope: "all" as const, searchTerm };
 }
