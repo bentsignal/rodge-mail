@@ -178,6 +178,56 @@ it("searches all stored mail only when asked to", async () => {
   ]);
 });
 
+it("leaves junk behind when it moves a hosted thread", async () => {
+  const { t, owner } = setup();
+  const { hosted } = await seedMailbox(t);
+  const threadId = await t.run(async (ctx) => {
+    const id = await insertThread(ctx, hosted, {
+      inInbox: false,
+      labels: ["folder:Receipts"],
+      receivedAt: 50,
+      subject: "Receipt",
+    });
+    await ctx.db.insert("messages", {
+      ownerId: OWNER,
+      accountId: hosted,
+      threadId: id,
+      remoteMessageId: "receipt-junk",
+      direction: "incoming",
+      from: { address: "prize@example.com" },
+      to: [],
+      cc: [],
+      bcc: [],
+      subject: "Re: Receipt",
+      snippet: "You won",
+      searchText: "re receipt",
+      remoteLabelIds: ["junk"],
+      bodyState: "available",
+      receivedAt: 60,
+      hasAttachments: false,
+      inInbox: false,
+      isRead: true,
+      isPinned: false,
+      createdAt: 1,
+      updatedAt: 1,
+    });
+    return id;
+  });
+
+  const result = await owner.mutation(
+    api.mail.archiveMutations.moveThreadToInbox,
+    { threadId },
+  );
+  expect(result).toEqual({ movedMessages: 1 });
+  const thread = await owner.query(api.mail.queries.getThread, { threadId });
+  expect(
+    thread?.messages.map((message) => [message.subject, message.inInbox]),
+  ).toEqual([
+    ["Receipt", true],
+    ["Re: Receipt", false],
+  ]);
+});
+
 it("moves hosted folder mail into the inbox but leaves Gmail's alone", async () => {
   const { t, owner } = setup();
   const { gmailArchive, trip } = await seedMailbox(t);

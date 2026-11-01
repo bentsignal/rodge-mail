@@ -9,6 +9,7 @@ import {
 } from "./archive";
 import { collectMessageRecords, deleteMessageRecords } from "./cleanupRecords";
 import { ensureOwnedAccount, ensureOwnedThread } from "./helpers";
+import { isAllMailLocation, resolveMessageLocation } from "./location";
 import { getThreadInboxState } from "./threadState";
 
 export const restoreArchivedThread = authedMutation({
@@ -48,12 +49,16 @@ export const moveThreadToInbox = authedMutation({
     if (!isArchived && account.provider !== "hosted") {
       throw new ConvexError("Move this conversation in your mail provider");
     }
-    await moveMessagesToInbox(
-      ctx,
-      thread,
-      messages.filter((message) => message.hiddenAt === undefined),
+    const movable = messages.filter((message) =>
+      isAllMailLocation(
+        message,
+        resolveMessageLocation(message, account.provider) ?? {
+          kind: "archive",
+        },
+      ),
     );
-    return { movedMessages: messages.length };
+    await moveMessagesToInbox(ctx, thread, movable);
+    return { movedMessages: movable.length };
   },
 });
 
