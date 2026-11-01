@@ -112,6 +112,13 @@ export class MicrosoftGraphAdapter implements MailProviderAdapter {
     );
   }
 
+  async fetchRawMessage(accessToken: string, remoteMessageId: string) {
+    return await graphFetchBytes(
+      accessToken,
+      `/me/messages/${encodeURIComponent(remoteMessageId)}/$value`,
+    );
+  }
+
   async setRead(accessToken: string, remoteMessageId: string, isRead: boolean) {
     await graphFetch<GraphMessage>(
       accessToken,
@@ -509,7 +516,7 @@ function initialDeltaUrl() {
   return url.toString();
 }
 
-async function graphFetch<T>(
+export async function graphFetch<T>(
   accessToken: string,
   path: string,
   init?: RequestInit,
@@ -539,7 +546,8 @@ async function graphFetch<T>(
 }
 
 async function graphFetchBytes(accessToken: string, path: string) {
-  const response = await fetch(validateGraphUrl(path), {
+  const url = validateGraphUrl(path);
+  const response = await fetch(url, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
       Accept: "application/octet-stream",
@@ -548,7 +556,7 @@ async function graphFetchBytes(accessToken: string, path: string) {
   });
   if (!response.ok) {
     throw new MicrosoftGraphError(
-      `Microsoft attachment request failed with ${response.status}`,
+      `Microsoft Graph GET ${new URL(url).pathname} failed with ${response.status}`,
       response.status,
     );
   }
@@ -592,7 +600,7 @@ function validateGraphUrl(value: string) {
   return url.toString();
 }
 
-function parseDate(value: string | undefined) {
+export function parseDate(value: string | undefined) {
   if (!value) return undefined;
   const timestamp = Date.parse(value);
   return Number.isFinite(timestamp) ? timestamp : undefined;
@@ -616,7 +624,7 @@ const WELL_KNOWN_FOLDERS = [
   ["junkemail", "junk"],
 ] as const satisfies readonly (readonly [string, NormalizedFolder["kind"]])[];
 
-interface GraphCollection<T> {
+export interface GraphCollection<T> {
   value?: T[];
   "@odata.nextLink"?: string;
   "@odata.deltaLink"?: string;

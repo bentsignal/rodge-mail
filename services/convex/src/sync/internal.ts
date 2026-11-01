@@ -59,7 +59,7 @@ const vNormalizedAttachment = v.object({
   contentId: v.optional(v.string()),
 });
 
-const vNormalizedMessage = v.object({
+export const vNormalizedMessage = v.object({
   remoteMessageId: v.string(),
   remoteThreadId: v.string(),
   internetMessageId: v.optional(v.string()),
@@ -1122,167 +1122,185 @@ export const upsertProviderMessage = internalMutation({
     notifyNewMail: v.boolean(),
   },
   handler: async (ctx, args) => {
-    const account = await ensureInternalOwnedAccount(
-      ctx,
-      args.ownerId,
-      args.accountId,
-    );
-    const message = args.message as NormalizedMessage;
-    const now = Date.now();
-    const archivedTombstone = await ctx.db
-      .query("archivedMessageTombstones")
-      .withIndex("by_account_remote", (q) =>
-        q
-          .eq("accountId", args.accountId)
-          .eq("remoteMessageId", message.remoteMessageId),
-      )
-      .unique();
-    if (isProviderMessageArchived(undefined, archivedTombstone)) return;
-    let thread = await ctx.db
-      .query("threads")
-      .withIndex("by_account_remote", (q) =>
-        q
-          .eq("accountId", args.accountId)
-          .eq("remoteThreadId", message.remoteThreadId),
-      )
-      .unique();
-    if (!thread) {
-      const threadId = await ctx.db.insert("threads", {
-        ownerId: args.ownerId,
-        accountId: args.accountId,
-        remoteThreadId: message.remoteThreadId,
-        subject: message.subject,
-        snippet: message.snippet,
-        participants: uniqueAddresses([
-          message.from,
-          ...message.to,
-          ...message.cc,
-        ]),
-        latestMessageAt: message.receivedAt,
-        latestInboxMessageAt: message.inInbox ? message.receivedAt : undefined,
-        messageCount: 0,
-        unreadCount: 0,
-        inInbox: message.inInbox,
-        isPinned: false,
-        hasAttachments: message.hasAttachments,
-        createdAt: now,
-        updatedAt: now,
-      });
-      thread = await ctx.db.get(threadId);
-    }
-    if (!thread) throw new ConvexError("Unable to create mail thread");
+    await writeProviderMessage(ctx, {
+      ...args,
+      message: args.message as NormalizedMessage,
+    });
+  },
+});
 
-    const existing = await ctx.db
-      .query("messages")
-      .withIndex("by_account_remote", (q) =>
-        q
-          .eq("accountId", args.accountId)
-          .eq("remoteMessageId", message.remoteMessageId),
-      )
-      .unique();
-    const inInbox = isProviderMessageArchived(existing, undefined)
-      ? false
-      : message.inInbox;
-    const messageFields = {
+export async function writeProviderMessage(
+  ctx: MutationCtx,
+  args: {
+    ownerId: string;
+    accountId: Id<"mailAccounts">;
+    message: NormalizedMessage;
+    notifyNewMail: boolean;
+    automaticCleanView?: boolean;
+  },
+) {
+  const account = await ensureInternalOwnedAccount(
+    ctx,
+    args.ownerId,
+    args.accountId,
+  );
+  const message = args.message;
+  const now = Date.now();
+  const archivedTombstone = await ctx.db
+    .query("archivedMessageTombstones")
+    .withIndex("by_account_remote", (q) =>
+      q
+        .eq("accountId", args.accountId)
+        .eq("remoteMessageId", message.remoteMessageId),
+    )
+    .unique();
+  if (isProviderMessageArchived(undefined, archivedTombstone)) return;
+  let thread = await ctx.db
+    .query("threads")
+    .withIndex("by_account_remote", (q) =>
+      q
+        .eq("accountId", args.accountId)
+        .eq("remoteThreadId", message.remoteThreadId),
+    )
+    .unique();
+  if (!thread) {
+    const threadId = await ctx.db.insert("threads", {
       ownerId: args.ownerId,
       accountId: args.accountId,
-      threadId: thread._id,
-      remoteMessageId: message.remoteMessageId,
-      internetMessageId: message.internetMessageId,
-      direction: message.direction,
-      from: message.from,
-      replyTo: message.replyTo,
-      to: message.to,
-      cc: message.cc,
-      bcc: message.bcc,
+      remoteThreadId: message.remoteThreadId,
       subject: message.subject,
       snippet: message.snippet,
-      searchText: createMessageSearchText({
-        accountAddress: account.address,
-        body: message.plainText,
-        cc: message.cc,
-        from: message.from,
-        snippet: message.snippet,
-        subject: message.subject,
-        to: message.to,
-      }),
-      headers: message.headers,
-      remoteLabelIds: message.remoteLabelIds,
-      bodyState:
-        message.plainText || message.sanitizedHtml
-          ? ("available" as const)
-          : ("remote" as const),
-      sentAt: message.sentAt,
-      receivedAt: message.receivedAt,
+      participants: uniqueAddresses([
+        message.from,
+        ...message.to,
+        ...message.cc,
+      ]),
+      latestMessageAt: message.receivedAt,
+      latestInboxMessageAt: message.inInbox ? message.receivedAt : undefined,
+      messageCount: 0,
+      unreadCount: 0,
+      inInbox: message.inInbox,
+      isPinned: false,
       hasAttachments: message.hasAttachments,
-      inInbox,
-      isRead: message.isRead,
+      createdAt: now,
       updatedAt: now,
-    };
-    let messageId: Id<"messages">;
-    if (existing) {
-      messageId = existing._id;
-      await ctx.db.patch(messageId, messageFields);
-    } else {
-      messageId = await ctx.db.insert("messages", {
-        ...messageFields,
-        isPinned: false,
-        createdAt: now,
-      });
-    }
-    await upsertMessageContent(
-      ctx,
-      args.ownerId,
+    });
+    thread = await ctx.db.get(threadId);
+  }
+  if (!thread) throw new ConvexError("Unable to create mail thread");
+
+  const existing = await ctx.db
+    .query("messages")
+    .withIndex("by_account_remote", (q) =>
+      q
+        .eq("accountId", args.accountId)
+        .eq("remoteMessageId", message.remoteMessageId),
+    )
+    .unique();
+  const inInbox = isProviderMessageArchived(existing, undefined)
+    ? false
+    : message.inInbox;
+  const messageFields = {
+    ownerId: args.ownerId,
+    accountId: args.accountId,
+    threadId: thread._id,
+    remoteMessageId: message.remoteMessageId,
+    internetMessageId: message.internetMessageId,
+    direction: message.direction,
+    from: message.from,
+    replyTo: message.replyTo,
+    to: message.to,
+    cc: message.cc,
+    bcc: message.bcc,
+    subject: message.subject,
+    snippet: message.snippet,
+    searchText: createMessageSearchText({
+      accountAddress: account.address,
+      body: message.plainText,
+      cc: message.cc,
+      from: message.from,
+      snippet: message.snippet,
+      subject: message.subject,
+      to: message.to,
+    }),
+    headers: message.headers,
+    remoteLabelIds: message.remoteLabelIds,
+    bodyState:
+      message.plainText || message.sanitizedHtml
+        ? ("available" as const)
+        : ("remote" as const),
+    sentAt: message.sentAt,
+    receivedAt: message.receivedAt,
+    hasAttachments: message.hasAttachments,
+    inInbox,
+    isRead: message.isRead,
+    updatedAt: now,
+  };
+  let messageId: Id<"messages">;
+  if (existing) {
+    messageId = existing._id;
+    await ctx.db.patch(messageId, messageFields);
+  } else {
+    messageId = await ctx.db.insert("messages", {
+      ...messageFields,
+      isPinned: false,
+      createdAt: now,
+    });
+  }
+  await upsertMessageContent(
+    ctx,
+    args.ownerId,
+    messageId,
+    message.plainText,
+    message.sanitizedHtml,
+    now,
+  );
+  await reconcileAttachments(
+    ctx,
+    args.ownerId,
+    messageId,
+    message.attachments,
+    now,
+  );
+  const storedMessage = await ctx.db.get(messageId);
+  const suppression =
+    inInbox && storedMessage
+      ? await findMatchingSuppression(ctx, storedMessage)
+      : null;
+  if (suppression && storedMessage) {
+    await suppressMessageAsSpam(ctx, storedMessage, suppression._id, now);
+  } else if (inInbox) {
+    await queueClassificationForMessage(ctx, {
+      ownerId: args.ownerId,
       messageId,
-      message.plainText,
-      message.sanitizedHtml,
-      now,
-    );
-    await reconcileAttachments(
-      ctx,
-      args.ownerId,
-      messageId,
-      message.attachments,
-      now,
-    );
-    const storedMessage = await ctx.db.get(messageId);
-    const suppression =
-      inInbox && storedMessage
-        ? await findMatchingSuppression(ctx, storedMessage)
-        : null;
-    if (suppression && storedMessage) {
-      await suppressMessageAsSpam(ctx, storedMessage, suppression._id, now);
-    } else if (inInbox) {
-      await queueClassificationForMessage(ctx, {
-        ownerId: args.ownerId,
-        messageId,
-        promptVersion: CLASSIFICATION_PROMPT_VERSION,
-        replaceManual: false,
-        generateCleanView: shouldRequestAutomaticCleanView({
+      promptVersion: CLASSIFICATION_PROMPT_VERSION,
+      replaceManual: false,
+      generateCleanView:
+        args.automaticCleanView !== false &&
+        shouldRequestAutomaticCleanView({
           messageExists: existing !== null,
           direction: message.direction,
           inInbox,
         })
           ? true
           : undefined,
-      });
-    }
-    await reconcileEmbeddingSelection(ctx, messageId);
-    await recalculateThread(ctx, thread._id);
-    if (
-      args.notifyNewMail &&
-      !existing &&
-      message.direction === "incoming" &&
-      inInbox &&
-      !suppression
-    ) {
-      await queueNewMailNotification(ctx, {
-        ownerId: args.ownerId,
-        messageId,
-      });
-    }
-  },
-});
+    });
+  }
+  await reconcileEmbeddingSelection(ctx, messageId);
+  await recalculateThread(ctx, thread._id);
+  if (
+    args.notifyNewMail &&
+    !existing &&
+    message.direction === "incoming" &&
+    inInbox &&
+    !suppression
+  ) {
+    await queueNewMailNotification(ctx, {
+      ownerId: args.ownerId,
+      messageId,
+    });
+  }
+}
 
 export const updateProviderMessageReadState = internalMutation({
   args: {

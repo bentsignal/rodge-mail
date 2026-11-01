@@ -24,7 +24,9 @@ const usage = `Usage:
   node scripts/hosted-mail.mjs add-domain <domain> [--force]
   node scripts/hosted-mail.mjs add-address <address> [--name <display name>] [--alias-of <address>]
   node scripts/hosted-mail.mjs send-test <from> <to> [--reply-to <message-id>]
-  node scripts/hosted-mail.mjs status [domain]`;
+  node scripts/hosted-mail.mjs status [domain]
+  node scripts/hosted-mail.mjs import <source address> <hosted address>
+  node scripts/hosted-mail.mjs import-status [hosted address]`;
 
 const [command, ...rest] = process.argv.slice(2);
 const options = parseOptions(rest);
@@ -36,6 +38,8 @@ try {
   else if (command === "add-address") addAddress(options._[0]);
   else if (command === "send-test") sendTest(options._[0], options._[1]);
   else if (command === "status") status(options._[0]);
+  else if (command === "import") importMail(options._[0], options._[1]);
+  else if (command === "import-status") importStatus(options._[0]);
   else {
     console.log(usage);
     process.exitCode = command ? 1 : 0;
@@ -479,6 +483,45 @@ function status(domain) {
     );
   }
   console.log(convexRun("providers/hosted/admin:listAddresses", {}));
+}
+
+function importMail(source, target) {
+  if (!source || !target) {
+    throw new Error("import needs <source address> and <hosted address>");
+  }
+  const result = JSON.parse(
+    convexRun("providers/hosted/importJobs:start", { source, target }),
+  );
+  console.log(
+    result.started
+      ? `→ ${result.resumed ? "resumed" : "started"} import ${result.importId}`
+      : `✓ import ${result.importId} is already running`,
+  );
+  importStatus(target);
+}
+
+function importStatus(target) {
+  const rows = JSON.parse(
+    convexRun("providers/hosted/importJobs:status", target ? { target } : {}),
+  );
+  if (rows.length === 0) console.log("No imports yet.");
+  for (const row of rows) {
+    const total = row.estimatedTotal ? ` of about ${row.estimatedTotal}` : "";
+    console.log(`\n${row.source} → ${row.target}: ${row.status}`);
+    console.log(
+      `  imported ${row.imported}, skipped ${row.skipped}, failed ${row.failed}${total}`,
+    );
+    console.log(
+      `  started ${row.startedAt}, updated ${row.updatedAt}${row.finishedAt ? `, finished ${row.finishedAt}` : ""}`,
+    );
+    if (row.currentFolder) console.log(`  folder: ${row.currentFolder}`);
+    if (row.lastError) console.log(`  last error: ${row.lastError}`);
+    for (const failure of row.recentFailures) {
+      console.log(
+        `  ✗ ${failure.folder}: ${failure.reason} (${failure.remoteMessageId})`,
+      );
+    }
+  }
 }
 
 function aws(args) {

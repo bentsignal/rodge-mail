@@ -34,6 +34,7 @@ import {
   vHostedAddress,
   vHostedDeliveryEvent,
   vHostedDomain,
+  vMailImport,
 } from "./providers/hosted/validators";
 
 export default defineSchema(
@@ -167,6 +168,9 @@ export default defineSchema(
     hostedDeliveryEvents: defineTable(vHostedDeliveryEvent)
       .index("by_ses_message", ["sesMessageId"])
       .index("by_owner_created", ["ownerId", "createdAt"]),
+    mailImports: defineTable(vMailImport)
+      .index("by_owner", ["ownerId"])
+      .index("by_source_target", ["sourceAccountId", "targetAccountId"]),
     draftAttachments: defineTable(vDraftAttachment)
       .index("by_owner_status_created", ["ownerId", "status", "createdAt"])
       .index("by_status_created", ["status", "createdAt"])

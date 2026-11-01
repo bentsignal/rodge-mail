@@ -218,3 +218,56 @@ records without `--force`; with it, the old records are deleted on Vercel
 before the new ones are added (moving a domain off another mail host stops
 its mail there, so create its addresses right after). The SES account has
 production access, so it sends to anyone.
+
+### Importing a connected account's mail
+
+Moving a domain to hosted mail leaves its old mail with the previous provider.
+`import` copies that mail into a hosted address as real raw messages, so it
+survives removing the old account:
+
+```sh
+node scripts/hosted-mail.mjs import me@example.com me@example.com   # source, then hosted address
+node scripts/hosted-mail.mjs import-status [me@example.com]
+```
+
+The source is the connected (non-hosted) account with that address; only
+Microsoft 365 is supported so far. Sources implement `MailImportSource` in
+`src/providers/types.ts` (list messages with folder, read state, and date,
+then fetch raw MIME), so Gmail (`format=raw`) or iCloud (IMAP `BODY[]`) can be
+added without touching the hosted side. Microsoft reads every folder except
+Deleted Items, Drafts, Outbox, Conversation History, and Sync Issues, and
+downloads each message from `/me/messages/{id}/$value`.
+
+Each message is stored in S3 under `import/<hosted account id>/<sha256 of
+source account and message id>`, parsed like inbound SES mail, and written
+through `upsertProviderMessage`, so Message-ID threading, attachments (read
+from S3 on demand), and search work as they do for other hosted mail:
+
+| Source folder | Hosted copy                                           |
+| ------------- | ----------------------------------------------------- |
+| Inbox         | Inbox, original read state, queued for classification |
+| Sent Items    | Outgoing, read, label `sent`                          |
+| Archive       | Out of the inbox, label `archive`                     |
+| Junk Email    | Out of the inbox, label `junk`                        |
+| Other folders | Out of the inbox, label `folder:<path>`               |
+
+Dates come from the source (`receivedDateTime`, or `sentDateTime` for sent
+mail). Archived mail doesn't get Rodge's `archivedAt`, which deletes mail
+after 30 days. Rodge has no folder or label views yet and search covers inbox
+mail only, so imported mail outside the inbox shows up only inside threads
+that also have inbox mail, until those views exist. Imports never notify, never request a clean view, and never
+send. Inbox mail is still classified, so batches wait 2 s per inbox message to
+stay under half the classification rate limit.
+
+`importer:run` handles 25 messages per batch and schedules the next one. The
+`mailImports` row keeps the cursor and the imported, skipped, and failed
+counts, plus the last 100 failures with their reasons. Graph throttling and
+5xx errors retry the same page with backoff and fail the import after five in
+a row; a missing or oversized (over 40 MB) message is recorded as a failure
+and skipped. Running `import` again resumes a failed or stalled import from
+its cursor, and restarts a completed one from the beginning: messages already
+imported (by source account and message ID) are skipped without being
+downloaded, which retries only the failures. A message received from a day
+before the hosted account existed onward is skipped when SES already delivered
+the same Message-ID, which covers mail both providers got during the DNS move.
+The source account is never changed.

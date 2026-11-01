@@ -93,9 +93,21 @@ describe("hosted identifiers", () => {
   });
 
   it("derives S3 keys without allowing traversal", () => {
-    expect(hostedObjectKey("ses:abc-123", "incoming")).toBe("inbound/abc-123");
-    expect(hostedObjectKey("ses:abc-123", "outgoing")).toBe("sent/abc-123");
-    expect(() => hostedObjectKey("ses:../secret", "incoming")).toThrow();
+    function key(remoteMessageId: string, direction: "incoming" | "outgoing") {
+      return hostedObjectKey({
+        accountId: "account1",
+        remoteMessageId,
+        direction,
+      });
+    }
+    const digest = "a".repeat(64);
+    expect(key("ses:abc-123", "incoming")).toBe("inbound/abc-123");
+    expect(key("ses:abc-123", "outgoing")).toBe("sent/abc-123");
+    expect(key(`import:${digest}`, "outgoing")).toBe(
+      `import/account1/${digest}`,
+    );
+    expect(() => key("ses:../secret", "incoming")).toThrow();
+    expect(() => key("import:../secret", "incoming")).toThrow();
   });
 
   it("parses attachment indexes and SES message ids", () => {

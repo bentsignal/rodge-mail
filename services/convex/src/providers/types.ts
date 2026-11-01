@@ -102,3 +102,33 @@ export interface MailProviderAdapter {
     remoteAttachmentId: string,
   ): Promise<Uint8Array>;
 }
+
+export type ImportFolderKind = "inbox" | "sent" | "archive" | "junk" | "custom";
+
+export interface ImportFolder {
+  kind: ImportFolderKind;
+  path: string;
+}
+
+export interface ImportSourceMessage {
+  remoteMessageId: string;
+  folder: ImportFolder;
+  isRead: boolean;
+  receivedAt?: number;
+}
+
+/**
+ * Reads a connected account's mail as raw RFC 5322 messages. `cursor` is
+ * opaque to callers; `nextCursor` is null once every folder is exhausted.
+ */
+export interface MailImportSource {
+  listMessages(
+    cursor: string | undefined,
+    limit: number,
+  ): Promise<{
+    messages: ImportSourceMessage[];
+    nextCursor: string | null;
+    estimatedTotal?: number;
+  }>;
+  fetchRawMessage(remoteMessageId: string): Promise<Uint8Array>;
+}
