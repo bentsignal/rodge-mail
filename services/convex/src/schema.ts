@@ -157,6 +157,7 @@ export default defineSchema(
       .index("by_account_idempotency", ["accountId", "idempotencyKey"])
       .index("by_owner_created", ["ownerId", "createdAt"])
       .index("by_owner_status_created", ["ownerId", "status", "createdAt"])
+      .index("by_account_status_created", ["accountId", "status", "createdAt"])
       .index("by_status_created", ["status", "createdAt"])
       .index("by_remote_message", ["remoteMessageId"]),
     hostedDomains: defineTable(vHostedDomain)

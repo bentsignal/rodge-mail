@@ -3,7 +3,7 @@ import { v } from "convex/values";
 
 import type { Doc } from "../_generated/dataModel";
 import type { AuthedQueryCtx } from "../utils";
-import { getActiveAccount } from "../mail/helpers";
+import { ensureListableAccount, getActiveAccount } from "../mail/helpers";
 import { authedQuery } from "../utils";
 import {
   MAX_RECENT_OUTBOX_PER_UNRESOLVED_STATUS,
@@ -66,17 +66,27 @@ export const listUnsent = authedQuery({
   },
 });
 
-/** Delivered mail, newest first. */
+/** Delivered mail, newest first, from every account or just one. */
 export const listSent = authedQuery({
-  args: { paginationOpts: paginationOptsValidator },
+  args: {
+    accountId: v.optional(v.id("mailAccounts")),
+    paginationOpts: paginationOptsValidator,
+  },
   handler: async (ctx, args) => {
-    const result = await ctx.db
-      .query("outboxMessages")
-      .withIndex("by_owner_status_created", (q) =>
-        q.eq("ownerId", ctx.ownerId).eq("status", "sent"),
-      )
-      .order("desc")
-      .paginate(args.paginationOpts);
+    const { accountId } = args;
+    if (accountId) await ensureListableAccount(ctx, ctx.ownerId, accountId);
+    const sent = accountId
+      ? ctx.db
+          .query("outboxMessages")
+          .withIndex("by_account_status_created", (q) =>
+            q.eq("accountId", accountId).eq("status", "sent"),
+          )
+      : ctx.db
+          .query("outboxMessages")
+          .withIndex("by_owner_status_created", (q) =>
+            q.eq("ownerId", ctx.ownerId).eq("status", "sent"),
+          );
+    const result = await sent.order("desc").paginate(args.paginationOpts);
     return { ...result, page: await toSentRows(ctx, result.page) };
   },
 });
@@ -129,6 +139,7 @@ async function toSentRow(ctx: AuthedQueryCtx, outbox: Doc<"outboxMessages">) {
   const message = await findStoredMessage(ctx, outbox);
   return {
     _id: outbox._id,
+    accountId: outbox.accountId,
     account: {
       _id: account._id,
       address: account.address,

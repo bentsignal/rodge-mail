@@ -37,6 +37,7 @@ function toQueuedRow(
 ) {
   return {
     _id: toConvexId<"outboxMessages">(`optimistic-${args.idempotencyKey}`),
+    accountId: account._id,
     account: {
       _id: account._id,
       address: account.address,

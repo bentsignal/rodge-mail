@@ -22,7 +22,7 @@ export function RemoveAccountButton({
   const [isOpen, setIsOpen] = useState(false);
   const accountFilter = useMailStore((store) => store.accountFilter);
   const { selectedThread } = useLiveMail();
-  const showMailbox = useMailboxNavigation();
+  const showMailbox = useMailboxNavigation("inbox");
   const removeAccount = useMutation(
     api.accounts.mutations.remove,
   ).withOptimisticUpdate(optimisticallyRemoveAccount);

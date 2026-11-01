@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   normalizeMailRouteSearch,
+  toMailboxLinkSearch,
   withMailboxSearch,
   withUnreadSearch,
 } from "./mail-route-search";
@@ -25,6 +26,17 @@ describe("mail route search", () => {
     expect(
       withMailboxSearch({ mailbox: "account-1", unread: true }, "all"),
     ).toEqual({ mailbox: undefined, unread: true });
+  });
+
+  it("keeps only the account when moving to another mailbox", () => {
+    expect(toMailboxLinkSearch({ mailbox: "account-1", unread: true })).toEqual(
+      {
+        mailbox: "account-1",
+      },
+    );
+    expect(toMailboxLinkSearch({ unread: true })).toEqual({
+      mailbox: undefined,
+    });
   });
 
   it("preserves the mailbox when toggling unread", () => {

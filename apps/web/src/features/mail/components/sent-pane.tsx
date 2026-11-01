@@ -3,7 +3,7 @@ import type { FunctionReturnType } from "convex/server";
 import { useQuery } from "@tanstack/react-query";
 import { convexQuery } from "@convex-dev/react-query";
 import { usePaginatedQuery } from "convex/react";
-import { ArrowLeft, Paperclip, Send } from "lucide-react";
+import { Paperclip, Send } from "lucide-react";
 
 import { api } from "@rodge-mail/convex/api";
 import {
@@ -16,8 +16,11 @@ import { cn } from "@rodge-mail/std/cn";
 import { QuickLink } from "~/components/quick-link";
 import { MAIL_PAGE_SIZE } from "../constants";
 import { formatInboxDate, getInitials } from "../format";
+import { useSettledResults } from "../live-data-support";
 import { isOptimisticOutboxId } from "../outbox-optimistic";
 import { useSelectedOutboxId } from "../sent-live-data";
+import { useMailStore } from "../store";
+import { MobileScopeFilters } from "./mobile-scope-filters";
 import { RetryOutboxButton } from "./sent-message-pane";
 
 export type SentRow = FunctionReturnType<
@@ -26,14 +29,21 @@ export type SentRow = FunctionReturnType<
 
 export function SentPane() {
   const outboxId = useSelectedOutboxId();
+  const accountFilter = useMailStore((store) => store.accountFilter);
+  const accountId = accountFilter === "all" ? undefined : accountFilter;
   const unsent = useQuery({
     ...convexQuery(api.outbox.queries.listUnsent, {}),
     select: (rows) => rows,
   });
   const sent = usePaginatedQuery(
     api.outbox.queries.listSent,
-    {},
+    { accountId },
     { initialNumItems: MAIL_PAGE_SIZE },
+  );
+  const isPending = sent.status === "LoadingFirstPage";
+  const sentRows = useSettledResults(sent.results, isPending, accountId);
+  const unsentRows = (unsent.data ?? []).filter(
+    (row) => !accountId || row.accountId === accountId,
   );
 
   return (
@@ -44,37 +54,27 @@ export function SentPane() {
         outboxId ? "hidden lg:flex" : "flex",
       )}
     >
-      <header className="bg-background border-border flex shrink-0 items-center gap-2 border-b px-4 pt-5 pb-4 sm:px-5">
-        <QuickLink
-          aria-label="Back to inbox"
-          className="hover:bg-muted -ml-2 flex size-10 items-center justify-center rounded-lg md:hidden"
-          to="/"
-        >
-          <ArrowLeft className="size-4" />
-        </QuickLink>
+      <header className="bg-background border-border shrink-0 border-b px-4 pt-5 pb-4 sm:px-5">
         <h1 className="text-[32px] leading-none font-semibold tracking-[-0.04em] sm:text-[34px]">
           Sent
         </h1>
+        <MobileScopeFilters />
       </header>
       <div className="mail-scrollbar min-h-0 flex-1 overflow-y-auto">
+        <SentSection rows={unsentRows} selectedId={outboxId} title="Outbox" />
         <SentSection
-          rows={unsent.data ?? []}
+          rows={sentRows}
           selectedId={outboxId}
-          title="Outbox"
-        />
-        <SentSection
-          rows={sent.results}
-          selectedId={outboxId}
-          title={unsent.data?.length ? "Sent" : undefined}
+          title={unsentRows.length > 0 ? "Sent" : undefined}
         />
         <SentListFooter
           canLoadMore={sent.status === "CanLoadMore"}
           isEmpty={
             sent.status === "Exhausted" &&
             sent.results.length === 0 &&
-            (unsent.data?.length ?? 0) === 0
+            unsentRows.length === 0
           }
-          isLoading={sent.status === "LoadingFirstPage"}
+          isLoading={isPending && sentRows.length === 0}
           onLoadMore={() => sent.loadMore(MAIL_PAGE_SIZE)}
         />
       </div>
@@ -191,6 +191,7 @@ function SentRowLink({
       aria-label={label}
       className={className}
       params={{ outboxId }}
+      search={(previous) => previous}
       to="/sent/$outboxId"
     >
       {children}

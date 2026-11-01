@@ -221,20 +221,40 @@ export const getThread = authedQuery({
   },
 });
 
+/**
+ * Classifications don't record their account, so one account's spam is
+ * filtered after reading. It reads more rows per page to make up for that, and
+ * a page can still come back short with more to load.
+ */
+const SPAM_ACCOUNT_SCAN_FACTOR = 5;
+
 export const listSpam = authedQuery({
-  args: { paginationOpts: paginationOptsValidator },
+  args: {
+    accountId: v.optional(v.id("mailAccounts")),
+    paginationOpts: paginationOptsValidator,
+  },
   handler: async (ctx, args) => {
+    const { accountId, paginationOpts } = args;
+    if (accountId) await ensureListableAccount(ctx, ctx.ownerId, accountId);
     const classifications = await ctx.db
       .query("messageClassifications")
       .withIndex("by_owner_spam_updated", (q) =>
         q.eq("ownerId", ctx.ownerId).eq("isSpam", true),
       )
       .order("desc")
-      .paginate(args.paginationOpts);
+      .paginate(
+        accountId
+          ? {
+              ...paginationOpts,
+              numItems: paginationOpts.numItems * SPAM_ACCOUNT_SCAN_FACTOR,
+            }
+          : paginationOpts,
+      );
     const page = await Promise.all(
       classifications.page.map(async (classification) => {
         const message = await ctx.db.get(classification.messageId);
         if (!message?.inInbox || message.ownerId !== ctx.ownerId) return null;
+        if (accountId && message.accountId !== accountId) return null;
         return await toMessageListItem(ctx, message);
       }),
     );

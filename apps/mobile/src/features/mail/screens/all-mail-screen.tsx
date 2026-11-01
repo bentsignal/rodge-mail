@@ -1,17 +1,16 @@
 import type { LegendListRenderItemProps } from "@legendapp/list/react-native";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "expo-router";
 import { usePaginatedQuery } from "convex/react";
 
-import type { MailAccountFilter, MailThread } from "@rodge-mail/features/mail";
+import type { MailThread } from "@rodge-mail/features/mail";
 import { api } from "@rodge-mail/convex/api";
-import { readCachedAccountPage } from "@rodge-mail/features/mail";
 
-import type { OtherMailbox } from "../store";
 import type { MailboxFilter } from "./mailbox-controls";
 import { useDebouncedValue } from "~/hooks/use-debounced-value";
 import { ThreadRow } from "../components/thread-row";
 import { getThreadTag } from "../components/thread-row-presentation";
+import { useCachedMailboxPage } from "../hooks/use-cached-mailbox-page";
 import { toConvexId } from "../lib/convex-id";
 import { toAllMailThreads } from "../lib/convex-mail";
 import { useMailStore } from "../store";
@@ -23,14 +22,10 @@ import { useMoveToInbox } from "./use-move-to-inbox";
 const pageSize = 30;
 
 export function AllMailMailbox({
-  onAccountChange,
-  onMailboxSelect,
   primary,
   searchMode,
   searchTerm,
 }: {
-  onAccountChange: (value: MailAccountFilter) => void;
-  onMailboxSelect: (mailbox: OtherMailbox) => void;
   primary: string;
   searchMode: boolean;
   searchTerm: string;
@@ -64,11 +59,13 @@ export function AllMailMailbox({
     { initialNumItems: pageSize },
   );
   const activePage = isSearching ? search : allMail;
-  const rows = useCachedRows({
+  const rows = useCachedMailboxPage({
     accountId,
     isPending: activePage.status === "LoadingFirstPage",
+    mailbox: "all",
     rows: activePage.results,
     searchTerm: activeSearchTerm,
+    selectCache: (store) => store.mailboxPages,
   });
   const threads = filterMailboxThreads(toAllMailThreads(rows), filter);
 
@@ -112,48 +109,10 @@ export function AllMailMailbox({
       selectedCount={0}
       selectionEnabled={false}
       selectionMode={false}
-      onAccountChange={onAccountChange}
       onFilterChange={setFilter}
       onLoadMore={() => activePage.loadMore(pageSize)}
-      onMailboxSelect={onMailboxSelect}
       onToggleSelection={() => undefined}
       pageStatus={activePage.status}
     />
   );
-}
-
-/**
- * Each scope's last settled page, so switching accounts or searches shows
- * rows at once while the next page loads, as the inbox does: an account
- * reads the unified page narrowed to it until its own page arrives.
- */
-function useCachedRows<T extends { accountId: string }>({
-  accountId,
-  isPending,
-  rows,
-  searchTerm,
-}: {
-  accountId: string | undefined;
-  isPending: boolean;
-  rows: T[];
-  searchTerm: string;
-}) {
-  const [cache, setCache] = useState(() => new Map<string, T[]>());
-  const key = `${accountId ?? "all"}:${searchTerm}`;
-  // eslint-disable-next-line no-restricted-syntax -- Cache the latest settled Convex page so switching scopes never blanks the list.
-  useEffect(() => {
-    if (isPending) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- The Convex page is an external subscription snapshot.
-    setCache((current) => {
-      if (current.get(key) === rows) return current;
-      return new Map(current).set(key, rows);
-    });
-  }, [isPending, key, rows]);
-  if (!isPending) return rows;
-  return readCachedAccountPage({
-    accountId,
-    cache,
-    key,
-    unifiedKey: searchTerm ? undefined : "all:",
-  }).items;
 }

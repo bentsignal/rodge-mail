@@ -8,7 +8,7 @@ import type { MailAccountFilter, MailThread } from "@rodge-mail/features/mail";
 
 import type { MobileMailAccount } from "../lib/convex-mail";
 import type { PageStatus } from "../lib/next-page";
-import type { MobileMailbox, OtherMailbox } from "../store";
+import type { MobileMailbox } from "../store";
 import type { InboxHeader } from "./inbox-header";
 import type { MailboxFilter } from "./mailbox-controls";
 import { ContentReveal } from "~/components/content-reveal";
@@ -56,10 +56,8 @@ interface MailboxThreadListProps {
   includeTopSafeArea?: boolean;
   isRefreshing?: boolean;
   mailbox: MobileMailbox;
-  onAccountChange: (value: MailAccountFilter) => void;
   onFilterChange: (value: MailboxFilter) => void;
   onLoadMore: () => void;
-  onMailboxSelect: (mailbox: OtherMailbox) => void;
   onRefresh?: () => void;
   onToggleSelection: () => void;
   pageStatus: PageStatus;
@@ -87,10 +85,8 @@ export function MailboxThreadList({
   includeTopSafeArea = true,
   isRefreshing,
   mailbox,
-  onAccountChange,
   onFilterChange,
   onLoadMore,
-  onMailboxSelect,
   onRefresh,
   onToggleSelection,
   pageStatus,
@@ -128,9 +124,7 @@ export function MailboxThreadList({
         headerInList={headerInList}
         includeTopSafeArea={includeTopSafeArea}
         mailbox={mailbox}
-        onAccountChange={onAccountChange}
         onFilterChange={onFilterChange}
-        onMailboxSelect={onMailboxSelect}
         onToggleSelection={onToggleSelection}
         refreshError={refreshError}
         searchMode={searchMode}
@@ -138,7 +132,10 @@ export function MailboxThreadList({
         selectionEnabled={selectionEnabled}
         selectionMode={selectionMode}
       />
+      {/* A fresh list per account starts at the top under the large title. A
+          reused one keeps its scroll offset and lands misplaced under the bar. */}
       <MailboxRows
+        key={accountFilter}
         accounts={accounts}
         feedback={feedback}
         headerInList={headerInList}
@@ -148,9 +145,7 @@ export function MailboxThreadList({
           filter,
           includeTopSafeArea,
           mailbox,
-          onAccountChange,
           onFilterChange,
-          onMailboxSelect,
           onToggleSelection,
           refreshError,
           selectionMode,

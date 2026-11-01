@@ -12,6 +12,7 @@ export function parseMobileMailbox(value: string | undefined) {
 export function getMailboxSearchPlaceholder(mailbox: MobileMailbox) {
   if (mailbox === "all") return "Search all mail";
   if (mailbox === "archive") return "Search archive";
+  if (mailbox === "sent") return "Search sent";
   if (mailbox === "spam") return "Search spam";
   return undefined;
 }
