@@ -20,7 +20,7 @@ section here in that PR (see AGENTS.md → Releases), in this form:
 - Verify: ...
 ```
 
-## Sort existing passkeys by platform (#PR)
+## Sort existing passkeys by platform (#33)
 
 Passkeys stored before this release have no `rpId`, so Settings lists them
 under "Other passkeys" and won't remove any of them until both the website
