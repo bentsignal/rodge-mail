@@ -1,9 +1,14 @@
+import { createRequire } from "node:module";
 import type { ConfigContext } from "expo/config";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createUrls } from "@rodge-mail/config/urls";
 
 import createExpoConfig from "./app.config";
+
+const { networkSecurityConfig } = createRequire(import.meta.url)(
+  "./expo-plugins/with-android-network-security.cjs",
+) as { networkSecurityConfig: (options: { debug: boolean }) => string };
 
 // A worktree with an isolated backend points its overrides elsewhere.
 vi.mock("../../shared/config/src/overrides", () => ({
@@ -54,5 +59,35 @@ describe("mobile development configuration", () => {
       cloud: "https://dazzling-dog-633.convex.cloud",
       site: "https://dazzling-dog-633.convex.site",
     });
+  });
+});
+
+describe("Android network security config", () => {
+  it("blocks cleartext traffic in release builds", () => {
+    const release = networkSecurityConfig({ debug: false });
+
+    expect(release).toContain(
+      '<base-config cleartextTrafficPermitted="false">',
+    );
+    expect(release).not.toContain('cleartextTrafficPermitted="true"');
+  });
+
+  it("allows cleartext only to Metro's hosts in debug builds", () => {
+    const debug = networkSecurityConfig({ debug: true });
+
+    expect(debug).toContain('<base-config cleartextTrafficPermitted="false">');
+    expect(
+      [...debug.matchAll(/<domain [^>]*>([^<]+)<\/domain>/g)].map(
+        ([, host]) => host,
+      ),
+    ).toEqual(["10.0.2.2", "localhost", "127.0.0.1"]);
+  });
+
+  it("trusts user-installed certificate authorities in every build", () => {
+    for (const debug of [false, true]) {
+      expect(networkSecurityConfig({ debug })).toContain(
+        '<certificates src="user" />',
+      );
+    }
   });
 });
