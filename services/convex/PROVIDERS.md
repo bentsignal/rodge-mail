@@ -155,9 +155,11 @@ Removal happens in two steps:
    including their cached files in Convex storage), then threads, folders,
    archive tombstones, mailing-list suppressions, outbox rows with their
    draft attachments and SES delivery events, sync runs, provider
-   credentials, and per-account notification preferences. It takes the
-   account out of agent credential allowlists and finally deletes the
-   `mailAccounts` row.
+   credentials, per-account notification preferences, and hosted mail
+   imports it was the source or target of. It takes the account out of
+   agent credential allowlists and finally deletes the `mailAccounts` row.
+   Mail already imported into a hosted account belongs to that account and
+   stays when the source is removed; a running import stops.
 
 Reconnecting the same mailbox while a removal is still running creates a new
 account; the account upserts ignore rows with `deletingAt`.

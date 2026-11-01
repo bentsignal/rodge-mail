@@ -1,4 +1,3 @@
-// @vitest-environment edge-runtime
 /// <reference types="vite/client" />
 import { convexTest } from "convex-test";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
@@ -83,6 +82,11 @@ async function countOwnedRows(ctx: MutationCtx, seeded: Seeded) {
   );
   const files = await Promise.all(
     seeded.storageIds.map(async (id) => await ctx.db.system.get(id)),
+  );
+  const imports = await ctx.db.query("mailImports").collect();
+  counts.set(
+    "mailImports",
+    imports.filter((row) => row.sourceAccountId === seeded.accountId).length,
   );
   counts.set("storage", files.filter(Boolean).length);
   counts.set("mailAccounts", (await ctx.db.get(seeded.accountId)) ? 1 : 0);

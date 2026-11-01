@@ -112,6 +112,20 @@ const REMOVAL_STEPS = [
         .take(REMOVAL_ROW_BATCH_SIZE),
     ),
   async (ctx, account) => {
+    const imports = await ctx.db
+      .query("mailImports")
+      .withIndex("by_owner", (q) => q.eq("ownerId", account.ownerId))
+      .collect();
+    return await deleteRows(
+      ctx,
+      imports.filter(
+        (job) =>
+          job.sourceAccountId === account._id ||
+          job.targetAccountId === account._id,
+      ),
+    );
+  },
+  async (ctx, account) => {
     await deleteHostedRoutes(ctx, account);
     await removeFromAgentAllowlists(ctx, account);
     return false;

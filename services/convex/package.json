@@ -27,7 +27,6 @@
   },
   "devDependencies": {
     "@convex-dev/eslint-plugin": "^1.1.1",
-    "@edge-runtime/vm": "^5.0.0",
     "@rodge-mail/eslint-config": "workspace:*",
     "@rodge-mail/prettier-config": "workspace:*",
     "@rodge-mail/tsconfig": "workspace:*",
@@ -35,7 +34,7 @@
     "@types/node": "^22.19.1",
     "@types/nodemailer": "^8.0.1",
     "@types/sanitize-html": "^2.16.1",
-    "convex-test": "^0.0.54",
+    "convex-test": "0.0.54",
     "eslint": "catalog:",
     "prettier": "catalog:",
     "typescript": "catalog:",

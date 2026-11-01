@@ -83,6 +83,20 @@ export async function seedAccount(
   await seedAccountRows(ctx, base, messageIds[0]);
   storageIds.push(await seedOutbox(ctx, base));
   if (options.provider === "hosted") await seedHostedRoutes(ctx, base);
+  await ctx.db.insert("mailImports", {
+    ownerId: OWNER,
+    updatedAt: now,
+    sourceAccountId: accountId,
+    targetAccountId: accountId,
+    status: "completed",
+    runId: "1",
+    imported: 0,
+    skipped: 0,
+    failed: 0,
+    recentFailures: [],
+    consecutiveErrors: 0,
+    startedAt: now,
+  });
   return { accountId, threadId, messageIds, storageIds };
 }
 
