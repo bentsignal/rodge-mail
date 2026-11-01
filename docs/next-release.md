@@ -20,7 +20,7 @@ section here in that PR (see AGENTS.md → Releases), in this form:
 - Verify: ...
 ```
 
-## Import the old Microsoft 365 mail into hosted me@bentsignal.com (#PR)
+## Import the old Microsoft 365 mail into hosted me@bentsignal.com (#24)
 
 - When: after the Convex deploy. Keep the Microsoft 365 me@bentsignal.com
   account connected in Rodge and its subscription active until the import
