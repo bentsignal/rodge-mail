@@ -21,7 +21,11 @@ save_metro() {
   printf 'PORT=%s\nMETRO_PID=%s\n' "$PORT" "$METRO_PID" >"$STATE_DIR/metro"
 }
 
-port_in_use() { lsof -nP -iTCP:"$1" -sTCP:LISTEN >/dev/null 2>&1; }
+# netstat also sees listeners lsof can't, such as Tailscale's.
+port_in_use() {
+  lsof -nP -iTCP:"$1" -sTCP:LISTEN >/dev/null 2>&1 ||
+    netstat -an -p tcp 2>/dev/null | awk '$6 == "LISTEN" { print $4 }' | grep -qE "[.:]$1\$"
+}
 
 metro_running() {
   [ -n "$METRO_PID" ] && kill -0 "$METRO_PID" 2>/dev/null &&
