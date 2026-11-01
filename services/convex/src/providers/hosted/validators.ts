@@ -35,3 +35,36 @@ export const vHostedDeliveryEvent = v.object({
   occurredAt: v.number(),
   createdAt: v.number(),
 });
+
+export const vMailImportStatus = v.union(
+  v.literal("running"),
+  v.literal("completed"),
+  v.literal("failed"),
+);
+
+export const vMailImportFailure = v.object({
+  remoteMessageId: v.string(),
+  folder: v.string(),
+  reason: v.string(),
+  at: v.number(),
+});
+
+export const vMailImport = v.object({
+  ownerId: v.string(),
+  sourceAccountId: v.id("mailAccounts"),
+  targetAccountId: v.id("mailAccounts"),
+  status: vMailImportStatus,
+  runId: v.string(),
+  cursor: v.optional(v.string()),
+  currentFolder: v.optional(v.string()),
+  estimatedTotal: v.optional(v.number()),
+  imported: v.number(),
+  skipped: v.number(),
+  failed: v.number(),
+  recentFailures: v.array(vMailImportFailure),
+  consecutiveErrors: v.number(),
+  lastError: v.optional(v.string()),
+  startedAt: v.number(),
+  updatedAt: v.number(),
+  finishedAt: v.optional(v.number()),
+});

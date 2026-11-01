@@ -25,15 +25,27 @@ export function hostedRemoteMessageId(sesMessageId: string) {
   return `ses:${sesMessageId}`;
 }
 
-export function hostedObjectKey(
-  remoteMessageId: string,
-  direction: "incoming" | "outgoing",
-) {
-  const sesMessageId = remoteMessageId.replace(/^ses:/u, "");
+export function importedRemoteMessageId(digest: string) {
+  return `import:${digest}`;
+}
+
+export function hostedObjectKey(message: {
+  accountId: string;
+  remoteMessageId: string;
+  direction: "incoming" | "outgoing";
+}) {
+  const imported = /^import:([a-f0-9]{64})$/u.exec(message.remoteMessageId);
+  if (imported) {
+    if (!/^\w+$/u.test(message.accountId)) {
+      throw new Error("Hosted account identifier is invalid");
+    }
+    return `import/${message.accountId}/${imported[1]}`;
+  }
+  const sesMessageId = message.remoteMessageId.replace(/^ses:/u, "");
   if (!/^[\w-]+$/u.test(sesMessageId)) {
     throw new Error("Hosted message identifier is invalid");
   }
-  return `${direction === "outgoing" ? "sent" : "inbound"}/${sesMessageId}`;
+  return `${message.direction === "outgoing" ? "sent" : "inbound"}/${sesMessageId}`;
 }
 
 export function hostedAttachmentId(remoteMessageId: string, index: number) {

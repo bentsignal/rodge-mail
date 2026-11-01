@@ -26,6 +26,9 @@ export function normalizeHostedMessage(
     fallbackFrom: string;
     receivedAt: number;
     junk: boolean;
+    labelIds?: string[];
+    inInbox?: boolean;
+    isRead?: boolean;
   },
 ) {
   const internetMessageId = args.internetMessageId ?? parsed.messageId;
@@ -66,12 +69,14 @@ export function normalizeHostedMessage(
       name: header.key,
       value: header.line.slice(header.line.indexOf(":") + 1).trim(),
     })),
-    remoteLabelIds: [outgoing ? "sent" : args.junk ? "junk" : "inbox"],
+    remoteLabelIds: args.labelIds ?? [
+      outgoing ? "sent" : args.junk ? "junk" : "inbox",
+    ],
     sentAt: outgoing ? args.receivedAt : parsed.date?.getTime(),
     receivedAt: args.receivedAt,
     hasAttachments: parsed.attachments.length > 0,
-    inInbox: !outgoing && !args.junk,
-    isRead: outgoing,
+    inInbox: args.inInbox ?? (!outgoing && !args.junk),
+    isRead: args.isRead ?? outgoing,
     direction: args.direction,
     attachments: parsed.attachments.map((attachment, index) => ({
       remoteAttachmentId: hostedAttachmentId(args.remoteMessageId, index),

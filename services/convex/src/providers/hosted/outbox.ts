@@ -110,7 +110,11 @@ async function recordSentMessage(
     sent.region,
   );
   await putRawMessage(
-    hostedObjectKey(sent.remoteMessageId, "outgoing"),
+    hostedObjectKey({
+      accountId: outbox.accountId,
+      remoteMessageId: sent.remoteMessageId,
+      direction: "outgoing",
+    }),
     sent.raw,
   );
   await ctx.runMutation(internal.sync.internal.upsertProviderMessage, {

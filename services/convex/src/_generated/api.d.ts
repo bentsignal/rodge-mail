@@ -142,6 +142,9 @@ import type * as providers_hosted_attachments from "../providers/hosted/attachme
 import type * as providers_hosted_aws from "../providers/hosted/aws.js";
 import type * as providers_hosted_env from "../providers/hosted/env.js";
 import type * as providers_hosted_http from "../providers/hosted/http.js";
+import type * as providers_hosted_importJobs from "../providers/hosted/importJobs.js";
+import type * as providers_hosted_importMessages from "../providers/hosted/importMessages.js";
+import type * as providers_hosted_importer from "../providers/hosted/importer.js";
 import type * as providers_hosted_ingest from "../providers/hosted/ingest.js";
 import type * as providers_hosted_internal from "../providers/hosted/internal.js";
 import type * as providers_hosted_normalize from "../providers/hosted/normalize.js";
@@ -160,6 +163,7 @@ import type * as providers_icloud_sync from "../providers/icloud/sync.js";
 import type * as providers_icloud_window from "../providers/icloud/window.js";
 import type * as providers_microsoft_api from "../providers/microsoft/api.js";
 import type * as providers_microsoft_http from "../providers/microsoft/http.js";
+import type * as providers_microsoft_mailImport from "../providers/microsoft/mailImport.js";
 import type * as providers_microsoft_oauth from "../providers/microsoft/oauth.js";
 import type * as providers_microsoft_tokenAccess from "../providers/microsoft/tokenAccess.js";
 import type * as providers_types from "../providers/types.js";
@@ -311,6 +315,9 @@ declare const fullApi: ApiFromModules<{
   "providers/hosted/aws": typeof providers_hosted_aws;
   "providers/hosted/env": typeof providers_hosted_env;
   "providers/hosted/http": typeof providers_hosted_http;
+  "providers/hosted/importJobs": typeof providers_hosted_importJobs;
+  "providers/hosted/importMessages": typeof providers_hosted_importMessages;
+  "providers/hosted/importer": typeof providers_hosted_importer;
   "providers/hosted/ingest": typeof providers_hosted_ingest;
   "providers/hosted/internal": typeof providers_hosted_internal;
   "providers/hosted/normalize": typeof providers_hosted_normalize;
@@ -329,6 +336,7 @@ declare const fullApi: ApiFromModules<{
   "providers/icloud/window": typeof providers_icloud_window;
   "providers/microsoft/api": typeof providers_microsoft_api;
   "providers/microsoft/http": typeof providers_microsoft_http;
+  "providers/microsoft/mailImport": typeof providers_microsoft_mailImport;
   "providers/microsoft/oauth": typeof providers_microsoft_oauth;
   "providers/microsoft/tokenAccess": typeof providers_microsoft_tokenAccess;
   "providers/types": typeof providers_types;
