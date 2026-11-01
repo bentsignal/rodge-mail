@@ -273,7 +273,7 @@ stay under half the classification rate limit.
 `mailImports` row keeps the cursor and the imported, skipped, and failed
 counts, plus the last 100 failures with their reasons. Each failure also
 keeps the subject, sender, and date from the source listing (Graph's
-`$select` already returns them), and the reason includes the error's class,
+`$select` asks for them with the folder and read state), and the reason includes the error's class,
 ConvexError data, and causes, up to 1,000 characters. Graph throttling and
 5xx errors retry the same page with backoff and fail the import after five in
 a row; a missing or oversized (over 40 MB) message is recorded as a failure
