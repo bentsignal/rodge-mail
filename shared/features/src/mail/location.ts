@@ -23,7 +23,7 @@ const LOCATION_LABELS = {
 } satisfies Record<MailLocationKind, string>;
 
 export function getMailLocationLabel(location: MailLocation) {
-  return location.name?.trim() || LOCATION_LABELS[location.kind];
+  return location.name ?? LOCATION_LABELS[location.kind];
 }
 
 /** "Account · Folder" for rows outside the inbox; the account alone when asked. */
@@ -52,7 +52,7 @@ export function getMailThreadPlacement({
 }: {
   archivedAt?: number;
   inInbox?: boolean;
-}): MailThreadPlacement {
+}) {
   if (inInbox !== false) return "inbox";
   if (archivedAt !== undefined) return "archived";
   return "elsewhere";

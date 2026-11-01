@@ -17,7 +17,8 @@ interface ThreadOverride {
   isRead?: boolean;
 }
 
-export type MobileMailbox = "archive" | "inbox" | "spam";
+export type MobileMailbox = "all" | "archive" | "inbox" | "spam";
+export type OtherMailbox = Exclude<MobileMailbox, "inbox">;
 
 function useInternalStore() {
   const [accountFilter, setAccountFilter] = useState<MailAccountFilter>("all");

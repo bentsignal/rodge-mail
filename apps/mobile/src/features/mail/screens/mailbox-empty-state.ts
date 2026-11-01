@@ -22,6 +22,12 @@ export function getEmptyMailboxCopy({
       title: "No unread messages",
     };
   }
+  if (mailbox === "all") {
+    return {
+      detail: "Mail from every folder and account appears here.",
+      title: "No mail yet",
+    };
+  }
   if (mailbox === "archive") {
     return {
       detail: "Conversations you archive stay here for 30 days.",

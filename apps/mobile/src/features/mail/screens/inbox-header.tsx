@@ -7,7 +7,7 @@ import { Check, ListChecks, ListFilter } from "lucide-react-native";
 import type { MailAccountFilter } from "@rodge-mail/features/mail";
 
 import type { MobileMailAccount } from "../lib/convex-mail";
-import type { MobileMailbox } from "../store";
+import type { MobileMailbox, OtherMailbox } from "../store";
 import type { MailboxFilter } from "./mailbox-controls";
 import { useColor } from "~/hooks/use-color";
 import { AccountFilter } from "../components/account-filter";
@@ -21,8 +21,7 @@ export function InboxHeader({
   includeTopSafeArea = true,
   mailbox,
   onAccountChange,
-  onArchiveSelect,
-  onSpamSelect,
+  onMailboxSelect,
   onFilterChange,
   onToggleSelection,
   refreshError,
@@ -35,8 +34,7 @@ export function InboxHeader({
   includeTopSafeArea?: boolean;
   mailbox: MobileMailbox;
   onAccountChange: (value: MailAccountFilter) => void;
-  onArchiveSelect: () => void;
-  onSpamSelect: () => void;
+  onMailboxSelect: (mailbox: OtherMailbox) => void;
   onFilterChange: (value: MailboxFilter) => void;
   onToggleSelection: () => void;
   refreshError: string | undefined;
@@ -55,8 +53,7 @@ export function InboxHeader({
             mailbox={mailbox}
             value={accountFilter}
             onChange={onAccountChange}
-            onArchiveSelect={onArchiveSelect}
-            onSpamSelect={onSpamSelect}
+            onMailboxSelect={onMailboxSelect}
           />
           <MailboxFilterMenu filter={filter} onChange={onFilterChange} />
           <SelectionButtonSlot

@@ -7,7 +7,11 @@ import { useMutation, useQuery } from "convex/react";
 
 import type { MailMessage, MailThread } from "@rodge-mail/features/mail";
 import { api } from "@rodge-mail/convex/api";
-import { getReplyAddress } from "@rodge-mail/features/mail";
+import {
+  canMoveMailThreadToInbox,
+  getMailThreadPlacement,
+  getReplyAddress,
+} from "@rodge-mail/features/mail";
 
 import type { MobileMailbox } from "../store";
 import type { MessageViewMode } from "./thread-message-body";
@@ -26,6 +30,7 @@ import { parseMobileMailbox } from "./mailbox-controls";
 import { MessageViewToolbar } from "./message-view-toolbar";
 import { ThreadMessageBody } from "./thread-message-body";
 import { ThreadReaderToolbar } from "./thread-reader-toolbar";
+import { useMoveToInbox } from "./use-move-to-inbox";
 import { useThreadReaderActions } from "./use-thread-reader-actions";
 
 type ThreadQueryResult =
@@ -94,6 +99,7 @@ function ThreadScreenBody({
     return (
       <ThreadReader
         accountAddress={departingReader.accountAddress}
+        canMoveToInbox={false}
         mailbox={mailbox}
         targetMessageId={targetMessageId}
         thread={departingReader.thread}
@@ -107,7 +113,12 @@ function ThreadScreenBody({
   return (
     <ThreadReader
       accountAddress={thread.account.address}
-      mailbox={mailbox}
+      canMoveToInbox={canMoveMailThreadToInbox({
+        archivedAt: thread.archivedAt,
+        inInbox: thread.inInbox,
+        provider: thread.account.provider,
+      })}
+      mailbox={getReaderMailbox(mailbox, thread)}
       targetMessageId={targetMessageId}
       thread={mailThread}
       onPermanentDeleteStart={() =>
@@ -120,20 +131,35 @@ function ThreadScreenBody({
   );
 }
 
+/** The toolbar follows where the thread lives, not the list it came from. */
+function getReaderMailbox(
+  mailbox: MobileMailbox,
+  thread: { archivedAt?: number; inInbox?: boolean },
+) {
+  if (mailbox === "spam") return "spam";
+  const placement = getMailThreadPlacement(thread);
+  if (placement === "archived") return "archive";
+  if (placement === "elsewhere") return "all";
+  return "inbox";
+}
+
 function ThreadReader({
   accountAddress,
+  canMoveToInbox,
   mailbox,
   onPermanentDeleteStart,
   targetMessageId,
   thread,
 }: {
   accountAddress: string;
+  canMoveToInbox: boolean;
   mailbox: MobileMailbox;
   onPermanentDeleteStart: () => void;
   targetMessageId?: string;
   thread: MailThread;
 }) {
   const router = useRouter();
+  const moveToInbox = useMoveToInbox();
   const scrollViewRef = useRef<ScrollView>(null);
   const [viewMode, setViewMode] = useState<MessageViewMode>("clean");
   const actions = useThreadReaderActions(thread, onPermanentDeleteStart);
@@ -159,12 +185,14 @@ function ThreadReader({
   return (
     <>
       <ThreadReaderToolbar
+        canMoveToInbox={canMoveToInbox}
         cleanViewAction={cleanViewAction}
         isPinned={actions.isPinned}
         mailbox={mailbox}
         title={thread.sender.name}
         onArchive={() => void actions.archive()}
         onDelete={actions.confirmPermanentDelete}
+        onMoveToInbox={() => moveToInbox(thread.id)}
         onPin={() => void actions.togglePin()}
         onReply={reply}
         onRestore={() => void actions.restore()}

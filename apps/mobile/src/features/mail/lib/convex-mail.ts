@@ -3,6 +3,7 @@ import type { FunctionReturnType } from "convex/server";
 import type { api } from "@rodge-mail/convex/api";
 import type { MailAccount, MailAttachment } from "@rodge-mail/features/mail";
 import {
+  canMoveMailThreadToInbox,
   dedupeThreadRows,
   sortPinnedMailRows,
 } from "@rodge-mail/features/mail";
@@ -33,7 +34,13 @@ export type MobileMailAccount = MailAccount & {
 export function toMailThread(item: InboxItem) {
   return {
     accountId: item.accountId,
+    canMoveToInbox: canMoveMailThreadToInbox({
+      archivedAt: item.archivedAt,
+      inInbox: item.location.kind === "inbox",
+      provider: item.account.provider,
+    }),
     id: item.threadId,
+    location: item.location,
     isPinned: item.isPinned,
     isRead: item.isRead,
     messages: [],
@@ -49,6 +56,11 @@ export function toMailThread(item: InboxItem) {
 
 export function toMailThreads(items: InboxItem[]) {
   return sortPinnedMailRows(dedupeThreadRows(items).map(toMailThread));
+}
+
+/** Newest first, as the server ordered them; All Mail doesn't lift pins. */
+export function toAllMailThreads(items: InboxItem[]) {
+  return dedupeThreadRows(items).map(toMailThread);
 }
 
 export function toMailThreadDetail(item: ThreadDetail) {

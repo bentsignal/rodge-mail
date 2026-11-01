@@ -5,7 +5,7 @@ import { ChevronDown } from "lucide-react-native";
 
 import type { MailAccount, MailAccountFilter } from "@rodge-mail/features/mail";
 
-import type { MobileMailbox } from "../store";
+import type { MobileMailbox, OtherMailbox } from "../store";
 import { useColor } from "~/hooks/use-color";
 
 export function AccountFilter({
@@ -13,15 +13,13 @@ export function AccountFilter({
   accounts,
   mailbox,
   onChange,
-  onArchiveSelect,
-  onSpamSelect,
+  onMailboxSelect,
 }: {
   accounts: MailAccount[];
   mailbox: MobileMailbox;
   value: MailAccountFilter;
   onChange: (value: MailAccountFilter) => void;
-  onArchiveSelect: () => void;
-  onSpamSelect: () => void;
+  onMailboxSelect: (mailbox: OtherMailbox) => void;
 }) {
   const mutedForeground = useColor("muted-foreground");
   const selectedAccount =
@@ -29,13 +27,11 @@ export function AccountFilter({
       ? undefined
       : accounts.find((account) => account.id === value);
   const selectedLabel =
-    mailbox === "archive"
-      ? "Archive"
-      : mailbox === "spam"
-        ? "Spam"
-        : selectedAccount
-          ? getAccountLabel(selectedAccount)
-          : "All Inboxes";
+    mailbox === "inbox"
+      ? selectedAccount
+        ? getAccountLabel(selectedAccount)
+        : "All Inboxes"
+      : MAILBOX_TITLES[mailbox];
   const actions = [
     {
       id: "all",
@@ -49,6 +45,12 @@ export function AccountFilter({
       state: selectionState(mailbox === "inbox" && value === account.id),
       title: getAccountLabel(account),
     })),
+    {
+      id: allMailboxId,
+      image: "mail.stack" as const,
+      state: selectionState(mailbox === "all"),
+      title: "All Mail",
+    },
     {
       id: archiveMailboxId,
       image: "archivebox" as const,
@@ -72,8 +74,9 @@ export function AccountFilter({
         testID="mailbox-picker"
         onPressAction={(event) => {
           const nextValue = event.nativeEvent.event;
-          if (nextValue === archiveMailboxId) onArchiveSelect();
-          else if (nextValue === spamMailboxId) onSpamSelect();
+          if (nextValue === allMailboxId) onMailboxSelect("all");
+          else if (nextValue === archiveMailboxId) onMailboxSelect("archive");
+          else if (nextValue === spamMailboxId) onMailboxSelect("spam");
           else onChange(nextValue);
         }}
       >
@@ -96,6 +99,13 @@ export function AccountFilter({
   );
 }
 
+const MAILBOX_TITLES = {
+  all: "All Mail",
+  archive: "Archive",
+  spam: "Spam",
+} satisfies Record<OtherMailbox, string>;
+
+const allMailboxId = "__all__";
 const archiveMailboxId = "__archive__";
 const spamMailboxId = "__spam__";
 

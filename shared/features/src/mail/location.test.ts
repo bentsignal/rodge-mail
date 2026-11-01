@@ -43,9 +43,9 @@ describe("mail location", () => {
     expect(
       canMoveMailThreadToInbox({ inInbox: false, provider: "hosted" }),
     ).toBe(true);
-    expect(canMoveMailThreadToInbox({ inInbox: false, provider: "gmail" })).toBe(
-      false,
-    );
+    expect(
+      canMoveMailThreadToInbox({ inInbox: false, provider: "gmail" }),
+    ).toBe(false);
     expect(
       canMoveMailThreadToInbox({
         archivedAt: 1,
@@ -53,8 +53,8 @@ describe("mail location", () => {
         provider: "gmail",
       }),
     ).toBe(true);
-    expect(canMoveMailThreadToInbox({ inInbox: true, provider: "hosted" })).toBe(
-      false,
-    );
+    expect(
+      canMoveMailThreadToInbox({ inInbox: true, provider: "hosted" }),
+    ).toBe(false);
   });
 });

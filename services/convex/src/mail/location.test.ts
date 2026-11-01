@@ -9,11 +9,11 @@ import {
 
 const incoming = {
   archivedAt: undefined,
-  direction: "incoming" as const,
+  direction: "incoming",
   hiddenAt: undefined,
   inInbox: false,
-  remoteLabelIds: [] as string[],
-};
+  remoteLabelIds: [],
+} satisfies Parameters<typeof resolveMessageLocation>[0];
 
 describe("message location", () => {
   it("puts inbox and Rodge-archived mail first", () => {
@@ -29,11 +29,12 @@ describe("message location", () => {
   });
 
   it("reads hosted import labels", () => {
-    const at = (label: string) =>
-      resolveMessageLocation(
+    function at(label: string) {
+      return resolveMessageLocation(
         { ...incoming, remoteLabelIds: [label] },
         "hosted",
       );
+    }
     expect(at("archive")).toEqual({ kind: "archive" });
     expect(at("junk")).toEqual({ kind: "junk" });
     expect(at("sent")).toEqual({ kind: "sent" });
@@ -68,11 +69,12 @@ describe("message location", () => {
   });
 
   it("names custom folders and maps special ones", () => {
-    expect(locationFromFolder({ kind: "custom", name: "Receipts" }, incoming))
-      .toEqual({ kind: "custom", name: "Receipts" });
-    expect(locationFromFolder({ kind: "junk", name: "Junk" }, incoming)).toEqual(
-      { kind: "junk" },
-    );
+    expect(
+      locationFromFolder({ kind: "custom", name: "Receipts" }, incoming),
+    ).toEqual({ kind: "custom", name: "Receipts" });
+    expect(
+      locationFromFolder({ kind: "junk", name: "Junk" }, incoming),
+    ).toEqual({ kind: "junk" });
     expect(locationFromFolder(null, incoming)).toEqual({ kind: "archive" });
   });
 

@@ -553,7 +553,8 @@ const SEEDS = [
     account: "hosted",
     from: ["Oak Street Property", "leasing@oakstreet.example"],
     subject: "Lease renewal signed",
-    snippet: "Your signed renewal is attached. Thanks for staying another year.",
+    snippet:
+      "Your signed renewal is attached. Thanks for staying another year.",
     category: "transactional",
     hoursAgo: 520,
     placement: "folder",

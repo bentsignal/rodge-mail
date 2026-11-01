@@ -6,6 +6,7 @@ import { usePaginatedQuery, useQuery } from "convex/react";
 import type { MailAccountFilter, MailThread } from "@rodge-mail/features/mail";
 import { api } from "@rodge-mail/convex/api";
 
+import type { OtherMailbox } from "../store";
 import { useDebouncedValue } from "~/hooks/use-debounced-value";
 import { ThreadRow } from "../components/thread-row";
 import { toConvexId } from "../lib/convex-id";
@@ -20,7 +21,7 @@ const pageSize = 30;
 
 interface ArchiveMailboxProps {
   onAccountChange: (value: MailAccountFilter) => void;
-  onSpamSelect: () => void;
+  onMailboxSelect: (mailbox: OtherMailbox) => void;
   primary: string;
   searchMode: boolean;
   searchTerm: string;
@@ -31,7 +32,7 @@ export function ArchiveMailbox({
   searchMode,
   searchTerm,
   onAccountChange,
-  onSpamSelect,
+  onMailboxSelect,
 }: ArchiveMailboxProps) {
   const router = useRouter();
   const accounts = useMailStore((store) => store.accounts);
@@ -112,10 +113,9 @@ export function ArchiveMailbox({
       selectedCount={actions.selectedIds.size}
       selectionMode={actions.selectionMode}
       onAccountChange={onAccountChange}
-      onArchiveSelect={() => undefined}
       onFilterChange={actions.changeFilter}
       onLoadMore={() => archive.loadMore(pageSize)}
-      onSpamSelect={onSpamSelect}
+      onMailboxSelect={onMailboxSelect}
       onToggleSelection={actions.toggleSelectionMode}
       pageStatus={isSearching ? "Exhausted" : archive.status}
     />

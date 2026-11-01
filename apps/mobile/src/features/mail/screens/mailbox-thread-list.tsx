@@ -8,7 +8,7 @@ import type { MailAccountFilter, MailThread } from "@rodge-mail/features/mail";
 
 import type { MobileMailAccount } from "../lib/convex-mail";
 import type { PageStatus } from "../lib/next-page";
-import type { MobileMailbox } from "../store";
+import type { MobileMailbox, OtherMailbox } from "../store";
 import type { InboxHeader } from "./inbox-header";
 import type { MailboxFilter } from "./mailbox-controls";
 import { ContentReveal } from "~/components/content-reveal";
@@ -57,11 +57,10 @@ interface MailboxThreadListProps {
   isRefreshing?: boolean;
   mailbox: MobileMailbox;
   onAccountChange: (value: MailAccountFilter) => void;
-  onArchiveSelect: () => void;
   onFilterChange: (value: MailboxFilter) => void;
   onLoadMore: () => void;
+  onMailboxSelect: (mailbox: OtherMailbox) => void;
   onRefresh?: () => void;
-  onSpamSelect: () => void;
   onToggleSelection: () => void;
   pageStatus: PageStatus;
   primary: string;
@@ -89,11 +88,10 @@ export function MailboxThreadList({
   isRefreshing,
   mailbox,
   onAccountChange,
-  onArchiveSelect,
   onFilterChange,
   onLoadMore,
+  onMailboxSelect,
   onRefresh,
-  onSpamSelect,
   onToggleSelection,
   pageStatus,
   primary,
@@ -131,10 +129,9 @@ export function MailboxThreadList({
         includeTopSafeArea={includeTopSafeArea}
         mailbox={mailbox}
         onAccountChange={onAccountChange}
-        onArchiveSelect={onArchiveSelect}
         onFilterChange={onFilterChange}
+        onMailboxSelect={onMailboxSelect}
         onToggleSelection={onToggleSelection}
-        onSpamSelect={onSpamSelect}
         refreshError={refreshError}
         searchMode={searchMode}
         selectedCount={selectedCount}
@@ -152,10 +149,9 @@ export function MailboxThreadList({
           includeTopSafeArea,
           mailbox,
           onAccountChange,
-          onArchiveSelect,
           onFilterChange,
+          onMailboxSelect,
           onToggleSelection,
-          onSpamSelect,
           refreshError,
           selectionMode,
           selectionEnabled,

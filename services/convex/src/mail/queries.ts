@@ -1,9 +1,7 @@
-import type { PaginationOptions } from "convex/server";
 import { paginationOptsValidator } from "convex/server";
 import { ConvexError, v } from "convex/values";
 
-import type { Doc, Id } from "../_generated/dataModel";
-import type { AuthedQueryCtx } from "../utils";
+import type { Doc } from "../_generated/dataModel";
 import { authedQuery } from "../utils";
 import {
   ensureListableAccount,
@@ -12,13 +10,14 @@ import {
   toMessageDetail,
   toMessageListItem,
 } from "./helpers";
+import { isAllMailLocation } from "./location";
+import { paginateMessageSearch } from "./messageSearch";
 import {
   enrichAllMailPage,
   enrichMessagePage,
   enrichThreadPage,
   getVisibleUnreadCountSummary,
 } from "./queryEnrichment";
-import { isAllMailLocation } from "./location";
 import { emptyMessagePage, matchesMailSearch, parseMailSearch } from "./search";
 import { matchesUnreadScope } from "./unread";
 
@@ -269,30 +268,14 @@ export const searchHeaders = authedQuery({
       return emptyMessagePage();
     }
 
-    const accountId = args.accountId;
     const inboxOnly = args.scope !== "all";
-    const results = searchPlan.lexicalQuery
-      ? await ctx.db
-          .query("messages")
-          .withSearchIndex("search_headers", (q) => {
-            const byOwner = q
-              .search("searchText", searchPlan.lexicalQuery)
-              .eq("ownerId", ctx.ownerId);
-            const byScope = inboxOnly ? byOwner.eq("inInbox", true) : byOwner;
-            const byAccount = accountId
-              ? byScope.eq("accountId", accountId)
-              : byScope;
-            return args.unreadOnly ? byAccount.eq("isRead", false) : byAccount;
-          })
-          .paginate(args.paginationOpts)
-      : await paginateByReceivedDate(ctx, {
-          accountId,
-          after: searchPlan.after ?? 0,
-          before: searchPlan.before ?? Number.MAX_SAFE_INTEGER,
-          inboxOnly,
-          paginationOpts: args.paginationOpts,
-          unreadOnly: args.unreadOnly === true,
-        });
+    const results = await paginateMessageSearch(ctx, {
+      accountId: args.accountId,
+      inboxOnly,
+      paginationOpts: args.paginationOpts,
+      plan: searchPlan,
+      unreadOnly: args.unreadOnly === true,
+    });
 
     const filtered = {
       ...results,
@@ -301,65 +284,6 @@ export const searchHeaders = authedQuery({
       ),
     };
 
-    return await enrichMessagePage(
-      ctx,
-      filtered,
-      inboxOnly ? "inbox" : "all",
-    );
+    return await enrichMessagePage(ctx, filtered, inboxOnly ? "inbox" : "all");
   },
 });
-
-async function paginateByReceivedDate(
-  ctx: AuthedQueryCtx,
-  args: {
-    accountId: Id<"mailAccounts"> | undefined;
-    after: number;
-    before: number;
-    inboxOnly: boolean;
-    paginationOpts: PaginationOptions;
-    unreadOnly: boolean;
-  },
-) {
-  const { accountId, after, before } = args;
-  const messages = ctx.db.query("messages");
-  const range = accountId
-    ? args.inboxOnly
-      ? messages.withIndex("by_account_inbox_received", (q) =>
-          q
-            .eq("accountId", accountId)
-            .eq("inInbox", true)
-            .gte("receivedAt", after)
-            .lt("receivedAt", before),
-        )
-      : messages.withIndex("by_account_received", (q) =>
-          q
-            .eq("accountId", accountId)
-            .gte("receivedAt", after)
-            .lt("receivedAt", before),
-        )
-    : args.inboxOnly
-      ? messages.withIndex("by_owner_inbox_received", (q) =>
-          q
-            .eq("ownerId", ctx.ownerId)
-            .eq("inInbox", true)
-            .gte("receivedAt", after)
-            .lt("receivedAt", before),
-        )
-      : messages.withIndex("by_owner_received", (q) =>
-          q
-            .eq("ownerId", ctx.ownerId)
-            .gte("receivedAt", after)
-            .lt("receivedAt", before),
-        );
-  return await range
-    .order("desc")
-    .filter((q) => {
-      const visible = args.inboxOnly
-        ? q.eq(q.field("inInbox"), true)
-        : q.eq(q.field("hiddenAt"), undefined);
-      return args.unreadOnly
-        ? q.and(visible, q.eq(q.field("isRead"), false))
-        : visible;
-    })
-    .paginate(args.paginationOpts);
-}

@@ -10,11 +10,13 @@ export interface CleanViewMenuAction {
 }
 
 export function ThreadReaderToolbar({
+  canMoveToInbox,
   cleanViewAction,
   isPinned,
   mailbox,
   onArchive,
   onDelete,
+  onMoveToInbox,
   onPin,
   onReply,
   onRestore,
@@ -22,11 +24,13 @@ export function ThreadReaderToolbar({
   title,
   unsubscribeName,
 }: {
+  canMoveToInbox: boolean;
   cleanViewAction?: CleanViewMenuAction;
   isPinned: boolean;
   mailbox: MobileMailbox;
   onArchive: () => void;
   onDelete: () => void;
+  onMoveToInbox: () => void;
   onPin: () => void;
   onReply: () => void;
   onRestore: () => void;
@@ -71,6 +75,12 @@ export function ThreadReaderToolbar({
           hidden={!isInbox}
           icon="archivebox"
           onPress={onArchive}
+        />
+        <Stack.Toolbar.Button
+          accessibilityLabel="Move to Inbox"
+          hidden={mailbox !== "all" || !canMoveToInbox}
+          icon="tray.and.arrow.down"
+          onPress={onMoveToInbox}
         />
         <Stack.Toolbar.Button
           accessibilityLabel="Restore"

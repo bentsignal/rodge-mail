@@ -14,9 +14,8 @@ import {
   Trash2,
 } from "lucide-react";
 
-import { cn } from "@rodge-mail/std/cn";
-
 import type { MailThreadPlacement } from "@rodge-mail/features/mail";
+import { cn } from "@rodge-mail/std/cn";
 
 import type { MailMode } from "../live-data-types";
 import type { ThreadMessageDetail } from "../types";
