@@ -3,15 +3,16 @@
     python3 build-icons.py              # rodge-mail.icon, render-flat.swift, previews/
     python3 build-icons.py --check DIR  # also every iOS appearance at 1024px in DIR
 
-The icon is a folded paper plane: a near wing seen whole and a far wing
-foreshortened behind it, meeting along the fold from the nose to the notch.
-Light is a graphite plane on white; dark is a white plane on near-black;
-tinted and clear use a white and a gray wing, which iOS tints.
+The icon is a folded paper plane: one rounded silhouette cut along the fold
+from the nose to the notch into a near wing and a far wing behind it. The two
+wings are one color, the far wing in shadow: graphite on white in light, white
+on near-black in dark, white and gray in tinted and clear, which iOS tints.
 
-The plane is drawn on a 100-unit design grid, scaled so its larger side is
-GLYPH pixels of the 1024px canvas, and centered optically: halfway between
-its bounding box's center and its centroid (OPTICAL). Wing tips, nose, and
-notch are rounded with arcs tangent to both edges.
+The plane is drawn on a 100-unit design grid. Its outline grows by OUTSET with
+round corners, as if stroked with round joins, and its notch gets a small
+concave arc. The silhouette is scaled so its larger side is GLYPH pixels of the
+1024px canvas and centered optically: halfway between its bounding box's center
+and its centroid (OPTICAL).
 """
 
 from pathlib import Path
@@ -36,54 +37,87 @@ GLYPH = 640
 # looks pushed up and to the right; halfway reads as centered.
 OPTICAL = .5
 
-# The plane on a 100-unit design grid (concept 05): y grows downward.
+# The plane on a 100-unit design grid: y grows downward. The fold is the line
+# through NOSE and NOTCH.
 NOSE = (80, 24)
-NEAR_TIP = (20, 49)
 FAR_TIP = (61, 78)
 NOTCH = (48, 56)
-RADIUS = {NOSE: 18, NOTCH: 10, NEAR_TIP: 24, FAR_TIP: 20}
+NEAR_TIP = (20, 49)
+OUTLINE = (NOSE, FAR_TIP, NOTCH, NEAR_TIP)
+# Half the approved design's 7-unit round-join stroke. Convex corners with
+# radius OUTSET become arcs around the original vertices.
+OUTSET = 3.5
+RADIUS = {NOSE: OUTSET, FAR_TIP: OUTSET, NOTCH: 1, NEAR_TIP: OUTSET}
+# Pixels the far wing reaches under the near wing. Icon Composer antialiases
+# each layer on its own, so wings that only touch show the background through
+# a hairline along the fold.
+UNDERLAP = 1.5
 
 BACKGROUND = {"light": ("#ffffff", "#e4e4e9"), "dark": ("#2e2e30", "#0c0c0d")}
+NEAR_WING = {"light": ("#48484b", "#1c1c1e"), "dark": ("#ffffff", "#e0e0e4"), "tinted": "#ffffff"}
+# The far wing is the near wing's color times this.
+SHADE = {"light": .68, "dark": .74, "tinted": .74}
+
+
+def shaded(value, k):
+    if isinstance(value, tuple):
+        return tuple(shaded(v, k) for v in value)
+    return "#" + "".join(f"{round(int(value[i:i + 2], 16) * k):02x}" for i in (1, 3, 5))
+
+
 WINGS = {
-    "near": {"light": ("#4a4a4d", "#1f1f21"), "dark": ("#ffffff", "#e5e5ea"), "tinted": "#ffffff"},
-    "far": {"light": ("#1a1a1b", "#000000"), "dark": ("#a1a1a6", "#77777c"), "tinted": "#9a9a9a"},
+    "near": NEAR_WING,
+    "far": {appearance: shaded(v, SHADE[appearance]) for appearance, v in NEAR_WING.items()},
 }
-FACETS = {"near": (NOSE, NEAR_TIP, NOTCH), "far": (NOSE, NOTCH, FAR_TIP)}
+
+
+def unit(x, y):
+    d = math.hypot(x, y)
+    return x / d, y / d
+
+
+def signed_area(points):
+    return sum(x0 * y1 - x1 * y0 for (x0, y0), (x1, y1) in zip(points, points[1:] + points[:1])) / 2
 
 
 def centroid(points):
-    area = cx = cy = 0
+    cx = cy = 0
     for (x0, y0), (x1, y1) in zip(points, points[1:] + points[:1]):
         cross = x0 * y1 - x1 * y0
-        area += cross
         cx += (x0 + x1) * cross
         cy += (y0 + y1) * cross
-    return cx / (3 * area), cy / (3 * area)
+    area = signed_area(points)
+    return cx / (6 * area), cy / (6 * area)
 
 
-def to_screen(points):
-    xs, ys = zip(*points)
-    scale = GLYPH / max(max(xs) - min(xs), max(ys) - min(ys))
-    box = ((max(xs) + min(xs)) / 2, (max(ys) + min(ys)) / 2)
-    mass = centroid(list(points))
-    cx, cy = (b + OPTICAL * (m - b) for b, m in zip(box, mass))
-    return [(CANVAS / 2 + (x - cx) * scale, CANVAS / 2 + (y - cy) * scale) for x, y in points]
+def outset(points, d):
+    """The polygon with every edge moved outward by d, its corners kept sharp."""
+    sign = 1 if signed_area(points) > 0 else -1
+    lines = []
+    for p, q in zip(points, points[1:] + points[:1]):
+        n = unit(sign * (q[1] - p[1]), sign * (p[0] - q[0]))
+        lines.append((n, n[0] * p[0] + n[1] * p[1] + d))
+    corners = []
+    for (n1, c1), (n2, c2) in zip(lines[-1:] + lines[:-1], lines):
+        det = n1[0] * n2[1] - n1[1] * n2[0]
+        corners.append(((c1 * n2[1] - c2 * n1[1]) / det, (n1[0] * c2 - n2[0] * c1) / det))
+    return corners
 
 
-OUTLINE = (NOSE, FAR_TIP, NOTCH, NEAR_TIP)
-SCREEN = dict(zip(OUTLINE, to_screen(OUTLINE)))
+def rounded(corners, radii, step=math.radians(5)):
+    """The polygon with each corner replaced by an arc tangent to both edges.
 
-
-def rounded(vertices, steps=10):
-    """A convex polygon with each corner replaced by a tangent arc."""
+    The arc's center lies on the corner's bisector, inside the polygon at a
+    convex corner and outside it at a reflex one, so the same construction
+    rounds both.
+    """
     points = []
-    for i, vertex in enumerate(vertices):
-        p = SCREEN[vertex]
-        a, b = SCREEN[vertices[i - 1]], SCREEN[vertices[(i + 1) % len(vertices)]]
+    for i, p in enumerate(corners):
+        a, b = corners[i - 1], corners[(i + 1) % len(corners)]
         u = unit(a[0] - p[0], a[1] - p[1])
         v = unit(b[0] - p[0], b[1] - p[1])
         half = math.acos(max(-1, min(1, u[0] * v[0] + u[1] * v[1]))) / 2
-        r = RADIUS[vertex]
+        r = radii[i]
         reach = r / math.tan(half)
         bisector = unit(u[0] + v[0], u[1] + v[1])
         center = (p[0] + bisector[0] * r / math.sin(half), p[1] + bisector[1] * r / math.sin(half))
@@ -92,14 +126,49 @@ def rounded(vertices, steps=10):
         a0 = math.atan2(start[1] - center[1], start[0] - center[0])
         a1 = math.atan2(end[1] - center[1], end[0] - center[0])
         sweep = (a1 - a0 + math.pi) % (2 * math.pi) - math.pi
+        steps = max(1, math.ceil(abs(sweep) / step))
         points += [(center[0] + r * math.cos(a0 + sweep * k / steps),
                     center[1] + r * math.sin(a0 + sweep * k / steps)) for k in range(steps + 1)]
     return points
 
 
-def unit(x, y):
-    d = math.hypot(x, y)
-    return x / d, y / d
+def placement(points):
+    """Maps the design grid onto the canvas: the larger side GLYPH pixels, centered optically."""
+    xs, ys = zip(*points)
+    scale = GLYPH / max(max(xs) - min(xs), max(ys) - min(ys))
+    box = ((max(xs) + min(xs)) / 2, (max(ys) + min(ys)) / 2)
+    cx, cy = (b + OPTICAL * (m - b) for b, m in zip(box, centroid(points)))
+    return lambda p: (CANVAS / 2 + (p[0] - cx) * scale, CANVAS / 2 + (p[1] - cy) * scale)
+
+
+def clip(points, distance):
+    """Sutherland-Hodgman: the part of the polygon where the linear `distance` is >= 0."""
+    part = []
+    for p, q in zip(points, points[1:] + points[:1]):
+        dp, dq = distance(p), distance(q)
+        if dp >= 0:
+            part.append(p)
+        if (dp >= 0) != (dq >= 0):
+            t = dp / (dp - dq)
+            part.append((p[0] + t * (q[0] - p[0]), p[1] + t * (q[1] - p[1])))
+    return part
+
+
+def wings():
+    """The silhouette cut along the fold, in canvas pixels."""
+    grid = rounded(outset(list(OUTLINE), OUTSET), [RADIUS[v] for v in OUTLINE])
+    place = placement(grid)
+    plane = [place(p) for p in grid]
+    (ax, ay), (bx, by) = place(NOSE), place(NOTCH)
+    normal = unit(ay - by, bx - ax)
+    near_tip = place(NEAR_TIP)
+    if normal[0] * (near_tip[0] - ax) + normal[1] * (near_tip[1] - ay) < 0:
+        normal = -normal[0], -normal[1]
+
+    def past_fold(p):
+        return normal[0] * (p[0] - ax) + normal[1] * (p[1] - ay)
+
+    return {"near": clip(plane, past_fold), "far": clip(plane, lambda p: UNDERLAP - past_fold(p))}
 
 
 def f(x):
@@ -161,8 +230,8 @@ def write_bundle():
     bundle = ROOT / f"{NAME}.icon"
     shutil.rmtree(bundle, ignore_errors=True)
     (bundle / "Assets").mkdir(parents=True)
-    for wing, vertices in FACETS.items():
-        (bundle / "Assets" / f"{wing}-wing.svg").write_text(svg(rounded(vertices)))
+    for wing, points in wings().items():
+        (bundle / "Assets" / f"{wing}-wing.svg").write_text(svg(points))
     (bundle / "icon.json").write_text(json.dumps(document(), indent=2) + "\n")
     return bundle
 
